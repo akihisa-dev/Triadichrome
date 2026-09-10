@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.npm-cache/
+coverage/
+backup/
+build/
+.pnpm-store/
+*.local
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
