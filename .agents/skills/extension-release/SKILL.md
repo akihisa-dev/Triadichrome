@@ -5,7 +5,7 @@ description: Plan and verify commit timing, SemVer changes, tags, and releases f
 
 # Extension release workflow
 
-Use this skill when the request concerns when to commit, how to bump the version, whether a release is ready, or how to create a tag. Read the repository `AGENTS.md`, `package.json`, `public/manifest.json`, current status, and relevant verification results before deciding.
+Use this skill when the request concerns when to commit, how to bump the version, whether a release is ready, or how to create a tag. Read the repository `AGENTS.md`, `package.json`, `Triadichrome-extension/manifest.template.json`, current status, and relevant verification results before deciding.
 
 ## Commit timing
 
@@ -17,7 +17,7 @@ Use this skill when the request concerns when to commit, how to bump the version
 
 ## Version policy
 
-`package.json` is the version source of truth. `public/manifest.json` must carry the same version, and `dist/extension/manifest.json` is generated and ignored. Every normal commit for a requested change includes the two source versions together; a version-only commit is not created.
+`package.json` is the version source of truth. `Triadichrome-extension/manifest.template.json` must carry the same version, and `Triadichrome-extension/manifest.json` is generated from that template. Every normal commit for a requested change includes the two source versions together; a version-only commit is not created.
 
 Choose SemVer independently from commit type:
 

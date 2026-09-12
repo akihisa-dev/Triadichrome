@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "npm run typecheck && vite build",
+    "build": "npm run typecheck && node scripts/build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --pretty false"
   },

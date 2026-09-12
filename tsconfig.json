@@ -5,6 +5,7 @@
     "moduleDetection": "force",
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
     "allowJs": false,
     "checkJs": false,
     "isolatedModules": true,
@@ -24,5 +25,5 @@
     "jsx": "react-jsx",
     "types": ["vite/client", "chrome", "node"]
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["Triadichrome-extension/src", "vite.config.ts"]
 }

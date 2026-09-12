@@ -21,7 +21,7 @@
 ## 情報源と作業範囲
 
 - 作業開始時に`git status --short`、HEAD、通常差分、cached差分、対象ファイルを確認し、他者の変更を保護します。
-- 現行仕様の根拠は、現在の実装、`package.json`、`public/manifest.json`、`vite.config.ts`、`tsconfig.json`、READMEと検証結果です。過去の計画やコミットだけから現在の仕様を推測しません。
+- 現行仕様の根拠は、現在の実装、`package.json`、`Triadichrome-extension/manifest.template.json`、`vite.config.ts`、`tsconfig.json`、READMEと検証結果です。過去の計画やコミットだけから現在の仕様を推測しません。
 - 質問、調査、説明、レビュー、診断だけの依頼では編集・stage・commit・外部変更を行いません。変更が明示された場合は、指定範囲のローカル編集、正本文書の更新、非破壊的な検証、通常のcommitまで進めます。
 - 無関係な差分を編集、削除、stage、commit、巻き戻ししません。Git履歴の書き換え、push、公開、Issue・PR・tag・releaseなどの外部状態変更は、明示された場合だけ行います。利用者が「commitしない」「計画だけ」などと限定した場合は、その限定を優先します。
 
@@ -38,9 +38,9 @@
 ## 構成と境界
 
 - パッケージ管理と実行手順は`npm`を使用します。`pnpm`や`yarn`へ置き換えません。
-- `src/`は編集用のTypeScript/React正本です。将来、Chrome APIに依存しない純粋な処理を分離する場合は`src/core/`へ置き、`chrome.*`や直接の拡張環境依存処理は`src/extension/`へ置きます。
-- `src/extension/`はManifest V3のservice worker、独立拡張ページ、Chrome adapterなどの環境依存入口を所有します。Dexie、PapaParse、File System Access APIは責務とI/O境界を明示して配置します。
-- `public/manifest.json`は編集するManifestの正本、`dist/extension/`はViteが生成するChrome読み込み・配布物です。生成物や生成JavaScriptを`src/`へ置かず、`dist/`をcommitしません。
+- `Triadichrome-extension/src/`は編集用のTypeScript/React正本です。将来、Chrome APIに依存しない純粋な処理を分離する場合は`Triadichrome-extension/src/core/`へ置き、`chrome.*`や直接の拡張環境依存処理は`Triadichrome-extension/src/extension/`へ置きます。
+- `Triadichrome-extension/src/extension/`はManifest V3のservice worker、独立拡張ページ、Chrome adapterなどの環境依存入口を所有します。Dexie、PapaParse、File System Access APIは責務とI/O境界を明示して配置します。
+- `Triadichrome-extension/manifest.template.json`は編集するManifestの正本、`Triadichrome-extension/`直下の`manifest.json`・独立ページ・assetsはbuild補助が同期するChrome読み込み・配布物です。生成物はTypeScript正本と区別し、`dist/`はbuild時だけ使う一時領域としてcommitしません。
 - 依頼が画面不要と指定している間は、Reactの起動確認用入口を除き、UI、デザイン、業務機能、サンプルデータを追加しません。
 - 既存のAGPLv3 LICENSEを変更せず、他プロジェクトのライセンス、著作権表示、公開先、秘密情報、権限、host permissionをコピーしません。
 
@@ -55,13 +55,13 @@
 ## 検証と完了条件
 
 - 変更直後は対象に必要な検証を行い、commit前は`npm run typecheck`と`npm run build`を基本に、変更範囲に応じた検証を一度実行します。同じHEAD・同じ条件で成功した検証は、関連変更・失敗修正・Node/npm・依存・OSなどの環境変化がない限り再利用します。
-- `npm run build`後に`dist/extension/manifest.json`、service worker、独立ページ、生成された参照先を確認します。Chromeの未パッケージ拡張読み込み、実サイト操作、スクリーンショット、性能確認は明示依頼がある場合だけ行います。
+- `npm run build`後に`Triadichrome-extension/manifest.json`、service worker、独立ページ、生成された参照先を確認します。Chromeの未パッケージ拡張読み込み、実サイト操作、スクリーンショット、性能確認は明示依頼がある場合だけ行います。
 - `git diff --check`、生成物、Git状態を確認し、検証失敗時はcommitしません。ツールの成功表示だけで完了とせず、失敗経路と未確認範囲を報告します。
 
 ## version、commit、release
 
-- versionの正はrootの`package.json`です。編集用Manifestの`public/manifest.json`は同じversionを持たせ、`dist/extension/manifest.json`は生成物として一致を検証します。
-- commitする更新では`package.json`と`public/manifest.json`のversionを同じcommitへ含めます。
+- versionの正はrootの`package.json`です。編集用Manifestの`Triadichrome-extension/manifest.template.json`は同じversionを持たせ、`Triadichrome-extension/manifest.json`は生成物として一致を検証します。
+- commitする更新では`package.json`と`Triadichrome-extension/manifest.template.json`のversionを同じcommitへ含めます。
 - versionの区分はcommit typeではなく、公開済み機能との互換性と利用者に見える変更でSemVerを決めます。
   - MAJOR: 公開機能、保存データ、設定形式などに後方互換性のない変更
   - MINOR: 後方互換性を保った機能追加、または廃止予定の告知

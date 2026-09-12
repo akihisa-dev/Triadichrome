@@ -18,7 +18,7 @@ Use only scripts that exist in the root `package.json`. The current baseline com
 
 - `npm run typecheck`
 - `npm run build`
-- `node --check dist/extension/background.js` after a successful build
+- `node --check Triadichrome-extension/src/extension/background.js` after a successful build
 
 Run targeted checks immediately after a related change. Before a requested commit, run the appropriate complete set once and reuse a successful result for the same HEAD and environment. Do not claim that a typecheck/build proves real Chrome loading, target-site behavior, performance, or OS-specific packaging.
 

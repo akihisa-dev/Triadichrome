@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "Triadichrome",
+  "version": "0.2.0",
+  "description": "Triadichrome Chrome Extension",
+  "action": {
+    "default_title": "Open Triadichrome"
+  },
+  "background": {
+    "service_worker": "src/extension/background.js",
+    "type": "module"
+  }
+}

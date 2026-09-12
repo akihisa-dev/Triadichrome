@@ -25,8 +25,8 @@ Do not infer scope from the first easy file or from the number of changes. Read 
 ## Non-negotiable boundaries
 
 - Preserve the requested UI scope. If the user says no screen or design work, do not add visual UI while modernizing the build or runtime.
-- Keep pure application logic separate from Chrome-specific adapters. Keep `chrome.*` and direct extension-page/service-worker concerns in `src/extension/`; keep future platform-neutral logic in `src/core/` when that boundary exists.
-- Treat `public/manifest.json` as the editable manifest source and `dist/extension/` as generated output. Do not put generated JavaScript, bundles, or sample data in `src/`.
+- Keep pure application logic separate from Chrome-specific adapters. Keep `chrome.*` and direct extension-page/service-worker concerns in `Triadichrome-extension/src/extension/`; keep future platform-neutral logic in `Triadichrome-extension/src/core/` when that boundary exists.
+- Treat `Triadichrome-extension/manifest.template.json` as the editable manifest source and generated `manifest.json`, page, assets, and JavaScript under `Triadichrome-extension/` as loadable output. Do not clear the authored source under `Triadichrome-extension/src/` while building.
 - Preserve MV3 entry points, the independent extension page, service worker behavior, storage contracts, CSV semantics, File System Access safety, permissions, and version consistency unless the user explicitly changes them.
 - Do not load an unpacked extension, operate a real site, capture screenshots, push, publish, or change external state unless explicitly requested.
 
