@@ -1,6 +1,6 @@
 # Triadichrome
 
-Chrome Extension (Manifest V3) の開発基盤です。画面や業務機能はまだ実装していません。
+Chrome Extension (Manifest V3) の開発基盤です。入口画面を備え、業務機能は今後実装します。
 
 ## 技術スタック
 
@@ -32,20 +32,21 @@ npm run dev
 # TypeScript の型チェック
 npm run typecheck
 
-# dist/ に Chrome 拡張をビルド
+# Triadichrome-extension/ に Chrome 拡張を生成
 npm run build
 ```
 
-`npm run build` は型チェック後に Vite の本番ビルドを実行します。現段階の拡張ページは起動確認用の空ページで、UI や業務処理は含みません。
+`npm run build` は型チェック後に `scripts/build.mjs` が一時領域で Vite の本番ビルドを実行し、生成した Manifest、独立ページ、assetsをリポジトリ直下の `Triadichrome-extension/` に同期します。`Triadichrome-extension/manifest.template.json` とTypeScript正本はそのまま保持されます。入口画面はアプリ名、バージョン、ファイルを開くボタンを表示します。
 
 ## Chrome で読み込む
 
 1. `npm run build` を実行します。
 2. Chrome で `chrome://extensions` を開き、デベロッパーモードを有効にします。
-3. 「パッケージ化されていない拡張機能を読み込む」を選択し、このリポジトリの `dist/extension/` フォルダーを指定します。
-4. 拡張機能のアイコンをクリックすると、Manifest V3 の service worker が拡張機能ページ（`index.html`）を開きます。
+3. 「パッケージ化されていない拡張機能を読み込む」を選択します。
+4. このリポジトリ直下の `Triadichrome-extension/`（build後に生成された `manifest.json` が直下にあるフォルダー）だけを指定します。build前の同フォルダーにはManifestがないため、先にbuildしてください。
+5. 拡張機能のアイコンをクリックすると、Manifest V3 の service worker が拡張機能ページ（`index.html`）を新しいタブで開きます。
 
-`dist/` は生成物のため Git 管理しません。ソースを変更した場合は、再度 `npm run build` を実行してから拡張機能管理画面の更新ボタンを押してください。
+`dist/` はbuild時の一時領域として使うため Git 管理しません。ソースを変更した場合は、再度 `npm run build` を実行してから拡張機能管理画面の更新ボタンを押してください。
 
 ## 開発ルール
 
@@ -58,11 +59,22 @@ npm run build
 ## ディレクトリ
 
 ```text
-index.html              # 独立した拡張機能ページの入口
-src/extension/          # React の最小エントリ（現在は空ページ）
-src/extension/background.ts # MV3 service worker
-public/manifest.json    # MV3 manifest（Vite が dist/extension/ にコピー）
-vite.config.ts          # ページと service worker の複数エントリ設定
+index.html                              # Viteが処理するページ入口
+Triadichrome-extension/
+  manifest.template.json                # 編集用 Manifest の正本
+  manifest.json                         # buildで生成されるManifest
+  index.html                            # buildで生成される独立ページ
+  assets/                               # buildで生成されるJS/CSS
+  src/
+    extension/                          # ReactページとMV3 service workerの正本
+      ExtensionPage.tsx                 # 入口画面の正本
+      background.ts                     # service workerの正本
+      background.js                     # buildで生成されるservice worker
+scripts/
+  paths.mjs                             # 正本・生成物のパス定義
+  build.mjs                             # ViteビルドとManifest生成
+dist/                                  # build時だけ使う一時領域
+vite.config.ts                          # ページと service worker の複数エントリ設定
 ```
 
 Dexie.js、PapaParse、React は依存関係として導入済みです。CSV の業務ロジックや IndexedDB のテーブル定義、File System Access API の入出力処理は今後の機能実装で追加します。

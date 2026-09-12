@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Triadichrome",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Triadichrome Chrome Extension",
   "action": {
     "default_title": "Open Triadichrome"
