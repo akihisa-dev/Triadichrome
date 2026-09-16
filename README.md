@@ -36,7 +36,7 @@ npm run typecheck
 npm run build
 ```
 
-`npm run build` は型チェック後に `scripts/build.mjs` が一時領域で Vite の本番ビルドを実行し、生成した Manifest、独立ページ、assetsをリポジトリ直下の `Triadichrome-extension/` に同期します。`Triadichrome-extension/manifest.template.json` とTypeScript正本はそのまま保持されます。入口画面はアプリ名、バージョン、ファイルを開くボタンを表示します。
+`npm run build` は型チェック後に `scripts/build.mjs` が一時領域で Vite の本番ビルドを実行し、生成した Manifest、独立ページ、assetsをリポジトリ直下の `Triadichrome-extension/` に同期します。`Triadichrome-extension/manifest.template.json` とTypeScript正本はそのまま保持されます。ファイルを開くか新規作成するとホーム画面へ移動し、三角形のメニューから明細、総原価表、展開表、施策入力の各画面へ移動できます。各画面は現段階では枠のみを表示します。
 
 ## Chrome で読み込む
 
@@ -67,7 +67,7 @@ Triadichrome-extension/
   assets/                               # buildで生成されるJS/CSS
   src/
     extension/                          # ReactページとMV3 service workerの正本
-      ExtensionPage.tsx                 # 入口画面の正本
+      ExtensionPage.tsx                 # 入口画面とホーム・各画面の正本
       background.ts                     # service workerの正本
       background.js                     # buildで生成されるservice worker
 scripts/

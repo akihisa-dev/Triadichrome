@@ -48,6 +48,20 @@ type OpenedFile = {
   handle?: FileSystemFileHandle;
 };
 
+type WorkspaceView =
+  | "home"
+  | "detail"
+  | "cost"
+  | "expansion"
+  | "initiative";
+
+type WorkspaceSection = Exclude<WorkspaceView, "home">;
+
+type WorkspaceSectionInfo = {
+  title: string;
+  description: string;
+};
+
 const filePickerTypes: FilePickerAcceptType[] = [
   {
     description: "Triadichrome予算データ",
@@ -62,6 +76,25 @@ const filePickerTypes: FilePickerAcceptType[] = [
 ];
 
 const initialDocument = "{}\n";
+
+const workspaceSections: Record<WorkspaceSection, WorkspaceSectionInfo> = {
+  detail: {
+    title: "明細",
+    description: "費目ごとの明細を確認する画面です。",
+  },
+  cost: {
+    title: "総原価表",
+    description: "全体の原価を確認する画面です。",
+  },
+  expansion: {
+    title: "展開表",
+    description: "予算の展開を確認する画面です。",
+  },
+  initiative: {
+    title: "施策入力",
+    description: "施策を入力する画面です。",
+  },
+};
 
 function isPickerCancellation(error: unknown): boolean {
   return (
@@ -103,11 +136,168 @@ async function getDroppedFile(
   return file ? { file } : null;
 }
 
+type WorkspaceLayoutProps = {
+  fileName: string;
+  children: React.ReactNode;
+};
+
+function WorkspaceLayout({
+  fileName,
+  children,
+}: WorkspaceLayoutProps): React.JSX.Element {
+  return (
+    <main className="workspace-page">
+      <div className="workspace-shell">
+        <header className="workspace-header">
+          <div className="workspace-brand">
+            <span className="workspace-brand-mark" aria-hidden="true">
+              △
+            </span>
+            <div>
+              <p className="workspace-brand-name">Triadichrome</p>
+              <p className="workspace-brand-caption">予算データワークスペース</p>
+            </div>
+          </div>
+          <div className="workspace-file" title={fileName}>
+            <span className="workspace-file-label">現在のデータ</span>
+            <strong className="workspace-file-name">{fileName}</strong>
+          </div>
+        </header>
+        {children}
+      </div>
+    </main>
+  );
+}
+
+type HomeViewProps = {
+  onNavigate: (view: WorkspaceView) => void;
+};
+
+function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
+  return (
+    <section className="home-view" aria-labelledby="home-title">
+      <div className="home-intro">
+        <p className="workspace-eyebrow">HOME</p>
+        <h1 id="home-title" className="home-title">
+          作業メニュー
+        </h1>
+        <p className="home-description">
+          三角形のメニューから、確認したい画面を選択してください。
+        </p>
+      </div>
+
+      <div className="home-triangle" aria-label="作業メニュー">
+        <svg
+          className="home-triangle-graphic"
+          viewBox="0 0 600 540"
+          role="img"
+          aria-label="3つの画面と施策入力をつなぐ三角形"
+        >
+          <defs>
+            <linearGradient id="triangle-fill" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0" stopColor="#f4fbfa" />
+              <stop offset="1" stopColor="#e2eff2" />
+            </linearGradient>
+          </defs>
+          <polygon
+            className="home-triangle-surface"
+            points="300,20 575,505 25,505"
+            fill="url(#triangle-fill)"
+          />
+          <line className="home-triangle-spoke" x1="300" x2="300" y1="275" y2="20" />
+          <line className="home-triangle-spoke" x1="300" x2="25" y1="275" y2="505" />
+          <line className="home-triangle-spoke" x1="300" x2="575" y1="275" y2="505" />
+        </svg>
+
+        <button
+          className="home-node home-node-top"
+          type="button"
+          onClick={() => onNavigate("detail")}
+          aria-label="1 明細へ移動"
+        >
+          <span className="home-node-number">1</span>
+          <span className="home-node-label">明細</span>
+        </button>
+        <button
+          className="home-node home-node-right"
+          type="button"
+          onClick={() => onNavigate("cost")}
+          aria-label="2 総原価表へ移動"
+        >
+          <span className="home-node-number">2</span>
+          <span className="home-node-label">総原価表</span>
+        </button>
+        <button
+          className="home-node home-node-left"
+          type="button"
+          onClick={() => onNavigate("expansion")}
+          aria-label="3 展開表へ移動"
+        >
+          <span className="home-node-number">3</span>
+          <span className="home-node-label">展開表</span>
+        </button>
+        <button
+          className="home-center-button"
+          type="button"
+          onClick={() => onNavigate("initiative")}
+          aria-label="施策入力へ移動"
+        >
+          <span className="home-center-kicker">中央メニュー</span>
+          <span className="home-center-label">施策入力</span>
+          <span className="home-center-arrow" aria-hidden="true">
+            →
+          </span>
+        </button>
+      </div>
+      <p className="home-hint">中央のボタンから施策入力モードへ移動できます。</p>
+    </section>
+  );
+}
+
+type WorkspacePlaceholderProps = {
+  section: WorkspaceSection;
+  onHome: () => void;
+};
+
+function WorkspacePlaceholder({
+  section,
+  onHome,
+}: WorkspacePlaceholderProps): React.JSX.Element {
+  const sectionInfo = workspaceSections[section];
+
+  return (
+    <section className="workspace-view" aria-labelledby="workspace-view-title">
+      <button className="screen-back-button" type="button" onClick={onHome}>
+        <span aria-hidden="true">←</span> ホームへ戻る
+      </button>
+      <div className="screen-heading">
+        <p className="workspace-eyebrow">WORKSPACE</p>
+        <h1 id="workspace-view-title" className="screen-title">
+          {sectionInfo.title}
+        </h1>
+        <p className="screen-description">{sectionInfo.description}</p>
+      </div>
+      <div className="screen-frame" aria-label={`${sectionInfo.title}画面の枠`}>
+        <div className="screen-frame-content">
+          <span className="screen-frame-icon" aria-hidden="true">
+            △
+          </span>
+          <p className="screen-frame-title">{sectionInfo.title}画面</p>
+          <p className="screen-frame-description">
+            この画面の枠です。入力欄やデータ表示は今後追加します。
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function ExtensionPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [openedFile, setOpenedFile] = useState<OpenedFile | null>(null);
+  const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [status, setStatus] = useState(
     "ファイルをドロップするか、ボタンから選択してください。",
   );
@@ -132,6 +322,7 @@ export function ExtensionPage() {
       } else {
         setOpenedFile({ name: file.name, size: file.size });
       }
+      setActiveView("home");
       setStatus(`「${file.name}」を開きました。`);
     } catch (error) {
       console.error("ファイルを開けませんでした。", error);
@@ -217,6 +408,7 @@ export function ExtensionPage() {
         size: new TextEncoder().encode(initialDocument).byteLength,
         handle: fileHandle,
       });
+      setActiveView("home");
       setStatus(`「${fileHandle.name}」を新規作成しました。`);
     } catch (error) {
       if (!isPickerCancellation(error)) {
@@ -290,6 +482,21 @@ export function ExtensionPage() {
     }
   };
 
+  if (openedFile) {
+    return (
+      <WorkspaceLayout fileName={openedFile.name}>
+        {activeView === "home" ? (
+          <HomeView onNavigate={setActiveView} />
+        ) : (
+          <WorkspacePlaceholder
+            section={activeView}
+            onHome={() => setActiveView("home")}
+          />
+        )}
+      </WorkspaceLayout>
+    );
+  }
+
   return (
     <main
       className={`entry-page${isDragActive ? " is-drag-active" : ""}`}
@@ -339,11 +546,6 @@ export function ExtensionPage() {
         <p className="entry-status" role="status" aria-live="polite">
           {status}
         </p>
-        {openedFile ? (
-          <p className="entry-file-info">
-            開いているファイル: <strong>{openedFile.name}</strong>
-          </p>
-        ) : null}
       </div>
     </main>
   );
