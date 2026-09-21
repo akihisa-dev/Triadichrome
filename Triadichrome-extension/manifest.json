@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Triadichrome",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Triadichrome Chrome Extension",
   "action": {
     "default_title": "Open Triadichrome"
@@ -9,5 +9,8 @@
   "background": {
     "service_worker": "src/extension/background.js",
     "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
   }
 }

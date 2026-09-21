@@ -5,6 +5,13 @@ import {
   type DragEvent,
 } from "react";
 import manifest from "../../manifest.template.json";
+import {
+  createTriadicDatabase,
+  TRIADIC_FILE_EXTENSION,
+  TRIADIC_MIME_TYPE,
+  TriadicFileError,
+  validateTriadicDatabase,
+} from "../core/triadicDatabase";
 import "./ExtensionPage.css";
 
 type FilePickerAcceptType = {
@@ -66,16 +73,10 @@ const filePickerTypes: FilePickerAcceptType[] = [
   {
     description: "Triadichrome予算データ",
     accept: {
-      "application/json": [".json"],
-      "text/csv": [".csv"],
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
-        ".xlsx",
-      ],
+      [TRIADIC_MIME_TYPE]: [TRIADIC_FILE_EXTENSION],
     },
   },
 ];
-
-const initialDocument = "{}\n";
 
 const workspaceSections: Record<WorkspaceSection, WorkspaceSectionInfo> = {
   detail: {
@@ -107,6 +108,10 @@ function isPickerCancellation(error: unknown): boolean {
 
 function hasFileDrag(event: DragEvent<HTMLElement>): boolean {
   return Array.from(event.dataTransfer.types).includes("Files");
+}
+
+function hasTriadicExtension(fileName: string): boolean {
+  return fileName.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION);
 }
 
 async function getDroppedFile(
@@ -309,9 +314,14 @@ export function ExtensionPage() {
     setIsBusy(true);
 
     try {
-      // Reading the file here confirms that the selected or dropped source is
-      // accessible before it becomes the current document.
-      await file.arrayBuffer();
+      if (!hasTriadicExtension(file.name)) {
+        throw new TriadicFileError(
+          `Triadichromeで開けるのは${TRIADIC_FILE_EXTENSION}ファイルだけです。`,
+        );
+      }
+
+      const databaseBytes = new Uint8Array(await file.arrayBuffer());
+      await validateTriadicDatabase(databaseBytes);
 
       if (fileHandle) {
         setOpenedFile({
@@ -326,7 +336,11 @@ export function ExtensionPage() {
       setStatus(`「${file.name}」を開きました。`);
     } catch (error) {
       console.error("ファイルを開けませんでした。", error);
-      setStatus("ファイルを開けませんでした。読み取り権限を確認してください。");
+      setStatus(
+        error instanceof TriadicFileError
+          ? error.message
+          : "ファイルを開けませんでした。読み取り権限を確認してください。",
+      );
     } finally {
       setIsBusy(false);
     }
@@ -385,27 +399,37 @@ export function ExtensionPage() {
 
     try {
       const fileHandle = await filePickerWindow.showSaveFilePicker({
-        suggestedName: "新しい予算データ.json",
-        types: [
-          {
-            description: "Triadichrome予算データ",
-            accept: { "application/json": [".json"] },
-          },
-        ],
+        suggestedName: `新しい予算データ${TRIADIC_FILE_EXTENSION}`,
+        types: filePickerTypes,
       });
+      if (!hasTriadicExtension(fileHandle.name)) {
+        throw new TriadicFileError(
+          `保存先の拡張子は${TRIADIC_FILE_EXTENSION}にしてください。`,
+        );
+      }
+      const databaseBytes = await createTriadicDatabase();
       const writable = await fileHandle.createWritable();
 
       try {
-        await writable.write(initialDocument);
+        const databaseBuffer = databaseBytes.buffer.slice(
+          databaseBytes.byteOffset,
+          databaseBytes.byteOffset + databaseBytes.byteLength,
+        ) as ArrayBuffer;
+        await writable.write(databaseBuffer);
         await writable.close();
       } catch (error) {
         await writable.abort().catch(() => undefined);
         throw error;
       }
 
+      const savedFile = await fileHandle.getFile();
+      await validateTriadicDatabase(
+        new Uint8Array(await savedFile.arrayBuffer()),
+      );
+
       setOpenedFile({
         name: fileHandle.name,
-        size: new TextEncoder().encode(initialDocument).byteLength,
+        size: databaseBytes.byteLength,
         handle: fileHandle,
       });
       setActiveView("home");
@@ -413,7 +437,11 @@ export function ExtensionPage() {
     } catch (error) {
       if (!isPickerCancellation(error)) {
         console.error("新規データを作成できませんでした。", error);
-        setStatus("新規データを作成できませんでした。保存先を確認してください。");
+        setStatus(
+          error instanceof TriadicFileError
+            ? error.message
+            : "新規データを作成できませんでした。保存先を確認してください。",
+        );
       }
     } finally {
       setIsBusy(false);
@@ -538,7 +566,7 @@ export function ExtensionPage() {
           ref={fileInputRef}
           className="entry-file-input"
           type="file"
-          accept=".json,.csv,.xlsx"
+          accept={TRIADIC_FILE_EXTENSION}
           onChange={handleInputChange}
           tabIndex={-1}
           aria-hidden="true"
