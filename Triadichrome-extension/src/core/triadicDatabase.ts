@@ -23,8 +23,7 @@ export class TriadicFileError extends Error {
   }
 }
 
-function closeDatabase(database: Database): never {
-  database.close();
+function invalidDatabase(): never {
   throw new TriadicFileError("Triadicファイルの形式が正しくありません。");
 }
 
@@ -44,7 +43,7 @@ function assertTriadicDatabase(database: Database): void {
       schemaObjectKeys.has(`${type}:${name}`),
     )
   ) {
-    closeDatabase(database);
+    invalidDatabase();
   }
 
   const metadata = database.exec(
@@ -52,7 +51,7 @@ function assertTriadicDatabase(database: Database): void {
   )[0];
 
   if (!metadata || metadata.values.length !== 3) {
-    closeDatabase(database);
+    invalidDatabase();
   }
 
   const metadataValues = new Map(
@@ -64,12 +63,12 @@ function assertTriadicDatabase(database: Database): void {
     metadataValues.get("format_version") !== String(TRIADIC_FORMAT_VERSION) ||
     metadataValues.get("container") !== "sqlite"
   ) {
-    closeDatabase(database);
+    invalidDatabase();
   }
 
   const userVersion = database.exec("PRAGMA user_version")[0]?.values[0]?.[0];
   if (userVersion !== TRIADIC_FORMAT_VERSION) {
-    closeDatabase(database);
+    invalidDatabase();
   }
 
   database.exec(`
@@ -98,6 +97,14 @@ function assertTriadicDatabase(database: Database): void {
       actual_profit_amount
       FROM expansion_view LIMIT 0;
   `);
+
+  const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
+  if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {
+    invalidDatabase();
+  }
+  if (database.exec("PRAGMA foreign_key_check")[0]?.values.length) {
+    invalidDatabase();
+  }
 }
 
 export async function createTriadicDatabase(): Promise<Uint8Array> {
@@ -117,22 +124,40 @@ export async function createTriadicDatabase(): Promise<Uint8Array> {
   }
 }
 
-export async function validateTriadicDatabase(
+/** The caller owns the database and must close it when the document is closed. */
+export async function openTriadicDatabase(
   data: ArrayLike<number>,
-): Promise<void> {
+): Promise<Database> {
   const sql = await sqlJsPromise;
   let database: Database | undefined;
 
   try {
     database = new sql.Database(data);
     assertTriadicDatabase(database);
+    database.exec("PRAGMA foreign_keys = ON");
+    return database;
   } catch (error) {
+    database?.close();
     if (error instanceof TriadicFileError) {
       throw error;
     }
 
     throw new TriadicFileError("Triadicファイルを読み込めませんでした。");
+  }
+}
+
+export async function validateTriadicDatabase(
+  data: ArrayLike<number>,
+): Promise<void> {
+  const database = await openTriadicDatabase(data);
+  database.close();
+}
+
+export function exportTriadicDatabase(database: Database): Uint8Array {
+  try {
+    return database.export();
   } finally {
-    database?.close();
+    // sql.js reopens its connection on export, resetting connection pragmas.
+    database.exec("PRAGMA foreign_keys = ON");
   }
 }

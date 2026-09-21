@@ -343,6 +343,76 @@ button:disabled {
   white-space: nowrap;
 }
 
+.workspace-save-button {
+  min-height: 2.25rem;
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid #9fc3c5;
+  border-radius: 0.5rem;
+  color: #173f4f;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.8125rem;
+}
+
+.workspace-save-button:hover:not(:disabled) {
+  background: #e8f5f2;
+}
+
+.workspace-save-button:focus-visible {
+  outline: 3px solid #79aeb4;
+  outline-offset: 3px;
+}
+
+.workspace-status {
+  min-height: 1.5rem;
+  margin: 0.75rem 0 0;
+  color: #4c707c;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.budget-nav { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+.budget-nav button, .budget-workspace button, .save-notice button {
+  min-height: 2.25rem; padding: 0.4rem 0.8rem; border: 1px solid #9fc3c5;
+  border-radius: 0.4rem; color: #173f4f; background: white; cursor: pointer;
+}
+.budget-nav button[aria-current="page"] { background: #173f4f; color: white; }
+.budget-workspace { padding: 1.75rem 0; }
+.budget-workspace h1 { margin-top: 0; font-size: 1.75rem; }
+.budget-workspace h2 { font-size: 1rem; }
+.budget-hint, .budget-empty { color: #4c707c; font-size: 0.875rem; }
+.budget-name { display: flex; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.budget-workspace input {
+  min-width: 0; min-height: 2.5rem; padding: 0.5rem 0.65rem;
+  border: 1px solid #afc4cb; border-radius: 0.3rem; font: inherit; background: white; color: #163047;
+}
+.budget-workspace input:focus-visible, .budget-workspace button:focus-visible,
+.budget-nav button:focus-visible, .save-notice button:focus-visible {
+  outline: 2px solid #2673a5; outline-offset: 2px;
+}
+.budget-workspace input:disabled { opacity: 0.7; }
+.budget-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+.budget-list, .budget-months { padding: 1rem; background: #ffffffb3; border: 1px solid #d3e0e3; border-radius: 0.6rem; }
+.budget-add { display: flex; gap: 0.5rem; }
+.budget-add input { flex: 1; }
+.budget-list ul { list-style: none; padding: 0; margin-bottom: 0; }
+.budget-list li { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0; border-top: 3px solid transparent; border-bottom: 3px solid transparent; }
+.budget-list li input { width: 100%; }
+.budget-list .drag-handle { border: 0; cursor: grab; font-size: 1.4rem; }
+.budget-list li.drop-before { border-top-color: #2673a5; }
+.budget-list li.drop-after { border-bottom-color: #2673a5; }
+.budget-months { margin-top: 1.5rem; }
+.budget-months .budget-add { max-width: 25rem; }
+.budget-table-scroll { overflow: auto; max-height: 70vh; }
+.budget-table { width: 100%; border-collapse: collapse; background: white; font-size: 0.875rem; }
+.budget-table th, .budget-table td { padding: 0.75rem; border-bottom: 1px solid #d3e0e3; text-align: left; white-space: nowrap; }
+.budget-table th { position: sticky; top: 0; background: #e8f5f2; }
+.budget-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
+.save-notice { padding: 0.75rem; color: #705019; background: #fff4d9; border-radius: 0.4rem; }
+.save-notice button { margin-left: 1rem; }
+@media (max-width: 48rem) { .budget-lists { grid-template-columns: 1fr; } }
+
 .home-view {
   display: flex;
   min-height: calc(100svh - 4.5rem);

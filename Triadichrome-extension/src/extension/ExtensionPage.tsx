@@ -1,17 +1,24 @@
 import {
+  useEffect,
+  useMemo,
   useRef,
   useState,
   type ChangeEvent,
   type DragEvent,
 } from "react";
+import type { Database } from "sql.js";
 import manifest from "../../manifest.template.json";
 import {
   createTriadicDatabase,
+  exportTriadicDatabase,
+  openTriadicDatabase,
   TRIADIC_FILE_EXTENSION,
   TRIADIC_MIME_TYPE,
   TriadicFileError,
-  validateTriadicDatabase,
 } from "../core/triadicDatabase";
+import { applyBudgetEdit, readBudgetData, type BudgetEdit } from "../core/budgetData";
+import { BudgetWorkspace } from "./BudgetWorkspace";
+import { persistTriadicFile, requestWritePermission } from "./triadicFile";
 import "./ExtensionPage.css";
 
 type FilePickerAcceptType = {
@@ -51,7 +58,8 @@ type DroppedFile = {
 
 type OpenedFile = {
   name: string;
-  size: number;
+  database: Database;
+  savedBytes: Uint8Array;
   handle?: FileSystemFileHandle;
 };
 
@@ -118,6 +126,8 @@ async function getDroppedFile(
   item: DataTransferItem,
 ): Promise<DroppedFile | null> {
   const fileSystemItem = item as FileSystemDropItem;
+  // Read during the drop event; browsers stop exposing the item after an await.
+  const file = item.getAsFile();
 
   if (fileSystemItem.getAsFileSystemHandle) {
     try {
@@ -137,17 +147,22 @@ async function getDroppedFile(
     }
   }
 
-  const file = item.getAsFile();
   return file ? { file } : null;
 }
 
 type WorkspaceLayoutProps = {
   fileName: string;
+  isBusy: boolean;
+  status: string;
+  onSaveAs: () => void;
   children: React.ReactNode;
 };
 
 function WorkspaceLayout({
   fileName,
+  isBusy,
+  status,
+  onSaveAs,
   children,
 }: WorkspaceLayoutProps): React.JSX.Element {
   return (
@@ -166,8 +181,19 @@ function WorkspaceLayout({
           <div className="workspace-file" title={fileName}>
             <span className="workspace-file-label">現在のデータ</span>
             <strong className="workspace-file-name">{fileName}</strong>
+            <button
+              className="workspace-save-button"
+              type="button"
+              onClick={onSaveAs}
+              disabled={isBusy}
+            >
+              {isBusy ? "保存中…" : "別名で保存"}
+            </button>
           </div>
         </header>
+        <p className="workspace-status" role="status" aria-live="polite">
+          {status}
+        </p>
         {children}
       </div>
     </main>
@@ -259,60 +285,45 @@ function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
   );
 }
 
-type WorkspacePlaceholderProps = {
-  section: WorkspaceSection;
-  onHome: () => void;
-};
-
-function WorkspacePlaceholder({
-  section,
-  onHome,
-}: WorkspacePlaceholderProps): React.JSX.Element {
-  const sectionInfo = workspaceSections[section];
-
-  return (
-    <section className="workspace-view" aria-labelledby="workspace-view-title">
-      <button className="screen-back-button" type="button" onClick={onHome}>
-        <span aria-hidden="true">←</span> ホームへ戻る
-      </button>
-      <div className="screen-heading">
-        <p className="workspace-eyebrow">WORKSPACE</p>
-        <h1 id="workspace-view-title" className="screen-title">
-          {sectionInfo.title}
-        </h1>
-        <p className="screen-description">{sectionInfo.description}</p>
-      </div>
-      <div className="screen-frame" aria-label={`${sectionInfo.title}画面の枠`}>
-        <div className="screen-frame-content">
-          <span className="screen-frame-icon" aria-hidden="true">
-            △
-          </span>
-          <p className="screen-frame-title">{sectionInfo.title}画面</p>
-          <p className="screen-frame-description">
-            この画面の枠です。入力欄やデータ表示は今後追加します。
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function ExtensionPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const busyRef = useRef(false);
   const [isBusy, setIsBusy] = useState(false);
   const [isDragActive, setIsDragActive] = useState(false);
   const [openedFile, setOpenedFile] = useState<OpenedFile | null>(null);
+  const [revision, setRevision] = useState(0);
+  const [dirty, setDirty] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [status, setStatus] = useState(
     "ファイルをドロップするか、ボタンから選択してください。",
   );
 
+  const database = openedFile?.database;
+  useEffect(() => () => database?.close(), [database]);
+  const budgetData = useMemo(() => database ? readBudgetData(database) : null, [database, revision]);
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
+  const beginOperation = (): boolean => {
+    if (busyRef.current) return false;
+    busyRef.current = true;
+    setIsBusy(true);
+    return true;
+  };
+
+  const endOperation = (): void => {
+    busyRef.current = false;
+    setIsBusy(false);
+  };
+
   const openFile = async (
     file: File,
     fileHandle?: FileSystemFileHandle,
   ): Promise<void> => {
-    setIsBusy(true);
-
     try {
       if (!hasTriadicExtension(file.name)) {
         throw new TriadicFileError(
@@ -321,16 +332,17 @@ export function ExtensionPage() {
       }
 
       const databaseBytes = new Uint8Array(await file.arrayBuffer());
-      await validateTriadicDatabase(databaseBytes);
+      const loadedDatabase = await openTriadicDatabase(databaseBytes);
 
       if (fileHandle) {
         setOpenedFile({
           name: file.name,
-          size: file.size,
+          database: loadedDatabase,
+          savedBytes: databaseBytes,
           handle: fileHandle,
         });
       } else {
-        setOpenedFile({ name: file.name, size: file.size });
+        setOpenedFile({ name: file.name, database: loadedDatabase, savedBytes: databaseBytes });
       }
       setActiveView("home");
       setStatus(`「${file.name}」を開きました。`);
@@ -341,12 +353,11 @@ export function ExtensionPage() {
           ? error.message
           : "ファイルを開けませんでした。読み取り権限を確認してください。",
       );
-    } finally {
-      setIsBusy(false);
     }
   };
 
   const handleOpen = async (): Promise<void> => {
+    if (busyRef.current) return;
     const filePickerWindow = window as FilePickerWindow;
 
     if (!filePickerWindow.showOpenFilePicker) {
@@ -354,7 +365,7 @@ export function ExtensionPage() {
       return;
     }
 
-    setIsBusy(true);
+    if (!beginOperation()) return;
 
     try {
       const [fileHandle] = await filePickerWindow.showOpenFilePicker({
@@ -374,7 +385,7 @@ export function ExtensionPage() {
         setStatus("ファイルを開けませんでした。もう一度お試しください。");
       }
     } finally {
-      setIsBusy(false);
+      endOperation();
     }
   };
 
@@ -382,8 +393,8 @@ export function ExtensionPage() {
     const [file] = event.target.files ?? [];
     event.target.value = "";
 
-    if (file) {
-      void openFile(file);
+    if (file && beginOperation()) {
+      void openFile(file).finally(endOperation);
     }
   };
 
@@ -395,47 +406,37 @@ export function ExtensionPage() {
       return;
     }
 
-    setIsBusy(true);
-
+    if (!beginOperation()) return;
+    let picked = false;
     try {
       const fileHandle = await filePickerWindow.showSaveFilePicker({
         suggestedName: `新しい予算データ${TRIADIC_FILE_EXTENSION}`,
         types: filePickerTypes,
       });
+      picked = true;
       if (!hasTriadicExtension(fileHandle.name)) {
         throw new TriadicFileError(
           `保存先の拡張子は${TRIADIC_FILE_EXTENSION}にしてください。`,
         );
       }
       const databaseBytes = await createTriadicDatabase();
-      const writable = await fileHandle.createWritable();
-
-      try {
-        const databaseBuffer = databaseBytes.buffer.slice(
-          databaseBytes.byteOffset,
-          databaseBytes.byteOffset + databaseBytes.byteLength,
-        ) as ArrayBuffer;
-        await writable.write(databaseBuffer);
-        await writable.close();
-      } catch (error) {
-        await writable.abort().catch(() => undefined);
-        throw error;
-      }
+      await persistTriadicFile(fileHandle, databaseBytes);
 
       const savedFile = await fileHandle.getFile();
-      await validateTriadicDatabase(
+      const createdDatabase = await openTriadicDatabase(
         new Uint8Array(await savedFile.arrayBuffer()),
       );
 
       setOpenedFile({
         name: fileHandle.name,
-        size: databaseBytes.byteLength,
+        database: createdDatabase,
+        savedBytes: databaseBytes,
         handle: fileHandle,
       });
       setActiveView("home");
       setStatus(`「${fileHandle.name}」を新規作成しました。`);
     } catch (error) {
-      if (!isPickerCancellation(error)) {
+      if (picked || !isPickerCancellation(error)) {
         console.error("新規データを作成できませんでした。", error);
         setStatus(
           error instanceof TriadicFileError
@@ -444,7 +445,92 @@ export function ExtensionPage() {
         );
       }
     } finally {
-      setIsBusy(false);
+      endOperation();
+    }
+  };
+
+  const handleSaveAs = async (): Promise<void> => {
+    if (!openedFile) return;
+    const filePickerWindow = window as FilePickerWindow;
+    if (!filePickerWindow.showSaveFilePicker) {
+      setStatus("この環境では保存先を選択できません。Chromeでお試しください。");
+      return;
+    }
+    if (!beginOperation()) return;
+    let picked = false;
+    try {
+      const fileHandle = await filePickerWindow.showSaveFilePicker({
+        suggestedName: openedFile.name,
+        types: filePickerTypes,
+      });
+      picked = true;
+      if (!hasTriadicExtension(fileHandle.name)) {
+        throw new TriadicFileError(
+          `保存先の拡張子は${TRIADIC_FILE_EXTENSION}にしてください。`,
+        );
+      }
+      const bytes = exportTriadicDatabase(openedFile.database);
+      const sameFile = openedFile.handle && await fileHandle.isSameEntry(openedFile.handle);
+      await persistTriadicFile(fileHandle, bytes, sameFile ? openedFile.savedBytes : undefined);
+      setOpenedFile({ ...openedFile, name: fileHandle.name, handle: fileHandle, savedBytes: bytes });
+      setDirty(false);
+      setStatus(`「${fileHandle.name}」に保存しました。`);
+    } catch (error) {
+      if (picked || !isPickerCancellation(error)) {
+        setStatus(
+          error instanceof Error && !(error instanceof DOMException)
+            ? error.message
+            : "保存できませんでした。開いているデータは保持しています。保存先を確認して、もう一度お試しください。",
+        );
+      }
+    } finally {
+      endOperation();
+    }
+  };
+
+  const saveCurrent = async (file: OpenedFile): Promise<void> => {
+    if (!file.handle) throw new Error("先に「別名で保存」で保存先を選んでください。");
+    const bytes = exportTriadicDatabase(file.database);
+    await persistTriadicFile(file.handle, bytes, file.savedBytes);
+    setOpenedFile({ ...file, savedBytes: bytes });
+    setDirty(false);
+    setStatus("すべての変更を保存しました。");
+  };
+
+  const reportSaveError = (error: unknown): void => {
+    setStatus(error instanceof Error && !(error instanceof DOMException)
+      ? error.message
+      : "保存できませんでした。編集内容は保持しています。再試行するか、別名で保存してください。");
+  };
+
+  const handleEdit = async (edit: BudgetEdit): Promise<boolean> => {
+    if (!openedFile?.handle || !beginOperation()) return false;
+    let applied = false;
+    try {
+      await requestWritePermission(openedFile.handle);
+      applyBudgetEdit(openedFile.database, edit);
+      applied = true;
+      setDirty(true);
+      setRevision((value) => value + 1);
+      setStatus("保存中…");
+      await saveCurrent(openedFile);
+    } catch (error) {
+      reportSaveError(error);
+    } finally {
+      endOperation();
+    }
+    return applied;
+  };
+
+  const handleRetrySave = async (): Promise<void> => {
+    if (!openedFile?.handle || !beginOperation()) return;
+    try {
+      await requestWritePermission(openedFile.handle);
+      await saveCurrent(openedFile);
+    } catch (error) {
+      reportSaveError(error);
+    } finally {
+      endOperation();
     }
   };
 
@@ -454,13 +540,15 @@ export function ExtensionPage() {
     }
 
     event.preventDefault();
-    event.dataTransfer.dropEffect = "copy";
+    event.dataTransfer.dropEffect = busyRef.current ? "none" : "copy";
+    if (busyRef.current) return;
     setIsDragActive(true);
   };
 
   const handleDragEnter = (event: DragEvent<HTMLElement>): void => {
     if (hasFileDrag(event)) {
       event.preventDefault();
+      if (busyRef.current) return;
       setIsDragActive(true);
     }
   };
@@ -482,43 +570,70 @@ export function ExtensionPage() {
     event.preventDefault();
     setIsDragActive(false);
 
-    const fileItem = Array.from(event.dataTransfer.items).find(
+    if (busyRef.current) return;
+    const fileItems = Array.from(event.dataTransfer.items).filter(
       (item) => item.kind === "file",
     );
+    if (fileItems.length > 1 || event.dataTransfer.files.length > 1) {
+      setStatus("予算データは一つずつ開いてください。");
+      return;
+    }
+    const fileItem = fileItems[0];
 
     if (fileItem) {
-      void getDroppedFile(fileItem).then((droppedFile) => {
+      if (!beginOperation()) return;
+      void getDroppedFile(fileItem).then(async (droppedFile) => {
         if (!droppedFile) {
           setStatus("ファイルを読み取れませんでした。別のファイルをお試しください。");
           return;
         }
 
         if (droppedFile.handle) {
-          void openFile(droppedFile.file, droppedFile.handle);
+          await openFile(droppedFile.file, droppedFile.handle);
         } else {
-          void openFile(droppedFile.file);
+          await openFile(droppedFile.file);
         }
-      });
+      }).catch(() => {
+        setStatus("ファイルを読み取れませんでした。ボタンから選択してください。");
+      }).finally(endOperation);
       return;
     }
 
     const [file] = Array.from(event.dataTransfer.files);
-    if (file) {
-      void openFile(file);
+    if (file && beginOperation()) {
+      void openFile(file).finally(endOperation);
     } else {
       setStatus("ファイルをドロップしてください。");
     }
   };
 
-  if (openedFile) {
+  if (openedFile && budgetData) {
     return (
-      <WorkspaceLayout fileName={openedFile.name}>
+      <WorkspaceLayout
+        fileName={openedFile.name}
+        isBusy={isBusy}
+        status={status}
+        onSaveAs={() => void handleSaveAs()}
+      >
+        <nav className="budget-nav" aria-label="画面の切り替え">
+          <button type="button" aria-current={activeView === "home" ? "page" : undefined}
+            onClick={() => setActiveView("home")}>ホーム</button>
+          {(Object.keys(workspaceSections) as WorkspaceSection[]).map((section) =>
+            <button key={section} type="button" aria-current={activeView === section ? "page" : undefined}
+              onClick={() => setActiveView(section)}>{workspaceSections[section].title}</button>)}
+        </nav>
+        {!openedFile.handle ? <p className="save-notice">編集するには「別名で保存」で保存先を選んでください。</p> : null}
+        {dirty ? <p className="save-notice" role="status">{isBusy ? "変更を保存しています。" : "未保存の変更があります。"}
+          <button type="button" disabled={isBusy} onClick={() => void handleRetrySave()}>保存を再試行</button>
+        </p> : null}
         {activeView === "home" ? (
           <HomeView onNavigate={setActiveView} />
         ) : (
-          <WorkspacePlaceholder
+          <BudgetWorkspace
             section={activeView}
-            onHome={() => setActiveView("home")}
+            data={budgetData}
+            disabled={isBusy || !openedFile.handle}
+            onEdit={handleEdit}
           />
         )}
       </WorkspaceLayout>
