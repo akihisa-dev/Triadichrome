@@ -9,7 +9,7 @@ const out=path.resolve(import.meta.dirname,'../store-assets/source/screenshots')
 await fs.mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.TRIADICHROME_ART_CHROME ? {executablePath:process.env.TRIADICHROME_ART_CHROME} : {})});
 try {
- const page=await browser.newPage({viewport:{width:1280,height:604},deviceScaleFactor:1,locale:'ja-JP',colorScheme:'light',reducedMotion:'reduce'});
+ const page=await browser.newPage({viewport:{width:1280,height:800},deviceScaleFactor:1,locale:'ja-JP',colorScheme:'light',reducedMotion:'reduce'});
  const errors=[];page.on('pageerror',error=>errors.push(error.message));
  await page.goto(process.env.TRIADICHROME_CAPTURE_URL ?? 'http://127.0.0.1:5173/');
  await page.getByRole('button',{name:'新しい計画',exact:true}).waitFor();

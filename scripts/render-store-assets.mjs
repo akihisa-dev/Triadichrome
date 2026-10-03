@@ -42,7 +42,7 @@ try {
   await page.goto(pathToFileURL(path.join(store, "source", "layouts.html")).href);
   await page.evaluate(() => document.fonts.ready);
   assert.equal(await page.locator("img").evaluateAll(imgs => imgs.every(img => img.complete && img.naturalWidth > 0)), true);
-  for (const [id, filename, width, height] of assets) {
+  for (const [id, filename, width, height] of assets.slice(0, 2)) {
     const screenshot = await page.locator(`#${id}`).screenshot({ animations: "disabled" });
     const target = path.join(store, filename);
     await sharp(screenshot).removeAlpha().png().toFile(target);
@@ -51,6 +51,13 @@ try {
     assert.equal(meta.hasAlpha, false); assert.equal(meta.channels, 3);
   }
 } finally { await browser.close(); }
+// スクリーンショットは実画面の画素を保ち、保存形式だけRGBに揃えます。
+for (const [, filename, width, height] of assets.slice(2)) {
+  const source = path.join(store, "source", filename.replace("-1280x800", ""));
+  const meta = await sharp(source).metadata();
+  assert.equal(meta.width, width); assert.equal(meta.height, height);
+  await sharp(source).removeAlpha().png().toFile(path.join(store, filename));
+}
 // この一覧は確認用で、ストアへのアップロード対象には含めません。
 const thumbs = [
   ["promo-small-440x280.png", 32, 32, 440, 280],
@@ -60,6 +67,6 @@ const thumbs = [
 const composite = await Promise.all(thumbs.map(async ([file, left, top, width, height]) => ({
   input: await sharp(path.join(store, file)).resize(width, height).toBuffer(), left, top,
 })));
-await sharp({ create: { width: 1228, height: 1484, channels: 3, background: "#dce6e1" } })
+await sharp({ create: { width: 1228, height: 1484, channels: 3, background: "#e5e5e5" } })
   .composite(composite).png().toFile(path.join(store, "preview.png"));
 console.log("Store assets verified: icon, 2 promotional images, 5 screenshots; extension icons and logo exports.");
