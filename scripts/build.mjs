@@ -10,6 +10,8 @@ import {
 
 const buildOutputEnvironment = "TRIADICHROME_BUILD_OUTPUT";
 const packageJsonPath = path.join(projectRoot, "package.json");
+const iconSourceRoot = path.join(projectRoot, "branding", "icons");
+const iconSizes = [16, 32, 48, 128];
 const viteEntryPath = path.join(
   projectRoot,
   "node_modules",
@@ -70,6 +72,26 @@ async function walkFiles(directory) {
 async function verifyBuild(buildRoot, manifest, checkSourceLeakage = true) {
   await assertFile(path.join(buildRoot, "index.html"), "独立ページ");
   await assertFile(path.join(buildRoot, "manifest.json"), "生成Manifest");
+  const buildPrefix = buildRoot + path.sep;
+
+  for (const icons of [manifest.icons, manifest.action?.default_icon]) {
+    const references =
+      typeof icons === "string" ? [icons] : Object.values(icons ?? {});
+    for (const reference of new Set(references)) {
+      if (
+        typeof reference !== "string" ||
+        !reference ||
+        path.isAbsolute(reference)
+      ) {
+        throw new Error("Manifestのicon参照が相対パスではありません。");
+      }
+      const iconPath = path.resolve(buildRoot, reference);
+      if (!iconPath.startsWith(buildPrefix)) {
+        throw new Error("Manifestのiconが出力先外を参照しています: " + reference);
+      }
+      await assertFile(iconPath, "Manifestのicon参照先");
+    }
+  }
 
   const serviceWorker = manifest.background?.service_worker;
   if (typeof serviceWorker !== "string" || path.isAbsolute(serviceWorker)) {
@@ -83,7 +105,6 @@ async function verifyBuild(buildRoot, manifest, checkSourceLeakage = true) {
   const indexPath = path.join(buildRoot, "index.html");
   const indexHtml = await fs.readFile(indexPath, "utf8");
   const references = [...indexHtml.matchAll(/(?:src|href)="([^"]+)"/g)];
-  const buildPrefix = buildRoot + path.sep;
 
   for (const [, reference] of references) {
     if (
@@ -125,6 +146,7 @@ async function syncBuild(stagingRoot) {
     "manifest.json",
     "index.html",
     "assets",
+    "icons",
     "src/extension/background.js",
   ];
 
@@ -170,6 +192,14 @@ try {
     JSON.stringify(manifest, null, 2) + "\n",
     "utf8",
   );
+  await fs.mkdir(path.join(stagingRoot, "icons"), { recursive: true });
+  for (const size of iconSizes) {
+    const fileName = "icon-" + size + ".png";
+    await fs.copyFile(
+      path.join(iconSourceRoot, fileName),
+      path.join(stagingRoot, "icons", fileName),
+    );
+  }
   await verifyBuild(stagingRoot, manifest);
   await syncBuild(stagingRoot);
   await verifyBuild(extensionPackageRoot, manifest, false);

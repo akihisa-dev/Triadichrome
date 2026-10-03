@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" fill="none">
+  <title>Triadichrome</title>
+  <desc>一枚の折り畳まれた書類を三つの多角形で表すロゴ。</desc>
+  <path fill="#135C63" d="M24 16H64V52L50 112H24Z"/>
+  <path fill="#42C4B0" d="M64 52L104 68V112H50Z"/>
+  <path fill="#BCF0D8" d="M64 16L104 56V68L64 52Z"/>
+</svg>

@@ -1,0 +1,66 @@
+# Chrome Web Store 掲載画像
+
+そのままアップロードできるPNGを8枚用意しています。`preview.png`は確認用の一覧で、アップロード用ではありません。
+
+| 掲載欄 | ファイル | 寸法 | 必須・任意 |
+| --- | --- | --- | --- |
+| ストアアイコン | [icon-128.png](icon-128.png) | 128×128 | 必須。拡張機能の配布物にも同梱 |
+| 小型の販促画像 | [promo-small-440x280.png](promo-small-440x280.png) | 440×280 | 必須 |
+| 大型の販促画像 | [promo-marquee-1400x560.png](promo-marquee-1400x560.png) | 1400×560 | 任意の掲載枠用 |
+| スクリーンショット1 | [入口](screenshots/01-entry-1280x800.png) | 1280×800 | スクリーンショットは最低1枚、最大5枚 |
+| スクリーンショット2 | [新規作成](screenshots/02-create-1280x800.png) | 1280×800 | 同上 |
+| スクリーンショット3 | [ドラッグ操作](screenshots/03-drop-1280x800.png) | 1280×800 | 同上 |
+| スクリーンショット4 | [ファイルメニュー](screenshots/04-menu-1280x800.png) | 1280×800 | 同上 |
+| スクリーンショット5 | [形式の案内](screenshots/05-validation-1280x800.png) | 1280×800 | 同上 |
+
+スクリーンショットは番号順に登録します。説明文は日本語です。言語別登録のできない販促画像は、ロゴと製品名のみで構成しています。アイコンは透過PNG、販促画像とスクリーンショットは透過のないRGB PNGです。古い資料に見られる920×680の販促枠は、現在の公式要件には含まれません。
+
+寸法・枚数は[Chrome公式の画像要件](https://developer.chrome.com/docs/webstore/images)、構成は[掲載画像の品質指針](https://developer.chrome.com/docs/webstore/best-listing)に基づきます。
+
+## ロゴ
+
+[編集用SVG](../branding/logo.svg)は、一枚の書類を三つの多角形で表現しています。濃い青緑 `#135C63`、青緑 `#42C4B0`、薄い緑 `#BCF0D8` の三色を使います。製品の「同じ計画を三つの視点で扱う」という考え方をモチーフにしたもので、未実装の画面を示す図ではありません。
+
+128px版の図形は横80×縦96pxで、上下16px・左右24pxの透明余白があります。追加の[512px](../branding/logo-512.png)・[1024px](../branding/logo-1024.png)透過PNGと、拡張機能用の16・32・48・128px PNGを`branding/`に収めています。
+
+原案の検討には組み込みの画像生成ツールを使い、製品で用いる正本は三つの単色多角形からなるSVGとして作成しています。[生成時の指示](../branding/generation-prompts.json)を参照できます。
+
+## 画面の出典と範囲
+
+`source/screenshots/`は、このリポジトリのReact画面をローカルで動かして撮影した未加工の画像です。各画像は幅1280×高さ604pxで、掲載用には上部へ196pxの説明帯を付けています。アプリの表示領域に描き足し・引き伸ばし・角丸処理はしていません。
+
+撮影対象は入口、キーボードで新規作成ボタンを選択した状態、ファイルのドラッグ受付中、有効なファイルを読み込んだ後のメニュー、対応外の拡張子を選択した際の案内です。OSの保存ダイアログは収録していません。撮影用ファイルはアプリの作成処理から生成した空の計画であり、個人情報や業務データを含みません。
+
+現在のホーム本文は空白です。施策入力・計画編集・明細・総原価表・展開表は未実装のため、画像には含めていません。撮影はローカルWeb表示で行い、Chrome拡張機能としての読み込み確認とは区別しています。
+
+## 再生成
+
+通常の`npm run build`には画像制作用の追加依存は不要です。`branding/icons/`のPNGを拡張機能へコピーし、Manifestの参照先を確認します。ロゴを変更した場合は、先に画像を書き出してください。
+
+画像制作スクリプトはNode.js、Playwright、sharp、Chromium系ブラウザーを使います。画像制作用の別ディレクトリに依存を置く例です。
+
+```sh
+npm install --prefix /tmp/triadichrome-art-tools --no-save playwright@1.62.1 sharp@0.35.4
+export TRIADICHROME_ART_MODULES=/tmp/triadichrome-art-tools/node_modules
+```
+
+macOSで既存のChromeを使う場合は、次を指定します。省略時はPlaywrightが管理するChromiumを使うため、そのブラウザーを別途用意してください。
+
+```sh
+export TRIADICHROME_ART_CHROME='/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+```
+
+画面を更新するときだけ、別のターミナルで`npm run dev -- --host 127.0.0.1`を実行してから撮影します。
+
+```sh
+node scripts/capture-store-screenshots.mjs
+```
+
+ロゴ・説明文・販促画像のレイアウトは`branding/logo.svg`と`store-assets/source/layouts.html`を編集し、次のコマンドでPNGと確認用一覧を再生成します。再生成時は既存の制作画像を上書きします。
+
+```sh
+node scripts/render-store-assets.mjs
+npm run build
+```
+
+`TRIADICHROME_CAPTURE_URL`で撮影先を変更できます。撮影処理はViteからTypeScriptのファイル作成処理を読み込むため、撮影先にはこのリポジトリのローカル開発サーバーを指定してください。日本語フォントにはmacOSのHiragino Sansを使用し、OSが異なる場合は文字の形や幅が変わることがあります。

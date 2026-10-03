@@ -1,0 +1,42 @@
+import {createRequire} from 'node:module';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import assert from 'node:assert/strict';
+const require=createRequire(process.env.TRIADICHROME_ART_MODULES
+ ? path.join(path.resolve(process.env.TRIADICHROME_ART_MODULES),'package.json') : import.meta.url);
+const {chromium}=require('playwright');
+const out=path.resolve(import.meta.dirname,'../store-assets/source/screenshots');
+await fs.mkdir(out,{recursive:true});
+const browser=await chromium.launch({headless:true,...(process.env.TRIADICHROME_ART_CHROME ? {executablePath:process.env.TRIADICHROME_ART_CHROME} : {})});
+try {
+ const page=await browser.newPage({viewport:{width:1280,height:604},deviceScaleFactor:1,locale:'ja-JP',colorScheme:'light',reducedMotion:'reduce'});
+ const errors=[];page.on('pageerror',error=>errors.push(error.message));
+ await page.goto(process.env.TRIADICHROME_CAPTURE_URL ?? 'http://127.0.0.1:5173/');
+ await page.getByRole('button',{name:'新しい計画',exact:true}).waitFor();
+ await page.evaluate(()=>document.fonts.ready);
+ await page.screenshot({path:out+'/01-entry.png',animations:'disabled'});
+ await page.keyboard.press('Tab');await page.keyboard.press('Tab');
+ assert.equal(await page.evaluate(()=>document.activeElement.textContent),'新しい計画');
+ await page.screenshot({path:out+'/02-create.png',animations:'disabled'});
+ const bytes=await page.evaluate(async()=>Array.from(await (await import('/Triadichrome-extension/src/core/triadicDatabase.ts')).createTriadicDatabase()));
+ await page.evaluate(()=>document.activeElement.blur());
+ const transfer=await page.evaluateHandle(data=>{const dt=new DataTransfer();dt.items.add(new File([new Uint8Array(data)],'計画サンプル.triadic',{type:'application/vnd.triadichrome.triadic'}));return dt;},bytes);
+ await page.locator('.entry-page').dispatchEvent('dragenter',{dataTransfer:transfer});
+ await page.locator('.entry-page.is-drag-active').waitFor();
+ await page.screenshot({path:out+'/03-drop.png',animations:'disabled'});
+ await page.locator('.entry-page').dispatchEvent('drop',{dataTransfer:transfer});
+ await page.getByRole('button',{name:'サイドバーを開く',exact:true}).waitFor();
+ await page.getByRole('button',{name:'サイドバーを開く',exact:true}).click();
+ await page.getByRole('dialog').waitFor();
+ assert.equal(await page.getByRole('button',{name:'ファイルを閉じる',exact:true}).isVisible(),true);
+ await page.screenshot({path:out+'/04-menu.png',animations:'disabled'});
+ await page.getByRole('button',{name:'ファイルを閉じる',exact:true}).click();
+ await page.getByRole('button',{name:'新しい計画',exact:true}).waitFor();
+ await page.locator('input[type=file]').setInputFiles({name:'形式確認用.txt',mimeType:'text/plain',buffer:Buffer.from('Store screenshot fixture')});
+ await page.getByRole('alert').waitFor();
+ assert.equal(await page.getByRole('alert').textContent(),'.triadicファイルを選択してください。');
+ await page.evaluate(()=>document.activeElement.blur());
+ await page.screenshot({path:out+'/05-validation.png',animations:'disabled'});
+ assert.deepEqual(errors,[]);
+ console.log('Captured five real UI states. Valid file drop, menu, close, file extension validation passed. No browser errors.');
+} finally {await browser.close();}

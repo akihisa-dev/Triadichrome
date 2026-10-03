@@ -21,7 +21,7 @@ npm run build
 ```
 
 TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
-`npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・service workerを`Triadichrome-extension/`へ同期します。
+`npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。
 
 ## Chromeで読み込む
 
@@ -31,6 +31,11 @@ TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用しま
 4. 拡張機能のアイコンを押すと、ファイルを開く入口画面が開きます。
 
 変更後は再ビルドし、拡張機能管理画面で更新してください。
+
+## ストア掲載画像
+
+Chrome Web Store用のアイコン・販促画像2種類・スクリーンショット5枚を`store-assets/`に用意しています。掲載先との対応と再生成手順は[掲載画像ガイド](store-assets/README.md)、画像の一覧は[プレビュー](store-assets/preview.png)を参照してください。
+ロゴの正本は`branding/logo.svg`です。三つの多角形で書類のモチーフを表現し、拡張機能用のPNGを`branding/icons/`からビルド時に同期します。
 
 ## 構成
 
