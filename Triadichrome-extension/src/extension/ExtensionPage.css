@@ -245,126 +245,21 @@ button:disabled {
   }
 }
 
-/* Workspace: controls stay compact; the sheet owns the available space. */
-.workspace-page { min-height: 100svh; padding: 0 24px; background: var(--surface); }
-.workspace-shell { width: 100%; margin: 0 auto; }
-.workspace-header { display: flex; align-items: center; gap: 24px; min-height: 60px; border-bottom: 1px solid var(--line); }
-.workspace-brand-name { margin: 0; font-size: 14px; font-weight: 650; white-space: nowrap; }
-.workspace-file { display: flex; align-items: center; gap: 8px; margin-left: auto; min-width: 0; }
-.workspace-file-name { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: var(--muted); }
-.workspace-save-button, .budget-nav button, .budget-workspace button, .save-notice button {
-  min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 4px;
-  font: inherit; font-size: 12px; color: var(--ink); background: var(--surface); cursor: pointer; white-space: nowrap;
-}
-button:disabled { cursor: not-allowed; }
-.workspace-save-button:hover:not(:disabled), .budget-workspace button:hover:not(:disabled), .save-notice button:hover:not(:disabled) { background: var(--soft); border-color: var(--control-line); }
-button:focus-visible, summary:focus-visible, select:focus-visible, input:focus-visible, .sheet-scroll:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.workspace-status { margin: 8px 0; padding: 8px 12px; font-size: 12px; background: var(--soft); }
-.budget-nav { display: flex; align-self: stretch; gap: 4px; align-items: center; }
-.budget-nav button { border-color: transparent; background: transparent; color: var(--muted); }
-.budget-nav button:hover { color: var(--ink); }
-.budget-nav button[aria-current="page"] { background: var(--soft); color: var(--ink); font-weight: 650; }
-.budget-workspace { padding: 20px 0; min-width: 0; }
-.workspace-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
-.budget-workspace h1 { margin: 0; font-size: 20px; letter-spacing: 0.02em; font-weight: 650; }
-.budget-workspace h2 { margin: 0 0 12px; font-size: 13px; }
-.budget-workspace input, .budget-workspace select {
-  min-width: 0; min-height: 32px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 4px;
-  font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
-}
-.budget-workspace input:disabled, .budget-workspace select:disabled { color: var(--muted); background: var(--soft); }
-.period-form, .period-form label { display: flex; align-items: center; gap: 8px; }
-.period-form { flex-wrap: wrap; font-size: 12px; color: var(--muted); }
-.period-form input { width: 140px; }
-.sheet-heading { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
-.initiative-select { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--muted); }
-.initiative-select select { min-width: 200px; max-width: min(420px, 65vw); font-size: 16px; font-weight: 600; border-color: transparent; border-bottom-color: var(--control-line); border-radius: 0; }
-.inline-add { display: flex; align-items: center; gap: 6px; }
-.inline-add input { width: 180px; }
-.sheet-heading .inline-add { margin-left: auto; }
-.sheet-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 42px; margin-bottom: 8px; }
-.sheet-fields { display: flex; gap: 2px; padding: 3px; background: var(--soft); border-radius: 5px; }
-.sheet-fields button { min-height: 28px; padding: 4px 16px; border-color: transparent; background: transparent; color: var(--muted); }
-.sheet-fields button[aria-pressed="true"] { color: var(--surface); background: var(--ink); }
-.sheet-fields button[aria-pressed="true"]:hover { background: var(--ink); }
-.sheet-unit { font-size: 12px; color: var(--muted); }
-.sheet-save { display: flex; align-items: center; gap: 8px; margin-left: auto; font-size: 12px; color: var(--muted); }
-.budget-workspace .primary-button { color: var(--surface); background: var(--ink); border-color: var(--ink); }
-.budget-workspace .primary-button:hover:not(:disabled) { color: var(--surface); background: var(--muted); }
-.sheet-scroll { overflow: auto; max-height: calc(100svh - 290px); min-height: 100px; border: 1px solid var(--line); }
-.month-sheet { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
-.month-sheet th, .month-sheet td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); min-width: 120px; height: 42px; padding: 0; text-align: right; white-space: nowrap; }
-.month-sheet tr > :last-child { border-right: 0; }
-.month-sheet thead th { position: sticky; top: 0; z-index: 2; background: var(--soft); padding: 10px 12px; font-weight: 500; }
-.month-sheet tr > :first-child { position: sticky; left: 0; z-index: 1; min-width: 190px; max-width: 280px; padding: 10px 16px; text-align: left; background: var(--surface); font-weight: 500; white-space: normal; overflow-wrap: anywhere; }
-.month-sheet thead tr > :first-child { z-index: 3; background: var(--soft); }
-.month-sheet td input { display: block; width: 100%; min-width: 118px; height: 41px; border: 0; border-radius: 0; padding: 8px 12px; text-align: right; background: transparent; font-variant-numeric: tabular-nums; }
-.month-sheet td input:focus { outline: 2px solid var(--ink); outline-offset: -2px; background: var(--surface); }
-.month-sheet td.is-edited { background: var(--soft); box-shadow: inset 0 -2px var(--muted); }
-.month-sheet td output { display: block; padding: 8px 12px; }
-.month-sheet .sheet-total, .month-sheet tfoot td { padding: 10px 12px; background: var(--soft); }
-.month-sheet tfoot th, .month-sheet tfoot td { position: sticky; bottom: 0; font-weight: 650; border-bottom: 0; background: var(--soft); }
-.month-sheet tfoot th { z-index: 3; }
-.note-sheet td, .note-sheet thead th:not(:first-child) { min-width: 220px; }
-.note-sheet td input { text-align: left; }
-.sheet-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
-.budget-workspace .cell-delete { border: 0; color: var(--muted); }
-.sheet-settings { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 12px; }
-.sheet-settings summary { width: fit-content; font-size: 12px; color: var(--muted); cursor: pointer; }
-.sheet-settings fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
-.budget-lists { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; max-width: 960px; margin-top: 16px; }
-.budget-list { min-width: 0; }
-.budget-add { display: flex; gap: 6px; }
-.budget-add input { flex: 1; }
-.budget-list ul { list-style: none; padding: 0; margin: 8px 0; }
-.budget-list li { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 2px solid transparent; border-bottom: 2px solid transparent; }
-.budget-list li input { width: 100%; }
-.budget-list .drag-handle { border: 0; cursor: grab; font-size: 18px; }
-.budget-list li.drop-before { border-top-color: var(--ink); }
-.budget-list li.drop-after { border-bottom-color: var(--ink); }
-.plan-summary { display: flex; flex-wrap: wrap; gap: 24px; margin: 0 0 16px; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
-.plan-summary strong { color: var(--ink); margin-left: 8px; font-size: 15px; }
-.budget-table-scroll { overflow: auto; max-height: calc(100svh - 180px); }
-.budget-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.budget-table th, .budget-table td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
-.budget-table th { position: sticky; top: 0; background: var(--soft); font-weight: 500; }
-.budget-table .numeric { text-align: right; font-variant-numeric: tabular-nums; }
-.budget-empty { color: var(--muted); font-size: 13px; }
-.save-notice { display: flex; align-items: center; gap: 12px; padding: 10px 12px; font-size: 13px; background: var(--soft); border-left: 2px solid var(--ink); }
-.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.home-view { display: grid; place-items: center; min-height: calc(100svh - 61px); }
-.home-triangle { position: relative; width: min(560px, 100%, 82svh); aspect-ratio: 600 / 540; }
+.home-view { display: grid; place-items: center; min-height: calc(100svh - 60px); }
+.home-triangle { position: relative; width: min(560px, calc(100% - 24px), 82svh); aspect-ratio: 600 / 540; }
 .home-triangle-graphic { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .home-triangle-surface { fill: none; stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
 .home-triangle-spoke { stroke: var(--line); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.home-node, .home-center-button { position: absolute; display: grid; place-items: center; transform: translate(-50%, -50%); border-radius: 50%; font: inherit; font-size: clamp(12px, 2vw, 15px); cursor: pointer; }
+.home-node, .home-center-button { position: absolute; display: grid; place-items: center; transform: translate(-50%, -50%); border-radius: 50%; font: inherit; font-size: clamp(12px, 2vw, 15px); }
 .home-node { width: 23%; aspect-ratio: 1; background: var(--surface); border: 1px solid var(--control-line); }
 .home-node-top { left: 50%; top: 12.963%; }
 .home-node-left { left: 15%; top: 79.63%; }
 .home-node-right { left: 85%; top: 79.63%; }
 .home-center-button { left: 50%; top: 57.407%; width: 28%; aspect-ratio: 1; background: var(--ink); color: var(--surface); border: 1px solid var(--ink); font-weight: 650; }
-.home-node:hover { background: var(--soft); border-color: var(--ink); }
-.home-center-button:hover { background: var(--muted); }
-::selection { background: var(--ink); color: var(--surface); }
-@media (max-width: 1100px) {
-  .workspace-header { flex-wrap: wrap; gap: 8px 16px; padding: 8px 0; }
-  .budget-nav { order: 3; width: 100%; min-height: 32px; }
-  .workspace-file-name { max-width: 180px; }
-}
-@media (max-width: 600px) {
-  .workspace-page { padding: 0 12px; }
-  .workspace-brand-name { font-size: 12px; }
-  .workspace-file { flex-wrap: wrap; justify-content: flex-end; }
-  .workspace-file-name { max-width: 120px; }
-  .workspace-save-button { font-size: 11px; padding: 4px 6px; }
-  .budget-nav { overflow-x: auto; flex-wrap: nowrap; }
-  .budget-nav button { padding: 5px 8px; }
-  .workspace-heading { gap: 12px; margin-bottom: 16px; }
-  .period-form { gap: 4px; }
-  .period-form input { width: 124px; }
-  .sheet-heading .inline-add { margin-left: 0; }
-  .sheet-save { margin-left: 0; }
-  .sheet-scroll { max-height: 60svh; }
-  .month-sheet tr > :first-child { min-width: 120px; max-width: 160px; }
-  .budget-lists { grid-template-columns: 1fr; }
-}
+
+.home-header { min-height: 60px; display: flex; align-items: center; gap: 16px; padding: 8px 24px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.home-header strong { margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 400; color: var(--muted); }
+.home-header button { flex-shrink: 0; min-height: 32px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); color: var(--ink); font-size: 12px; cursor: pointer; }
+.home-header button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.entry-actions { margin-top: 0; }
+@media (max-width: 600px) { .home-header { padding: 8px 12px; gap: 8px; } }
