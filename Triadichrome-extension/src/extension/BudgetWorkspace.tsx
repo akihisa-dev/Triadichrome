@@ -87,12 +87,11 @@ function NamedList({ kind, items, disabled, onEdit }: {
         }}>削除</button>
       </li>)}
     </ul>
-    {items.length === 0 ? <p className="budget-empty">{label}を追加すると、ここに並びます。</p> : null}
   </section>;
 }
 
 function DataTable({ data }: { data: QueryExecResult }) {
-  if (data.values.length === 0) return <p className="budget-empty">登録されている明細はありません。</p>;
+  if (data.values.length === 0) return <p className="budget-empty">0件</p>;
   return <div className="budget-table-scroll" tabIndex={0} aria-label="表を横にスクロールできます">
     <table className="budget-table"><thead><tr>{data.columns.map((column) =>
       <th key={column} scope="col">{columns[column] ?? column}</th>)}</tr></thead>
@@ -106,53 +105,38 @@ function DataTable({ data }: { data: QueryExecResult }) {
 }
 
 export function BudgetWorkspace({ data, section, disabled, onEdit, onDraftChange, draftActive }: Props) {
-  const [month, setMonth] = useState("");
+  const year = new Date().getFullYear();
+  const [start, setStart] = useState(data.months[0] ?? `${year}-01`);
+  const [end, setEnd] = useState(data.months.at(-1) ?? `${year}-12`);
   return <section className="budget-workspace" aria-labelledby="budget-section-title">
-    <h1 id="budget-section-title">{titles[section]}</h1>
-    <div className="plan-summary" aria-label="計画全体の合計">
-      <div><span>原価合計</span><strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.cost, 0))}<small> 円</small></strong></div>
-      <div><span>売上合計</span><strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.sales, 0))}<small> 円</small></strong></div>
-      <div><span>利益合計</span><strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.sales - line.cost, 0))}<small> 円</small></strong></div>
+    <div className="workspace-heading">
+      <h1 id="budget-section-title">{titles[section]}</h1>
+      {section === "initiative" ? <form className="period-form" onSubmit={(event) => {
+        event.preventDefault();
+        void onEdit({ type: "period", start, end });
+      }}>
+        <label>期間<input type="month" min="0001-01" max="9999-12" aria-label="開始月" value={start} onChange={(event) => setStart(event.target.value)} required disabled={disabled || draftActive} /></label>
+        <span>—</span>
+        <input type="month" min={start || "0001-01"} max="9999-12" aria-label="終了月" value={end} onChange={(event) => setEnd(event.target.value)} required disabled={disabled || draftActive} />
+        <button disabled={disabled || draftActive || !start || !end || start > end}>期間を設定</button>
+      </form> : null}
     </div>
     {section === "initiative" ? <>
-      <fieldset className="plan-setup" disabled={draftActive}>
-      <p className="budget-hint">名前を直接編集できます。左の取っ手をドラッグすると並び順が変わります。</p>
-      <label className="budget-name">予算名
-        <input key={data.name} defaultValue={data.name} placeholder="予算名を入力" disabled={disabled}
-          onBlur={(event) => {
-            const input = event.currentTarget;
-            if (input.value.trim() !== data.name) {
-              void onEdit({ type: "name", name: input.value })
-                .then((done) => { if (!done) input.value = data.name; });
-            }
-          }} onKeyDown={(event) => {
-            if (event.key === "Enter") event.currentTarget.blur();
-            if (event.key === "Escape") { event.currentTarget.value = data.name; event.currentTarget.blur(); }
-          }} />
-      </label>
-      <div className="budget-lists">
-        <NamedList kind="initiative" items={data.initiatives} disabled={disabled} onEdit={onEdit} />
-        <NamedList kind="account" items={data.accounts} disabled={disabled} onEdit={onEdit} />
-      </div>
-      <section className="budget-months" aria-label="年月の登録">
-        <h2>年月</h2>
-        <form className="budget-add" onSubmit={(event) => {
-          event.preventDefault();
-          void onEdit({ type: "month", month }).then((done) => { if (done) setMonth(""); });
-        }}>
-          <input type="month" min="0001-01" max="9999-12" aria-label="追加する年月" value={month}
-            onChange={(event) => setMonth(event.target.value)} required disabled={disabled} />
-          <button disabled={disabled || !month}>追加</button>
-        </form>
-        <div className="month-tags">{data.months.map((value) => <span key={value}>{value}<button type="button" disabled={disabled} aria-label={`${value}を削除`} onClick={() => {
-          if (window.confirm(`${value}を削除しますか？ 明細で使用中の年月は削除できません。`)) void onEdit({ type: "removeMonth", month: value });
-        }}>×</button></span>)}</div>
-        {!data.months.length ? <p>年月を追加してください。</p> : null}
-      </section>
-      </fieldset>
       <PlanEditor data={data} disabled={disabled} onEdit={onEdit} onDraftChange={onDraftChange} />
-    </> : section === "detail" ? <PlanEditor data={data} disabled={disabled} onEdit={onEdit} onDraftChange={onDraftChange} /> : <>
-      <p className="budget-hint">{section === "cost" ? "勘定科目別・月別の計画です。" : "施策別・月別の計画です。"}明細の変更を自動で集計します。</p>
+      <details className="sheet-settings"><summary>名称・並び順を編集</summary>
+        <fieldset disabled={disabled || draftActive}>
+          <div className="budget-lists">
+            <NamedList kind="initiative" items={data.initiatives} disabled={disabled || draftActive} onEdit={onEdit} />
+            <NamedList kind="account" items={data.accounts} disabled={disabled || draftActive} onEdit={onEdit} />
+          </div>
+        </fieldset>
+      </details>
+    </> : <>
+      <div className="plan-summary" aria-label="計画全体の合計">
+        <span>原価 <strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.cost, 0))}</strong></span>
+        <span>売上 <strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.sales, 0))}</strong></span>
+        <span>利益 <strong>{formatAmount(data.lines.reduce((sum, line) => sum + line.sales - line.cost, 0))}</strong> 円</span>
+      </div>
       <DataTable data={data[section]} />
     </>}
   </section>;

@@ -27,8 +27,35 @@ try {
     } }],
   });
   const { createTriadicDatabase, openTriadicDatabase, exportTriadicDatabase,
-    TriadicFileError, applyBudgetEdit, readBudgetData, writeTriadicFile, persistTriadicFile, BudgetWorkspace } = await import(pathToFileURL(bundle));
+    TriadicFileError, applyBudgetEdit, readBudgetData, writeTriadicFile, persistTriadicFile, BudgetWorkspace, monthsInPeriod } = await import(pathToFileURL(bundle));
   const bytes = await createTriadicDatabase();
+  assert.deepEqual(monthsInPeriod("2026-11", "2027-02"), ["2026-11", "2026-12", "2027-01", "2027-02"]);
+  assert.deepEqual(monthsInPeriod("0001-01", "0001-01"), ["0001-01"]);
+  assert.deepEqual(monthsInPeriod("9999-12", "9999-12"), ["9999-12"]);
+  for (const [start, end] of [["2026-13", "2027-01"], ["2027-01", "2026-01"], ["0000-01", "2026-01"]]) {
+    assert.throws(() => monthsInPeriod(start, end));
+  }
+  const matrix = await openTriadicDatabase(bytes);
+  applyBudgetEdit(matrix, { type: "period", start: "2026-11", end: "2027-02" });
+  applyBudgetEdit(matrix, { type: "period", start: "2026-12", end: "2027-03" });
+  assert.deepEqual(readBudgetData(matrix).months, ["2026-12", "2027-01", "2027-02", "2027-03"]);
+  applyBudgetEdit(matrix, { type: "add", kind: "initiative", name: "施策" });
+  applyBudgetEdit(matrix, { type: "add", kind: "account", name: "科目" });
+  const cells = ["2026-12", "2027-01"].map(month => ({ line: { initiativeId: 1, accountId: 1, month, cost: 10.25, sales: 20.5, note: "月別計画" } }));
+  const beforeBatch = readBudgetData(matrix);
+  assert.throws(() => applyBudgetEdit(matrix, { type: "plans", edits: [cells[0], { line: { ...cells[1].line, cost: NaN } }] }));
+  assert.deepEqual(readBudgetData(matrix), beforeBatch, "one invalid cell must roll back the whole sheet");
+  applyBudgetEdit(matrix, { type: "plans", edits: cells });
+  const matrixSaved = readBudgetData(matrix);
+  assert.equal(matrixSaved.lines.length, 2);
+  assert.equal(matrixSaved.lines.reduce((sum, line) => sum + line.cost, 0), 20.5);
+  assert.throws(() => applyBudgetEdit(matrix, { type: "period", start: "2027-01", end: "2027-12" }), /入力済み/);
+  assert.deepEqual(readBudgetData(matrix), matrixSaved, "a shorter period must not delete entered values");
+  applyBudgetEdit(matrix, { type: "plans", edits: matrixSaved.lines.map(line => ({ id: line.id, line: { ...line, sales: 40 } })) });
+  assert.equal(readBudgetData(matrix).lines.length, 2, "saving cells again must update rather than duplicate them");
+  const matrixReloaded = await openTriadicDatabase(exportTriadicDatabase(matrix));
+  assert.deepEqual(readBudgetData(matrixReloaded), readBudgetData(matrix));
+  matrixReloaded.close(); matrix.close();
   const db = await openTriadicDatabase(bytes);
   applyBudgetEdit(db, { type: "name", name: "試験予算" });
   for (const name of ["施策A", "施策B", "施策C"]) applyBudgetEdit(db, { type: "add", kind: "initiative", name });
@@ -120,13 +147,19 @@ try {
       onEdit: async () => true, onDraftChange: () => {},
     }));
     assert.doesNotMatch(html, /実績|actual_/);
-    assert.match(html, /1,823.45/);
-    assert.match(html, /4,200/);
-    assert.match(html, /2,376.55/);
-    if (section === "detail" || section === "initiative") {
-      assert.match(html, /明細を追加/);
-      assert.match(html, /複製/);
-      assert.match(html, /翌月へ移動/);
+    assert.doesNotMatch(html, /計画明細|予算名|明細を追加/);
+    if (section === "initiative") {
+      assert.match(html, /開始月/);
+      assert.match(html, /終了月/);
+      assert.match(html, /<th scope="col">2026\/10<\/th>/);
+      assert.match(html, /<th scope="col">2026\/11<\/th>/);
+      assert.match(html, /<th scope="row">人件費<\/th>/);
+      assert.match(html, /施策A 人件費 2026-11 原価/);
+      assert.match(html, /value="123.45"/);
+    } else {
+      assert.match(html, /1,823.45/);
+      assert.match(html, /4,200/);
+      assert.match(html, /2,376.55/);
     }
   }
   savedPlan.close(); plan.close();

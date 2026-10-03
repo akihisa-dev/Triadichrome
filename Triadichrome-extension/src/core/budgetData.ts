@@ -20,6 +20,8 @@ export type BudgetEdit =
   | { type: "rename"; kind: ItemKind; id: number; name: string }
   | { type: "move"; kind: ItemKind; id: number; targetId: number; after: boolean }
   | { type: "month"; month: string }
+  | { type: "period"; start: string; end: string }
+  | { type: "plans"; edits: { line: Omit<PlanLine, "id">; id?: number }[] }
   | { type: "removeItem"; kind: ItemKind; id: number }
   | { type: "removeMonth"; month: string }
   | { type: "plan"; line: Omit<PlanLine, "id">; id?: number }
@@ -79,96 +81,10 @@ function requireName(value: string): string {
 export function applyBudgetEdit(database: Database, edit: BudgetEdit): void {
   database.exec("BEGIN TRANSACTION");
   try {
-    if (edit.type === "plan") {
-      const { line } = edit;
-      for (const amount of [line.cost, line.sales, line.sales - line.cost]) {
-        if (!Number.isFinite(amount) || Math.abs(amount) > 1e12) {
-          throw new Error("金額は絶対値1兆以下の数値で入力してください。");
-        }
-      }
-      if ([line.cost, line.sales].some((amount) => Number(amount.toFixed(2)) !== amount)) {
-        throw new Error("原価と売上は小数第2位までで入力してください。");
-      }
-      if (!items(database, "initiative").some((item) => item.id === line.initiativeId) ||
-          !items(database, "account").some((item) => item.id === line.accountId)) {
-        throw new Error("登録済みの施策と勘定科目を選んでください。");
-      }
-      const periodId = database.exec("SELECT id FROM periods WHERE budget_id = 1 AND printf('%04d-%02d', year, month) = ?", [line.month])[0]?.values[0]?.[0];
-      if (typeof periodId !== "number") throw new Error("登録済みの年月を選んでください。");
-      if (edit.id !== undefined && !database.exec("SELECT id FROM details WHERE id = ? AND budget_id = 1", [edit.id])[0]?.values.length) {
-        throw new Error("明細が見つかりません。");
-      }
-      if (database.exec(`SELECT id FROM details WHERE budget_id = 1 AND period_id = ? AND initiative_id = ?
-        AND account_id = ? AND id != ?`, [periodId, line.initiativeId, line.accountId, edit.id ?? -1])[0]?.values.length) {
-        throw new Error("同じ施策・勘定科目・年月の明細があります。既存の明細を編集してください。");
-      }
-      const values = [periodId, line.initiativeId, line.accountId, line.cost, line.sales, Number((line.sales - line.cost).toFixed(2)), line.note];
-      if (edit.id === undefined) {
-        database.run(`INSERT INTO details (budget_id, period_id, initiative_id, account_id,
-          budget_amount, budget_sales_amount, budget_profit_amount, note) VALUES (1, ?, ?, ?, ?, ?, ?, ?)`, values);
-      } else {
-        database.run(`UPDATE details SET period_id = ?, initiative_id = ?, account_id = ?,
-          budget_amount = ?, budget_sales_amount = ?, budget_profit_amount = ?, note = ? WHERE budget_id = 1 AND id = ?`, [...values, edit.id]);
-      }
-    } else if (edit.type === "deletePlan") {
-      // Existing actual data is outside the planning editor's scope.
-      if (database.exec(`SELECT id FROM details WHERE id = ? AND
-        (actual_amount != 0 OR actual_sales_amount != 0 OR actual_profit_amount != 0)`, [edit.id])[0]?.values.length) {
-        throw new Error("この明細には既存の実績データがあるため削除できません。");
-      }
-      database.run("DELETE FROM details WHERE budget_id = 1 AND id = ?", [edit.id]);
-      if (!database.getRowsModified()) throw new Error("明細が見つかりません。");
-    } else if (edit.type === "removeItem" || edit.type === "removeMonth") {
-      const targetTable = edit.type === "removeItem" ? tables[edit.kind] : "periods";
-      const id = edit.type === "removeItem" ? edit.id : database.exec(
-        "SELECT id FROM periods WHERE budget_id = 1 AND printf('%04d-%02d', year, month) = ?", [edit.month])[0]?.values[0]?.[0];
-      if (typeof id !== "number") throw new Error("項目が見つかりません。");
-      const column = edit.type === "removeMonth" ? "period_id" : edit.kind === "initiative" ? "initiative_id" : "account_id";
-      if (database.exec(`SELECT id FROM details WHERE ${column} = ? LIMIT 1`, [id])[0]?.values.length) {
-        throw new Error("明細で使用中です。先に明細を移動または削除してください。");
-      }
-      database.run(`DELETE FROM ${targetTable} WHERE budget_id = 1 AND id = ?`, [id]);
-      if (!database.getRowsModified()) throw new Error("項目が見つかりません。");
-    } else if (edit.type === "name") {
-      database.run("UPDATE budgets SET name = ? WHERE id = 1", [requireName(edit.name)]);
-    } else if (edit.type === "month") {
-      if (!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(edit.month)) {
-        throw new Error("年月を正しく入力してください。");
-      }
-      const [year, month] = edit.month.split("-").map(Number);
-      if (database.exec("SELECT id FROM periods WHERE budget_id = 1 AND year = ? AND month = ?", [year!, month!])[0]?.values.length) {
-        throw new Error("その年月は登録済みです。");
-      }
-      database.run("INSERT INTO periods (budget_id, year, month) VALUES (1, ?, ?)", [year!, month!]);
+    if (edit.type === "plans") {
+      for (const entry of edit.edits) applySingleEdit(database, { type: "plan", ...entry });
     } else {
-      const current = items(database, edit.kind);
-      const targetTable = tables[edit.kind];
-      if (edit.type === "move") {
-        const source = current.find((item) => item.id === edit.id);
-        if (!source || !current.some((item) => item.id === edit.targetId)) {
-          throw new Error("移動する項目が見つかりません。");
-        }
-        if (edit.id !== edit.targetId) {
-          const ordered = current.filter((item) => item.id !== edit.id);
-          const targetIndex = ordered.findIndex((item) => item.id === edit.targetId);
-          ordered.splice(targetIndex + (edit.after ? 1 : 0), 0, source);
-          ordered.forEach((item, index) => {
-            database.run(`UPDATE ${targetTable} SET sort_order = ? WHERE id = ? AND budget_id = 1`, [index, item.id]);
-          });
-        }
-      } else {
-        const name = requireName(edit.name);
-        if (current.some((item) => item.name === name && (edit.type === "add" || item.id !== edit.id))) {
-          throw new Error("同じ名前が登録されています。");
-        }
-        if (edit.type === "add") {
-          database.run(`INSERT INTO ${targetTable} (budget_id, name, sort_order)
-            SELECT 1, ?, COALESCE(MAX(sort_order), -1) + 1 FROM ${targetTable} WHERE budget_id = 1`, [name]);
-        } else {
-          if (!current.some((item) => item.id === edit.id)) throw new Error("項目が見つかりません。");
-          database.run(`UPDATE ${targetTable} SET name = ? WHERE id = ? AND budget_id = 1`, [name, edit.id]);
-        }
-      }
+      applySingleEdit(database, edit);
     }
     database.run("UPDATE budgets SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);
     database.exec("COMMIT");
@@ -176,4 +92,121 @@ export function applyBudgetEdit(database: Database, edit: BudgetEdit): void {
     database.exec("ROLLBACK");
     throw error;
   }
+}
+
+function applySingleEdit(database: Database, edit: Exclude<BudgetEdit, { type: "plans" }>): void {
+  if (edit.type === "plan") {
+    const { line } = edit;
+    for (const amount of [line.cost, line.sales, line.sales - line.cost]) {
+      if (!Number.isFinite(amount) || Math.abs(amount) > 1e12) {
+        throw new Error("金額は絶対値1兆以下の数値で入力してください。");
+      }
+    }
+    if ([line.cost, line.sales].some((amount) => Number(amount.toFixed(2)) !== amount)) {
+      throw new Error("原価と売上は小数第2位までで入力してください。");
+    }
+    if (!items(database, "initiative").some((item) => item.id === line.initiativeId) ||
+        !items(database, "account").some((item) => item.id === line.accountId)) {
+      throw new Error("登録済みの施策と勘定科目を選んでください。");
+    }
+    const periodId = database.exec("SELECT id FROM periods WHERE budget_id = 1 AND printf('%04d-%02d', year, month) = ?", [line.month])[0]?.values[0]?.[0];
+    if (typeof periodId !== "number") throw new Error("登録済みの年月を選んでください。");
+    if (edit.id !== undefined && !database.exec("SELECT id FROM details WHERE id = ? AND budget_id = 1", [edit.id])[0]?.values.length) {
+      throw new Error("明細が見つかりません。");
+    }
+    if (database.exec(`SELECT id FROM details WHERE budget_id = 1 AND period_id = ? AND initiative_id = ?
+      AND account_id = ? AND id != ?`, [periodId, line.initiativeId, line.accountId, edit.id ?? -1])[0]?.values.length) {
+      throw new Error("同じ施策・勘定科目・年月の明細があります。既存の明細を編集してください。");
+    }
+    const values = [periodId, line.initiativeId, line.accountId, line.cost, line.sales, Number((line.sales - line.cost).toFixed(2)), line.note];
+    if (edit.id === undefined) {
+      database.run(`INSERT INTO details (budget_id, period_id, initiative_id, account_id,
+        budget_amount, budget_sales_amount, budget_profit_amount, note) VALUES (1, ?, ?, ?, ?, ?, ?, ?)`, values);
+    } else {
+      database.run(`UPDATE details SET period_id = ?, initiative_id = ?, account_id = ?,
+        budget_amount = ?, budget_sales_amount = ?, budget_profit_amount = ?, note = ? WHERE budget_id = 1 AND id = ?`, [...values, edit.id]);
+    }
+  } else if (edit.type === "deletePlan") {
+    // Existing actual data is outside the planning editor's scope.
+    if (database.exec(`SELECT id FROM details WHERE id = ? AND
+      (actual_amount != 0 OR actual_sales_amount != 0 OR actual_profit_amount != 0)`, [edit.id])[0]?.values.length) {
+      throw new Error("この明細には既存の実績データがあるため削除できません。");
+    }
+    database.run("DELETE FROM details WHERE budget_id = 1 AND id = ?", [edit.id]);
+    if (!database.getRowsModified()) throw new Error("明細が見つかりません。");
+  } else if (edit.type === "removeItem" || edit.type === "removeMonth") {
+    const targetTable = edit.type === "removeItem" ? tables[edit.kind] : "periods";
+    const id = edit.type === "removeItem" ? edit.id : database.exec(
+      "SELECT id FROM periods WHERE budget_id = 1 AND printf('%04d-%02d', year, month) = ?", [edit.month])[0]?.values[0]?.[0];
+    if (typeof id !== "number") throw new Error("項目が見つかりません。");
+    const column = edit.type === "removeMonth" ? "period_id" : edit.kind === "initiative" ? "initiative_id" : "account_id";
+    if (database.exec(`SELECT id FROM details WHERE ${column} = ? LIMIT 1`, [id])[0]?.values.length) {
+      throw new Error("明細で使用中です。先に明細を移動または削除してください。");
+    }
+    database.run(`DELETE FROM ${targetTable} WHERE budget_id = 1 AND id = ?`, [id]);
+    if (!database.getRowsModified()) throw new Error("項目が見つかりません。");
+  } else if (edit.type === "name") {
+    database.run("UPDATE budgets SET name = ? WHERE id = 1", [requireName(edit.name)]);
+  } else if (edit.type === "period") {
+    const months = monthsInPeriod(edit.start, edit.end);
+    const outside = database.exec(`SELECT p.id FROM periods p JOIN details d ON d.period_id = p.id
+      WHERE p.budget_id = 1 AND (printf('%04d-%02d', p.year, p.month) < ? OR printf('%04d-%02d', p.year, p.month) > ?) LIMIT 1`, [edit.start, edit.end]);
+    if (outside[0]?.values.length) throw new Error("入力済みの月を期間から外すことはできません。");
+    database.run("DELETE FROM periods WHERE budget_id = 1 AND (printf('%04d-%02d', year, month) < ? OR printf('%04d-%02d', year, month) > ?)", [edit.start, edit.end]);
+    for (const value of months) {
+      const [year, month] = value.split("-").map(Number);
+      database.run("INSERT OR IGNORE INTO periods (budget_id, year, month) VALUES (1, ?, ?)", [year!, month!]);
+    }
+    database.run("UPDATE budgets SET period_start = ?, period_end = ? WHERE id = 1", [edit.start, edit.end]);
+  } else if (edit.type === "month") {
+    if (!/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(edit.month)) {
+      throw new Error("年月を正しく入力してください。");
+    }
+    const [year, month] = edit.month.split("-").map(Number);
+    if (database.exec("SELECT id FROM periods WHERE budget_id = 1 AND year = ? AND month = ?", [year!, month!])[0]?.values.length) {
+      throw new Error("その年月は登録済みです。");
+    }
+    database.run("INSERT INTO periods (budget_id, year, month) VALUES (1, ?, ?)", [year!, month!]);
+  } else {
+    const current = items(database, edit.kind);
+    const targetTable = tables[edit.kind];
+    if (edit.type === "move") {
+      const source = current.find((item) => item.id === edit.id);
+      if (!source || !current.some((item) => item.id === edit.targetId)) {
+        throw new Error("移動する項目が見つかりません。");
+      }
+      if (edit.id !== edit.targetId) {
+        const ordered = current.filter((item) => item.id !== edit.id);
+        const targetIndex = ordered.findIndex((item) => item.id === edit.targetId);
+        ordered.splice(targetIndex + (edit.after ? 1 : 0), 0, source);
+        ordered.forEach((item, index) => {
+          database.run(`UPDATE ${targetTable} SET sort_order = ? WHERE id = ? AND budget_id = 1`, [index, item.id]);
+        });
+      }
+    } else {
+      const name = requireName(edit.name);
+      if (current.some((item) => item.name === name && (edit.type === "add" || item.id !== edit.id))) {
+        throw new Error("同じ名前が登録されています。");
+      }
+      if (edit.type === "add") {
+        database.run(`INSERT INTO ${targetTable} (budget_id, name, sort_order)
+          SELECT 1, ?, COALESCE(MAX(sort_order), -1) + 1 FROM ${targetTable} WHERE budget_id = 1`, [name]);
+      } else {
+        if (!current.some((item) => item.id === edit.id)) throw new Error("項目が見つかりません。");
+        database.run(`UPDATE ${targetTable} SET name = ? WHERE id = ? AND budget_id = 1`, [name, edit.id]);
+      }
+    }
+  }
+}
+
+export function monthsInPeriod(start: string, end: string): string[] {
+  const valid = /^(?!0000)\d{4}-(0[1-9]|1[0-2])$/;
+  if (!valid.test(start) || !valid.test(end)) throw new Error("年月を正しく入力してください。");
+  if (start > end) throw new Error("終了月は開始月以降にしてください。");
+  const index = (value: string) => Number(value.slice(0, 4)) * 12 + Number(value.slice(5)) - 1;
+  const first = index(start), last = index(end);
+  return Array.from({ length: last - first + 1 }, (_, offset) => {
+    const value = first + offset;
+    return `${String(Math.floor(value / 12)).padStart(4, "0")}-${String(value % 12 + 1).padStart(2, "0")}`;
+  });
 }

@@ -74,12 +74,11 @@ type WorkspaceSection = Exclude<WorkspaceView, "home">;
 
 type WorkspaceSectionInfo = {
   title: string;
-  description: string;
 };
 
 const filePickerTypes: FilePickerAcceptType[] = [
   {
-    description: "Triadichrome予算データ",
+    description: "Triadichrome計画",
     accept: {
       [TRIADIC_MIME_TYPE]: [TRIADIC_FILE_EXTENSION],
     },
@@ -89,19 +88,15 @@ const filePickerTypes: FilePickerAcceptType[] = [
 const workspaceSections: Record<WorkspaceSection, WorkspaceSectionInfo> = {
   detail: {
     title: "明細",
-    description: "費目ごとの明細を確認する画面です。",
   },
   cost: {
     title: "総原価表",
-    description: "全体の原価を確認する画面です。",
   },
   expansion: {
     title: "展開表",
-    description: "予算の展開を確認する画面です。",
   },
   initiative: {
     title: "施策入力",
-    description: "施策を入力する画面です。",
   },
 };
 
@@ -156,6 +151,7 @@ type WorkspaceLayoutProps = {
   status: string;
   onSaveAs: () => void;
   onClose: () => void;
+  navigation: React.ReactNode;
   children: React.ReactNode;
 };
 
@@ -165,23 +161,16 @@ function WorkspaceLayout({
   status,
   onSaveAs,
   onClose,
+  navigation,
   children,
 }: WorkspaceLayoutProps): React.JSX.Element {
   return (
     <main className="workspace-page">
       <div className="workspace-shell">
         <header className="workspace-header">
-          <div className="workspace-brand">
-            <span className="workspace-brand-mark" aria-hidden="true">
-              △
-            </span>
-            <div>
-              <p className="workspace-brand-name">Triadichrome</p>
-              <p className="workspace-brand-caption">計画をつくるワークスペース</p>
-            </div>
-          </div>
+          <span className="workspace-brand-name">Triadichrome</span>
+          {navigation}
           <div className="workspace-file" title={fileName}>
-            <span className="workspace-file-label">現在のデータ</span>
             <strong className="workspace-file-name">{fileName}</strong>
             <button
               className="workspace-save-button"
@@ -194,9 +183,7 @@ function WorkspaceLayout({
             <button className="workspace-save-button" type="button" disabled={isBusy} onClick={onClose}>ファイルを閉じる</button>
           </div>
         </header>
-        <p className="workspace-status" role="status" aria-live="polite">
-          {status}
-        </p>
+        {status ? <p className="workspace-status" role="status" aria-live="polite">{status}</p> : null}
         {children}
       </div>
     </main>
@@ -209,17 +196,7 @@ type HomeViewProps = {
 
 function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
   return (
-    <section className="home-view" aria-labelledby="home-title">
-      <div className="home-intro">
-        <p className="workspace-eyebrow">HOME</p>
-        <h1 id="home-title" className="home-title">
-          作業メニュー
-        </h1>
-        <p className="home-description">
-          施策・勘定科目・年月を登録して計画を入力し、三つの表で確認できます。
-        </p>
-      </div>
-
+    <section className="home-view" aria-label="ホーム">
       <div className="home-triangle" aria-label="作業メニュー">
         <svg
           className="home-triangle-graphic"
@@ -229,38 +206,35 @@ function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
         >
           <polygon
             className="home-triangle-surface"
-            points="300,20 575,505 25,505"
+            points="300,70 510,430 90,430"
           />
-          <line className="home-triangle-spoke" x1="300" x2="300" y1="275" y2="20" />
-          <line className="home-triangle-spoke" x1="300" x2="25" y1="275" y2="505" />
-          <line className="home-triangle-spoke" x1="300" x2="575" y1="275" y2="505" />
+          <line className="home-triangle-spoke" x1="300" x2="300" y1="310" y2="70" />
+          <line className="home-triangle-spoke" x1="300" x2="90" y1="310" y2="430" />
+          <line className="home-triangle-spoke" x1="300" x2="510" y1="310" y2="430" />
         </svg>
 
         <button
           className="home-node home-node-top"
           type="button"
           onClick={() => onNavigate("detail")}
-          aria-label="1 明細へ移動"
+          aria-label="明細へ移動"
         >
-          <span className="home-node-number">1</span>
           <span className="home-node-label">明細</span>
         </button>
         <button
           className="home-node home-node-right"
           type="button"
           onClick={() => onNavigate("cost")}
-          aria-label="2 総原価表へ移動"
+          aria-label="総原価表へ移動"
         >
-          <span className="home-node-number">2</span>
           <span className="home-node-label">総原価表</span>
         </button>
         <button
           className="home-node home-node-left"
           type="button"
           onClick={() => onNavigate("expansion")}
-          aria-label="3 展開表へ移動"
+          aria-label="展開表へ移動"
         >
-          <span className="home-node-number">3</span>
           <span className="home-node-label">展開表</span>
         </button>
         <button
@@ -269,14 +243,9 @@ function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
           onClick={() => onNavigate("initiative")}
           aria-label="施策入力へ移動"
         >
-          <span className="home-center-kicker">中央メニュー</span>
           <span className="home-center-label">施策入力</span>
-          <span className="home-center-arrow" aria-hidden="true">
-            →
-          </span>
         </button>
       </div>
-      <p className="home-hint">中央のボタンから施策入力モードへ移動できます。</p>
     </section>
   );
 }
@@ -291,9 +260,7 @@ export function ExtensionPage() {
   const [dirty, setDirty] = useState(false);
   const [draftDirty, setDraftDirty] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
-  const [status, setStatus] = useState(
-    "ファイルをドロップするか、ボタンから選択してください。",
-  );
+  const [status, setStatus] = useState("");
 
   const database = openedFile?.database;
   useEffect(() => () => database?.close(), [database]);
@@ -307,7 +274,7 @@ export function ExtensionPage() {
 
   const navigate = (view: WorkspaceView) => {
     if (isBusy || view === activeView) return;
-    if (draftDirty && !window.confirm("入力中の明細を取り消して画面を移動しますか？")) return;
+    if (draftDirty && !window.confirm("未確定の入力を取り消して画面を移動しますか？")) return;
     setDraftDirty(false);
     setActiveView(view);
   };
@@ -349,7 +316,7 @@ export function ExtensionPage() {
         setOpenedFile({ name: file.name, database: loadedDatabase, savedBytes: databaseBytes });
       }
       setActiveView("home");
-      setStatus(`「${file.name}」を開きました。`);
+      setStatus("");
     } catch (error) {
       console.error("ファイルを開けませんでした。", error);
       setStatus(
@@ -414,7 +381,7 @@ export function ExtensionPage() {
     let picked = false;
     try {
       const fileHandle = await filePickerWindow.showSaveFilePicker({
-        suggestedName: `新しい予算データ${TRIADIC_FILE_EXTENSION}`,
+        suggestedName: `新しい計画${TRIADIC_FILE_EXTENSION}`,
         types: filePickerTypes,
       });
       picked = true;
@@ -438,14 +405,14 @@ export function ExtensionPage() {
         handle: fileHandle,
       });
       setActiveView("home");
-      setStatus(`「${fileHandle.name}」を新規作成しました。`);
+      setStatus("");
     } catch (error) {
       if (picked || !isPickerCancellation(error)) {
-        console.error("新規データを作成できませんでした。", error);
+        console.error("計画を作成できませんでした。", error);
         setStatus(
           error instanceof TriadicFileError
             ? error.message
-            : "新規データを作成できませんでした。保存先を確認してください。",
+            : "計画を作成できませんでした。保存先を確認してください。",
         );
       }
     } finally {
@@ -478,7 +445,7 @@ export function ExtensionPage() {
       await persistTriadicFile(fileHandle, bytes, sameFile ? openedFile.savedBytes : undefined);
       setOpenedFile({ ...openedFile, name: fileHandle.name, handle: fileHandle, savedBytes: bytes });
       setDirty(false);
-      setStatus(`「${fileHandle.name}」に保存しました。`);
+      setStatus("");
     } catch (error) {
       if (picked || !isPickerCancellation(error)) {
         setStatus(
@@ -498,7 +465,7 @@ export function ExtensionPage() {
     await persistTriadicFile(file.handle, bytes, file.savedBytes);
     setOpenedFile({ ...file, savedBytes: bytes });
     setDirty(false);
-    setStatus("すべての変更を保存しました。");
+    setStatus("");
   };
 
   const reportSaveError = (error: unknown): void => {
@@ -579,7 +546,7 @@ export function ExtensionPage() {
       (item) => item.kind === "file",
     );
     if (fileItems.length > 1 || event.dataTransfer.files.length > 1) {
-      setStatus("予算データは一つずつ開いてください。");
+      setStatus("一度に開けるファイルは一つです。");
       return;
     }
     const fileItem = fileItems[0];
@@ -617,26 +584,27 @@ export function ExtensionPage() {
         fileName={openedFile.name}
         isBusy={isBusy}
         status={status}
+        navigation={activeView === "home" ? null : (
+        <nav className="budget-nav" aria-label="画面の切り替え">
+          <button type="button" disabled={isBusy} onClick={() => navigate("home")}>ホーム</button>
+          {(["initiative", "detail", "cost", "expansion"] as WorkspaceSection[]).map((section) =>
+            <button key={section} type="button" aria-current={activeView === section ? "page" : undefined}
+              disabled={isBusy} onClick={() => navigate(section)}>{workspaceSections[section].title}</button>)}
+        </nav>
+        )}
         onSaveAs={() => void handleSaveAs()}
         onClose={() => {
           if (busyRef.current) return;
-          if ((dirty || draftDirty) && !window.confirm("未保存または入力中の変更を破棄してファイルを閉じますか？")) return;
+          if ((dirty || draftDirty) && !window.confirm("未保存または未確定の入力を破棄してファイルを閉じますか？")) return;
           setOpenedFile(null);
           setDirty(false);
           setDraftDirty(false);
           setActiveView("home");
-          setStatus("ファイルをドロップするか、ボタンから選択してください。");
+          setStatus("");
         }}
       >
-        <nav className="budget-nav" aria-label="画面の切り替え">
-          <button type="button" aria-current={activeView === "home" ? "page" : undefined}
-            disabled={isBusy} onClick={() => navigate("home")}>ホーム</button>
-          {(Object.keys(workspaceSections) as WorkspaceSection[]).map((section) =>
-            <button key={section} type="button" aria-current={activeView === section ? "page" : undefined}
-              disabled={isBusy} onClick={() => navigate(section)}>{workspaceSections[section].title}</button>)}
-        </nav>
-        {!openedFile.handle ? <p className="save-notice">編集するには「別名で保存」で保存先を選んでください。</p> : null}
-        {dirty ? <p className="save-notice" role="status">{isBusy ? "変更を保存しています。" : "未保存の変更があります。"}
+        {!openedFile.handle ? <p className="save-notice">読み取り専用</p> : null}
+        {dirty ? <p className="save-notice" role="status">{isBusy ? "保存中…" : "未保存"}
           <button type="button" disabled={isBusy} onClick={() => void handleRetrySave()}>保存を再試行</button>
         </p> : null}
         {activeView === "home" ? (
@@ -667,13 +635,8 @@ export function ExtensionPage() {
       <div className="entry-content">
         <h1 className="entry-title">Triadichrome</h1>
         <p className="entry-version">v{manifest.version}</p>
-        <section className="entry-drop-zone" aria-label="予算データを開く">
-          <p className="entry-drop-title">予算データを開く</p>
-          <p className="entry-drop-description">
-            ファイルをここへドロップ
-            <br />
-            またはボタンから選択
-          </p>
+        <section className="entry-drop-zone" aria-label="計画を開く">
+          <p className="entry-drop-title">計画を開く</p>
           <div className="entry-actions">
             <button
               className="entry-open-button"
@@ -689,7 +652,7 @@ export function ExtensionPage() {
               onClick={() => void handleCreate()}
               disabled={isBusy}
             >
-              新規データを作成
+              新しい計画
             </button>
           </div>
         </section>

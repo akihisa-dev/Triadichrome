@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { BudgetData, BudgetEdit, PlanLine } from "../core/budgetData";
+import { useEffect, useMemo, useState } from "react";
+import type { BudgetData, BudgetEdit } from "../core/budgetData";
 
 export const formatAmount = (value: number) => new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 2 }).format(value);
 type Props = {
@@ -8,95 +8,134 @@ type Props = {
   onEdit: (edit: BudgetEdit) => Promise<boolean>;
   onDraftChange: (dirty: boolean) => void;
 };
-type Draft = { id?: number; initiativeId: string; accountId: string; month: string; cost: string; sales: string; note: string };
+type Field = "cost" | "sales" | "profit" | "note";
+type Cell = { initiativeId: number; accountId: number; month: string; cost: string; sales: string; note: string; id?: number };
+const fields: Record<Field, string> = { cost: "原価", sales: "売上", profit: "利益", note: "メモ" };
+const cellKey = (initiativeId: number, accountId: number, month: string) => `${initiativeId}:${accountId}:${month}`;
 
 export function PlanEditor({ data, disabled, onEdit, onDraftChange }: Props) {
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [initiative, setInitiative] = useState("");
-  const [month, setMonth] = useState("");
-  const ready = data.initiatives.length > 0 && data.accounts.length > 0 && data.months.length > 0;
-  const lines = data.lines.filter((line) => (!initiative || line.initiativeId === Number(initiative)) && (!month || line.month === month));
-  const start = (line?: PlanLine, copy = false) => {
-    const next: Draft = {
-      initiativeId: String(line?.initiativeId ?? data.initiatives[0]?.id ?? ""),
-      accountId: String(line?.accountId ?? data.accounts[0]?.id ?? ""),
-      month: line?.month ?? data.months[0] ?? "", cost: String(line?.cost ?? 0),
-      sales: String(line?.sales ?? 0), note: line?.note ?? "",
-    };
-    if (line && !copy) next.id = line.id;
-    setDraft(next);
-    onDraftChange(true);
+  const [selectedId, setSelectedId] = useState(data.initiatives[0]?.id ?? 0);
+  const initiativeId = data.initiatives.some((item) => item.id === selectedId) ? selectedId : (selectedId === -1 ? data.initiatives.at(-1)?.id ?? 0 : data.initiatives[0]?.id ?? 0);
+  useEffect(() => {
+    if (selectedId === -1 && data.initiatives.length) setSelectedId(data.initiatives.at(-1)!.id);
+  }, [data.initiatives, selectedId]);
+  const [field, setField] = useState<Field>("cost");
+  const [drafts, setDrafts] = useState<Record<string, Cell>>({});
+  const [name, setName] = useState("");
+  const [account, setAccount] = useState("");
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const [error, setError] = useState("");
+  const existing = useMemo(() => new Map(data.lines.map((line) => [cellKey(line.initiativeId, line.accountId, line.month), line])), [data.lines]);
+  const dirty = Object.keys(drafts).length > 0;
+  const active = activeKey ? existing.get(activeKey) : undefined;
+  const initiative = data.initiatives.find((item) => item.id === initiativeId);
+  const read = (accountId: number, month: string): Cell => {
+    const key = cellKey(initiativeId, accountId, month);
+    if (drafts[key]) return drafts[key];
+    const line = existing.get(key);
+    return { initiativeId, accountId, month, cost: line ? String(line.cost) : "", sales: line ? String(line.sales) : "", note: line?.note ?? "", ...(line ? { id: line.id } : {}) };
   };
-  const change = (field: keyof Draft, value: string) => setDraft((current) => current ? { ...current, [field]: value } : current);
-  const finish = () => { setDraft(null); onDraftChange(false); };
-  return <section className="plan-editor" aria-label="計画明細の入力">
-    <div className="plan-toolbar">
-      <div><h2>計画明細</h2><p className="budget-hint">施策・勘定科目・年月ごとに入力します。金額は円単位（小数第2位まで）、利益は売上 − 原価です。</p></div>
-      <button type="button" className="primary-button" disabled={disabled || !ready || draft !== null} onClick={() => start()}>明細を追加</button>
+  const change = (cell: Cell, value: string) => {
+    if (field === "profit") return;
+    const key = cellKey(cell.initiativeId, cell.accountId, cell.month);
+    const nextCell = { ...cell, [field]: value };
+    const original = existing.get(key);
+    const next = { ...drafts, [key]: nextCell };
+    if (nextCell.cost === (original ? String(original.cost) : "") && nextCell.sales === (original ? String(original.sales) : "") && nextCell.note === (original?.note ?? "")) delete next[key];
+    setDrafts(next);
+    setError("");
+    onDraftChange(Object.keys(next).length > 0);
+  };
+  const amount = (cell: Cell) => field === "sales" ? Number(cell.sales) : field === "profit" ? Number(cell.sales) - Number(cell.cost) : Number(cell.cost);
+  const total = (cells: Cell[]) => {
+    const sum = cells.reduce((value, cell) => value + amount(cell), 0);
+    return Number.isFinite(sum) ? formatAmount(sum) : "—";
+  };
+  const save = async () => {
+    setError("");
+    const edits = Object.values(drafts).map((cell) => ({
+      ...(cell.id === undefined ? {} : { id: cell.id }),
+      line: { initiativeId: cell.initiativeId, accountId: cell.accountId, month: cell.month, cost: Number(cell.cost), sales: Number(cell.sales), note: cell.note },
+    }));
+    if (edits.some(({ line }) => [line.cost, line.sales, line.sales - line.cost].some((value) => !Number.isFinite(value) || Math.abs(value) > 1e12) || [line.cost, line.sales].some((value) => Number(value.toFixed(2)) !== value))) {
+      setError("金額は小数第2位まで、原価・売上・利益は絶対値1兆以下で入力してください。");
+      return;
+    }
+    if (await onEdit({ type: "plans", edits })) {
+      setDrafts({});
+      onDraftChange(false);
+    }
+  };
+  return <section className="initiative-sheet" aria-label="施策の月別計画">
+    <div className="sheet-heading">
+      {data.initiatives.length ? <label className="initiative-select">施策
+        <select aria-label="入力する施策" value={initiativeId} disabled={disabled} onChange={(event) => { setSelectedId(Number(event.target.value)); setActiveKey(null); }}>
+          {data.initiatives.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select>
+      </label> : null}
+      <form className="inline-add" onSubmit={(event) => {
+        event.preventDefault();
+        void onEdit({ type: "add", kind: "initiative", name }).then((done) => { if (done) { setName(""); setSelectedId(-1); } });
+      }}>
+        <input aria-label="新しい施策名" placeholder="新しい施策名" value={name} disabled={disabled || dirty} onChange={(event) => setName(event.target.value)} required />
+        <button disabled={disabled || dirty || !name.trim()}>施策を追加</button>
+      </form>
     </div>
-    {!ready ? <p className="save-notice">「施策入力」で施策・勘定科目・年月をそれぞれ登録すると、計画を入力できます。</p> : null}
-    {draft ? <form className="plan-form" onSubmit={(event) => {
-      event.preventDefault();
-      const edit: BudgetEdit = { type: "plan", line: {
-        initiativeId: Number(draft.initiativeId), accountId: Number(draft.accountId),
-        month: draft.month, cost: Number(draft.cost), sales: Number(draft.sales), note: draft.note,
-      } };
-      if (draft.id !== undefined) edit.id = draft.id;
-      void onEdit(edit).then((applied) => { if (applied) finish(); });
-    }}>
-      <h3>{draft.id === undefined ? "新しい明細" : "明細を編集"}</h3>
-      <fieldset disabled={disabled}>
-        <div className="plan-fields">
-          <label>施策<select autoFocus required value={draft.initiativeId} onChange={(event) => change("initiativeId", event.target.value)}>
-            {data.initiatives.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select></label>
-          <label>勘定科目<select required value={draft.accountId} onChange={(event) => change("accountId", event.target.value)}>
-            {data.accounts.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-          </select></label>
-          <label>年月<select required value={draft.month} onChange={(event) => change("month", event.target.value)}>
-            {data.months.map((value) => <option key={value}>{value}</option>)}
-          </select></label>
-          <label>原価（円）<input required type="number" step="0.01" min="-1000000000000" max="1000000000000" value={draft.cost} onChange={(event) => change("cost", event.target.value)} /></label>
-          <label>売上（円）<input required type="number" step="0.01" min="-1000000000000" max="1000000000000" value={draft.sales} onChange={(event) => change("sales", event.target.value)} /></label>
-          <label>利益（円・自動計算）<output>{formatAmount(Number(draft.sales) - Number(draft.cost))}</output></label>
-          <label className="plan-note">メモ<textarea rows={2} value={draft.note} onChange={(event) => change("note", event.target.value)} /></label>
-        </div>
-        <div className="plan-actions"><button className="primary-button" type="submit">{disabled ? "保存中…" : "計画を保存"}</button>
-          <button type="button" onClick={() => { if (window.confirm("入力中の明細を取り消しますか？")) finish(); }}>取り消す</button></div>
-      </fieldset>
-      <p className="budget-hint">保存すると三表に反映します。複製時は施策・勘定科目・年月のいずれかを変更してください。</p>
-    </form> : null}
-    <div className="plan-filters">
-      <label>施策で絞り込み<select value={initiative} onChange={(event) => setInitiative(event.target.value)}><option value="">すべての施策</option>
-        {data.initiatives.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-      </select></label>
-      <label>年月で絞り込み<select value={month} onChange={(event) => setMonth(event.target.value)}><option value="">すべての年月</option>
-        {data.months.map((value) => <option key={value}>{value}</option>)}
-      </select></label>
-      <span>{lines.length}件</span>
+    <div className="sheet-toolbar">
+      <div className="sheet-fields" aria-label="表示する項目">{(Object.keys(fields) as Field[]).map((value) =>
+        <button key={value} type="button" aria-pressed={field === value} onClick={() => setField(value)}>{fields[value]}</button>)}</div>
+      <span className="sheet-unit">{field === "note" ? "" : "円"}</span>
+      {dirty ? <div className="sheet-save"><span>未確定 {Object.keys(drafts).length}セル</span>
+        <button type="button" disabled={disabled} onClick={() => { if (window.confirm("表の入力を取り消しますか？")) { setDrafts({}); onDraftChange(false); setError(""); } }}>取り消す</button>
+        <button type="button" className="primary-button" disabled={disabled} onClick={() => void save()}>{disabled ? "保存中…" : "変更を保存"}</button>
+      </div> : null}
     </div>
-    {!lines.length ? <p className="budget-empty">{data.lines.length ? "条件に合う明細はありません。" : "計画はまだありません。「明細を追加」から入力してください。"}</p> :
-      <div className="budget-table-scroll" tabIndex={0} aria-label="計画明細の表">
-        <table className="budget-table"><thead><tr>{["年月", "施策", "勘定科目", "原価（円）", "売上（円）", "利益（円）", "メモ", "操作"].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead>
-          <tbody>{lines.map((line) => <tr key={line.id}>
-            <td>{line.month}</td><td>{data.initiatives.find((item) => item.id === line.initiativeId)?.name}</td>
-            <td>{data.accounts.find((item) => item.id === line.accountId)?.name}</td>
-            <td className="numeric">{formatAmount(line.cost)}</td><td className="numeric">{formatAmount(line.sales)}</td>
-            <td className="numeric">{formatAmount(line.sales - line.cost)}</td><td className="memo-cell">{line.note}</td>
-            <td><div className="plan-actions">
-              <button disabled={disabled || draft !== null} onClick={() => start(line)}>編集</button>
-              <button disabled={disabled || draft !== null} onClick={() => start(line, true)}>複製</button>
-              <button disabled={disabled || draft !== null} onClick={() => {
-                if (window.confirm(`${line.month}・${data.initiatives.find((item) => item.id === line.initiativeId)?.name}・${data.accounts.find((item) => item.id === line.accountId)?.name}の明細を削除しますか？`)) void onEdit({ type: "deletePlan", id: line.id });
-              }}>削除</button>
-            </div></td>
+    {error ? <p role="alert" className="save-notice">{error}</p> : null}
+    {initiativeId && data.months.length ?
+      <div className="sheet-scroll" tabIndex={0} aria-label={`${initiative?.name}の月別${fields[field]}表`}>
+        <table className={`month-sheet${field === "note" ? " note-sheet" : ""}`}>
+          <caption className="sr-only">{initiative?.name}：勘定科目別・月別の{fields[field]}</caption>
+          <thead><tr><th scope="col">勘定科目</th>{data.months.map((month) => <th scope="col" key={month}>{month.replace("-", "/")}</th>)}{field !== "note" ? <th scope="col">合計</th> : null}</tr></thead>
+          <tbody>{data.accounts.map((item) => <tr key={item.id}>
+            <th scope="row">{item.name}</th>
+            {data.months.map((month) => {
+              const cell = read(item.id, month);
+              const key = cellKey(initiativeId, item.id, month);
+              return <td key={month} className={drafts[key] ? "is-edited" : ""}>
+                {field === "profit" ? <output>{formatAmount(Number(cell.sales) - Number(cell.cost))}</output> :
+                  <input type="text" inputMode={field === "note" ? "text" : "decimal"} aria-label={`${initiative?.name} ${item.name} ${month} ${fields[field]}`}
+                    value={cell[field]} disabled={disabled} placeholder={field === "note" ? "" : "—"}
+                    onFocus={() => setActiveKey(key)} onChange={(event) => change(cell, event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.nativeEvent.isComposing) return;
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        if (event.ctrlKey || event.metaKey) { if (dirty) void save(); return; }
+                        const inputs = Array.from(event.currentTarget.closest("table")!.querySelectorAll<HTMLInputElement>("td input"));
+                        const index = inputs.indexOf(event.currentTarget);
+                        inputs[index + (event.shiftKey ? -data.months.length : data.months.length)]?.focus();
+                      }
+                    }} />}
+              </td>;
+            })}
+            {field !== "note" ? <td className="sheet-total">{total(data.months.map((month) => read(item.id, month)))}</td> : null}
           </tr>)}</tbody>
-          <tfoot><tr><th colSpan={3} scope="row">表示中の合計</th>
-            <td className="numeric">{formatAmount(lines.reduce((sum, line) => sum + line.cost, 0))}</td>
-            <td className="numeric">{formatAmount(lines.reduce((sum, line) => sum + line.sales, 0))}</td>
-            <td className="numeric">{formatAmount(lines.reduce((sum, line) => sum + line.sales - line.cost, 0))}</td><td colSpan={2} />
-          </tr></tfoot>
+          {field !== "note" ? <tfoot><tr><th scope="row">合計</th>{data.months.map((month) => <td key={month}>{total(data.accounts.map((item) => read(item.id, month)))}</td>)}
+            <td>{total(data.accounts.flatMap((item) => data.months.map((month) => read(item.id, month))))}</td>
+          </tr></tfoot> : null}
         </table>
-      </div>}
+      </div> : null}
+    <div className="sheet-footer">
+      <form className="inline-add" onSubmit={(event) => {
+        event.preventDefault();
+        void onEdit({ type: "add", kind: "account", name: account }).then((done) => { if (done) setAccount(""); });
+      }}>
+        <input aria-label="新しい勘定科目名" placeholder="勘定科目名" value={account} disabled={disabled || dirty} onChange={(event) => setAccount(event.target.value)} required />
+        <button disabled={disabled || dirty || !account.trim()}>行を追加</button>
+      </form>
+      {active && !dirty ? <button type="button" className="cell-delete" disabled={disabled} onClick={() => {
+        if (window.confirm(`${data.accounts.find((item) => item.id === active.accountId)?.name}・${active.month}の原価・売上・メモを削除しますか？`)) void onEdit({ type: "deletePlan", id: active.id }).then((done) => { if (done) setActiveKey(null); });
+      }}>選択セルの記録を削除</button> : null}
+    </div>
   </section>;
 }
