@@ -2,6 +2,7 @@ import { useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, validateTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { writeTriadicFile } from "./triadicFile";
 import { HomePage } from "./HomePage";
+import appIcon from "../../../branding/logo.svg?no-inline";
 import "./ExtensionPage.css";
 
 type PickerWindow = Window & {
@@ -69,6 +70,7 @@ export function ExtensionPage() {
       void run(() => open(files[0]!));
     }}>
     <div className="entry-content">
+      <img className="entry-logo" src={appIcon} width="64" height="64" alt="" draggable={false} />
       <h1 className="entry-title">Triadichrome</h1>
       <section className="entry-drop-zone" aria-label="計画を開く">
         <div className="entry-actions">

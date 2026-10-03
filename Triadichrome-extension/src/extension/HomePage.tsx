@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import appIcon from "../../../branding/logo.svg?no-inline";
 
 type HomePageProps = {
   fileName: string;
@@ -32,7 +33,10 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span className="home-brand">Triadichrome</span>
+        <span className="home-brand">
+          <img src={appIcon} width="28" height="28" alt="" draggable={false} />
+          Triadichrome
+        </span>
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
       </header>
       <main className="home-view" aria-label="ホーム" />

@@ -36,6 +36,7 @@ TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用しま
 
 Chrome Web Store用のアイコン・販促画像2種類・スクリーンショット5枚を`store-assets/`に用意しています。掲載先との対応と再生成手順は[掲載画像ガイド](store-assets/README.md)、画像の一覧は[プレビュー](store-assets/preview.png)を参照してください。
 ロゴの正本は`branding/logo.svg`です。アプリと同じモノクロミニマルな配色で、三つの多角形によって書類のモチーフを表現しています。拡張機能用のPNGを`branding/icons/`からビルド時に同期します。
+入口とホームのヘッダーには同じSVGを表示し、ブラウザーのタブにもアイコンを設定しています。
 
 ## 構成
 
