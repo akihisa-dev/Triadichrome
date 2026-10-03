@@ -3,51 +3,6 @@ import { createTriadicDatabase, validateTriadicDatabase, TRIADIC_FILE_EXTENSION,
 import { writeTriadicFile } from "./triadicFile";
 import "./ExtensionPage.css";
 
-function HomeView() {
-  return (
-    <main className="home-view" aria-label="ホーム">
-      <div className="home-triangle" aria-label="作業メニュー">
-        <svg
-          className="home-triangle-graphic"
-          viewBox="0 0 600 540"
-          role="img"
-          aria-label="3つの画面と施策入力をつなぐ三角形"
-        >
-          <polygon
-            className="home-triangle-surface"
-            points="300,70 510,430 90,430"
-          />
-          <line className="home-triangle-spoke" x1="300" x2="300" y1="310" y2="70" />
-          <line className="home-triangle-spoke" x1="300" x2="90" y1="310" y2="430" />
-          <line className="home-triangle-spoke" x1="300" x2="510" y1="310" y2="430" />
-        </svg>
-
-        <div
-          className="home-node home-node-top"
-        >
-          <span className="home-node-label">明細</span>
-        </div>
-        <div
-          className="home-node home-node-right"
-        >
-          <span className="home-node-label">総原価表</span>
-        </div>
-        <div
-          className="home-node home-node-left"
-        >
-          <span className="home-node-label">展開表</span>
-        </div>
-        <div
-          className="home-center-button"
-        >
-          <span className="home-center-label">施策入力</span>
-        </div>
-      </div>
-    </main>
-  );
-}
-
-
 type PickerWindow = Window & {
   showOpenFilePicker?: (options: { multiple: boolean; types: typeof fileTypes }) => Promise<FileSystemFileHandle[]>;
   showSaveFilePicker?: (options: { suggestedName: string; types: typeof fileTypes }) => Promise<FileSystemFileHandle>;
@@ -106,7 +61,7 @@ export function ExtensionPage() {
     <header className="home-header"><span>Triadichrome</span><strong title={fileName}>{fileName}</strong>
       <button type="button" onClick={() => { setFileName(null); setError(""); }}>ファイルを閉じる</button>
     </header>
-    <HomeView />
+    <main className="home-view" aria-label="ホーム" />
   </div>;
   return <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
