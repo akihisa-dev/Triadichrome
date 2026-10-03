@@ -227,16 +227,9 @@ function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
           role="img"
           aria-label="3つの画面と施策入力をつなぐ三角形"
         >
-          <defs>
-            <linearGradient id="triangle-fill" x1="0" x2="1" y1="0" y2="1">
-              <stop offset="0" stopColor="#f4fbfa" />
-              <stop offset="1" stopColor="#e2eff2" />
-            </linearGradient>
-          </defs>
           <polygon
             className="home-triangle-surface"
             points="300,20 575,505 25,505"
-            fill="url(#triangle-fill)"
           />
           <line className="home-triangle-spoke" x1="300" x2="300" y1="275" y2="20" />
           <line className="home-triangle-spoke" x1="300" x2="25" y1="275" y2="505" />
