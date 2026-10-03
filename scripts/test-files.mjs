@@ -3,6 +3,8 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const root = resolve(import.meta.dirname, "..");
 await mkdir(join(root, "dist"), { recursive: true });
@@ -14,6 +16,7 @@ try {
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
       'export * from "./Triadichrome-extension/src/core/budgetData.ts";',
       'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
+      'export * from "./Triadichrome-extension/src/extension/BudgetWorkspace.tsx";',
     ].join("\n"), resolveDir: root },
     outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
     plugins: [{ name: "local-wasm", setup(api) {
@@ -24,7 +27,7 @@ try {
     } }],
   });
   const { createTriadicDatabase, openTriadicDatabase, exportTriadicDatabase,
-    TriadicFileError, applyBudgetEdit, readBudgetData, writeTriadicFile, persistTriadicFile } = await import(pathToFileURL(bundle));
+    TriadicFileError, applyBudgetEdit, readBudgetData, writeTriadicFile, persistTriadicFile, BudgetWorkspace } = await import(pathToFileURL(bundle));
   const bytes = await createTriadicDatabase();
   const db = await openTriadicDatabase(bytes);
   applyBudgetEdit(db, { type: "name", name: "試験予算" });
@@ -53,8 +56,80 @@ try {
   assert.deepEqual(readBudgetData(reopened), readBudgetData(db), "all three views survive round trip");
   assert.equal(readBudgetData(reopened).detail.values[0][2], "名称変更後");
   assert.equal(readBudgetData(reopened).detail.values[0][4], 123.45);
-  assert.equal(readBudgetData(reopened).detail.values[0][10], "保持するメモ");
+  assert.equal(readBudgetData(reopened).detail.values[0][7], "保持するメモ");
+  assert.ok(readBudgetData(db).detail.columns.every((column) => !column.startsWith("actual_")));
+  // Editing a legacy row must preserve hidden actual values.
+  applyBudgetEdit(db, { type: "plan", id: 1, line: { initiativeId: 1, accountId: 1, month: "2026-09", cost: 100, sales: 250, note: "改訂" } });
+  assert.deepEqual(db.exec("SELECT actual_amount, actual_sales_amount, actual_profit_amount FROM details WHERE id = 1")[0].values[0], [-50, 150, 200]);
+  assert.throws(() => applyBudgetEdit(db, { type: "deletePlan", id: 1 }), /実績/);
   reopened.close(); db.close();
+
+  const plan = await openTriadicDatabase(bytes);
+  for (const name of ["施策A", "施策B"]) applyBudgetEdit(plan, { type: "add", kind: "initiative", name });
+  for (const name of ["人件費", "仕入"]) applyBudgetEdit(plan, { type: "add", kind: "account", name });
+  for (const month of ["2026-10", "2026-11"]) applyBudgetEdit(plan, { type: "month", month });
+  const line = { initiativeId: 1, accountId: 1, month: "2026-10", cost: 1200, sales: 3000, note: "計画" };
+  applyBudgetEdit(plan, { type: "plan", line });
+  applyBudgetEdit(plan, { type: "plan", line: { ...line, accountId: 2, cost: 800, sales: 0 } });
+  applyBudgetEdit(plan, { type: "plan", line: { ...line, initiativeId: 2, cost: 500, sales: 1000 } });
+  let result = readBudgetData(plan);
+  assert.deepEqual(result.expansion.values, [[2026, 10, "施策A", 2000, 3000, 1000], [2026, 10, "施策B", 500, 1000, 500]]);
+  assert.deepEqual(result.cost.values, [[2026, 10, "人件費", 1700, 4000, 2300], [2026, 10, "仕入", 800, 0, -800]]);
+  for (const invalid of [
+    { type: "plan", line },
+    { type: "plan", line: { ...line, cost: NaN } },
+    { type: "plan", line: { ...line, sales: Infinity } },
+    { type: "plan", line: { ...line, cost: 1e13 } },
+    { type: "plan", line: { ...line, cost: 1.001 } },
+    { type: "plan", line: { ...line, initiativeId: 999 } },
+    { type: "plan", line: { ...line, accountId: 999 } },
+    { type: "plan", line: { ...line, month: "2027-01" } },
+    { type: "plan", id: 999, line },
+    { type: "plan", id: 2, line },
+    { type: "removeItem", kind: "initiative", id: 1 },
+    { type: "removeItem", kind: "account", id: 1 },
+    { type: "removeMonth", month: "2026-10" },
+  ]) {
+    assert.throws(() => applyBudgetEdit(plan, invalid));
+    assert.deepEqual(readBudgetData(plan), result, "failed plan edits must preserve all data");
+  }
+  // Move, copy and delete a plan; all views and persisted data must follow.
+  applyBudgetEdit(plan, { type: "plan", id: 1, line: { ...line, month: "2026-11", cost: 123.45, sales: 200, note: "翌月へ移動" } });
+  applyBudgetEdit(plan, { type: "plan", line: { ...line, month: "2026-11", initiativeId: 2 } });
+  applyBudgetEdit(plan, { type: "deletePlan", id: 2 });
+  applyBudgetEdit(plan, { type: "removeItem", kind: "account", id: 2 });
+  result = readBudgetData(plan);
+  assert.equal(result.lines.length, 3);
+  for (const view of [result.detail, result.cost, result.expansion]) {
+    const costColumn = view.columns.indexOf("budget_amount");
+    const salesColumn = view.columns.indexOf("budget_sales_amount");
+    assert.equal(view.values.reduce((sum, row) => sum + row[costColumn], 0), 1823.45);
+    assert.equal(view.values.reduce((sum, row) => sum + row[salesColumn], 0), 4200);
+    assert.ok(view.columns.every((column) => !column.startsWith("actual_")));
+  }
+  const savedPlan = await openTriadicDatabase(exportTriadicDatabase(plan));
+  assert.deepEqual(readBudgetData(savedPlan), result);
+  for (const row of result.lines) applyBudgetEdit(plan, { type: "deletePlan", id: row.id });
+  applyBudgetEdit(plan, { type: "removeMonth", month: "2026-10" });
+  applyBudgetEdit(plan, { type: "removeItem", kind: "initiative", id: 1 });
+  assert.equal(readBudgetData(plan).lines.length, 0);
+  assert.deepEqual(readBudgetData(plan).months, ["2026-11"]);
+  for (const section of ["initiative", "detail", "cost", "expansion"]) {
+    const html = renderToStaticMarkup(createElement(BudgetWorkspace, {
+      data: result, section, disabled: false, draftActive: false,
+      onEdit: async () => true, onDraftChange: () => {},
+    }));
+    assert.doesNotMatch(html, /実績|actual_/);
+    assert.match(html, /1,823.45/);
+    assert.match(html, /4,200/);
+    assert.match(html, /2,376.55/);
+    if (section === "detail" || section === "initiative") {
+      assert.match(html, /明細を追加/);
+      assert.match(html, /複製/);
+      assert.match(html, /翌月へ移動/);
+    }
+  }
+  savedPlan.close(); plan.close();
   await assert.rejects(openTriadicDatabase(new Uint8Array([1, 2, 3])), TriadicFileError);
   for (const corrupt of [
     "DELETE FROM budgets",
@@ -98,7 +173,7 @@ try {
   const mismatch = handle();
   mismatch.getFile = async () => new Blob([new Uint8Array([99])]);
   await assert.rejects(persistTriadicFile(mismatch, bytes), /確認できません/);
-  console.log("PASS: budget edits, ordering, rollback, three views, file round trip, invalid data, write failures and conflicts");
+  console.log("PASS: plan lifecycle, plan-only rendering, ordering, rollback, three-view totals, file round trip, legacy data preservation, write failures and conflicts");
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

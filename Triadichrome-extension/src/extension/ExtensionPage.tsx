@@ -155,6 +155,7 @@ type WorkspaceLayoutProps = {
   isBusy: boolean;
   status: string;
   onSaveAs: () => void;
+  onClose: () => void;
   children: React.ReactNode;
 };
 
@@ -163,6 +164,7 @@ function WorkspaceLayout({
   isBusy,
   status,
   onSaveAs,
+  onClose,
   children,
 }: WorkspaceLayoutProps): React.JSX.Element {
   return (
@@ -175,7 +177,7 @@ function WorkspaceLayout({
             </span>
             <div>
               <p className="workspace-brand-name">Triadichrome</p>
-              <p className="workspace-brand-caption">予算データワークスペース</p>
+              <p className="workspace-brand-caption">計画をつくるワークスペース</p>
             </div>
           </div>
           <div className="workspace-file" title={fileName}>
@@ -189,6 +191,7 @@ function WorkspaceLayout({
             >
               {isBusy ? "保存中…" : "別名で保存"}
             </button>
+            <button className="workspace-save-button" type="button" disabled={isBusy} onClick={onClose}>ファイルを閉じる</button>
           </div>
         </header>
         <p className="workspace-status" role="status" aria-live="polite">
@@ -213,7 +216,7 @@ function HomeView({ onNavigate }: HomeViewProps): React.JSX.Element {
           作業メニュー
         </h1>
         <p className="home-description">
-          三角形のメニューから、確認したい画面を選択してください。
+          施策・勘定科目・年月を登録して計画を入力し、三つの表で確認できます。
         </p>
       </div>
 
@@ -293,6 +296,7 @@ export function ExtensionPage() {
   const [openedFile, setOpenedFile] = useState<OpenedFile | null>(null);
   const [revision, setRevision] = useState(0);
   const [dirty, setDirty] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
   const [activeView, setActiveView] = useState<WorkspaceView>("home");
   const [status, setStatus] = useState(
     "ファイルをドロップするか、ボタンから選択してください。",
@@ -302,11 +306,18 @@ export function ExtensionPage() {
   useEffect(() => () => database?.close(), [database]);
   const budgetData = useMemo(() => database ? readBudgetData(database) : null, [database, revision]);
   useEffect(() => {
-    if (!dirty) return;
+    if (!dirty && !draftDirty) return;
     const warn = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
-  }, [dirty]);
+  }, [dirty, draftDirty]);
+
+  const navigate = (view: WorkspaceView) => {
+    if (isBusy || view === activeView) return;
+    if (draftDirty && !window.confirm("入力中の明細を取り消して画面を移動しますか？")) return;
+    setDraftDirty(false);
+    setActiveView(view);
+  };
 
   const beginOperation = (): boolean => {
     if (busyRef.current) return false;
@@ -614,22 +625,34 @@ export function ExtensionPage() {
         isBusy={isBusy}
         status={status}
         onSaveAs={() => void handleSaveAs()}
+        onClose={() => {
+          if (busyRef.current) return;
+          if ((dirty || draftDirty) && !window.confirm("未保存または入力中の変更を破棄してファイルを閉じますか？")) return;
+          setOpenedFile(null);
+          setDirty(false);
+          setDraftDirty(false);
+          setActiveView("home");
+          setStatus("ファイルをドロップするか、ボタンから選択してください。");
+        }}
       >
         <nav className="budget-nav" aria-label="画面の切り替え">
           <button type="button" aria-current={activeView === "home" ? "page" : undefined}
-            onClick={() => setActiveView("home")}>ホーム</button>
+            disabled={isBusy} onClick={() => navigate("home")}>ホーム</button>
           {(Object.keys(workspaceSections) as WorkspaceSection[]).map((section) =>
             <button key={section} type="button" aria-current={activeView === section ? "page" : undefined}
-              onClick={() => setActiveView(section)}>{workspaceSections[section].title}</button>)}
+              disabled={isBusy} onClick={() => navigate(section)}>{workspaceSections[section].title}</button>)}
         </nav>
         {!openedFile.handle ? <p className="save-notice">編集するには「別名で保存」で保存先を選んでください。</p> : null}
         {dirty ? <p className="save-notice" role="status">{isBusy ? "変更を保存しています。" : "未保存の変更があります。"}
           <button type="button" disabled={isBusy} onClick={() => void handleRetrySave()}>保存を再試行</button>
         </p> : null}
         {activeView === "home" ? (
-          <HomeView onNavigate={setActiveView} />
+          <HomeView onNavigate={navigate} />
         ) : (
           <BudgetWorkspace
+            key={activeView}
+            draftActive={draftDirty}
+            onDraftChange={setDraftDirty}
             section={activeView}
             data={budgetData}
             disabled={isBusy || !openedFile.handle}
