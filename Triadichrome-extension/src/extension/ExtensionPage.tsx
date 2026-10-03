@@ -1,6 +1,7 @@
 import { useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, validateTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { writeTriadicFile } from "./triadicFile";
+import { HomePage } from "./HomePage";
 import "./ExtensionPage.css";
 
 type PickerWindow = Window & {
@@ -57,12 +58,7 @@ export function ExtensionPage() {
     event.dataTransfer.dropEffect = busy.current ? "none" : "copy";
     if (!busy.current) setDragging(true);
   };
-  if (fileName) return <div className="home-page">
-    <header className="home-header"><span>Triadichrome</span><strong title={fileName}>{fileName}</strong>
-      <button type="button" onClick={() => { setFileName(null); setError(""); }}>ファイルを閉じる</button>
-    </header>
-    <main className="home-view" aria-label="ホーム" />
-  </div>;
+  if (fileName) return <HomePage fileName={fileName} onCloseFile={() => { setFileName(null); setError(""); }} />;
   return <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
     onDrop={(event) => {

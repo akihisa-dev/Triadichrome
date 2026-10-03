@@ -1,7 +1,7 @@
 # Triadichrome
 
 施策を起点に計画を作り、明細・総原価表・展開表で同じデータを確認するChrome拡張機能です。
-現在の実装は、`.triadic`ファイルを開く入口画面とホーム画面の2画面です。入口ではファイルの新規作成・読込・ドロップを扱い、ホームからファイルを閉じて入口へ戻れます。施策入力・明細・総原価表・展開表の画面と計画編集機能はありません。ホームの本文領域は空白です。
+現在の実装は、`.triadic`ファイルを開く入口画面とホーム画面の2画面です。入口ではファイルの新規作成・読込・ドロップを扱います。ホーム左上のハンバーガーボタンでサイドバーを開き、「ホーム」と「ファイルを閉じる」を操作できます。サイドバーは閉じるボタン・背景クリック・Escキーで閉じられます。ファイルを閉じると入口へ戻ります。施策入力・明細・総原価表・展開表の画面と計画編集機能はありません。ホームの本文領域は空白です。
 
 ## 保存形式の方針
 
@@ -34,7 +34,8 @@ TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用しま
 
 ## 構成
 
-- `Triadichrome-extension/src/extension/ExtensionPage.tsx`：入口とホーム画面
+- `Triadichrome-extension/src/extension/ExtensionPage.tsx`：ファイル操作と入口画面
+- `Triadichrome-extension/src/extension/HomePage.tsx`：ホーム画面と開閉式サイドバー
 - `Triadichrome-extension/src/extension/ExtensionPage.css`：入口とホーム画面のスタイル
 - `Triadichrome-extension/src/extension/main.tsx`：Reactの起動
 - `Triadichrome-extension/src/extension/background.ts`：拡張機能アイコンから入口を開く処理
