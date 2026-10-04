@@ -11,7 +11,7 @@ import { writeTriadicFile } from "./triadicFile";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
 import { StatusNotice } from "./StatusNotice";
-import appIcon from "../../../branding/logo.svg?no-inline";
+import appIcon from "../../../branding/logo-512.png?no-inline";
 import "./ExtensionPage.css";
 
 type PickerWindow = Window & {

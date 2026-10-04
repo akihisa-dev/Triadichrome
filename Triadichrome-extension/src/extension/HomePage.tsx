@@ -11,7 +11,7 @@ import { type AccountChange } from "../core/accountMaster";
 import { type AggregationChange } from "../core/aggregationMaster";
 import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
-import appIcon from "../../../branding/logo.svg?no-inline";
+import appIcon from "../../../branding/logo-512.png?no-inline";
 
 type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "master" | "account-master" | "aggregation-master";
 

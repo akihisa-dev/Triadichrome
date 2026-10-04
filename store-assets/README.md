@@ -19,11 +19,11 @@
 
 ## ロゴ
 
-[編集用SVG](../branding/logo.svg)は、書類を三つの多角形で表現しています。配色は黒 `#202020`、グレー `#858585`、薄いグレー `#D9D9D9` です。
+[ロゴの正本PNG](../branding/logo.png)は、濃いグレーの角丸背景に三つの白い面を配置した文字なしの画像です。角丸の外側だけを透過し、背景と白い図形を残しています。
 
-128px版の図形は横80×縦96pxで、上下16px・左右24pxの透明余白があります。追加の[512px](../branding/logo-512.png)・[1024px](../branding/logo-1024.png)透過PNGと、拡張機能用の16・32・48・128px PNGを`branding/`に収めています。
+正本と同じ比率・透明余白を保った[512px](../branding/logo-512.png)・[1024px](../branding/logo-1024.png)透過PNGと、拡張機能用の16・32・48・128px PNGを`branding/`に収めています。
 
-販促画像も無彩色とし、背景の装飾は付けていません。ロゴのSVGと販促画像のHTMLを編集用の正本とします。
+販促画像も無彩色とし、背景の装飾は付けていません。ロゴのPNGと販促画像のHTMLを編集用の正本とします。既存の販促画像・スクリーンショットは旧ロゴを含むため、掲載時には再生成してください。
 
 ## 画面の出典と範囲
 
@@ -56,11 +56,13 @@ export TRIADICHROME_ART_CHROME='/Applications/Google Chrome.app/Contents/MacOS/G
 node scripts/capture-store-screenshots.mjs
 ```
 
-ロゴ・販促画像のレイアウトは`branding/logo.svg`と`store-assets/source/layouts.html`を編集し、次のコマンドでPNGと確認用一覧を再生成します。再生成時は既存の制作画像を上書きします。
+ロゴ・販促画像のレイアウトは`branding/logo.png`と`store-assets/source/layouts.html`を編集し、次のコマンドでPNGと確認用一覧を再生成します。再生成時は既存の制作画像を上書きします。
 
 ```sh
 node scripts/render-store-assets.mjs
 npm run build
 ```
+
+ロゴとアイコンだけを書き出す場合は`node scripts/render-store-assets.mjs --icons-only`を使います。この場合はsharpのみ必要で、ブラウザーを起動せず、販促画像・スクリーンショット・確認用一覧を変更しません。
 
 `TRIADICHROME_CAPTURE_URL`で撮影先を変更できます。撮影処理はViteからTypeScriptのファイル作成処理を読み込むため、撮影先にはこのリポジトリのローカル開発サーバーを指定してください。日本語フォントにはmacOSのHiragino Sansを使用し、OSが異なる場合は文字の形や幅が変わることがあります。

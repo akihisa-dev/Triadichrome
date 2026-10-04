@@ -9,10 +9,10 @@ const require = createRequire(process.env.TRIADICHROME_ART_MODULES
   ? path.join(path.resolve(process.env.TRIADICHROME_ART_MODULES), "package.json")
   : import.meta.url);
 const sharp = require("sharp");
-const { chromium } = require("playwright");
+const iconsOnly = process.argv.includes("--icons-only");
 const root = path.resolve(import.meta.dirname, "..");
 const store = path.join(root, "store-assets");
-const logo = path.join(root, "branding", "logo.svg");
+const logo = path.join(root, "branding", "logo.png");
 const assets = [
   ["promo-small", "promo-small-440x280.png", 440, 280],
   ["promo-marquee", "promo-marquee-1400x560.png", 1400, 560],
@@ -21,18 +21,23 @@ const assets = [
   ]),
 ];
 await fs.mkdir(path.join(root, "branding", "icons"), { recursive: true });
-await fs.mkdir(path.join(store, "screenshots"), { recursive: true });
 for (const size of [16, 32, 48, 128, 512, 1024]) {
   const target = size <= 128
     ? path.join(root, "branding", "icons", `icon-${size}.png`)
     : path.join(root, "branding", `logo-${size}.png`);
-  await sharp(logo, { density: Math.max(72, size / 128 * 72) })
+  await sharp(logo)
     .resize(size, size).png().toFile(target);
   const meta = await sharp(target).metadata();
   assert.equal(meta.width, size); assert.equal(meta.height, size);
   assert.equal(meta.hasAlpha, true);
 }
 await fs.copyFile(path.join(root, "branding", "icons", "icon-128.png"), path.join(store, "icon-128.png"));
+if (iconsOnly) {
+  console.log("Logo exports verified: transparent PNGs at 16, 32, 48, 128, 512, and 1024px.");
+  process.exit(0);
+}
+await fs.mkdir(path.join(store, "screenshots"), { recursive: true });
+const { chromium } = require("playwright");
 const browser = await chromium.launch({
   headless: true,
   ...(process.env.TRIADICHROME_ART_CHROME ? { executablePath: process.env.TRIADICHROME_ART_CHROME } : {}),
