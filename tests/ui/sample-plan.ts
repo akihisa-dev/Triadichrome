@@ -1,10 +1,10 @@
 import { changeAccountMaster } from "../../Triadichrome-extension/src/core/accountMaster";
 import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/aggregationMaster";
 import { type AggregationMember } from "../../Triadichrome-extension/src/core/aggregations";
-import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
+import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
 import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiative, type InitiativeRow } from "../../Triadichrome-extension/src/core/initiatives";
 
-// Preview-only synthetic data. Use the same registration and validation as the app.
+// Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase();
   const accounts = new Map<string, number>();
@@ -86,5 +86,11 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     await add(`${label}の販売施策`, "年度切り替え用の増減計画。総原価表の前年合計値ではありません。", [annual("商品売上", sales), annual("商品仕入", cost)], year);
     await add(`${label}のサービス施策`, "別年度の施策が当年度の集計に混ざらないことを確認できます。", [annual("保守サービス売上", sales / 2), annual("給与手当", 15000)], year);
   }
-  return bytes;
+  const database = await openTriadicDatabase(bytes);
+  try {
+    // Stable fixture timestamps keep regeneration independent of the wall clock.
+    const timestamp = `${String(fiscalYear).padStart(4, "0")}-04-01T00:00:00.000Z`;
+    database.run("UPDATE budgets SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
+    return database.export();
+  } finally { database.close(); }
 }

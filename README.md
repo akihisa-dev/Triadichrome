@@ -59,7 +59,7 @@ npm run build
 ```
 
 TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
-`npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。
+`npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。続いて[確認用の.triadicファイル](#確認用のtriadicファイル)を再生成します。
 
 ## 検証とGitフック
 
@@ -73,8 +73,16 @@ TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用しま
 | `npm run verify:release` | `verify`に未コミット変更と同名のローカルtagの確認を追加 |
 | `npm run version:next -- patch` | 次のversion候補を表示。`minor`・`major`も指定可能。ファイルは変更しない |
 | `npm run version:check-staged` | stage済みの3つのversionファイルの同時登録・一致を確認 |
+| `npm run samples:generate` | 確認用の`.triadic`ファイルを生成・更新。buildでも実行 |
+| `npm run samples:check` | 保存済みの確認用ファイルと現在の生成元が一致するか確認。testでも実行 |
 
 新しくcloneした環境では`npm run setup:hooks`を実行します。`pre-commit`はstage済み差分の空白エラーとversionを、`pre-push`は`npm run verify`でbuild・通常テスト・versionなどを確認します。画面自動テストはpush時に起動しません。通常の検証もフック未設定なら停止します。設定時に既存の別フックが検出された場合は、その設定内容を確認してください。
+
+## 確認用の.triadicファイル
+
+[全機能確認用.triadic](samples/全機能確認用.triadic)をアプリの「ファイルを開く」から選ぶと、登録済みのテストデータを操作できます。内容は下記の画面確認用データと共通で、生成元は[tests/ui/sample-plan.ts](tests/ui/sample-plan.ts)です。
+
+`npm run samples:generate`でファイルだけを更新できます。`npm run build`と`npm run verify`でも再生成し、`npm test`で生成元との一致を確認します。年度は生成時の当年度と前後1年度です。同じ年度・同じ内容ならファイルは書き換えません。再生成はこの確認用ファイルを置き換えるため、編集した内容を残す場合は先に別の場所へコピーして使ってください。配布用拡張機能には含めません。機能追加時の更新ルールは[AGENTS.md](AGENTS.md#検証と完了条件)に従います。
 
 ## ブラウザでの画面確認・自動テスト
 

@@ -43,6 +43,7 @@ export async function verifySamplePlan(api) {
   assert.equal((await readPlanContents(await changeAggregationMaster(bytes, { type: "delete", id: disposable.id }))).aggregations.length, 10);
   const database = await openTriadicDatabase(bytes);
   try {
+    assert.deepEqual(database.exec("SELECT created_at, updated_at FROM budgets")[0].values, [["2026-04-01T00:00:00.000Z", "2026-04-01T00:00:00.000Z"]], "確認用の作成・更新日時を再生成のたびに変更しない");
     assert.equal(database.exec("SELECT count(*) FROM details WHERE actual_amount != 0 OR actual_sales_amount != 0 OR actual_profit_amount != 0")[0].values[0][0], 0);
     assert.deepEqual(database.exec("SELECT DISTINCT p.year, p.month FROM details d JOIN periods p ON d.period_id = p.id WHERE initiative_id = ? AND p.month IN (4, 3) ORDER BY p.year", [product.id])[0].values, [[2026, 4], [2027, 3]]);
   } finally { database.close(); }
