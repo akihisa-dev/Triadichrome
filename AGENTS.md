@@ -7,8 +7,9 @@
 - 作業開始時に`git status --short`、HEAD、通常差分、cached差分、対象ファイルを確認し、他者の変更を保護します。
 - 現行仕様の根拠は、現在の実装、`package.json`、`Triadichrome-extension/manifest.template.json`、`vite.config.ts`、`tsconfig.json`、READMEと検証結果です。過去の計画やコミットだけから現在の仕様を推測しません。
 - 質問、調査、説明、レビュー、診断だけの依頼では編集・stage・commit・外部変更を行いません。変更が明示された場合は、指定範囲のローカル編集、正本文書の更新、非破壊的な検証、通常のcommitまで進めます。
-- 無関係な差分を編集、削除、stage、commit、巻き戻ししません。Git履歴の書き換え、push、公開、PR・tag・releaseなどの外部状態変更は、明示された場合だけ行います。Issue対応の依頼には対象Issueへの対応コメントとクローズを含みます。Issueの新規作成・再開・ラベル・担当者の変更は、別途明示依頼がある場合だけ行います。利用者が「commitしない」「調査だけ」「コメントしない」「クローズしない」などと限定した場合は、その限定を優先します。
-- 共通のcommit・version・Issue運用はHarvestを参照します。npm、生成物の配置、製品固有の検証内容はTriadichromeの構成を維持します。
+- 製品機能、画面、対象サイト、保存情報、外部送信、権限、公開先、配布方法は、明示された依頼の範囲で扱い、推測で追加しません。
+- 無関係な差分を編集、削除、stage、commit、巻き戻ししません。Git履歴の書き換え、remote設定、push、公開、PR・tag・release、リポジトリ作成・ブランチ保護などのGitHub設定変更は、明示された場合だけ行います。Issue対応の依頼には対象Issueへの対応コメントとクローズを含みます。Issueの新規作成・再開・ラベル・担当者の変更は、別途明示依頼がある場合だけ行います。利用者が「commitしない」「調査だけ」「コメントしない」「クローズしない」などと限定した場合は、その限定を優先します。
+- 共通の開発・commit・version・Issue運用は[Harvest](https://github.com/akihisa-dev/Harvest/blob/main/AGENTS.md)を参照し、この文書でTriadichromeへの適用内容を定めます。npm、生成物の配置、製品固有の検証内容はTriadichromeの構成を維持し、参照元の機能・製品仕様・画像・コード・履歴を複製しません。
 - 作業はmainで行い、新しいブランチを作成しません。別作業との重複回避を理由にブランチへ分離することも禁止します。
 
 ### 作業を止めて確認する条件
@@ -24,13 +25,23 @@
 ## 構成と境界
 
 - パッケージ管理と実行手順は`npm`を使用します。`pnpm`や`yarn`へ置き換えません。
-- `Triadichrome-extension/src/`は編集用のTypeScript/React正本です。将来、Chrome APIに依存しない純粋な処理を分離する場合は`Triadichrome-extension/src/core/`へ置き、`chrome.*`や直接の拡張環境依存処理は`Triadichrome-extension/src/extension/`へ置きます。
-- `Triadichrome-extension/src/extension/`はManifest V3のservice worker、独立拡張ページ、Chrome adapterなどの環境依存入口を所有します。Dexie、PapaParse、File System Access APIは責務とI/O境界を明示して配置します。
-- `Triadichrome-extension/manifest.template.json`は編集するManifestの正本、`Triadichrome-extension/`直下の`manifest.json`・独立ページ・assetsはbuild補助が同期するChrome読み込み・配布物です。生成物はTypeScript正本と区別し、`dist/`はbuild時だけ使う一時領域としてcommitしません。
+- `Triadichrome-extension/src/`は編集用のTypeScript/React正本です。Chrome APIに依存しないデータ処理は`Triadichrome-extension/src/core/`へ置き、`chrome.*`や直接の拡張環境依存処理は`Triadichrome-extension/src/extension/`へ置きます。
+- Manifest V3を使います。`Triadichrome-extension/src/extension/`はservice worker、独立拡張ページ、Chrome adapterなどの環境依存入口を所有します。保存形式の処理と、File System Access APIによる実ファイルの読み書きを分離します。
+- `Triadichrome-extension/manifest.template.json`は編集するManifestの正本、`Triadichrome-extension/`直下の`manifest.json`・独立ページ・assetsはbuild補助が同期するChrome読み込み・配布物です。生成物を直接編集せず、TypeScript正本と区別します。`dist/`はbuild時だけ使う一時領域としてcommitしません。
 - 依頼が画面不要と指定している間は、Reactの起動確認用入口を除き、UI、デザイン、業務機能、サンプルデータを追加しません。
 - 既存のAGPLv3 LICENSEを変更せず、他プロジェクトのライセンス、著作権表示、公開先、秘密情報、権限、host permissionをコピーしません。
 
-## Skills
+## 安全性・依存関係・利用者データ
+
+- 必要な機能と対象が決まるまで`permissions`、`optional_permissions`、`host_permissions`を追加しません。追加時は対象、取得・変更する情報、利用者への影響を説明し、既存の依頼で承認されていない範囲を確認します。
+- 理由のない通信、解析、広告、リモートコード、依存パッケージ、保存情報を追加しません。文字列をHTMLとして実行せず、Reactの通常の文字列表示や安全なDOM APIを使います。拡張機能ページに外部スクリプトを読み込みません。
+- 依存パッケージの追加・更新では必要性、導入理由、ライセンスを確認し、`package.json`に範囲指定ではなく完全な版を指定して`package-lock.json`と揃えます。依存の更新を意図しない環境再現には`npm ci`を使います。
+- 利用者データを扱う変更では、保存場所、保持期間、削除、移行、外部送信、失敗時の挙動を明確にします。既存データを利用者に知らせず削除・上書きせず、キャンセルや処理失敗でデータを失わないことを確認します。
+- セキュリティ、権限、データ処理、ビルド、GitHub運用を変える場合は、関連する正本文書も更新します。保存・移行・権限などの利用者への影響と、確認できた範囲を記載します。
+
+## 文書とSkills
+
+共通の判断基準はこの`AGENTS.md`、開発者向けのコマンドと環境準備は[README](README.md)、個別作業の手順はSkillに置きます。同じ規則を各文書へ複製せず、正本へのリンクを使います。
 
 プロジェクトSkillは`.agents/skills/*/SKILL.md`に置き、依頼に実際に該当する場合だけ全文を読みます。参照文書はSkillからリンクされた必要なものだけを読み、無関係なSkillや参照元固有の設計を持ち込みません。
 
@@ -41,8 +52,8 @@
 ## 検証と完了条件
 
 - 振る舞いを変える場合は仕様を確認できる自動テストを追加し、影響に応じた検証を行います。commit前は`npm run verify:full`を基本とし、画面に影響しない変更では`npm run verify`を選べます。どちらか一つを実行し、同じHEAD・同じ条件で成功した検証は、関連変更・失敗修正・Node/npm・依存・OSなどの環境変化がない限り再利用します。
-- `npm run verify`はGitフック設定、型検査を含むbuild、通常テスト、version一致を確認します。buildはManifest、service worker、独立ページ、生成された参照先を検査します。`npm run verify:full`は既存の画面自動テストも実行し、ブラウザを起動できない場合は検証失敗とします。実サイト操作、実ファイルへの保存、ストア用スクリーンショット、性能確認は明示依頼がある場合だけ行います。
-- push前には`npm run verify:full`を通します。Gitフックは`npm run setup:hooks`で有効にし、`pre-commit`でstage済み差分と3つのversionの同時登録・一致を確認し、`pre-push`で`npm run verify:full`を実行します。通常の検証もフック未設定なら停止して設定方法を案内します。GitHub Actionsでpush後に同じ検証を重複実行する運用は採用しません。
+- 検証内容とGitフックの設定手順は[README](README.md#検証とgitフック)を参照します。build後はManifest、service worker、独立ページ、生成された参照先を確認します。画面検証でブラウザを起動できない場合は検証失敗とし、省略して成功扱いにしません。実サイト操作、実ファイルへの保存、ストア用スクリーンショット、性能確認は明示依頼がある場合だけ行います。
+- push前には`npm run verify:full`を通します。Gitフックによるcommit・push前の確認を有効にし、既存の別フック設定を黙って上書きしません。GitHub Actionsでpush後に同じ検証を重複実行する運用は採用しません。
 - `git diff --check`、生成物、Git状態を確認し、検証失敗時はcommitしません。ツールの成功表示だけで完了とせず、失敗経路と未確認範囲を報告します。
 
 ## version、commit、release
@@ -54,7 +65,6 @@
   - MINOR: 後方互換性を保った機能追加、または廃止予定の告知
   - PATCH: 後方互換性を保った不具合修正、公開機能を変えない文書・test・build・保守変更
 - 独立した目的はcommitを分け、commitごとにversionを順次更新します。versionだけのcommitは作りません。commit typeとSemVer区分は独立して選びます。
-- `npm run version:next -- patch`などで次のversion候補を表示できます。ファイルは自動変更しません。
 - commit件名は`<type>[!]: <version> <日本語の説明>`とします。typeは`feat`、`fix`、`docs`、`style`、`refactor`、`perf`、`test`、`build`、`ci`、`chore`、`revert`から選びます。件名・本文は日本語とし、複数ファイル、version更新、運用変更を含む本文には`scope:`、`目的:`、`内容:`、`確認:`、`影響:`を記載します。`scope:`の対象は英語小文字の名詞で書きます。
 - commit前に`git status`、通常・cached diff、`git diff --cached --check`、version一致、変更に応じた検証を確認します。stageは対象pathを明示し、`git add .`と`git add -A`を使いません。commit後はcommit IDと残存差分を確認します。
 - 通常のcommitではGit tagを作りません。tagまたはreleaseは利用者が明示した場合だけ行い、`npm run verify:release`を通します。対象worktreeがclean、packageとManifestのversionが一致、必要な検証が成功、versionと一致する未使用の`vX.Y.Z`であることを確認します。tagは注釈付きで作成し、作成後に参照先とGit状態を確認します。既存tagを移動、上書き、削除しません。

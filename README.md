@@ -14,7 +14,7 @@
 Node.js 20.19以上とnpmを使用します。
 
 ```sh
-npm install
+npm ci
 npm run setup:hooks
 npm run dev
 npm run typecheck
@@ -24,19 +24,20 @@ npm run build
 TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
 `npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。
 
-## コミット・バージョン・Issue対応
+## 検証とGitフック
 
-作業はmainで行います。変更依頼は必要な文書と検証を揃え、独立した目的ごとにローカルコミットまで完了します。コミットごとにversionを更新し、互換性を壊す変更はMAJOR、互換性を保った機能追加はMINOR、修正・文書・test・build・保守変更はPATCHとします。コミットの種類とversion区分は独立して決め、versionだけのコミットは作りません。
+作業範囲、安全性、依存管理、コミット・バージョン・Issue対応の判断基準は[AGENTS.md](AGENTS.md)にまとめています。以下のコマンドから、同文書の検証基準に合うものを選びます。ブラウザの準備は次節を参照してください。
 
-`npm run version:next -- patch`で次の候補を表示できます。`package.json`、`Triadichrome-extension/manifest.template.json`、buildで生成する`Triadichrome-extension/manifest.json`を同じversionに揃え、同じコミットに含めます。`package-lock.json`も更新します。ソース変更で配布物が変わる場合は生成物も含めます。件名は`<type>[!]: <version> <日本語の説明>`とし、複数ファイル・version更新・運用変更を含む本文には`scope:`、`目的:`、`内容:`、`確認:`、`影響:`を記載します。
+| コマンド | 処理内容 |
+|---|---|
+| `npm run setup:hooks` | このリポジトリのGitフックを有効化 |
+| `npm run verify` | フック設定、型検査を含むbuild、通常テスト、version一致を確認 |
+| `npm run verify:full` | `verify`に画面テストを追加 |
+| `npm run verify:release` | `verify:full`に未コミット変更と同名のローカルtagの確認を追加 |
+| `npm run version:next -- patch` | 次のversion候補を表示。`minor`・`major`も指定可能。ファイルは変更しない |
+| `npm run version:check-staged` | stage済みの3つのversionファイルの同時登録・一致を確認 |
 
-コミット前は`npm run verify:full`を基本とし、画面に影響しない変更では`npm run verify`を選べます。前者はGitフック設定・型検査・build・通常テスト・version一致・画面テスト、後者は画面テスト以外を確認します。両方を続けて実行せず、同じ対象・条件で成功した結果を再利用します。ブラウザの準備は次節を参照してください。
-
-新しくcloneした環境では`npm run setup:hooks`を実行します。Gitフックはコミット直前にstage済み差分と3つのversionの同時登録・一致を確認し、push前に`npm run verify:full`を実行します。通常の検証もフック未設定なら停止します。既存の別フック設定は自動で上書きしません。検証失敗はpush前に解消する方針とし、GitHub Actionsによるpush後の同一検証は採用しません。
-
-Issue対応の依頼は、妥当性の判断、必要な修正・検証、日本語の対応コメント、クローズと状態確認までを含みます。Issue指定がなければ原則すべての未対応Issueを扱い、変更する場合はIssueごとにコミットを分けます。対応不要の場合も具体的な根拠をコメントします。調査だけ等の限定は優先し、情報待ちや検証失敗があれば未完了として報告します。
-
-push・PR・tag・releaseはそれぞれ明示依頼がある場合だけ行います。通常のコミットではtagを作りません。tag・release前は`npm run verify:release`で画面を含む検証、作業ツリーに未コミット変更がないこと、同名のローカルtagがないことを確認し、対象版と一致する未使用の`vX.Y.Z`を注釈付きで作成します。
+新しくcloneした環境では`npm run setup:hooks`を実行します。`pre-commit`はstage済み差分の空白エラーとversionを、`pre-push`は`npm run verify:full`で画面まで確認します。通常の検証もフック未設定なら停止します。設定時に既存の別フックが検出された場合は、その設定内容を確認してください。
 
 ## ブラウザでの画面確認・自動テスト
 
