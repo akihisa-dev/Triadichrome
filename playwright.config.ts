@@ -13,7 +13,7 @@ export default defineConfig({
     browserName: "chromium",
     ...(process.env.TRIADICHROME_TEST_BROWSER === "chrome" ? { channel: "chrome" } : {}),
     locale: "ja-JP",
-    reducedMotion: "reduce",
+    reducedMotion: "no-preference",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

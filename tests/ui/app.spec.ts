@@ -1,29 +1,7 @@
-import { test as base, expect, type FrameLocator, type TestInfo } from "@playwright/test";
+import { test, expect, attachImage, settleMotion } from "./fixtures";
 import { installMemoryFiles } from "./memory-files";
 import { PNG } from "pngjs";
 import pixelmatch from "pixelmatch";
-
-const test = base.extend<{ app: FrameLocator }>({
-  app: async ({ page }, use) => {
-    const errors: string[] = [];
-    page.on("pageerror", error => errors.push(error.message));
-    page.on("console", message => {
-      if (["error", "warning"].includes(message.type())) errors.push(message.text());
-    });
-    await page.goto("/tests/ui/preview.html");
-    await expect(page).toHaveTitle("Triadichrome 画面テスト");
-    await expect(page.getByRole("status")).toHaveText("操作できます");
-    const app = page.frameLocator("#app-preview");
-    await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
-    await use(app);
-    await expect(app.locator("vite-error-overlay")).toHaveCount(0);
-    expect(errors, "画面の実行時エラー・警告").toEqual([]);
-  },
-});
-
-async function attachImage(testInfo: TestInfo, name: string, image: Buffer) {
-  await testInfo.attach(name, { body: image, contentType: "image/png" });
-}
 
 test("ファイルを開き、サイドバーを操作して入口へ戻る", async ({ page, app }, testInfo) => {
   const preview = page.locator("#app-preview");
@@ -34,6 +12,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   const main = app.getByRole("main", { name: "ホーム", exact: true });
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(app.locator(".home-file-name")).toHaveText("画面テスト.triadic");
+  await settleMotion(app.locator("body"));
   const fullMain = (await main.boundingBox())!;
   await attachImage(testInfo, "ホーム", await preview.screenshot());
 
@@ -43,6 +22,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await expect(trigger).toHaveAccessibleName("サイドバーを閉じる");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
+  await settleMotion(app.locator("body"));
   const sidebarBox = (await sidebar.boundingBox())!;
   const mainBox = (await main.boundingBox())!;
   expect(mainBox.x).toBeCloseTo(sidebarBox.x + sidebarBox.width);
@@ -60,6 +40,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await expect(trigger).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(trigger).toHaveAccessibleName("サイドバーを開く");
+  await settleMotion(app.locator("body"));
   expect(await main.boundingBox()).toEqual(fullMain);
   await expect(app.getByRole("navigation")).toHaveCount(0);
 
@@ -76,6 +57,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await trigger.click();
   await trigger.click();
   await expect(sidebar).not.toBeVisible();
+  await settleMotion(app.locator("body"));
   expect(await main.boundingBox()).toEqual(fullMain);
 
   await trigger.click();
@@ -149,6 +131,8 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
   for (const width of [320, 600, 1280]) {
     await page.setViewportSize({ width, height: 800 });
     await expect(sidebar).toBeVisible();
+    await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
+    await settleMotion(app.locator("body"));
     const frame = (await page.locator("#app-preview").boundingBox())!;
     const sidebarBox = (await sidebar.boundingBox())!;
     const mainBox = (await app.getByRole("main", { name: "施策入力", exact: true }).boundingBox())!;
@@ -163,6 +147,7 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
 
   await trigger.click();
   await expect(sidebar).not.toBeVisible();
+  await settleMotion(app.locator("body"));
   const mainBox = (await app.getByRole("main", { name: "施策入力", exact: true }).boundingBox())!;
   const frame = (await page.locator("#app-preview").boundingBox())!;
   expect(mainBox.x).toBe(frame.x);
@@ -195,6 +180,7 @@ test("壊れたファイルを拒否し、正常なファイルで再開でき�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.getByRole("alert")).toHaveText("Triadicファイルを読み込めませんでした。");
   await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
+  await settleMotion(app.locator("body"));
   await attachImage(testInfo, "不正ファイル", await page.locator("#app-preview").screenshot());
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("normal");
   await expect(page.getByRole("status")).toHaveText("操作できます");
@@ -236,12 +222,14 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
         await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
         await expect(production.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
       }
+      await settleMotion(app.locator("body"));
+      await settleMotion(production.locator("body"));
       await expect(app.locator("img")).toHaveCount(1);
       await expect.poll(() => app.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
       await expect.poll(() => production.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
       expect(await app.locator("body").ariaSnapshot()).toBe(await production.locator("body").ariaSnapshot());
-      const previewImage = await page.locator("#app-preview").screenshot({ animations: "disabled" });
-      const productionImage = await production.screenshot({ animations: "disabled" });
+      const previewImage = await page.locator("#app-preview").screenshot();
+      const productionImage = await production.screenshot();
       await attachImage(testInfo, `${state}・確認用`, previewImage);
       await attachImage(testInfo, `${state}・配布用`, productionImage);
       const reference = PNG.sync.read(previewImage);

@@ -9,6 +9,12 @@
   --muted: #626262;
   --focus: #202020;
   --inverse-muted: #e0e0e0;
+  --motion-layout: 320ms;
+  --motion-fade: 160ms;
+  --motion-feedback: 160ms;
+  --motion-distance: 4px;
+  --motion-press: 1px;
+  --motion-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
   color: var(--ink);
   background: var(--canvas);
   font-family:
@@ -37,6 +43,59 @@ body {
 
 button {
   font: inherit;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition:
+    background-color var(--motion-feedback) var(--motion-ease),
+    border-color var(--motion-feedback) var(--motion-ease),
+    color var(--motion-feedback) var(--motion-ease),
+    outline-color var(--motion-feedback) var(--motion-ease),
+    opacity var(--motion-feedback) var(--motion-ease),
+    transform var(--motion-feedback) var(--motion-ease);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(var(--motion-press));
+}
+
+button:focus-visible {
+  outline-color: var(--focus);
+}
+
+.app-shell {
+  animation: app-appear var(--motion-layout) var(--motion-ease);
+}
+
+@keyframes app-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-swap {
+  display: flow-root;
+  min-width: 0;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--motion-fade) var(--motion-ease),
+    transform var(--motion-fade) var(--motion-ease);
+}
+
+.fade-swap.is-leaving {
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--motion-distance)));
+  pointer-events: none;
+}
+
+.motion-text {
+  --motion-distance: 0px;
+}
+
+.animated-height {
+  width: 100%;
+  flex-shrink: 0;
+  overflow: clip;
+  transition: height var(--motion-layout) var(--motion-ease);
 }
 
 .entry-page {
@@ -45,7 +104,9 @@ button {
   place-items: center;
   padding: clamp(1.5rem, 6vw, 4rem);
   background: var(--canvas);
-  transition: background-color 120ms ease;
+  transition:
+    background-color var(--motion-feedback) var(--motion-ease),
+    padding var(--motion-layout) var(--motion-ease);
 }
 
 .entry-page.is-drag-active {
@@ -93,9 +154,10 @@ button {
   background: var(--surface);
   text-align: center;
   transition:
-    border-color 120ms ease,
-    background-color 120ms ease,
-    box-shadow 120ms ease;
+    border-color var(--motion-feedback) var(--motion-ease),
+    background-color var(--motion-feedback) var(--motion-ease),
+    box-shadow var(--motion-feedback) var(--motion-ease),
+    padding var(--motion-layout) var(--motion-ease);
 }
 
 .is-drag-active .entry-drop-zone {
@@ -108,6 +170,7 @@ button {
   display: block;
   margin: 0 auto 0.875rem;
   color: var(--muted);
+  transition: color var(--motion-feedback) var(--motion-ease);
 }
 
 .is-drag-active .entry-drop-icon {
@@ -148,23 +211,11 @@ button {
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.25;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
 }
 
 .entry-open-button:hover:not(:disabled) {
   border-color: var(--muted);
   background: var(--muted);
-}
-
-.entry-open-button:active {
-  transform: translateY(1px);
-}
-
-.entry-open-button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
 }
 
 .entry-new-button {
@@ -178,23 +229,11 @@ button {
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.25;
-  transition:
-    background-color 120ms ease,
-    border-color 120ms ease;
 }
 
 .entry-new-button:hover {
   border-color: var(--muted);
   background: var(--soft);
-}
-
-.entry-new-button:active {
-  transform: translateY(1px);
-}
-
-.entry-new-button:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
 }
 
 button:disabled {
@@ -254,11 +293,12 @@ button:disabled {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .entry-page,
-  .entry-drop-zone,
-  .entry-open-button,
-  .entry-new-button {
-    transition: none;
+  :root {
+    --motion-layout: 140ms;
+    --motion-fade: 100ms;
+    --motion-feedback: 100ms;
+    --motion-distance: 0px;
+    --motion-press: 0px;
   }
 }
 
@@ -269,6 +309,7 @@ button:disabled {
 }
 
 .home-layout {
+  --sidebar-size: min(280px, 50vw);
   display: flex;
   min-height: 0;
   flex: 1;
@@ -278,6 +319,11 @@ button:disabled {
   min-width: 0;
   flex: 1;
   overflow: auto;
+}
+
+.page-switch {
+  display: grid;
+  min-height: 100%;
 }
 
 .home-view,
@@ -305,6 +351,9 @@ button:disabled {
   padding: 8px 16px;
   border-bottom: 1px solid var(--line);
   font-size: 13px;
+  transition:
+    padding var(--motion-layout) var(--motion-ease),
+    gap var(--motion-layout) var(--motion-ease);
 }
 
 .home-brand {
@@ -344,24 +393,38 @@ button:disabled {
   background: var(--soft);
 }
 
-.home-icon-button:focus-visible,
-.sidebar-item:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: 2px;
+.sidebar-panel {
+  width: 0;
+  flex-shrink: 0;
+  overflow: clip;
+  visibility: hidden;
+  transition:
+    width var(--motion-layout) var(--motion-ease),
+    visibility 0s var(--motion-layout);
 }
 
-.sidebar-panel {
+.sidebar-panel.is-open {
+  width: var(--sidebar-size);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.sidebar-inner {
   display: flex;
-  width: min(280px, 50vw);
-  flex-shrink: 0;
+  width: var(--sidebar-size);
+  height: 100%;
   flex-direction: column;
   overflow-y: auto;
   border-right: 1px solid var(--line);
   background: var(--surface);
+  transform: translateX(-100%);
+  transition:
+    width var(--motion-layout) var(--motion-ease),
+    transform var(--motion-layout) var(--motion-ease);
 }
 
-.sidebar-panel[hidden] {
-  display: none;
+.sidebar-panel.is-open .sidebar-inner {
+  transform: translateX(0);
 }
 
 .sidebar-header {
@@ -420,7 +483,6 @@ button:disabled {
 
 .sidebar-item[aria-current="page"] {
   background: var(--soft);
-  font-weight: 600;
 }
 
 .sidebar-footer {

@@ -7,6 +7,14 @@
 
 ホームの本文領域は空白で、施策入力画面は見出しのみです。入力項目・計画編集機能と明細・総原価表・展開表の画面はまだありません。
 
+## 画面の動き
+
+アプリの状態変更は連続的なアニメーションでつなぎます。サイドバーと本文の幅は320msで変化し、画面・ドロップ案内・エラーメッセージは160msで消えてから次の内容を160msで表示します。エラー領域の高さも滑らかに変えます。ボタンのホバー・押下・フォーカス・無効状態と、ナビゲーションの選択色にも共通の速度と減速の仕方を使います。
+
+連続して操作した場合は、その時点の幅や透明度から最新の状態へ向かいます。消える内容は見えなくなるまで保持し、操作対象からはすぐに外します。OSの「動きを減らす」設定では移動・押下の変位を抑え、幅の変化を140ms、フェードとボタンの反応を100msに短縮します。瞬間的な切り替えにはしません。ファイル選択などOSが表示する画面は、このアニメーション制御の対象外です。
+
+新しい画面や状態を追加する際も、`ExtensionPage.css`の共通変数と`FadeSwap`・`AnimatedHeight`を使い、表示中の内容を直接差し替えない方針です。
+
 ## 保存形式の方針
 
 計画は専用の `.triadic` ファイルで管理します。新規作成時の初期ファイル名は `Untitled.triadic` です。一つのファイルで一つの計画を扱い、中身は標準的なSQLiteデータベースとします。JSON・CSV・Excelを保存形式には使用しません。
@@ -66,6 +74,8 @@ npm run test:ui:report
 
 `playwright-report/`には結果と画像、`test-results/ui/`には失敗時の画像と操作記録を出力し、Gitには含めません。自動テストはポート4174の専用サーバーを起動・終了するため、ポート4173の手動確認画面と併用できます。Chrome拡張のアイコン起動・権限・service worker・実ファイルへの保存は、この画面テストの対象外です。起動管理には[Playwrightの開発サーバー設定](https://playwright.dev/docs/test-webserver)を使用しています。
 
+通常の画面テストはアニメーションを有効にし、実際の完了を待って寸法と画像を比較します。`tests/ui/motion.spec.ts`では通常設定と「動きを減らす」設定の両方で描画中の幅・透明度・高さを測定し、中間状態、途中反転で位置が飛ばないこと、本文の追従、画面切り替えを連打した場合の到達先を検証します。
+
 ## Chromeで読み込む
 
 1. `npm run build`を実行します。
@@ -86,6 +96,8 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 - `Triadichrome-extension/src/extension/ExtensionPage.tsx`：ファイル操作と入口画面
 - `Triadichrome-extension/src/extension/HomePage.tsx`：共通ヘッダー・開閉式サイドバーと画面切り替え
 - `Triadichrome-extension/src/extension/InitiativeEntryPage.tsx`：施策入力画面
+- `Triadichrome-extension/src/extension/FadeSwap.tsx`：画面・文言のフェード切り替え
+- `Triadichrome-extension/src/extension/AnimatedHeight.tsx`：内容量に応じた高さのアニメーション
 - `Triadichrome-extension/src/extension/ExtensionPage.css`：入口とホーム画面のスタイル
 - `Triadichrome-extension/src/extension/main.tsx`：Reactの起動
 - `Triadichrome-extension/src/extension/background.ts`：拡張機能アイコンから入口を開く処理

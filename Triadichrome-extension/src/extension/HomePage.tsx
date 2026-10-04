@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
+import { FadeSwap } from "./FadeSwap";
 import appIcon from "../../../branding/logo.svg?no-inline";
 
 type Page = "home" | "initiative-entry";
@@ -54,7 +55,8 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
       </header>
       <div className="home-layout">
-        <aside id="home-sidebar" className="sidebar-panel" aria-labelledby="sidebar-title" hidden={!isSidebarOpen}>
+        <aside id="home-sidebar" className={`sidebar-panel${isSidebarOpen ? " is-open" : ""}`} aria-labelledby="sidebar-title" aria-hidden={!isSidebarOpen} inert={!isSidebarOpen}>
+          <div className="sidebar-inner">
           <header className="sidebar-header">
             <h2 id="sidebar-title">メニュー</h2>
             <button className="home-icon-button" type="button" aria-label="サイドバーを閉じる" onClick={closeSidebar}>
@@ -81,11 +83,14 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             </button>
           </nav>
           <footer className="sidebar-footer">
-            <button className="sidebar-item" type="button" onClick={() => { closeSidebar(); onCloseFile(); }}>ファイルを閉じる</button>
+            <button className="sidebar-item" type="button" onClick={onCloseFile}>ファイルを閉じる</button>
           </footer>
+          </div>
         </aside>
         <div className="home-content">
-          {page === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
+          <FadeSwap value={page} className="page-switch">
+            {displayed => displayed === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
+          </FadeSwap>
         </div>
       </div>
     </div>

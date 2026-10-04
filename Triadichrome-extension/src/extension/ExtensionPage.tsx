@@ -2,6 +2,8 @@ import { useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, validateTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { writeTriadicFile } from "./triadicFile";
 import { HomePage } from "./HomePage";
+import { FadeSwap } from "./FadeSwap";
+import { AnimatedHeight } from "./AnimatedHeight";
 import appIcon from "../../../branding/logo.svg?no-inline";
 import "./ExtensionPage.css";
 
@@ -59,8 +61,9 @@ export function ExtensionPage() {
     event.dataTransfer.dropEffect = busy.current ? "none" : "copy";
     if (!busy.current) setDragging(true);
   };
-  if (fileName) return <HomePage fileName={fileName} onCloseFile={() => { setFileName(null); setError(""); }} />;
-  return <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
+  return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
+    ? <HomePage fileName={displayedFile} onCloseFile={() => { setFileName(null); setError(""); setDragging(false); }} />
+    : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
     onDrop={(event) => {
       event.preventDefault(); setDragging(false);
@@ -76,7 +79,7 @@ export function ExtensionPage() {
         <svg className="entry-drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
         </svg>
-        <p className="entry-drop-title" aria-live="polite">{dragging ? "ここで離して開く" : "ここにファイルをドロップ"}</p>
+        <div className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "ここで離して開く" : "ここにファイルをドロップ"}</FadeSwap></div>
         <p className="entry-drop-description">.triadicファイルに対応</p>
         <div className="entry-actions">
           <button className="entry-open-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
@@ -85,7 +88,11 @@ export function ExtensionPage() {
       </section>
       <input ref={input} className="entry-file-input" type="file" accept={TRIADIC_FILE_EXTENSION} tabIndex={-1} aria-hidden="true"
         onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void run(() => open(file)); }} />
-      {error ? <p className="entry-status" role="alert">{error}</p> : null}
+      <AnimatedHeight>
+        <FadeSwap value={error} className="motion-text">
+          {message => message ? <p className="entry-status" role="alert">{message}</p> : null}
+        </FadeSwap>
+      </AnimatedHeight>
     </div>
-  </main>;
+  </main>}</FadeSwap></div>;
 }
