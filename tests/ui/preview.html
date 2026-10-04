@@ -10,6 +10,12 @@
   <body>
     <header class="test-toolbar">
       <div><strong>画面テスト</strong><span>ファイル操作はメモリ内で再現します。</span></div>
+      <div class="scenario-control"><label for="dataset">テストデータ</label>
+        <select id="dataset">
+          <option value="full">全機能確認用</option>
+          <option value="empty">空の計画</option>
+        </select>
+      </div>
       <div class="scenario-control"><label for="scenario">ファイル操作</label>
         <select id="scenario">
           <option value="normal">正常</option>

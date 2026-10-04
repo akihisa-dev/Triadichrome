@@ -1,5 +1,6 @@
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
 import { verifyAggregationData } from "../tests/aggregation-data.mjs";
+import { verifySamplePlan } from "../tests/sample-plan.mjs";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -22,6 +23,7 @@ try {
       'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/accountMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
+      'export * from "./tests/ui/sample-plan.ts";',
     ].join("\n"), resolveDir: root },
     outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
     plugins: [{ name: "local-wasm", setup(api) {
@@ -137,6 +139,7 @@ try {
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
   await verifyInitiativeData(await import(pathToFileURL(bundle)), root);
   await verifyAggregationData(await import(pathToFileURL(bundle)));
+  await verifySamplePlan(await import(pathToFileURL(bundle)));
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

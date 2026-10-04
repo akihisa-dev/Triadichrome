@@ -22,7 +22,7 @@ export const test = base.extend<{ app: FrameLocator }>({
     page.on("console", message => {
       if (["error", "warning"].includes(message.type())) errors.push(message.text());
     });
-    await page.goto("/tests/ui/preview.html");
+    await page.goto("/tests/ui/preview.html?data=empty");
     await expect(page).toHaveTitle("Triadichrome 画面テスト");
     await expect(page.getByRole("status")).toHaveText("操作できます");
     const app = page.frameLocator("#app-preview");

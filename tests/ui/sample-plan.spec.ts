@@ -1,0 +1,58 @@
+import { test, expect } from "./fixtures";
+
+test("全機能確認用データを標準で開き、年度・集計・マスタを試せる", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await expect(page.getByRole("combobox", { name: "テストデータ" })).toHaveValue("full");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("button", { name: "施策一覧", exact: true }).click();
+  await expect(app.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
+  await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(9);
+  const year = app.getByRole("combobox", { name: "年度", exact: true });
+  const selectedYear = Number(await year.inputValue());
+  await year.selectOption(String(selectedYear - 1));
+  await expect(app.getByRole("button", { name: "前年度の販売施策", exact: true })).toBeVisible();
+  await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(2);
+  await year.selectOption(String(selectedYear + 1));
+  await expect(app.getByRole("button", { name: "次年度の販売施策", exact: true })).toBeVisible();
+  await year.selectOption(String(selectedYear));
+  await app.getByRole("button", { name: "総原価表", exact: true }).click();
+  await expect(app.getByRole("row", { name: /^経常利益/ })).toContainText("67,876.25");
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^集計マスタ/ }).click();
+  await expect(app.getByRole("button", { name: "商品売上小計を編集", exact: true })).toBeVisible();
+  await expect(app.getByRole("button", { name: "営業外収益を編集", exact: true })).toBeAttached();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+  await expect(app.getByRole("button", { name: "商品売上を削除", exact: true })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "未所属費用を削除", exact: true })).toBeDisabled();
+  await app.getByRole("button", { name: "削除確認用科目を削除", exact: true }).click();
+  await app.getByRole("alertdialog").getByRole("button", { name: "削除する", exact: true }).click();
+  await expect(app.getByRole("button", { name: "削除確認用科目を編集", exact: true })).toHaveCount(0);
+  await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+  await expect(app.getByRole("button", { name: "削除確認用科目を編集", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "入口に戻す", exact: true }).click();
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+  await expect(app.getByRole("button", { name: "削除確認用科目を編集", exact: true })).toBeVisible();
+});
+
+test("空の計画へ切り替えでき、全機能確認用を選んでも新規作成は空から始まる", async ({ page, app }) => {
+  await page.getByRole("combobox", { name: "テストデータ" }).selectOption("full");
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("button", { name: "施策一覧", exact: true }).click();
+  await expect(app.getByText("この年度の施策はまだ登録されていません。", { exact: true })).toBeVisible();
+  await page.getByRole("combobox", { name: "テストデータ" }).selectOption("empty");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("button", { name: "施策一覧", exact: true }).click();
+  await expect(app.getByText("この年度の施策はまだ登録されていません。", { exact: true })).toBeVisible();
+});
