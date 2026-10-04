@@ -55,6 +55,7 @@
 - [extension-release](.agents/skills/extension-release/SKILL.md): commit、SemVer、tag、releaseの判断と検証
 - [modernize-chrome-extension](.agents/skills/modernize-chrome-extension/SKILL.md): 複数境界にまたがる大規模な拡張機能の現代化
 - [extension-issue-workflow](.agents/skills/extension-issue-workflow/SKILL.md): GitHub Issueの妥当性判断、修正・検証、対応コメント・クローズ
+- [generate-triadic-sample](.agents/skills/generate-triadic-sample/SKILL.md): 作成時点の全機能を試せる.triadicサンプルの設計、生成、網羅性の検証
 
 ## 検証と完了条件
 
