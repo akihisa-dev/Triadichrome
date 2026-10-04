@@ -121,11 +121,14 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   await expect(sidebar).not.toBeVisible();
 });
 
-test("施策名を入力・編集し、画面を往復しても入力を保持する", async ({ page, app }, testInfo) => {
+test("施策名・備考・月別金額を入力し、画面を往復しても保持する", async ({ page, app }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const trigger = app.locator(".home-header").getByRole("button");
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   const name = app.getByRole("textbox", { name: "施策名", exact: true });
+  const note = app.getByRole("textbox", { name: "備考", exact: true });
+  const sales = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
+  const salaries = app.getByRole("spinbutton", { name: "給与手当 9月の金額", exact: true });
   await trigger.click();
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toBeVisible();
@@ -138,6 +141,9 @@ test("施策名を入力・編集し、画面を往復しても入力を保持�
   await name.fill("");
   await expect(name).toHaveValue("");
   await name.fill("業務改善施策（改訂）");
+  await note.fill("上期の業務改善\n担当部門と実施時期を調整する");
+  await sales.fill("100");
+  await salaries.fill("300");
   await trigger.click();
   await expect(name).toHaveValue("業務改善施策（改訂）");
   await sidebar.getByRole("button", { name: "Home", exact: true }).click();
@@ -145,6 +151,9 @@ test("施策名を入力・編集し、画面を往復しても入力を保持�
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toHaveValue("業務改善施策（改訂）");
   await trigger.click();
+  await expect(note).toHaveValue("上期の業務改善\n担当部門と実施時期を調整する");
+  await expect(sales).toHaveValue("100");
+  await expect(salaries).toHaveValue("300");
   await app.getByText("施策名", { exact: true }).click();
   await expect(name).toBeFocused();
   await settleMotion(app.locator("body"));
@@ -152,7 +161,13 @@ test("施策名を入力・編集し、画面を往復しても入力を保持�
   const nameBox = (await name.boundingBox())!;
   expect(nameBox.y).toBeGreaterThan(titleBox.y + titleBox.height);
   expect(nameBox.x).toBe(titleBox.x);
-  await attachImage(testInfo, "施策名入力", await page.locator("#app-preview").screenshot());
+  const noteBox = (await note.boundingBox())!;
+  const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
+  expect(noteBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
+  expect(tableBox.y).toBeGreaterThan(noteBox.y + noteBox.height);
+  expect(noteBox.x).toBe(nameBox.x);
+  expect(tableBox.x).toBe(nameBox.x);
+  await attachImage(testInfo, "施策入力・備考と月別金額", await page.locator("#app-preview").screenshot());
 
   await trigger.click();
   await sidebar.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
@@ -160,6 +175,61 @@ test("施策名を入力・編集し、画面を往復しても入力を保持�
   await trigger.click();
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toHaveValue("");
+  await expect(note).toHaveValue("");
+  expect(await app.getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
+});
+
+test("金額表の各セルを編集でき、狭い画面でも最後の月に入力できる", async ({ page, app }, testInfo) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const trigger = app.locator(".home-header").getByRole("button");
+  await trigger.click();
+  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await trigger.click();
+  const table = app.getByRole("table", { name: "月別計画金額", exact: true });
+  const region = app.getByRole("region", { name: "月別計画金額の入力表", exact: true });
+  await expect(table.getByRole("columnheader")).toHaveText(["勘定科目", "4月", "5月", "6月", "7月", "8月", "9月"]);
+  await expect(table.getByRole("rowheader")).toHaveText(["売上高", "消耗品費", "給与手当"]);
+  await expect(table.getByRole("spinbutton")).toHaveCount(18);
+  expect(await table.getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
+
+  const aprilSales = table.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
+  const maySales = table.getByRole("spinbutton", { name: "売上高 5月の金額", exact: true });
+  const supplies = table.getByRole("spinbutton", { name: "消耗品費 4月の金額", exact: true });
+  const salaries = table.getByRole("spinbutton", { name: "給与手当 9月の金額", exact: true });
+  await aprilSales.fill("0");
+  await aprilSales.press("Tab");
+  await expect(maySales).toBeFocused();
+  await maySales.pressSequentially("12.5");
+  await maySales.press("Shift+Tab");
+  await expect(aprilSales).toBeFocused();
+  await supplies.fill("-25.5");
+  expect(await supplies.evaluate(input => (input as HTMLInputElement).validity.valid)).toBe(true);
+  await salaries.fill("300");
+  await expect(aprilSales).toHaveValue("0");
+  await expect(maySales).toHaveValue("12.5");
+  await expect(supplies).toHaveValue("-25.5");
+  await expect(salaries).toHaveValue("300");
+  await expect(table.getByRole("spinbutton", { name: "売上高 9月の金額", exact: true })).toHaveValue("");
+  await supplies.fill("");
+  await expect(supplies).toHaveValue("");
+  await expect(aprilSales).toHaveValue("0");
+
+  await settleMotion(app.locator("body"));
+  const header = table.getByRole("rowheader", { name: "給与手当", exact: true });
+  const headerBefore = (await header.boundingBox())!;
+  await salaries.focus();
+  const headerAfter = (await header.boundingBox())!;
+  const regionBox = (await region.boundingBox())!;
+  const lastCellBox = (await salaries.boundingBox())!;
+  expect(headerAfter.x).toBe(headerBefore.x);
+  expect(headerAfter.x).toBeCloseTo(regionBox.x + 1);
+  expect(lastCellBox.x + lastCellBox.width).toBeLessThanOrEqual(regionBox.x + regionBox.width);
+  if (testInfo.project.name === "narrow") {
+    expect(await region.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
+  }
+  expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  await attachImage(testInfo, "月別金額・最後の月を編集", await page.locator("#app-preview").screenshot());
 });
 
 test("画面幅を変えてもサイドバーとメインが並び、閉じると幅が戻る", async ({ page, app }) => {
@@ -184,6 +254,9 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     const nameBox = (await app.getByRole("textbox", { name: "施策名", exact: true }).boundingBox())!;
     expect(nameBox.x).toBeGreaterThanOrEqual(mainBox.x);
     expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
+    const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
+    expect(tableBox.x + tableBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
+    expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     await app.getByRole("heading", { name: "施策入力", exact: true }).click();
     await expect(sidebar).toBeVisible();
@@ -256,15 +329,23 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
     await production.evaluate(installMemoryFiles, { bytes, scenario: "normal" as const });
     await expect(production).toHaveTitle("Triadichrome");
     await expect(production.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
-    for (const state of ["入口", "ホーム", "サイドバー"] as const) {
+    for (const state of ["入口", "ホーム", "サイドバー", "施策入力"] as const) {
       if (state !== "入口") {
-        const name = state === "ホーム" ? "ファイルを開く" : "サイドバーを開く";
+        const name = state === "ホーム" ? "ファイルを開く" : state === "サイドバー" ? "サイドバーを開く" : "施策入力";
         await app.getByRole("button", { name, exact: true }).click();
         await production.getByRole("button", { name, exact: true }).click();
       }
       if (state === "ホーム") {
         await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
         await expect(production.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
+      }
+      if (state === "施策入力") {
+        for (const target of [app, production]) {
+          await target.getByRole("textbox", { name: "施策名", exact: true }).fill("業務改善施策");
+          await target.getByRole("textbox", { name: "備考", exact: true }).fill("上期に実施\n関係部門と調整");
+          await target.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("100");
+          await target.getByRole("button", { name: "サイドバーを閉じる", exact: true }).first().click();
+        }
       }
       await settleMotion(app.locator("body"));
       await settleMotion(production.locator("body"));

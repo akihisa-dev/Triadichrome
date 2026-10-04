@@ -332,6 +332,7 @@ button:disabled {
 }
 
 .initiative-entry-page {
+  min-width: 0;
   padding: clamp(16px, 3vw, 32px);
 }
 
@@ -342,20 +343,21 @@ button:disabled {
   line-height: 1.4;
 }
 
-.initiative-name-field {
+.initiative-field {
   display: grid;
   width: min(100%, 40rem);
   gap: 8px;
   margin-top: 24px;
 }
 
-.initiative-name-field label {
+.initiative-field label {
   font-size: 14px;
   font-weight: 600;
   line-height: 1.5;
 }
 
-.initiative-name-field input {
+.initiative-field input,
+.initiative-field textarea {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -373,12 +375,114 @@ button:disabled {
     outline-color var(--motion-feedback) var(--motion-ease);
 }
 
-.initiative-name-field input:hover {
+.initiative-field textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.initiative-field input:hover,
+.initiative-field textarea:hover {
   border-color: var(--muted);
 }
 
-.initiative-name-field input:focus-visible {
+.initiative-field input:focus-visible,
+.initiative-field textarea:focus-visible {
   border-color: var(--focus);
+  outline-color: var(--focus);
+}
+
+.initiative-amount-table-container {
+  max-width: 100%;
+  margin-top: 24px;
+  overflow: auto;
+  border: 1px solid var(--control-line);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--motion-feedback) var(--motion-ease);
+}
+
+.initiative-amount-table-container:focus-visible {
+  outline-color: var(--focus);
+}
+
+.initiative-amount-table {
+  width: 100%;
+  min-width: 800px;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: var(--surface);
+}
+
+.initiative-amount-table th,
+.initiative-amount-table td {
+  height: 44px;
+  padding: 0;
+  border-right: 1px solid var(--control-line);
+  border-bottom: 1px solid var(--control-line);
+}
+
+.initiative-amount-table th {
+  padding: 10px 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.initiative-amount-table thead th {
+  background: #bfc1c0;
+}
+
+.initiative-amount-table th:first-child {
+  position: sticky;
+  z-index: 1;
+  left: 0;
+  width: clamp(96px, 16vw, 180px);
+  text-align: left;
+}
+
+.initiative-amount-table tbody th {
+  background: #dddddd;
+}
+
+.initiative-amount-table tr > :last-child {
+  border-right: 0;
+}
+
+.initiative-amount-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.initiative-amount-table input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  appearance: textfield;
+  border: 0;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  transition:
+    background-color var(--motion-feedback) var(--motion-ease),
+    outline-color var(--motion-feedback) var(--motion-ease);
+}
+
+.initiative-amount-table input::-webkit-inner-spin-button,
+.initiative-amount-table input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.initiative-amount-table input:hover {
+  background: var(--soft);
+}
+
+.initiative-amount-table input:focus-visible {
   outline-color: var(--focus);
 }
 

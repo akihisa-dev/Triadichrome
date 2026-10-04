@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { InitiativeEntryPage } from "./InitiativeEntryPage";
+import { InitiativeEntryPage, type InitiativeEntryDraft } from "./InitiativeEntryPage";
 import { FadeSwap } from "./FadeSwap";
 import appIcon from "../../../branding/logo.svg?no-inline";
 
@@ -14,7 +14,7 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [page, setPage] = useState<Page>("home");
-  const [initiativeName, setInitiativeName] = useState("");
+  const [initiativeDraft, setInitiativeDraft] = useState<InitiativeEntryDraft>({ name: "", note: "", amounts: {} });
 
   const closeSidebar = useCallback(() => {
     setIsSidebarOpen(false);
@@ -91,7 +91,7 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
         <div className="home-content">
           <FadeSwap value={page} className="page-switch">
             {displayed => displayed === "home" ? <main className="home-view" aria-label="ホーム" /> : (
-              <InitiativeEntryPage initiativeName={initiativeName} onInitiativeNameChange={setInitiativeName} />
+              <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} />
             )}
           </FadeSwap>
         </div>
