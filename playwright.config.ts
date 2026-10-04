@@ -11,7 +11,7 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4174",
     browserName: "chromium",
-    ...(process.env.TRIADICHROME_TEST_BROWSER === "chrome" ? { channel: "chrome" } : {}),
+    channel: "chrome",
     locale: "ja-JP",
     reducedMotion: "no-preference",
     screenshot: "only-on-failure",

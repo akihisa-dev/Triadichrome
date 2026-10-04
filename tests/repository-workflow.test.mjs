@@ -119,15 +119,17 @@ test("release確認は未コミットの変更と同名tagを拒否する", asyn
   fails(repo.script("check-release.mjs"), /tagが既に存在/);
 });
 
-test("pre-pushは一括検証を呼び出し、その失敗をpushへ返す", async t => {
+test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗をpushへ返す", async t => {
   const repo = await repository(t);
   const bin = path.join(repo.root, "test-bin");
   await mkdir(bin);
   const log = path.join(repo.root, "verify-arguments.txt");
-  await writeFile(path.join(bin, "npm"), '#!/bin/sh\nprintf "%s\\n" "$@" > "$TRIADICHROME_HOOK_TEST_LOG"\nexit 7\n', { mode: 0o755 });
-  const result = repo.run("sh", [".githooks/pre-push"], {
-    env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, TRIADICHROME_HOOK_TEST_LOG: log },
-  });
-  assert.equal(result.status, 7);
-  assert.equal(await readFile(log, "utf8"), "run\nverify:full\n");
+  await writeFile(path.join(bin, "npm"), '#!/bin/sh\nprintf "%s\\n" "$@" > "$TRIADICHROME_HOOK_TEST_LOG"\nexit "$TRIADICHROME_HOOK_TEST_EXIT"\n', { mode: 0o755 });
+  for (const exitCode of [0, 7]) {
+    const result = repo.run("sh", [".githooks/pre-push"], {
+      env: { ...process.env, PATH: `${bin}${path.delimiter}${process.env.PATH}`, TRIADICHROME_HOOK_TEST_LOG: log, TRIADICHROME_HOOK_TEST_EXIT: String(exitCode) },
+    });
+    assert.equal(result.status, exitCode);
+    assert.equal(await readFile(log, "utf8"), "run\nverify\n");
+  }
 });

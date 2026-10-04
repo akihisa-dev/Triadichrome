@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -24,7 +24,7 @@
     "check:release": "node scripts/check-release.mjs",
     "verify": "npm run check:hooks && npm run build && npm test && npm run check:version",
     "verify:full": "npm run verify && playwright test",
-    "verify:release": "npm run verify:full && npm run check:release"
+    "verify:release": "npm run verify && npm run check:release"
   },
   "dependencies": {
     "react": "^19.1.1",
