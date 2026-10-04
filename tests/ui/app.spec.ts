@@ -39,10 +39,10 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   const close = dialog.getByRole("button", { name: "サイドバーを閉じる" });
   await expect(close).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await expect(dialog.getByRole("button", { name: "ホーム", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(dialog.getByRole("button", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
   await attachImage(testInfo, "サイドバー", await preview.screenshot());
   await page.keyboard.press("Tab");
-  await expect(dialog.getByRole("button", { name: "ホーム", exact: true })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Home", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
   await expect(trigger).toBeFocused();
@@ -56,7 +56,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await dialog.click({ position: { x: (await dialog.boundingBox())!.width - 8, y: 200 } });
   await expect(dialog).not.toBeVisible();
   await trigger.click();
-  await dialog.getByRole("button", { name: "ホーム", exact: true }).click();
+  await dialog.getByRole("button", { name: "Home", exact: true }).click();
   await expect(dialog).not.toBeVisible();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
 
