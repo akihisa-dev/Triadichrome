@@ -47,7 +47,7 @@ export function ExtensionPage() {
   const create = () => void run(async () => {
     const picker = (window as PickerWindow).showSaveFilePicker;
     if (!picker) throw new Error("この環境ではファイルを新規作成できません。");
-    const handle = await picker.call(window, { suggestedName: `新しい計画${TRIADIC_FILE_EXTENSION}`, types: fileTypes });
+    const handle = await picker.call(window, { suggestedName: `Untitled${TRIADIC_FILE_EXTENSION}`, types: fileTypes });
     if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
     const bytes = await createTriadicDatabase();
     await writeTriadicFile(handle, bytes);

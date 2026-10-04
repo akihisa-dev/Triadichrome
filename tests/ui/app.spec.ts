@@ -71,11 +71,11 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
 
 test("新しい計画をメモリ上に作成し、閉じた後に読み直せる", async ({ app }) => {
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
-  await expect(app.locator(".home-file-name")).toHaveText("新しい計画.triadic");
+  await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await expect(app.locator(".home-file-name")).toHaveText("新しい計画.triadic");
+  await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
 });
 
 test("選択・新規作成のキャンセル後も入口を操作できる", async ({ page, app }) => {
