@@ -1,3 +1,4 @@
+import { verifyRecentFile } from "../tests/recent-file.mjs";
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
 import { verifyAggregationData } from "../tests/aggregation-data.mjs";
 import { verifySamplePlan } from "../tests/sample-plan.mjs";
@@ -23,6 +24,7 @@ try {
       'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/accountMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
+      'export * from "./Triadichrome-extension/src/extension/recentFile.ts";',
       'export * from "./tests/ui/sample-plan.ts";',
     ].join("\n"), resolveDir: root },
     outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
@@ -140,6 +142,7 @@ try {
   await verifyInitiativeData(await import(pathToFileURL(bundle)), root);
   await verifyAggregationData(await import(pathToFileURL(bundle)));
   await verifySamplePlan(await import(pathToFileURL(bundle)));
+  await verifyRecentFile(await import(pathToFileURL(bundle)));
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

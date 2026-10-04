@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { type AccountChange } from "../core/accountMaster";
 import { saveAccountMaster } from "./accountMasterFile";
@@ -8,6 +8,7 @@ import { type OpenPlan } from "./planFile";
 import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
 import { saveInitiative } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
+import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
 import { StatusNotice } from "./StatusNotice";
@@ -29,6 +30,35 @@ export function ExtensionPage() {
   const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
+  const [recentFile, setRecentFile] = useState<FileSystemFileHandle | null>(null);
+  const [recentLoading, setRecentLoading] = useState(true);
+  const [recentNotice, setRecentNotice] = useState("");
+  const recentRevision = useRef(0);
+  useEffect(() => {
+    let active = true;
+    const revision = recentRevision.current;
+    void loadRecentFile().then(handle => {
+      if (active && revision === recentRevision.current) setRecentFile(handle);
+    }).catch(() => {
+      if (active && revision === recentRevision.current) setRecentNotice("前回のファイルの記憶を読み込めませんでした。「ファイルを開く」から選択してください。");
+    }).finally(() => { if (active) setRecentLoading(false); });
+    return () => { active = false; };
+  }, []);
+  const remember = async (handle: FileSystemFileHandle | null) => {
+    recentRevision.current++;
+    setRecentNotice("");
+    try {
+      await rememberRecentFile(handle);
+      setRecentFile(handle);
+    }
+    catch {
+      if (handle) setRecentFile(handle);
+      setRecentNotice(handle
+        ? "このファイルの記憶を保存できませんでした。再起動後は「ファイルを開く」から選択してください。"
+        : "ファイルの記憶を消去できませんでした。もう一度「記憶を消す」を押してください。");
+      if (!handle) throw new Error("ファイルの記憶を消去できませんでした。");
+    }
+  };
   const run = async (operation: () => Promise<void>) => {
     if (busy.current) return;
     busy.current = true;
@@ -46,9 +76,19 @@ export function ExtensionPage() {
     const bytes = new Uint8Array(await file.arrayBuffer());
     const contents = await readPlanContents(bytes);
     plan.current = { name: file.name, bytes, ...contents, ...(handle ? { handle } : {}) };
+    // Failed reads never replace the last successfully opened file.
+    if (handle) await remember(handle);
+    else {
+      try { await remember(null); } catch { /* Opening a file must still succeed. */ }
+      setRecentNotice("この開き方ではファイルを記憶できません。「ファイルを開く」から選択するか、保存先を指定して保存してください。");
+    }
     setDisplayName(file.name);
     setFileName(file.name);
   };
+  const resume = () => void run(async () => {
+    if (recentFile) await open(await readRecentFile(recentFile), recentFile);
+  });
+  const forget = () => void run(() => remember(null));
   const choose = () => {
     if (busy.current) return;
     const picker = (window as PickerWindow).showOpenFilePicker;
@@ -77,6 +117,7 @@ export function ExtensionPage() {
         return picker.call(window, { suggestedName: plan.current!.name, types: fileTypes });
       });
       plan.current = saved;
+      if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
       return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations };
     } finally { busy.current = false; }
@@ -100,7 +141,17 @@ export function ExtensionPage() {
       if (busy.current) return;
       const files = Array.from(event.dataTransfer.files);
       if (files.length !== 1) { setError("一度に開けるファイルは一つです。"); return; }
-      void run(() => open(files[0]!));
+      // Capture the handle promise during the drop event, before awaiting anything.
+      const item = Array.from(event.dataTransfer.items).find(entry => entry.kind === "file") as
+        (DataTransferItem & { getAsFileSystemHandle?: () => Promise<FileSystemHandle | null> }) | undefined;
+      const droppedHandle = item?.getAsFileSystemHandle?.();
+      void run(async () => {
+        const handle = await droppedHandle?.catch(() => null);
+        if (handle?.kind === "file") {
+          const fileHandle = handle as FileSystemFileHandle;
+          await open(await fileHandle.getFile(), fileHandle);
+        } else await open(files[0]!);
+      });
     }}>
     <div className="entry-content">
       <img className="entry-logo" src={appIcon} width="64" height="64" alt="" draggable={false} />
@@ -111,11 +162,21 @@ export function ExtensionPage() {
         </svg>
         <div className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "ここで離して開く" : "ここにファイルをドロップ"}</FadeSwap></div>
         <p className="entry-drop-description">.triadicファイルに対応</p>
+        <div className="entry-resume">
+          <button className="entry-open-button entry-resume-button" type="button" disabled={isBusy || recentLoading || !recentFile}
+            aria-describedby="recent-file-name" onClick={resume}>続きから</button>
+          <p id="recent-file-name" className="entry-recent-name" title={recentFile?.name}>
+            {recentLoading ? "前回のファイルを確認中" : recentFile?.name ?? "前回のファイルはありません"}
+          </p>
+          <button className="entry-forget-button" type="button" disabled={isBusy || recentLoading || !recentFile}
+            onClick={forget}>記憶を消す</button>
+        </div>
         <div className="entry-actions">
-          <button className="entry-open-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
+          <button className="entry-new-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
           <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新規作成</button>
         </div>
       </section>
+      {recentNotice && <p className="entry-recent-notice" role="status">{recentNotice}</p>}
       <input ref={input} className="entry-file-input" type="file" accept={TRIADIC_FILE_EXTENSION} tabIndex={-1} aria-hidden="true"
         onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void run(() => open(file)); }} />
       <StatusNotice message={error} error onDismiss={() => setError("")} />
