@@ -3,8 +3,10 @@ import { type Account, type AccountChange } from "../core/accountMaster";
 import { accountTypes, type AccountType } from "../core/accountTypes";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { StatusNotice } from "./StatusNotice";
+import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
+import { AutoSaveStatus } from "./AutoSaveStatus";
 
-type AccountMasterPageProps = {
+type AccountMasterPageProps = AutoSaveProps & {
   accounts: Account[];
   usedAccountIds: Set<number>;
   isSaving: boolean;
@@ -12,14 +14,16 @@ type AccountMasterPageProps = {
   onBack: () => void;
 };
 
-export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange, onBack }: AccountMasterPageProps) {
+export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: AccountMasterPageProps) {
   const input = useRef<HTMLInputElement>(null);
   const focusAfterSave = useRef(false);
   const focusAfterEdit = useRef<number | null>(null);
   const [accountCode, setAccountCode] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountType, setAccountType] = useState<AccountType | "">("");
-  const [editing, setEditing] = useState<{ id: number; accountCode: string; accountName: string; accountType: AccountType | "" } | null>(null);
+  const autoSave = useAutoSave<Extract<AccountChange, { type: "update" }>>(onChange, onPendingChange);
+  const { draft: editing, controller } = autoSave;
+  const setEditing = (draft: NonNullable<typeof editing>) => controller.change(draft);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notice, setNotice] = useState({ message: "", error: false });
@@ -57,9 +61,6 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
         setAccountName("");
         setAccountType("");
         focusAfterSave.current = true;
-      } else if (change.type === "update") {
-        focusAfterEdit.current = change.id;
-        setEditing(null);
       }
       setDeleteDialogOpen(false);
       setNotice({ message: change.type === "delete" ? "勘定科目を削除しました。" : change.type === "reorder" ? "科目の並び順を保存しました。" : "勘定科目を保存しました。", error: false });
@@ -80,17 +81,17 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
   };
   const cancelEditing = () => {
     focusAfterEdit.current = editing?.id ?? null;
-    setEditing(null);
+    controller.end();
     setNotice({ message: "", error: false });
   };
 
-  return <main className="master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
-    <button className="text-button master-back" type="button" disabled={isSaving} onClick={onBack}>← マスタへ戻る</button>
+  return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
+    <button className="text-button master-back" type="button" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
     <h1 id="account-master-title">勘定科目マスタ</h1>
     <p className="page-description">この計画で使う勘定科目を管理します。変更は計画ファイルに保存されます。</p>
     <form className="account-master-form" onSubmit={event => {
       event.preventDefault();
-      if (!isSaving) void save({ type: "add", accountCode, accountName, accountType });
+      if (!isSaving && !autoSave.pending) void save({ type: "add", accountCode, accountName, accountType });
     }}>
       <div className="account-master-fields">
         <div className="initiative-field account-code-field">
@@ -111,9 +112,10 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
         </div>
       </div>
       <div className="form-actions">
-        <button className="primary-button" type="submit" disabled={isSaving || !accountCode.trim() || !accountName.trim() || !accountType}>登録</button>
+        <button className="primary-button" type="submit" disabled={isSaving || autoSave.pending || !accountCode.trim() || !accountName.trim() || !accountType}>登録</button>
       </div>
     </form>
+    {editing && <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />}
     <StatusNotice {...notice} onDismiss={dismissNotice} />
     <ConfirmationDialog open={isDeleteDialogOpen} title="勘定科目を削除" message={deletingAccount ? `「${deletingAccount.accountCode} ${deletingAccount.accountName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleteDialogOpen(false)}
@@ -143,7 +145,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
             <tr onKeyDown={event => {
               if (draft && event.key === "Escape") {
                 event.preventDefault(); event.stopPropagation();
-                if (!isSaving) cancelEditing();
+                if (!autoSave.pending) cancelEditing();
               }
             }}>
               <td><button type="button" className="text-button account-drag-handle" aria-label={`${account.accountName}を並べ替え`} title="ドラッグ、または上下キーで並べ替え"
@@ -157,25 +159,24 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                   if (target) reorder(account.id, target.id, event.key === "ArrowUp");
                 }}>⠿</button></td>
               <td className="account-code">{draft
-                ? <input autoFocus form={editFormId} name="accountCode" aria-label={`${account.accountName}の科目コード`} inputMode="numeric" autoComplete="off" value={draft.accountCode} disabled={isSaving} onChange={event => setEditing({ ...draft, accountCode: event.target.value })} />
+                ? <input autoFocus form={editFormId} name="accountCode" aria-label={`${account.accountName}の科目コード`} inputMode="numeric" autoComplete="off" value={draft.accountCode} onChange={event => setEditing({ ...draft, accountCode: event.target.value })} />
                 : account.accountCode ?? "未設定"}</td>
               <th scope="row" className="account-master-name">{draft
-                ? <input form={editFormId} name="accountName" aria-label={`${account.accountName}の科目名`} autoComplete="off" value={draft.accountName} disabled={isSaving} onChange={event => setEditing({ ...draft, accountName: event.target.value })} />
+                ? <input form={editFormId} name="accountName" aria-label={`${account.accountName}の科目名`} autoComplete="off" value={draft.accountName} onChange={event => setEditing({ ...draft, accountName: event.target.value })} />
                 : account.accountName}</th>
               <td>{draft
-                ? <select form={editFormId} name="accountType" aria-label={`${account.accountName}の科目属性`} value={draft.accountType} disabled={isSaving} onChange={event => setEditing({ ...draft, accountType: event.target.value as AccountType | "" })}>
+                ? <select form={editFormId} name="accountType" aria-label={`${account.accountName}の科目属性`} value={draft.accountType} onChange={event => setEditing({ ...draft, accountType: event.target.value as AccountType | "" })}>
                   <option value="">属性を選択</option>
                   {Object.entries(accountTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
                 : account.accountType ? accountTypes[account.accountType] : "未設定"}</td>
               <td>{draft ? <form id={editFormId} className="form-actions" onSubmit={event => {
                 event.preventDefault();
-                if (!isSaving) void save({ type: "update", ...draft });
+                if (!autoSave.pending) cancelEditing();
               }}>
-                <button className="text-button" type="submit" disabled={isSaving || !draft.accountCode.trim() || !draft.accountName.trim() || !draft.accountType}>保存</button>
-                <button className="text-button" type="button" disabled={isSaving} onClick={cancelEditing}>キャンセル</button>
+                <button className="text-button" type="submit" disabled={autoSave.pending}>完了</button>
               </form> : <div className="form-actions">
-                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={isSaving || editing !== null} onClick={() => { setEditing({ id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); setNotice({ message: "", error: false }); }}>編集</button>
+                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); setNotice({ message: "", error: false }); }}>編集</button>
                 <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・明細・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
               </div>}</td>
             </tr>

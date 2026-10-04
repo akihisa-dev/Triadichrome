@@ -22,10 +22,12 @@ type HomePageProps = {
   onChangeMaster: (change: AccountChange) => Promise<PlanContents>;
   onChangeAggregations: (change: AggregationChange) => Promise<PlanContents>;
   onRegisterInitiative: (draft: InitiativeEntryDraft) => Promise<PlanContents>;
+  onUpdateInitiative: (id: number, year: number | null, draft: InitiativeEntryDraft) => Promise<PlanContents>;
+  onPrepareSave: () => Promise<void>;
   onCloseFile: () => void;
 };
 
-export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onRegisterInitiative, onCloseFile }: HomePageProps) {
+export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
@@ -47,6 +49,8 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   const [isSaving, setIsSaving] = useState(false);
   const saving = useRef(false);
+  const [editPending, setEditPending] = useState(false);
+  const navigationBlocked = isSaving || editPending;
   const usedAccountIds = new Set(initiativeDraft.rows.flatMap(row => row.accountId === null ? [] : [row.accountId]));
   const changeMaster = async (change: AccountChange) => {
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
@@ -63,6 +67,19 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
     setIsSaving(true);
     try { setContents(await onChangeAggregations(change)); }
     finally { saving.current = false; setIsSaving(false); }
+  };
+
+  const update = async (draft: InitiativeEntryDraft) => {
+    if (!selectedInitiative || saving.current) throw new Error("保存が終わるまでお待ちください。");
+    saving.current = true;
+    setIsSaving(true);
+    try {
+      const saved = await onUpdateInitiative(selectedInitiative.id, selectedInitiative.fiscalYear, draft);
+      setContents(saved);
+      setSelectedInitiative({ id: selectedInitiative.id, fiscalYear: Number(draft.fiscalYear) });
+      setListYear(String(Number(draft.fiscalYear)));
+      setCostYear(String(Number(draft.fiscalYear)));
+    } finally { saving.current = false; setIsSaving(false); }
   };
 
   const register = async () => {
@@ -140,31 +157,31 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             </button>
           </header>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" aria-label="Home" disabled={isSaving} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
+            <button className="sidebar-item" type="button" aria-label="Home" disabled={navigationBlocked} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
               </svg>
               <span className="sidebar-label">Home</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="施策入力" disabled={isSaving} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
+            <button className="sidebar-item" type="button" aria-label="施策入力" disabled={navigationBlocked} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
               </svg>
               <span className="sidebar-label">施策入力</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={isSaving} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
+            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M10 4v16" />
               </svg>
               <span className="sidebar-label">施策一覧</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="総原価表" disabled={isSaving} aria-current={page === "cost-table" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("cost-table"); }}>
+            <button className="sidebar-item" type="button" aria-label="総原価表" disabled={navigationBlocked} aria-current={page === "cost-table" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("cost-table"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 15h18M11 4v16M16 9v11" />
               </svg>
               <span className="sidebar-label">総原価表</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={isSaving} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" ? "page" : undefined} onClick={() => setPage("master")}>
+            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
               </svg>
@@ -172,7 +189,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             </button>
           </nav>
           <footer className="sidebar-footer">
-            <button className="sidebar-item" type="button" aria-label="ファイルを閉じる" disabled={isSaving} onClick={onCloseFile}>
+            <button className="sidebar-item" type="button" aria-label="ファイルを閉じる" disabled={navigationBlocked} onClick={onCloseFile}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M10 4H4v16h6M10 12h11m-4-4 4 4-4 4" />
               </svg>
@@ -187,12 +204,12 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
               switch (displayed) {
                 case "home": return <main className="home-view" aria-label="ホーム" />;
                 case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} onBack={() => setPage("initiative-list")} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={() => setPage("initiative-list")} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} />;
                 case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onChange={changeAggregations} onBack={() => setPage("master")} />;
-                case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onChange={changeMaster} onBack={() => setPage("master")} />;
+                case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;
               }
             }}
           </FadeSwap>

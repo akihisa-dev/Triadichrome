@@ -47,14 +47,14 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
   await expect(app.getByRole("button", { name: "施策一覧", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策A");
   await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("施策Aの備考");
-  await expect(app.getByRole("textbox", { name: "年度", exact: true })).toHaveValue("2026");
+  await expect(app.getByRole("spinbutton", { name: "年度", exact: true })).toHaveValue("2026");
   const table = app.getByRole("table", { name: "月別計画金額", exact: true });
-  await expect(table.getByRole("rowheader")).toHaveText(["100 売上高", "100 売上高"]);
+  await expect(table.getByRole("combobox")).toHaveCount(2);
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("100");
   await expect(app.getByRole("spinbutton", { name: "売上高 5月の金額", exact: true }).first()).toHaveValue("0");
   await expect(app.getByRole("spinbutton", { name: "売上高 6月の金額", exact: true }).first()).toHaveValue("");
   await expect(app.getByRole("spinbutton", { name: "売上高 3月の金額", exact: true }).nth(1)).toHaveValue("25.5");
-  expect(await app.getByRole("main").locator("input").evaluateAll(inputs => inputs.every(input => input instanceof HTMLInputElement && input.readOnly))).toBe(true);
+  expect(await app.getByRole("main").locator("input").evaluateAll(inputs => inputs.every(input => input instanceof HTMLInputElement && !input.readOnly))).toBe(true);
   await expect(app.getByRole("button", { name: "登録", exact: true })).toHaveCount(0);
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: join(tmpdir(), `triadichrome-detail-${testInfo.project.name}.png`) });
@@ -63,7 +63,7 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
   await app.getByRole("combobox", { name: "年度", exact: true }).selectOption("2027");
   await app.getByRole("button", { name: "施策B", exact: true }).press("Enter");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策B");
-  await expect(app.getByRole("textbox", { name: "年度", exact: true })).toHaveValue("2027");
+  await expect(app.getByRole("spinbutton", { name: "年度", exact: true })).toHaveValue("2027");
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("200");
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("作成中の施策");
@@ -131,7 +131,7 @@ test("属性別に集計した施策を一覧で表示し、年度切替・属�
   await expect(app.getByRole("button", { name: "売上高を削除", exact: true })).toBeDisabled();
   await app.getByRole("button", { name: "費用を編集", exact: true }).click();
   await app.getByRole("combobox", { name: "費用の科目属性", exact: true }).selectOption("profit");
-  await app.getByRole("button", { name: "保存", exact: true }).click();
+  await app.getByRole("button", { name: "完了", exact: true }).click();
   await expect(app.getByRole("button", { name: "費用を編集", exact: true })).toBeVisible();
   await app.getByRole("button", { name: "施策一覧", exact: true }).click();
   await expect(row.getByRole("cell").nth(1)).toHaveText("975.5");

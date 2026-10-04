@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { type Account } from "../core/accountMaster";
 
 import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/initiatives";
@@ -9,12 +10,15 @@ type InitiativeEntryPageProps = {
   onOpenMaster: () => void;
   isSaving: boolean;
   onRegister: () => void;
+  editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMaster, isSaving, onRegister }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
   return (
-    <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving}>
-      <h1 id="initiative-entry-title">施策入力</h1>
+    <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
+      {editing?.before}
+      <h1 id="initiative-entry-title">{editing ? "施策詳細" : "施策入力"}</h1>
+      {editing?.status}
       <div className="initiative-name-row">
         <div className="initiative-field">
           <label htmlFor="initiative-name">施策名</label>
@@ -28,11 +32,11 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim()} onClick={event => {
+        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim()} onClick={event => {
           const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
-        }}>登録</button>
+        }}>登録</button>}
       </div>
       <div className="initiative-field">
         <label htmlFor="initiative-note">備考</label>
@@ -49,12 +53,13 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-year">年度</label>
         <input id="initiative-year" type="number" min="1" max="9998" step="1" value={draft.fiscalYear} disabled={isSaving}
-          aria-describedby="initiative-year-hint" onChange={event => onDraftChange({ ...draft, fiscalYear: event.target.value })} />
+          aria-describedby="initiative-year-hint" onChange={event => onDraftChange({ ...draft, fiscalYear: event.target.value,
+            invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput) })} />
         <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
       </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
-        <button className="secondary-button" type="button" disabled={isSaving} onClick={onOpenMaster}>勘定科目マスタを開く</button>
+        <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
       <div className="initiative-amount-table-container" role="region" aria-label="月別計画金額の入力表" tabIndex={0}>
         <table className="initiative-amount-table" aria-label="月別計画金額">
@@ -87,6 +92,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
                       value={row.amounts[month] ?? ""}
                       onChange={event => onDraftChange({
                         ...draft,
+                        invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput),
                         rows: draft.rows.map((current, currentIndex) => currentIndex === index
                           ? { ...current, amounts: { ...current.amounts, [month]: event.target.value } } : current),
                       })}

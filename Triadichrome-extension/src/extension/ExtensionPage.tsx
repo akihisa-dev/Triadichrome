@@ -6,7 +6,7 @@ import { saveAggregationMaster } from "./aggregationMasterFile";
 import { type AggregationChange } from "../core/aggregationMaster";
 import { type OpenPlan } from "./planFile";
 import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
-import { saveInitiative } from "./initiativeFile";
+import { saveInitiative, saveInitiativeUpdate } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
 import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
 import { HomePage } from "./HomePage";
@@ -107,24 +107,44 @@ export function ExtensionPage() {
     await writeTriadicFile(handle, bytes);
     await open(await handle.getFile(), handle);
   });
-  const saveChange = async (operation: (current: OpenPlan, chooseDestination: () => Promise<FileSystemFileHandle>) => Promise<OpenPlan>) => {
+  const chooseDestination = () => {
+    const picker = (window as PickerWindow).showSaveFilePicker;
+    if (!picker) throw new Error("この環境では保存できません。ファイルを保存できるChromeで開いてください。");
+    return picker.call(window, { suggestedName: plan.current!.name, types: fileTypes });
+  };
+  const prepareSave = async () => {
     if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
     busy.current = true;
     try {
-      const saved = await operation(plan.current, () => {
-        const picker = (window as PickerWindow).showSaveFilePicker;
-        if (!picker) throw new Error("この環境では保存できません。ファイルを保存できるChromeで開いてください。");
-        return picker.call(window, { suggestedName: plan.current!.name, types: fileTypes });
-      });
+      const current = plan.current;
+      const handle = current.handle ?? await chooseDestination();
+      if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
+      const permission = handle as FileSystemFileHandle & { requestPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> };
+      if (permission.requestPermission && await permission.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("ファイルへの保存を許可してください。");
+      // Preserve the source database and check the separately selected destination for conflicts.
+      plan.current = { ...current, handle, ...(!current.handle ? { destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) } : {}) };
+    } finally { busy.current = false; }
+  };
+  const saveChange = async (operation: (current: OpenPlan, chooseDestination: () => Promise<FileSystemFileHandle>) => Promise<OpenPlan>, automatic = false) => {
+    if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
+    busy.current = true;
+    try {
+      if (automatic) {
+        const handle = plan.current.handle as (FileSystemFileHandle & { queryPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> }) | undefined;
+        if (!handle) throw new Error("「保存を再試行」から保存先を選択してください。");
+        if (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted") throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
+      }
+      const saved = await operation(plan.current, chooseDestination);
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
       return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations };
     } finally { busy.current = false; }
   };
-  const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination));
+  const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
   const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination));
   const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
+  const update = (id: number, year: number | null, draft: InitiativeEntryDraft) => saveChange(current => saveInitiativeUpdate(current, id, year, draft), true);
   const drag = (event: DragEvent<HTMLElement>) => {
     if (!Array.from(event.dataTransfer.types).includes("Files")) return;
     event.preventDefault();
@@ -132,7 +152,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onRegisterInitiative={register}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
