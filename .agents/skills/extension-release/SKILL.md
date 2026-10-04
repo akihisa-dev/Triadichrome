@@ -5,28 +5,33 @@ description: Plan and verify commit timing, SemVer changes, tags, and releases f
 
 # Extension release workflow
 
-Use this skill when the request concerns when to commit, how to bump the version, whether a release is ready, or how to create a tag. Read the repository `AGENTS.md`, `package.json`, `Triadichrome-extension/manifest.template.json`, current status, and relevant verification results before deciding.
+Read the repository `AGENTS.md`, `package.json`, manifest template, current status, both diffs, and relevant verification results. Use the root `package.json` as the version source of truth; this repository has no `app/package.json`.
 
 ## Commit timing
 
-- Separate independent purposes into separate commits. Do not create a commit merely to record an intermediate state or a version-only change.
-- A question, review, or release-readiness check is read-only. When the user explicitly requests a change, the normal commit is part of completing that change unless the user explicitly limits the work to planning or says not to commit.
-- Protect unrelated worktree and staged changes. Stage only named paths; never use broad `git add .` or `git add -A`.
-- Before a requested commit, inspect status and both diffs, run `git diff --cached --check`, verify package/manifest version consistency, and run the relevant npm checks. Do not commit a failed verification.
-- After a commit, report the commit ID and confirm remaining changes. This skill does not authorize a commit by itself.
+- A change request includes the normal local commit after implementation, required documentation, and verification. Questions and reviews are read-only; honor an explicit no-commit limit.
+- Work on main without creating branches. Separate independent purposes into commits. For Issue work, commit each Issue separately and identify it in the body; do not create empty commits for Issues needing no changes.
+- Protect unrelated worktree and staged changes. Stage named paths only; never use `git add .` or `git add -A`.
+- Run `npm run verify:full` before committing by default. For changes with no UI impact, `npm run verify` is sufficient. Choose one, reuse valid results for the same state and environment, and do not commit after failed verification.
+- Before committing, inspect status and both diffs, run `git diff --cached --check` and `npm run version:check-staged`, and check generated output. Report the commit ID and remaining changes afterward.
 
-## Version policy
+## Version and message
 
-`package.json` is the version source of truth. `Triadichrome-extension/manifest.template.json` must carry the same version, and `Triadichrome-extension/manifest.json` is generated from that template. Every normal commit for a requested change includes the two source versions together; a version-only commit is not created.
+Update the version in every change commit. Include `package.json`, `Triadichrome-extension/manifest.template.json`, and generated `Triadichrome-extension/manifest.json` together with matching versions. Keep `package-lock.json` synchronized and include any changed distribution output from `npm run build`. Do not create version-only commits or edit generated output directly.
 
 Choose SemVer independently from commit type:
 
-- MAJOR: a breaking change to a published feature, stored data, or configuration format.
-- MINOR: a backward-compatible feature addition or a deprecation announcement.
-- PATCH: a backward-compatible bug fix or a documentation, test, build, or maintenance change that needs a version update.
+- MAJOR: a breaking change to published features, stored data, or configuration.
+- MINOR: a backward-compatible feature addition or deprecation announcement.
+- PATCH: a compatible fix or a documentation, test, build, or maintenance change.
 
-Use `<type>[!]: <version> <日本語の説明>` for commit subjects. Choose `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, or `revert`. Write the subject and body in Japanese; include `目的:` and `内容:` and add `scope:`, `確認:`, and `影響:` when useful.
+`npm run version:next -- patch` (or `minor` / `major`) prints a candidate without modifying files.
 
-## Tag and release boundary
+Use `<type>[!]: <version> <日本語の説明>` for the subject, with a type from `AGENTS.md`. Write the subject and body in Japanese. For multiple files, version updates, or workflow changes, include `scope:`, `目的:`, `内容:`, `確認:`, and `影響:`. Use lowercase English nouns for scope and omit sensitive values.
 
-Do not create tags for ordinary commits. A tag or release needs an explicit request, a clean worktree, matching package/manifest versions, successful appropriate verification, and an unused annotated `vX.Y.Z` that matches the package version. Never move, overwrite, or delete an existing tag. Do not infer push or store publication permission from a release-readiness request.
+## Hooks, push, tags, and releases
+
+- Enable repository hooks with `npm run setup:hooks`. Preserve a different existing hooks configuration rather than overwriting it silently. Normal verification fails when these hooks are not configured.
+- The pre-commit hook checks staged whitespace and the three version files. The pre-push hook runs `npm run verify:full`, including UI tests. A browser startup failure is a failed verification.
+- Push, PR creation, tags, and releases each require an explicit request. Issue completion and local commits do not grant that authorization.
+- Ordinary commits do not create tags. Before a requested tag or release, run `npm run verify:release` and confirm a clean worktree, matching versions, successful verification, and an unused `vX.Y.Z` matching the package. The command checks local tags; also check the destination when publishing is requested. Create an annotated tag, verify its target, and never move, overwrite, or delete an existing tag.

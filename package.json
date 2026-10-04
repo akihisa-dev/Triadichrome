@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -13,9 +13,18 @@
     "build": "npm run typecheck && node scripts/build.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --pretty false",
-    "test": "node scripts/test-files.mjs",
+    "test": "node scripts/test-files.mjs && node --test tests/repository-workflow.test.mjs",
     "test:ui": "npm run build && playwright test",
-    "test:ui:report": "playwright show-report"
+    "test:ui:report": "playwright show-report",
+    "setup:hooks": "node scripts/setup-hooks.mjs",
+    "check:hooks": "node scripts/check-hooks.mjs",
+    "check:version": "node scripts/check-version.mjs",
+    "version:check-staged": "node scripts/check-version.mjs --staged",
+    "version:next": "node scripts/version-next.mjs",
+    "check:release": "node scripts/check-release.mjs",
+    "verify": "npm run check:hooks && npm run build && npm test && npm run check:version",
+    "verify:full": "npm run verify && playwright test",
+    "verify:release": "npm run verify:full && npm run check:release"
   },
   "dependencies": {
     "react": "^19.1.1",
