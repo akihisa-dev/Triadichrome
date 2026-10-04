@@ -72,10 +72,15 @@ export function ExtensionPage() {
     <div className="entry-content">
       <img className="entry-logo" src={appIcon} width="64" height="64" alt="" draggable={false} />
       <h1 className="entry-title">Triadichrome</h1>
-      <section className="entry-drop-zone" aria-label="計画を開く">
+      <section className="entry-drop-zone" aria-label="ファイルを開く・新規作成">
+        <svg className="entry-drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
+        </svg>
+        <p className="entry-drop-title" aria-live="polite">{dragging ? "ここで離して開く" : "ここにファイルをドロップ"}</p>
+        <p className="entry-drop-description">.triadicファイルに対応</p>
         <div className="entry-actions">
           <button className="entry-open-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
-          <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新しい計画</button>
+          <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新規作成</button>
         </div>
       </section>
       <input ref={input} className="entry-file-input" type="file" accept={TRIADIC_FILE_EXTENSION} tabIndex={-1} aria-hidden="true"

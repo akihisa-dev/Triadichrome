@@ -70,7 +70,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
 });
 
 test("新しい計画をメモリ上に作成し、閉じた後に読み直せる", async ({ app }) => {
-  await app.getByRole("button", { name: "新しい計画", exact: true }).click();
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.locator(".home-file-name")).toHaveText("新しい計画.triadic");
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
@@ -81,7 +81,7 @@ test("新しい計画をメモリ上に作成し、閉じた後に読み直せ�
 test("選択・新規作成のキャンセル後も入口を操作できる", async ({ page, app }) => {
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("cancel");
   await expect(page.getByRole("status")).toHaveText("操作できます");
-  for (const name of ["ファイルを開く", "新しい計画"]) {
+  for (const name of ["ファイルを開く", "新規作成"]) {
     await app.getByRole("button", { name, exact: true }).click();
     await expect(app.getByRole("button", { name, exact: true })).toBeEnabled();
     await expect(app.getByRole("alert")).toHaveCount(0);
@@ -105,7 +105,7 @@ test("壊れたファイルを拒否し、正常なファイルで再開でき�
 test("保存失敗時は入口に残り、既存の計画を開ける", async ({ page, app }) => {
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("save-failure");
   await expect(page.getByRole("status")).toHaveText("操作できます");
-  await app.getByRole("button", { name: "新しい計画", exact: true }).click();
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.locator(".home-file-name")).toHaveText("画面テスト.triadic");
