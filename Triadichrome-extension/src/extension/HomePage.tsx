@@ -1,5 +1,8 @@
 import { useRef, useState } from "react";
+import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import appIcon from "../../../branding/logo.svg?no-inline";
+
+type Page = "home" | "initiative-entry";
 
 type HomePageProps = {
   fileName: string;
@@ -10,12 +13,17 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
   const sidebar = useRef<HTMLDialogElement>(null);
   const startedOnBackdrop = useRef(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [page, setPage] = useState<Page>("home");
 
   const openSidebar = () => {
     sidebar.current?.showModal();
     setIsSidebarOpen(true);
   };
   const closeSidebar = () => sidebar.current?.close();
+  const navigate = (nextPage: Page) => {
+    setPage(nextPage);
+    closeSidebar();
+  };
 
   return (
     <div className="home-page">
@@ -39,7 +47,7 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
         </span>
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
       </header>
-      <main className="home-view" aria-label="ホーム" />
+      {page === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
       <dialog
         ref={sidebar}
         id="home-sidebar"
@@ -65,11 +73,17 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             <strong title={fileName}>{fileName}</strong>
           </div>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" aria-current="page" onClick={closeSidebar}>
+            <button className="sidebar-item" type="button" aria-current={page === "home" ? "page" : undefined} onClick={() => navigate("home")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
               </svg>
               <span>Home</span>
+            </button>
+            <button className="sidebar-item" type="button" aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => navigate("initiative-entry")}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
+              </svg>
+              <span>施策入力</span>
             </button>
           </nav>
           <footer className="sidebar-footer">

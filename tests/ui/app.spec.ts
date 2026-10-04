@@ -69,6 +69,55 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
 });
 
+test("サイドバーから施策入力へ移動し、ホームへ戻れる", async ({ page, app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const trigger = app.getByRole("button", { name: "サイドバーを開く" });
+  const dialog = app.getByRole("dialog", { name: "メニュー" });
+  const navigation = dialog.getByRole("navigation", { name: "メインナビゲーション" });
+  const home = navigation.getByRole("button", { name: "Home", exact: true });
+  const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
+
+  await trigger.click();
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力"]);
+  await expect(home).toHaveAttribute("aria-current", "page");
+  await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Tab");
+  await expect(home).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(initiativeEntry).toBeFocused();
+  await page.keyboard.press("Enter");
+
+  await expect(dialog).not.toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
+  await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
+  await expect(app.getByRole("main", { name: "ホーム", exact: true })).toHaveCount(0);
+  await expect(app.locator(".home-file-name")).toHaveText("画面テスト.triadic");
+  expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+
+  await trigger.click();
+  await expect(initiativeEntry).toHaveAttribute("aria-current", "page");
+  await expect(home).not.toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Escape");
+  await expect(dialog).not.toBeVisible();
+  await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
+  await trigger.click();
+  await home.click();
+  await expect(dialog).not.toBeVisible();
+  await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
+  await expect(app.getByRole("main", { name: "施策入力", exact: true })).toHaveCount(0);
+
+  await trigger.click();
+  await expect(home).toHaveAttribute("aria-current", "page");
+  await initiativeEntry.click();
+  await trigger.click();
+  await dialog.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
+  await expect(dialog).not.toBeVisible();
+});
+
 test("新しい計画をメモリ上に作成し、閉じた後に読み直せる", async ({ app }) => {
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
