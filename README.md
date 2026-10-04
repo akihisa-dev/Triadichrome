@@ -23,6 +23,29 @@ npm run build
 TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
 `npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。
 
+## ブラウザでの画面確認・自動テスト
+
+`npm run dev:ui`で起動し、[画面テスト用の入口](http://127.0.0.1:4173/tests/ui/preview.html)を開きます。Codex内のブラウザでも操作できます。「ファイルを開く」は空のテスト計画を読み込み、「新しい計画」はメモリ内に計画を作ります。実ファイルの選択や書き込みは行いません。上部の選択欄でキャンセル・不正ファイル・保存失敗を再現でき、「入口に戻す」または再読み込みでテストデータを初期化します。
+
+表示領域には通常のアプリ入口をそのまま読み込みます。画面部品・CSS・SQLiteの作成と検証は製品と共通で、ファイル選択・保存の境界だけを`tests/ui/memory-files.ts`で置き換えています。アプリの変更は開発サーバーから反映されます。テスト用コードは配布用ビルドの入口に含めません。
+
+```sh
+# 初回のみ：テスト用ブラウザの準備
+npx playwright install chromium
+
+# ビルド後、広い画面と狭い画面でテスト
+npm run test:ui
+
+# 操作結果・画面画像・失敗時の記録を確認
+npm run test:ui:report
+```
+
+手元にインストール済みのChromeを使う場合は、macOS/Linuxでは`TRIADICHROME_TEST_BROWSER=chrome npm run test:ui`でも実行できます。ブラウザの種類を省略した場合はPlaywrightのChromiumを使います。
+
+入口からホームへの移動、計画作成と再読込、サイドバーの開閉・キーボード操作、キャンセル・読込失敗・保存失敗を確認します。さらに、確認用画面とビルドされた配布用画面を同じ寸法・テストデータで操作し、入口・ホーム・サイドバーの操作対象と画像が一致することを検証します。描画の微小な色差と輪郭処理の差を除外し、判定対象の差分画素数は0を要求します。過去画像との比較ではなく、同じ実装から生成した両画面の一致を確認するため、デザインの良し悪しは保存された画像を見て判断します。
+
+`playwright-report/`には結果と画像、`test-results/ui/`には失敗時の画像と操作記録を出力し、Gitには含めません。自動テストはポート4174の専用サーバーを起動・終了するため、ポート4173の手動確認画面と併用できます。Chrome拡張のアイコン起動・権限・service worker・実ファイルへの保存は、この画面テストの対象外です。起動管理には[Playwrightの開発サーバー設定](https://playwright.dev/docs/test-webserver)を使用しています。
+
 ## Chromeで読み込む
 
 1. `npm run build`を実行します。

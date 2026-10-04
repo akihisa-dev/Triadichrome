@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/branding/icons/icon-32.png?no-inline" />
+    <link rel="stylesheet" href="./preview.css" />
+    <title>Triadichrome 画面テスト</title>
+  </head>
+  <body>
+    <header class="test-toolbar">
+      <div><strong>画面テスト</strong><span>ファイル操作はメモリ内で再現します。</span></div>
+      <div class="scenario-control"><label for="scenario">ファイル操作</label>
+        <select id="scenario">
+          <option value="normal">正常</option>
+          <option value="cancel">キャンセル</option>
+          <option value="invalid">不正ファイル</option>
+          <option value="save-failure">保存失敗</option>
+        </select>
+      </div>
+      <button id="reset" type="button">入口に戻す</button>
+      <output id="status" role="status">準備中</output>
+    </header>
+    <iframe id="app-preview" title="Triadichromeの実装画面" inert></iframe>
+    <script type="module" src="./preview.ts"></script>
+  </body>
+</html>

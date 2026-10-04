@@ -2,6 +2,8 @@ node_modules/
 dist/
 .npm-cache/
 coverage/
+playwright-report/
+test-results/
 backup/
 build/
 .pnpm-store/
