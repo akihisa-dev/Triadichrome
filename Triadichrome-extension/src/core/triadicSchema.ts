@@ -2,6 +2,8 @@ export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
 export const TRIADIC_FORMAT_VERSION = 1;
+// Nullable only for accounts in older files, whose codes must be assigned by the user.
+export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
 export const TRIADIC_SCHEMA_OBJECTS = [
   { type: "table", name: "triadic_metadata" },
@@ -57,10 +59,13 @@ CREATE TABLE initiatives (
 CREATE TABLE accounts (
   id INTEGER PRIMARY KEY,
   budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
+  ${ACCOUNT_CODE_COLUMN_SQL},
   name TEXT NOT NULL,
   sort_order INTEGER NOT NULL DEFAULT 0,
   UNIQUE (budget_id, name)
 );
+
+CREATE UNIQUE INDEX accounts_code_idx ON accounts (budget_id, code);
 
 CREATE TABLE details (
   id INTEGER PRIMARY KEY,

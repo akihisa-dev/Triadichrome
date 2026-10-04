@@ -327,16 +327,19 @@ button:disabled {
 }
 
 .home-view,
-.initiative-entry-page {
+.initiative-entry-page,
+.master-page {
   min-height: 100%;
 }
 
-.initiative-entry-page {
+.initiative-entry-page,
+.master-page {
   min-width: 0;
   padding: clamp(16px, 3vw, 32px);
 }
 
-.initiative-entry-page h1 {
+.initiative-entry-page h1,
+.master-page h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
@@ -434,7 +437,7 @@ button:disabled {
   position: sticky;
   z-index: 1;
   left: 0;
-  width: clamp(96px, 16vw, 180px);
+  width: clamp(150px, 20vw, 220px);
   padding-left: 0;
   padding-right: 16px;
   text-align: left;
@@ -488,6 +491,80 @@ button:disabled {
   background: var(--surface);
   outline-color: var(--focus);
 }
+
+.initiative-amount-table select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  outline: 2px solid transparent;
+  outline-offset: -2px;
+  text-overflow: ellipsis;
+  transition: border-color var(--motion-feedback) var(--motion-ease), outline-color var(--motion-feedback) var(--motion-ease);
+}
+
+.initiative-amount-table select:focus-visible { outline-color: var(--focus); }
+.initiative-amount-table input:disabled { opacity: 0.45; }
+.initiative-row-actions { margin-top: 16px; }
+.initiative-master-guide { margin-top: 24px; color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+.page-description { color: var(--muted); font-size: 14px; line-height: 1.8; }
+.master-back { margin-bottom: 20px; }
+.master-menu { display: grid; max-width: 40rem; gap: 16px; margin-top: 28px; }
+.master-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+}
+.master-menu-item:hover { border-color: var(--control-line); background: var(--soft); }
+.master-menu-item strong { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 600; }
+.master-menu-item span span { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.account-master-form { max-width: 40rem; }
+.account-master-fields { display: flex; flex-wrap: wrap; gap: 0 20px; align-items: flex-start; }
+.account-master-fields .initiative-field { width: auto; flex: 1 1 180px; }
+.account-master-fields .account-code-field { flex: 0 1 140px; }
+.field-hint { font-size: 12px; color: var(--muted); }
+.account-code { display: inline-block; margin-right: 16px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.account-master-form > .form-actions { margin-top: 16px; }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.primary-button, .secondary-button, .text-button {
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+.primary-button { color: var(--surface); background: var(--ink); }
+.primary-button:hover:not(:disabled) { background: var(--muted); }
+.secondary-button { color: var(--ink); background: var(--surface); border-color: var(--line); }
+.secondary-button:hover:not(:disabled) { border-color: var(--control-line); background: var(--soft); }
+.text-button { padding-inline: 8px; color: var(--muted); background: transparent; }
+.text-button:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
+.primary-button:disabled, .secondary-button:disabled, .text-button:disabled { cursor: default; }
+.master-notice { margin: 16px 0 0; font-size: 14px; line-height: 1.7; }
+.account-master-list { max-width: 40rem; margin-top: 40px; }
+.account-master-list h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
+.account-master-list h2 span { color: var(--muted); font-size: 13px; font-weight: 400; }
+.account-master-list ul { padding: 0; margin: 16px 0 0; list-style: none; }
+.account-master-list li { border-bottom: 1px solid var(--line); }
+.account-master-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; }
+.account-master-name { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
+.account-master-name small { display: inline-block; margin-left: 12px; color: var(--muted); font-size: 12px; }
+.account-delete-confirm { padding: 0 0 16px; font-size: 14px; overflow-wrap: anywhere; }
 
 .home-header {
   display: flex;

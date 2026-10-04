@@ -21,42 +21,42 @@ export function installMemoryFiles(
       throw new target.DOMException("選択をキャンセルしました。", "AbortError");
     }
   };
+  const createHandle = (fileName: string) => ({
+    name: fileName,
+    getFile: async () => options.scenario === "invalid"
+      ? new target.File(["not a SQLite database"], name) : getFile(),
+    createWritable: async () => {
+      let pending: BlobPart | undefined;
+      return {
+        async write(data: BlobPart) {
+          if (options.scenario === "save-failure") {
+            throw new target.DOMException("テスト用の保存失敗です。", "NotAllowedError");
+          }
+          pending = data;
+        },
+        async close() {
+          if (pending === undefined) throw new Error("書き込み内容がありません。");
+          contents = pending;
+          name = fileName;
+        },
+        async abort() { pending = undefined; },
+      };
+    },
+  });
 
   Object.defineProperties(target, {
     showOpenFilePicker: {
       configurable: true,
       value: async () => {
         checkCancellation();
-        return [{ getFile: async () => options.scenario === "invalid"
-          ? new target.File(["not a SQLite database"], name)
-          : getFile() }];
+        return [createHandle(name)];
       },
     },
     showSaveFilePicker: {
       configurable: true,
       value: async ({ suggestedName }: { suggestedName: string }) => {
         checkCancellation();
-        return {
-          name: suggestedName,
-          getFile: async () => getFile(),
-          createWritable: async () => {
-            let pending: BlobPart | undefined;
-            return {
-              async write(data: BlobPart) {
-                if (options.scenario === "save-failure") {
-                  throw new target.DOMException("テスト用の保存失敗です。", "NotAllowedError");
-                }
-                pending = data;
-              },
-              async close() {
-                if (pending === undefined) throw new Error("書き込み内容がありません。");
-                contents = pending;
-                name = suggestedName;
-              },
-              async abort() { pending = undefined; },
-            };
-          },
-        };
+        return createHandle(suggestedName);
       },
     },
   });

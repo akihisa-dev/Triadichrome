@@ -1,20 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage, type InitiativeEntryDraft } from "./InitiativeEntryPage";
 import { FadeSwap } from "./FadeSwap";
+import { MasterPage } from "./MasterPage";
+import { AccountMasterPage } from "./AccountMasterPage";
+import { type Account, type AccountChange } from "../core/accountMaster";
 import appIcon from "../../../branding/logo.svg?no-inline";
 
-type Page = "home" | "initiative-entry";
+type Page = "home" | "initiative-entry" | "master" | "account-master";
 
 type HomePageProps = {
   fileName: string;
+  initialAccounts: Account[];
+  onChangeMaster: (change: AccountChange) => Promise<Account[]>;
   onCloseFile: () => void;
 };
 
-export function HomePage({ fileName, onCloseFile }: HomePageProps) {
+export function HomePage({ fileName, initialAccounts, onChangeMaster, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [page, setPage] = useState<Page>("home");
-  const [initiativeDraft, setInitiativeDraft] = useState<InitiativeEntryDraft>({ name: "", note: "", amounts: {} });
+  const [initiativeDraft, setInitiativeDraft] = useState<InitiativeEntryDraft>({ name: "", note: "", rows: [{ accountId: null, amounts: {} }] });
+  const [accounts, setAccounts] = useState(initialAccounts);
+  const [isSavingMaster, setIsSavingMaster] = useState(false);
+  const savingMaster = useRef(false);
+  const usedAccountIds = new Set(initiativeDraft.rows.flatMap(row => row.accountId === null ? [] : [row.accountId]));
+  const changeMaster = async (change: AccountChange) => {
+    if (savingMaster.current) throw new Error("保存が終わるまでお待ちください。");
+    if (change.type === "delete" && usedAccountIds.has(change.id)) throw new Error("施策入力で使用している勘定科目は削除できません。");
+    savingMaster.current = true;
+    setIsSavingMaster(true);
+    try { setAccounts(await onChangeMaster(change)); }
+    finally { savingMaster.current = false; setIsSavingMaster(false); }
+  };
 
   const closeSidebar = useCallback(() => {
     setIsSidebarOpen(false);
@@ -70,29 +87,40 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             <strong title={fileName}>{fileName}</strong>
           </div>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
+            <button className="sidebar-item" type="button" disabled={isSavingMaster} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
               </svg>
               <span>Home</span>
             </button>
-            <button className="sidebar-item" type="button" aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
+            <button className="sidebar-item" type="button" disabled={isSavingMaster} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
               </svg>
               <span>施策入力</span>
             </button>
+            <button className="sidebar-item" type="button" disabled={isSavingMaster} aria-current={page === "master" || page === "account-master" ? "page" : undefined} onClick={() => setPage("master")}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+              </svg>
+              <span>マスタ</span>
+            </button>
           </nav>
           <footer className="sidebar-footer">
-            <button className="sidebar-item" type="button" onClick={onCloseFile}>ファイルを閉じる</button>
+            <button className="sidebar-item" type="button" disabled={isSavingMaster} onClick={onCloseFile}>ファイルを閉じる</button>
           </footer>
           </div>
         </aside>
         <div className="home-content">
           <FadeSwap value={page} className="page-switch">
-            {displayed => displayed === "home" ? <main className="home-view" aria-label="ホーム" /> : (
-              <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} />
-            )}
+            {displayed => {
+              switch (displayed) {
+                case "home": return <main className="home-view" aria-label="ホーム" />;
+                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} onOpenMaster={() => setPage("account-master")} />;
+                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} />;
+                case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSavingMaster} onChange={changeMaster} onBack={() => setPage("master")} />;
+              }
+            }}
           </FadeSwap>
         </div>
       </div>
