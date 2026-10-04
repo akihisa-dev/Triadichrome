@@ -397,6 +397,10 @@ body:has(.sidebar-dialog[open]) {
   text-align: left;
 }
 
+.sidebar-item svg {
+  display: block;
+}
+
 .sidebar-item[aria-current="page"] {
   background: var(--soft);
   font-weight: 600;

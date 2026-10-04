@@ -66,7 +66,11 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             <strong title={fileName}>{fileName}</strong>
           </div>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" aria-current="page" onClick={closeSidebar}>ホーム</button>
+            <button className="sidebar-item" type="button" aria-label="ホーム" title="ホーム" aria-current="page" onClick={closeSidebar}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
+              </svg>
+            </button>
           </nav>
           <footer className="sidebar-footer">
             <button className="sidebar-item" type="button" onClick={() => { closeSidebar(); onCloseFile(); }}>ファイルを閉じる</button>
