@@ -68,6 +68,10 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await editedName.press("Enter");
   await expect(app.getByRole("button", { name: "売上を編集" })).toBeVisible();
   await app.getByRole("button", { name: "消耗品費を削除" }).click();
+  const confirmation = app.getByRole("alertdialog", { name: "勘定科目を削除" });
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText("「501 消耗品費」を削除しますか？");
+  await expect(confirmation.getByRole("button", { name: "キャンセル" })).toBeFocused();
   await app.getByRole("button", { name: "キャンセル", exact: true }).click();
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
   await app.getByRole("button", { name: "消耗品費を削除" }).click();
@@ -108,4 +112,53 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await expect(name).toHaveValue("売上高");
   await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("cell")).toHaveText("勘定科目はまだ登録されていません。");
   await expect(app.getByRole("button", { name: "登録", exact: true })).toBeEnabled();
+});
+
+test("一覧が長くても削除確認は画面中央に開き、キャンセルで表の位置を保つ", async ({ page, app }, testInfo) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く" }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+  await app.locator(".home-header button").click();
+  for (let index = 1; index <= 12; index++) {
+    await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(String(100 + index));
+    await app.getByRole("textbox", { name: "科目名", exact: true }).fill(`科目${index}`);
+    await app.getByRole("button", { name: "登録", exact: true }).click();
+    await expect(app.getByRole("button", { name: `科目${index}を削除`, exact: true })).toBeVisible();
+  }
+  await app.getByRole("button", { name: "通知を閉じる" }).click();
+  const trigger = app.getByRole("button", { name: "科目12を削除", exact: true });
+  await trigger.scrollIntoViewIfNeeded();
+  await settleMotion(app.locator("body"));
+  const readPosition = (node: HTMLElement) => ({ scroll: node.scrollTop, table: node.querySelector("table")!.getBoundingClientRect().toJSON() });
+  const before = await app.locator(".home-content").evaluate(readPosition);
+  expect(before.scroll).toBeGreaterThan(0);
+  await trigger.click();
+  const dialog = app.getByRole("alertdialog", { name: "勘定科目を削除" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText("「112 科目12」を削除しますか？");
+  await settleMotion(app.locator("body"));
+  expect(await app.locator(".home-content").evaluate(readPosition)).toEqual(before);
+  const placement = await dialog.evaluate(node => {
+    const { x, y, width, height } = node.getBoundingClientRect();
+    return { x, y, width, height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, modal: node.matches(":modal") };
+  });
+  expect(placement.modal).toBe(true);
+  expect(Math.abs(placement.x + placement.width / 2 - placement.viewportWidth / 2)).toBeLessThan(1);
+  expect(Math.abs(placement.y + placement.height / 2 - placement.viewportHeight / 2)).toBeLessThan(1);
+  expect(placement.y).toBeGreaterThanOrEqual(16);
+  expect(placement.x).toBeGreaterThanOrEqual(16);
+  const cancel = dialog.getByRole("button", { name: "キャンセル", exact: true });
+  const confirm = dialog.getByRole("button", { name: "削除する", exact: true });
+  await expect(cancel).toBeFocused();
+  await cancel.press("Tab");
+  await expect(confirm).toBeFocused();
+  await confirm.press("Tab");
+  await expect(cancel).toBeFocused();
+  await attachImage(testInfo, "削除確認ダイアログ", await page.locator("#app-preview").screenshot());
+  await cancel.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  expect(await app.locator(".home-content").evaluate(readPosition)).toEqual(before);
+  await expect(app.getByRole("table").getByRole("row")).toHaveCount(13);
 });

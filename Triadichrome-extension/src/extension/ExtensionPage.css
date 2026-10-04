@@ -91,13 +91,6 @@ button:focus-visible {
   --motion-distance: 0px;
 }
 
-.animated-height {
-  width: 100%;
-  flex-shrink: 0;
-  overflow: clip;
-  transition: height var(--motion-layout) var(--motion-ease);
-}
-
 .entry-page {
   display: grid;
   min-height: 100svh;
@@ -243,15 +236,6 @@ button:disabled {
 
 .entry-file-input {
   display: none;
-}
-
-.entry-status {
-  min-height: 1.5rem;
-  margin: 0.875rem 0 0;
-  color: var(--muted);
-  font-size: 0.8125rem;
-  line-height: 1.5;
-  text-align: center;
 }
 
 .entry-file-info {
@@ -558,7 +542,56 @@ button:disabled {
 .text-button { padding-inline: 8px; color: var(--muted); background: transparent; }
 .text-button:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
 .primary-button:disabled, .secondary-button:disabled, .text-button:disabled { cursor: default; }
-.master-notice { margin: 16px 0 0; font-size: 14px; line-height: 1.7; }
+.status-notice-layer {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 10;
+  width: max-content;
+  max-width: min(28rem, calc(100% - 32px));
+  pointer-events: none;
+}
+.status-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 4px 20px #00000014;
+  pointer-events: auto;
+}
+.status-notice p { margin: 0; overflow-wrap: anywhere; font-size: 14px; line-height: 1.7; }
+.status-notice .text-button { flex-shrink: 0; min-width: 36px; min-height: 36px; padding: 4px; font-size: 20px; }
+.confirmation-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(28rem, calc(100% - 32px));
+  max-height: calc(100svh - 32px);
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--surface);
+  box-shadow: 0 16px 64px #00000026;
+  opacity: 0;
+  transition: opacity var(--motion-fade) var(--motion-ease), display var(--motion-fade) allow-discrete, overlay var(--motion-fade) allow-discrete;
+}
+.confirmation-dialog[open] { opacity: 1; }
+.confirmation-dialog::backdrop {
+  background: #00000040;
+  opacity: 0;
+  transition: opacity var(--motion-fade) var(--motion-ease), display var(--motion-fade) allow-discrete, overlay var(--motion-fade) allow-discrete;
+}
+.confirmation-dialog[open]::backdrop { opacity: 1; }
+@starting-style {
+  .confirmation-dialog[open], .confirmation-dialog[open]::backdrop { opacity: 0; }
+}
+.confirmation-dialog h2 { margin: 0; font-size: 20px; line-height: 1.5; }
+.confirmation-dialog p { margin: 16px 0 24px; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
+.confirmation-dialog .form-actions { justify-content: flex-end; }
 .account-master-list { max-width: 40rem; margin-top: 40px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
 .account-master-list:focus-visible { outline-color: var(--focus); }
 .account-master-table { width: 100%; min-width: 360px; border-collapse: collapse; table-layout: fixed; text-align: left; }
@@ -571,10 +604,9 @@ button:disabled {
 .account-master-table tr > :last-child { padding-right: 0; }
 .account-master-table tbody { border-bottom: 1px solid var(--line); }
 .account-master-table .form-actions { flex-wrap: nowrap; }
+.account-master-table .text-button { min-height: 44px; }
 .account-master-table input { padding: 8px; font-size: 14px; outline-offset: -2px; }
-.account-master-table .account-confirm-row td { padding: 0; }
 .account-master-name { overflow-wrap: anywhere; font-size: 15px; font-weight: 400; line-height: 1.7; }
-.account-delete-confirm { padding: 0 0 16px; font-size: 14px; overflow-wrap: anywhere; }
 
 .home-header {
   display: flex;

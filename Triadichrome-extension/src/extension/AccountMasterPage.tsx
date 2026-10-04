@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Account, type AccountChange } from "../core/accountMaster";
-import { AnimatedHeight } from "./AnimatedHeight";
-import { FadeSwap } from "./FadeSwap";
+import { ConfirmationDialog } from "./ConfirmationDialog";
+import { StatusNotice } from "./StatusNotice";
 
 type AccountMasterPageProps = {
   accounts: Account[];
@@ -18,12 +18,14 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
   const [accountCode, setAccountCode] = useState("");
   const [accountName, setAccountName] = useState("");
   const [editing, setEditing] = useState<{ id: number; accountCode: string; accountName: string } | null>(null);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
+  const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [notice, setNotice] = useState({ message: "", error: false });
+  const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   useEffect(() => {
     if (!isSaving && focusAfterSave.current) {
       focusAfterSave.current = false;
-      input.current?.focus();
+      input.current?.focus({ preventScroll: true });
     }
   }, [isSaving]);
   const save = async (change: AccountChange) => {
@@ -38,9 +40,10 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
         focusAfterEdit.current = change.id;
         setEditing(null);
       }
-      setDeletingId(null);
+      setDeleteDialogOpen(false);
       setNotice({ message: change.type === "delete" ? "勘定科目を削除しました。" : "勘定科目を保存しました。", error: false });
     } catch (failure) {
+      setDeleteDialogOpen(false);
       const cancelled = failure instanceof DOMException && failure.name === "AbortError";
       setNotice({ message: cancelled ? "保存をキャンセルしました。入力内容は残っています。" : failure instanceof Error ? failure.message : "保存できませんでした。", error: !cancelled });
     }
@@ -74,8 +77,10 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
         <button className="primary-button" type="submit" disabled={isSaving || !accountCode.trim() || !accountName.trim()}>登録</button>
       </div>
     </form>
-    <AnimatedHeight><FadeSwap value={notice} className="motion-text">{value => value.message
-      ? <p className="master-notice" role={value.error ? "alert" : "status"}>{value.message}</p> : null}</FadeSwap></AnimatedHeight>
+    <StatusNotice {...notice} onDismiss={dismissNotice} />
+    <ConfirmationDialog open={isDeleteDialogOpen} title="勘定科目を削除" message={deletingAccount ? `「${deletingAccount.accountCode} ${deletingAccount.accountName}」を削除しますか？` : ""}
+      confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleteDialogOpen(false)}
+      onConfirm={() => { if (deletingAccount && !isSaving) void save({ type: "delete", id: deletingAccount.id }); }} />
     <div className="account-master-list" role="region" aria-label="勘定科目一覧" tabIndex={0}>
       <table className="account-master-table" aria-label="勘定科目一覧">
         <thead><tr><th scope="col">科目コード</th><th scope="col">科目名</th><th scope="col">操作</th></tr></thead>
@@ -104,17 +109,10 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                 <button className="text-button" type="submit" disabled={isSaving || !draft.accountCode.trim() || !draft.accountName.trim()}>保存</button>
                 <button className="text-button" type="button" disabled={isSaving} onClick={cancelEditing}>キャンセル</button>
               </form> : <div className="form-actions">
-                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus(); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={isSaving || editing !== null} onClick={() => { setEditing({ id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName }); setDeletingId(null); setNotice({ message: "", error: false }); }}>編集</button>
-                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策や明細があるため削除できません" : undefined} onClick={() => setDeletingId(account.id)}>削除</button>
+                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={isSaving || editing !== null} onClick={() => { setEditing({ id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName }); setNotice({ message: "", error: false }); }}>編集</button>
+                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策や明細があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
               </div>}</td>
             </tr>
-            <tr className="account-confirm-row"><td colSpan={3}><AnimatedHeight><FadeSwap value={deletingId === account.id}>{confirming => confirming ? <div className="account-delete-confirm">
-              <p>「{account.accountCode} {account.accountName}」を削除しますか？</p>
-              <div className="form-actions">
-                <button className="secondary-button" type="button" disabled={isSaving} onClick={() => void save({ type: "delete", id: account.id })}>削除する</button>
-                <button className="text-button" type="button" disabled={isSaving} onClick={() => setDeletingId(null)}>キャンセル</button>
-              </div>
-            </div> : null}</FadeSwap></AnimatedHeight></td></tr>
           </tbody>;
         })}
       </table>

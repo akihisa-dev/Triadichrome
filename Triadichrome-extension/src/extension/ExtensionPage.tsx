@@ -5,7 +5,7 @@ import { saveAccountMaster, type OpenPlan } from "./accountMasterFile";
 import { writeTriadicFile } from "./triadicFile";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
-import { AnimatedHeight } from "./AnimatedHeight";
+import { StatusNotice } from "./StatusNotice";
 import appIcon from "../../../branding/logo.svg?no-inline";
 import "./ExtensionPage.css";
 
@@ -110,11 +110,7 @@ export function ExtensionPage() {
       </section>
       <input ref={input} className="entry-file-input" type="file" accept={TRIADIC_FILE_EXTENSION} tabIndex={-1} aria-hidden="true"
         onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void run(() => open(file)); }} />
-      <AnimatedHeight>
-        <FadeSwap value={error} className="motion-text">
-          {message => message ? <p className="entry-status" role="alert">{message}</p> : null}
-        </FadeSwap>
-      </AnimatedHeight>
+      <StatusNotice message={error} error onDismiss={() => setError("")} />
     </div>
   </main>}</FadeSwap></div>;
 }

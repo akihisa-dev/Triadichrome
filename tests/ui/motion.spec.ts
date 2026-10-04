@@ -1,15 +1,18 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { test, expect, settleMotion, attachImage } from "./fixtures";
 
 type MotionAction = { frame: number; selector: string; event?: "dragenter" | "dragleave" };
 
 // Observe real rendered frames, without slowing, pausing or disabling animations.
-async function sampleChange(body: HTMLElement, options: { observe: string; actions: MotionAction[] }) {
-  const samples: { opacity: number; height: number; text: string }[] = [];
+async function sampleChange(body: HTMLElement, options: { observe: string; anchors?: string; actions: MotionAction[] }) {
+  const samples: { opacity: number; positions: number[][]; text: string }[] = [];
   for (let frame = 0; frame < 48; frame++) {
     const node = body.querySelector<HTMLElement>(options.observe)!;
     samples.push({
-      opacity: Number(getComputedStyle(node.classList.contains("animated-height") ? node.querySelector(".fade-swap")! : node).opacity),
-      height: node.getBoundingClientRect().height,
+      opacity: Number(getComputedStyle(node).opacity),
+      positions: options.anchors ? Array.from(body.querySelectorAll(options.anchors), anchor => {
+        const { x, y, width, height } = anchor.getBoundingClientRect();
+        return [x, y, width, height];
+      }) : [],
       text: node.textContent ?? "",
     });
     for (const action of options.actions.filter(action => action.frame === frame)) {
@@ -132,20 +135,67 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       expect(dragEnd.find(sample => sample.text.includes("ここにファイルをドロップ"))!.opacity).toBeLessThan(0.25);
     });
 
-    test("エラーの透明度と表示領域の高さが連続的に変わる", async ({ page, app }) => {
+    test("エラーはフェードし、表示・消去で入口の位置が動かない", async ({ page, app }) => {
       await page.getByLabel("ファイル操作", { exact: true }).selectOption("invalid");
       await expect(page.getByRole("status")).toHaveText("操作できます");
       await expect(app.getByRole("button", { name: "ファイルを開く", exact: true })).toBeVisible();
       await settleMotion(app.locator("body"));
       const samples = await app.locator("body").evaluate(sampleChange, {
-        observe: ".animated-height",
+        observe: ".status-notice-layer .fade-swap",
+        anchors: ".entry-logo, .entry-title, .entry-drop-zone",
         actions: [{ frame: 0, selector: ".entry-open-button" }],
       });
       await expect(app.getByRole("alert")).toHaveText("Triadicファイルを読み込めませんでした。");
-      const finalHeight = samples.at(-1)!.height;
-      expect(finalHeight).toBeGreaterThan(0);
-      expect(samples.some(sample => sample.height > 0 && sample.height < finalHeight)).toBe(true);
+      expect(samples[0]!.positions).toHaveLength(3);
+      for (const sample of samples) expect(sample.positions).toEqual(samples[0]!.positions);
       expect(samples.some(sample => sample.text.length > 0 && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      const dismissal = await app.locator("body").evaluate(sampleChange, {
+        observe: ".status-notice-layer .fade-swap",
+        anchors: ".entry-logo, .entry-title, .entry-drop-zone",
+        actions: [{ frame: 0, selector: ".status-notice button" }],
+      });
+      await expect(app.getByRole("alert")).toHaveCount(0);
+      for (const sample of dismissal) expect(sample.positions).toEqual(samples[0]!.positions);
+    });
+
+    test("表内保存の成功・エラーと通知の消去で入力欄や表が動かない", async ({ page, app }, testInfo) => {
+      await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+      await app.getByRole("button", { name: "サイドバーを開く" }).click();
+      await app.getByRole("button", { name: "マスタ", exact: true }).click();
+      await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+      await app.locator(".home-header button").click();
+      for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"]]) {
+        await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code!);
+        await app.getByRole("textbox", { name: "科目名", exact: true }).fill(name!);
+        await app.getByRole("button", { name: "登録", exact: true }).click();
+        await expect(app.getByRole("button", { name: `${name}を編集` })).toBeVisible();
+      }
+      await app.getByRole("button", { name: "売上高を編集" }).click();
+      const code = app.getByRole("textbox", { name: "売上高の科目コード", exact: true });
+      await code.fill("501");
+      await settleMotion(app.locator("body"));
+      const options = {
+        observe: ".status-notice-layer .fade-swap",
+        anchors: ".account-master-form, .account-master-table thead, .account-master-table tbody",
+        actions: [{ frame: 0, selector: ".account-master-table button[type=submit]" }],
+      };
+      const failure = await app.locator("body").evaluate(sampleChange, options);
+      await expect(app.getByRole("alert")).toHaveText("同じ科目コードが登録されています。");
+      const positions = failure[0]!.positions;
+      expect(positions).toHaveLength(4);
+      for (const sample of failure) expect(sample.positions).toEqual(positions);
+      await code.fill("100");
+      await app.getByRole("textbox", { name: "売上高の科目名", exact: true }).fill("売上");
+      const saved = await app.locator("body").evaluate(sampleChange, options);
+      await expect(app.getByRole("status")).toHaveText("勘定科目を保存しました。");
+      await expect(app.getByRole("button", { name: "売上を編集" })).toBeFocused();
+      for (const sample of saved) expect(sample.positions).toEqual(positions);
+      await attachImage(testInfo, "位置が変わらない保存通知", await page.locator("#app-preview").screenshot());
+      const dismissal = await app.locator("body").evaluate(sampleChange, {
+        ...options, actions: [{ frame: 0, selector: ".status-notice button" }],
+      });
+      await expect(app.getByRole("status")).toHaveCount(0);
+      for (const sample of dismissal) expect(sample.positions).toEqual(positions);
     });
   });
 }
