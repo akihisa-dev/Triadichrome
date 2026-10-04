@@ -159,7 +159,8 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   await name.fill("");
   await expect(name).toHaveValue("");
   await name.fill("業務改善施策（改訂）");
-  await note.fill("上期の業務改善\n担当部門と実施時期を調整する");
+  await expect(note).toHaveAttribute("type", "text");
+  await note.fill("上期の業務改善・担当部門と実施時期を調整する");
   await sales.fill("100");
   await salaries.fill("300");
   await trigger.click();
@@ -169,7 +170,7 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toHaveValue("業務改善施策（改訂）");
   await trigger.click();
-  await expect(note).toHaveValue("上期の業務改善\n担当部門と実施時期を調整する");
+  await expect(note).toHaveValue("上期の業務改善・担当部門と実施時期を調整する");
   await expect(sales).toHaveValue("100");
   await expect(salaries).toHaveValue("300");
   await app.getByText("施策名", { exact: true }).click();
@@ -179,7 +180,12 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   const nameBox = (await name.boundingBox())!;
   expect(nameBox.y).toBeGreaterThan(titleBox.y + titleBox.height);
   expect(nameBox.x).toBe(titleBox.x);
+  const registerBox = (await app.getByRole("button", { name: "登録", exact: true }).boundingBox())!;
+  expect(registerBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
+  expect(registerBox.y).toBe(nameBox.y);
+  expect(registerBox.height).toBe(nameBox.height);
   const noteBox = (await note.boundingBox())!;
+  expect(noteBox.height).toBe(nameBox.height);
   const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
   expect(noteBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
   expect(tableBox.y).toBeGreaterThan(noteBox.y + noteBox.height);
@@ -281,6 +287,10 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     const nameBox = (await app.getByRole("textbox", { name: "施策名", exact: true }).boundingBox())!;
     expect(nameBox.x).toBeGreaterThanOrEqual(mainBox.x);
     expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
+    const registerBox = (await app.getByRole("button", { name: "登録", exact: true }).boundingBox())!;
+    expect(registerBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
+    expect(registerBox.y).toBe(nameBox.y);
+    expect(registerBox.x + registerBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
     expect(tableBox.x + tableBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);

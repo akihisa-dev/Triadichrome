@@ -337,6 +337,22 @@ button:disabled {
   margin-top: 24px;
 }
 
+.initiative-name-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.initiative-name-row .initiative-field {
+  flex: 0 1 40rem;
+  min-width: 0;
+}
+
+.initiative-name-row > button {
+  flex-shrink: 0;
+  min-height: 46px;
+}
+
 .initiative-field label {
   font-size: 14px;
   font-weight: 600;
@@ -344,7 +360,6 @@ button:disabled {
 }
 
 .initiative-field input,
-.initiative-field textarea,
 .account-master-table input {
   width: 100%;
   min-width: 0;
@@ -363,19 +378,12 @@ button:disabled {
     outline-color var(--motion-feedback) var(--motion-ease);
 }
 
-.initiative-field textarea {
-  min-height: 96px;
-  resize: vertical;
-}
-
 .initiative-field input:hover,
-.initiative-field textarea:hover,
 .account-master-table input:hover {
   border-color: var(--muted);
 }
 
 .initiative-field input:focus-visible,
-.initiative-field textarea:focus-visible,
 .account-master-table input:focus-visible {
   border-color: var(--focus);
   outline-color: var(--focus);
