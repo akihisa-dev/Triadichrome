@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import { InitiativeListPage } from "./InitiativeListPage";
-import { createInitiativeDraft, currentFiscalYear, type InitiativeEntryDraft, type PlanContents } from "../core/initiatives";
+import { InitiativeDetailPage } from "./InitiativeDetailPage";
+import { createInitiativeDraft, currentFiscalYear, type Initiative, type InitiativeEntryDraft, type PlanContents } from "../core/initiatives";
 import { StatusNotice } from "./StatusNotice";
 import { FadeSwap } from "./FadeSwap";
 import { MasterPage } from "./MasterPage";
@@ -9,7 +10,7 @@ import { AccountMasterPage } from "./AccountMasterPage";
 import { type AccountChange } from "../core/accountMaster";
 import appIcon from "../../../branding/logo.svg?no-inline";
 
-type Page = "home" | "initiative-entry" | "initiative-list" | "master" | "account-master";
+type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "master" | "account-master";
 
 type HomePageProps = {
   fileName: string;
@@ -26,6 +27,13 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onRegister
   const [initiativeDraft, setInitiativeDraft] = useState(createInitiativeDraft);
   const [contents, setContents] = useState(initialContents);
   const { accounts, initiatives } = contents;
+  const [selectedInitiative, setSelectedInitiative] = useState<Pick<Initiative, "id" | "fiscalYear"> | null>(null);
+  const currentInitiative = initiatives.find(item => item.id === selectedInitiative?.id && item.fiscalYear === selectedInitiative?.fiscalYear);
+  const openInitiative = (initiative: Initiative) => {
+    dismissNotice();
+    setSelectedInitiative({ id: initiative.id, fiscalYear: initiative.fiscalYear });
+    setPage("initiative-detail");
+  };
   const [listYear, setListYear] = useState(String(initialContents.initiatives[0]?.fiscalYear ?? currentFiscalYear()));
   const [notice, setNotice] = useState({ message: "", error: false });
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
@@ -125,7 +133,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onRegister
               </svg>
               <span>施策入力</span>
             </button>
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "initiative-list" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
+            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M10 4v16" />
               </svg>
@@ -149,7 +157,8 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onRegister
               switch (displayed) {
                 case "home": return <main className="home-view" aria-label="ホーム" />;
                 case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} onBack={() => setPage("initiative-list")} />;
+                case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} />;
                 case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onChange={changeMaster} onBack={() => setPage("master")} />;
               }

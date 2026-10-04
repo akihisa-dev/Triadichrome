@@ -549,6 +549,10 @@ button:disabled {
 .initiative-list-table .initiative-list-name { position: sticky; left: 0; z-index: 1; width: 220px; text-align: left; overflow-wrap: anywhere; background: var(--canvas); border-right: 1px solid var(--line); }
 .initiative-list-table thead .initiative-list-name { vertical-align: bottom; background: var(--soft); }
 .initiative-list-table .initiative-month-end { border-right: 1px solid var(--line); }
+.initiative-name-button { max-width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--control-line); text-underline-offset: 4px; }
+.initiative-name-button:hover { text-decoration-color: currentColor; }
+.initiative-name-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 4px; }
+.initiative-detail-account { display: block; padding: 12px; font-size: 16px; font-weight: 400; overflow-wrap: anywhere; }
 .account-master-form { max-width: 52rem; }
 .account-master-fields { display: flex; flex-wrap: wrap; gap: 0 20px; align-items: flex-start; }
 .account-master-fields .initiative-field { width: auto; flex: 1 1 180px; }

@@ -8,9 +8,10 @@ type InitiativeListPageProps = {
   initiatives: Initiative[];
   fiscalYear: string;
   onYearChange: (year: string) => void;
+  onOpenInitiative: (initiative: Initiative) => void;
 };
 
-export function InitiativeListPage({ initiatives, fiscalYear, onYearChange }: InitiativeListPageProps) {
+export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOpenInitiative }: InitiativeListPageProps) {
   const years = [...new Set([fiscalYear, ...initiatives.map(item => item.fiscalYear === null ? "" : String(item.fiscalYear))])]
     .sort((a, b) => Number(b) - Number(a));
   const visible = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
@@ -36,7 +37,9 @@ export function InitiativeListPage({ initiatives, fiscalYear, onYearChange }: In
           </Fragment>)}</tr>
         </thead>
         <tbody>{visible.map(item => <tr key={item.id}>
-          <th scope="row" className="initiative-list-name" title={item.note || item.name}>{item.name}</th>
+          <th scope="row" className="initiative-list-name" title={item.note || item.name}>
+            <button className="initiative-name-button" type="button" onClick={() => onOpenInitiative(item)}>{item.name}</button>
+          </th>
           {initiativeMonths.map(month => <Fragment key={month}>
             <td>{amountText(item.months[month]?.sales)}</td>
             <td className="initiative-month-end">{amountText(item.months[month]?.profit)}</td>
