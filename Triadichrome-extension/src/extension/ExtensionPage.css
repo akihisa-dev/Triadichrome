@@ -360,7 +360,8 @@ button:disabled {
 }
 
 .initiative-field input,
-.initiative-field textarea {
+.initiative-field textarea,
+.account-master-table input {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -384,12 +385,14 @@ button:disabled {
 }
 
 .initiative-field input:hover,
-.initiative-field textarea:hover {
+.initiative-field textarea:hover,
+.account-master-table input:hover {
   border-color: var(--muted);
 }
 
 .initiative-field input:focus-visible,
-.initiative-field textarea:focus-visible {
+.initiative-field textarea:focus-visible,
+.account-master-table input:focus-visible {
   border-color: var(--focus);
   outline-color: var(--focus);
 }
@@ -536,7 +539,7 @@ button:disabled {
 .account-master-fields .initiative-field { width: auto; flex: 1 1 180px; }
 .account-master-fields .account-code-field { flex: 0 1 140px; }
 .field-hint { font-size: 12px; color: var(--muted); }
-.account-code { display: inline-block; margin-right: 16px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.account-code { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .account-master-form > .form-actions { margin-top: 16px; }
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .primary-button, .secondary-button, .text-button {
@@ -556,14 +559,21 @@ button:disabled {
 .text-button:hover:not(:disabled) { color: var(--ink); background: var(--soft); }
 .primary-button:disabled, .secondary-button:disabled, .text-button:disabled { cursor: default; }
 .master-notice { margin: 16px 0 0; font-size: 14px; line-height: 1.7; }
-.account-master-list { max-width: 40rem; margin-top: 40px; }
-.account-master-list h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 15px; font-weight: 600; }
-.account-master-list h2 span { color: var(--muted); font-size: 13px; font-weight: 400; }
-.account-master-list ul { padding: 0; margin: 16px 0 0; list-style: none; }
-.account-master-list li { border-bottom: 1px solid var(--line); }
-.account-master-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 12px 0; }
-.account-master-name { min-width: 0; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
-.account-master-name small { display: inline-block; margin-left: 12px; color: var(--muted); font-size: 12px; }
+.account-master-list { max-width: 40rem; margin-top: 40px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
+.account-master-list:focus-visible { outline-color: var(--focus); }
+.account-master-table { width: 100%; min-width: 360px; border-collapse: collapse; table-layout: fixed; text-align: left; }
+.account-master-table th, .account-master-table td { padding: 12px 8px; }
+.account-master-table thead { border-bottom: 1px solid var(--line); }
+.account-master-table thead th { color: var(--muted); font-size: 13px; font-weight: 500; }
+.account-master-table thead th:first-child { width: 100px; }
+.account-master-table thead th:last-child { width: 152px; }
+.account-master-table tr > :first-child { padding-left: 0; }
+.account-master-table tr > :last-child { padding-right: 0; }
+.account-master-table tbody { border-bottom: 1px solid var(--line); }
+.account-master-table .form-actions { flex-wrap: nowrap; }
+.account-master-table input { padding: 8px; font-size: 14px; outline-offset: -2px; }
+.account-master-table .account-confirm-row td { padding: 0; }
+.account-master-name { overflow-wrap: anywhere; font-size: 15px; font-weight: 400; line-height: 1.7; }
 .account-delete-confirm { padding: 0 0 16px; font-size: 14px; overflow-wrap: anywhere; }
 
 .home-header {
