@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import appIcon from "../../../branding/logo.svg?no-inline";
 
@@ -10,32 +10,38 @@ type HomePageProps = {
 };
 
 export function HomePage({ fileName, onCloseFile }: HomePageProps) {
-  const sidebar = useRef<HTMLDialogElement>(null);
-  const startedOnBackdrop = useRef(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [page, setPage] = useState<Page>("home");
 
-  const openSidebar = () => {
-    sidebar.current?.showModal();
-    setIsSidebarOpen(true);
-  };
-  const closeSidebar = () => sidebar.current?.close();
-  const navigate = (nextPage: Page) => {
-    setPage(nextPage);
-    closeSidebar();
-  };
+  const closeSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+    menuButton.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
+        closeSidebar();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isSidebarOpen, closeSidebar]);
 
   return (
     <div className="home-page">
       <header className="home-header">
         <button
+          ref={menuButton}
           className="home-icon-button"
           type="button"
-          aria-label="サイドバーを開く"
+          aria-label={isSidebarOpen ? "サイドバーを閉じる" : "サイドバーを開く"}
           aria-controls="home-sidebar"
           aria-expanded={isSidebarOpen}
-          aria-haspopup="dialog"
-          onClick={openSidebar}
+          onClick={() => setIsSidebarOpen(open => !open)}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" />
@@ -47,23 +53,11 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
         </span>
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
       </header>
-      {page === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
-      <dialog
-        ref={sidebar}
-        id="home-sidebar"
-        className="sidebar-dialog"
-        aria-labelledby="sidebar-title"
-        onClose={() => setIsSidebarOpen(false)}
-        onPointerDown={(event) => { startedOnBackdrop.current = event.target === event.currentTarget; }}
-        onClick={(event) => {
-          if (startedOnBackdrop.current && event.target === event.currentTarget) closeSidebar();
-          startedOnBackdrop.current = false;
-        }}
-      >
-        <div className="sidebar-panel">
+      <div className="home-layout">
+        <aside id="home-sidebar" className="sidebar-panel" aria-labelledby="sidebar-title" hidden={!isSidebarOpen}>
           <header className="sidebar-header">
             <h2 id="sidebar-title">メニュー</h2>
-            <button className="home-icon-button" type="button" aria-label="サイドバーを閉じる" onClick={closeSidebar} autoFocus>
+            <button className="home-icon-button" type="button" aria-label="サイドバーを閉じる" onClick={closeSidebar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <path d="m6 6 12 12M18 6 6 18" />
               </svg>
@@ -73,13 +67,13 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
             <strong title={fileName}>{fileName}</strong>
           </div>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" aria-current={page === "home" ? "page" : undefined} onClick={() => navigate("home")}>
+            <button className="sidebar-item" type="button" aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
               </svg>
               <span>Home</span>
             </button>
-            <button className="sidebar-item" type="button" aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => navigate("initiative-entry")}>
+            <button className="sidebar-item" type="button" aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
               </svg>
@@ -89,8 +83,11 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
           <footer className="sidebar-footer">
             <button className="sidebar-item" type="button" onClick={() => { closeSidebar(); onCloseFile(); }}>ファイルを閉じる</button>
           </footer>
+        </aside>
+        <div className="home-content">
+          {page === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
         </div>
-      </dialog>
+      </div>
     </div>
   );
 }

@@ -29,51 +29,69 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   const preview = page.locator("#app-preview");
   await attachImage(testInfo, "入口", await preview.screenshot());
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.getByRole("button", { name: "サイドバーを開く" });
-  const dialog = app.getByRole("dialog", { name: "メニュー" });
+  const trigger = app.locator(".home-header").getByRole("button");
+  const sidebar = app.getByRole("complementary", { name: "メニュー" });
+  const main = app.getByRole("main", { name: "ホーム", exact: true });
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await expect(app.locator(".home-file-name")).toHaveText("画面テスト.triadic");
+  const fullMain = (await main.boundingBox())!;
   await attachImage(testInfo, "ホーム", await preview.screenshot());
 
   await trigger.click();
-  const close = dialog.getByRole("button", { name: "サイドバーを閉じる" });
-  await expect(close).toBeFocused();
+  const close = sidebar.getByRole("button", { name: "サイドバーを閉じる" });
+  await expect(trigger).toBeFocused();
+  await expect(trigger).toHaveAccessibleName("サイドバーを閉じる");
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
-  await expect(dialog.getByRole("button", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
+  await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toHaveAttribute("aria-current", "page");
+  const sidebarBox = (await sidebar.boundingBox())!;
+  const mainBox = (await main.boundingBox())!;
+  expect(mainBox.x).toBeCloseTo(sidebarBox.x + sidebarBox.width);
+  expect(mainBox.width).toBeCloseTo(fullMain.width - sidebarBox.width);
+  expect(mainBox.width).toBeGreaterThan(0);
+  expect(mainBox.y).toBe(fullMain.y);
+  await expect(app.getByRole("dialog")).toHaveCount(0);
   await attachImage(testInfo, "サイドバー", await preview.screenshot());
   await page.keyboard.press("Tab");
-  await expect(dialog.getByRole("button", { name: "Home", exact: true })).toBeFocused();
+  await expect(close).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).not.toBeVisible();
   await expect(trigger).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(trigger).toHaveAccessibleName("サイドバーを開く");
+  expect(await main.boundingBox()).toEqual(fullMain);
+  await expect(app.getByRole("navigation")).toHaveCount(0);
 
   await trigger.click();
   await close.click();
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).not.toBeVisible();
   await expect(trigger).toBeFocused();
   await trigger.click();
-  await dialog.click({ position: { x: (await dialog.boundingBox())!.width - 8, y: 200 } });
-  await expect(dialog).not.toBeVisible();
+  await main.click({ position: { x: 20, y: 20 } });
+  await expect(sidebar).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sidebar).not.toBeVisible();
+  await expect(trigger).toBeFocused();
   await trigger.click();
-  await dialog.getByRole("button", { name: "Home", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
-  await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
+  await trigger.click();
+  await expect(sidebar).not.toBeVisible();
+  expect(await main.boundingBox()).toEqual(fullMain);
 
   await trigger.click();
-  await dialog.getByRole("button", { name: "ファイルを閉じる" }).click();
+  await sidebar.getByRole("button", { name: "ファイルを閉じる" }).click();
   await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).not.toBeVisible();
   expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
 });
 
-test("サイドバーから施策入力へ移動し、ホームへ戻れる", async ({ page, app }) => {
+test("サイドバーを開いたまま施策入力とホームを往復できる", async ({ page, app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.getByRole("button", { name: "サイドバーを開く" });
-  const dialog = app.getByRole("dialog", { name: "メニュー" });
-  const navigation = dialog.getByRole("navigation", { name: "メインナビゲーション" });
+  const trigger = app.locator(".home-header").getByRole("button");
+  const sidebar = app.getByRole("complementary", { name: "メニュー" });
+  const navigation = sidebar.getByRole("navigation", { name: "メインナビゲーション" });
   const home = navigation.getByRole("button", { name: "Home", exact: true });
   const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
 
@@ -82,40 +100,73 @@ test("サイドバーから施策入力へ移動し、ホームへ戻れる", as
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Tab");
+  await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる" })).toBeFocused();
+  await page.keyboard.press("Tab");
   await expect(home).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(initiativeEntry).toBeFocused();
   await page.keyboard.press("Enter");
 
-  await expect(dialog).not.toBeVisible();
-  await expect(trigger).toHaveAttribute("aria-expanded", "false");
+  await expect(sidebar).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
+  await expect(initiativeEntry).toBeFocused();
   await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toHaveCount(0);
   await expect(app.locator(".home-file-name")).toHaveText("画面テスト.triadic");
   expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
 
-  await trigger.click();
   await expect(initiativeEntry).toHaveAttribute("aria-current", "page");
   await expect(home).not.toHaveAttribute("aria-current", "page");
+  await app.getByRole("heading", { name: "施策入力", exact: true }).click();
+  await expect(sidebar).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).not.toBeVisible();
+  await expect(trigger).toBeFocused();
   await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
   await trigger.click();
   await home.click();
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).toBeVisible();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
   await expect(app.getByRole("main", { name: "施策入力", exact: true })).toHaveCount(0);
 
-  await trigger.click();
   await expect(home).toHaveAttribute("aria-current", "page");
   await initiativeEntry.click();
-  await trigger.click();
-  await dialog.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await sidebar.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
-  await expect(dialog).not.toBeVisible();
+  await expect(sidebar).not.toBeVisible();
+});
+
+test("画面幅を変えてもサイドバーとメインが並び、閉じると幅が戻る", async ({ page, app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const trigger = app.locator(".home-header").getByRole("button");
+  const sidebar = app.getByRole("complementary", { name: "メニュー" });
+  await trigger.click();
+  await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
+
+  for (const width of [320, 600, 1280]) {
+    await page.setViewportSize({ width, height: 800 });
+    await expect(sidebar).toBeVisible();
+    const frame = (await page.locator("#app-preview").boundingBox())!;
+    const sidebarBox = (await sidebar.boundingBox())!;
+    const mainBox = (await app.getByRole("main", { name: "施策入力", exact: true }).boundingBox())!;
+    expect(sidebarBox.x).toBe(frame.x);
+    expect(mainBox.x).toBeCloseTo(sidebarBox.x + sidebarBox.width);
+    expect(mainBox.x + mainBox.width).toBeCloseTo(frame.x + frame.width);
+    expect(mainBox.width).toBeGreaterThanOrEqual(frame.width / 2);
+    expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await app.getByRole("heading", { name: "施策入力", exact: true }).click();
+    await expect(sidebar).toBeVisible();
+  }
+
+  await trigger.click();
+  await expect(sidebar).not.toBeVisible();
+  const mainBox = (await app.getByRole("main", { name: "施策入力", exact: true }).boundingBox())!;
+  const frame = (await page.locator("#app-preview").boundingBox())!;
+  expect(mainBox.x).toBe(frame.x);
+  expect(mainBox.width).toBe(frame.width);
 });
 
 test("新しい計画をメモリ上に作成し、閉じた後に読み直せる", async ({ app }) => {
