@@ -1,21 +1,33 @@
 # Architecture contract
 
-## Source and generated boundaries
+Read [AGENTS.md](../../../../AGENTS.md) for the authoritative source and generated-output boundaries. The paths below locate the current owners; re-read their implementation before planning a move.
 
-- `Triadichrome-extension/src/` contains authored TypeScript, React, and extension source.
-- `Triadichrome-extension/src/core/` is reserved for platform-neutral logic when that boundary is introduced; it must not import `chrome.*`.
-- `Triadichrome-extension/src/extension/` owns the Manifest V3 service worker, independent extension page entry, Chrome adapters, and direct browser-extension lifecycle code.
-- `Triadichrome-extension/manifest.template.json` is the editable manifest source.
-- `Triadichrome-extension/` is the only Chrome load/distribution directory after build. Its `manifest.json`, page, assets, and generated JavaScript coexist with authored `manifest.template.json` and `Triadichrome-extension/src/`; do not clear the authored source while building.
+## Source and runtime owners
 
-## Runtime contracts
+| Responsibility | Current owner |
+| --- | --- |
+| File extension, format identity/version, schema tables and views | `Triadichrome-extension/src/core/triadicSchema.ts` |
+| sql.js initialization, validation, database creation/open/export | `Triadichrome-extension/src/core/triadicDatabase.ts` |
+| Writable stream, byte copying, close and abort | `Triadichrome-extension/src/extension/triadicFile.ts` |
+| File picker/fallback input, drop, busy state, errors, page transition | `Triadichrome-extension/src/extension/ExtensionPage.tsx` |
+| Manifest and distribution generation | `Triadichrome-extension/manifest.template.json`, `scripts/build.mjs`, `vite.config.ts` |
 
-- Keep the manifest's service-worker path, extension-page entry, permissions, host permissions, and relative asset references internally consistent.
-- Keep React page code independent from service-worker lifecycle code. The service worker must remain valid under MV3 and must not depend on DOM globals.
-- Put Dexie schema/transaction ownership behind a named persistence boundary. Keep PapaParse conversion separate from UI state and preserve malformed-row/error semantics once they are defined.
-- Put File System Access API calls behind an adapter that owns handle permission checks, file replacement, lock coordination, and abort/error behavior. Do not spread raw handles through unrelated components.
-- Keep public names, storage keys, CSV columns, file names, and manifest loading order stable unless the user explicitly approves a compatibility change.
+The core directory already exists. Keep `chrome.*`, file-picker calls, and raw browser handles out of schema/database processing. sql.js uses a bundled WebAssembly asset; preserve its local loading path and verify the generated reference if initialization or imports move. Service-worker code must remain independent from React page lifecycle and DOM globals.
 
-## Change boundary
+## SQLite document contracts
 
-Do not move or split an entry merely because the file is large. Confirm its consumers, dynamic references, manifest references, generated output, and tests first. When a consumer moves to a new owner, re-scan the old export, registration, listener, subscription, asset, and document references before removing anything.
+- One `.triadic` file represents one plan as a standard SQLite database. Read the current schema and README; do not invent a second persistence format or make derived views a separate source of truth.
+- Preserve extension and format identity, metadata version, `PRAGMA user_version`, required tables/views/columns, the single-plan constraint, and foreign-key validation. Package SemVer is independent from `TRIADIC_FORMAT_VERSION`.
+- Current loading rejects unsupported or malformed documents; it does not imply a migration facility. A requested schema change needs an explicit compatibility decision, defined handling of older and newer files, and failure recovery before any migration is introduced.
+- Keep database ownership clear: creation and validation close their temporary databases; callers of `openTriadicDatabase` own the returned database. Preserve cleanup on failures and foreign-key enforcement after export as implemented by `exportTriadicDatabase`.
+
+## File and UI contracts
+
+- Preserve the split between database bytes and browser file handles. Trace the picker, fallback input, drop, validation, and page transition before changing their owner.
+- `writeTriadicFile` copies the supplied byte view, writes it, and treats successful `close()` as completion. Write or close failure attempts `abort()` and propagates the original failure even if abort also fails.
+- A rejected `createWritable()` has no acquired stream to abort. On creation, wait for writing, rereading, and validation before entering the document. On opening an existing file, validate before changing the active document and do not write as part of validation. Restore the UI from its busy state after failure or cancellation.
+- Read current UI state ownership and persistence behavior. An in-memory field is not automatically persisted just because a corresponding schema table exists. Do not add autosave, handle caching, locking, or permission flows unless required by the actual change.
+
+## Moving a boundary
+
+Do not move a module merely because it is large. Confirm imports, dynamic references, manifest/build inputs, asset loading, tests, and current consumers. After reconnecting an owner, scan old exports, listeners, subscriptions, references, and documentation before removing the replaced path.

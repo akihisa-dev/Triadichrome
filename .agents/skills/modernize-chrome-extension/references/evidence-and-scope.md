@@ -2,32 +2,33 @@
 
 ## Evidence order
 
-1. Confirm HEAD, worktree status, normal and cached diffs, `package.json`, `Triadichrome-extension/manifest.template.json`, `vite.config.ts`, `tsconfig.json`, and the requested paths.
-2. Trace the MV3 manifest, service worker, independent extension page, source imports, storage, CSV parsing, File System Access adapters, generated output, tests, and documents.
-3. Use `rg`, imports/exports, event registration, dynamic loading, manifest references, and build output to confirm actual connections.
-4. Read history only as evidence about regressions or incomplete migrations. Current source and current documents define the current contract.
-5. Identify what existing tests and checks detect and what they do not detect.
+1. Follow [AGENTS.md](../../../../AGENTS.md) to inspect HEAD, normal/staged changes, package and manifest sources, build configuration, and the requested paths.
+2. Trace the manifest, service worker, extension page, schema/database processing, browser file operations, generated output, tests, and current documentation.
+3. Use `rg`, imports/exports, registrations, dynamic loading, manifest references, and build output to confirm actual connections.
+4. Read history only as evidence about regressions or incomplete migrations. Current code and source-of-truth documents define the current contract.
+5. Identify actual test assertions and their limits before deciding what needs additional verification.
 
 ## Scope map
 
-For a broad request, enumerate every applicable surface:
+For a broad request, trace every applicable surface:
 
 | Surface | Minimum trace |
 | --- | --- |
 | Runtime | manifest, service worker, extension page, initialization, re-entry |
-| Boundaries | `Triadichrome-extension/src/core/`, `Triadichrome-extension/src/extension/`, Chrome APIs, browser APIs, adapters |
-| State and persistence | owner, keys, defaults, read/write/reset, conflicts, recovery |
-| CSV and files | parser, validation, File System Access handles, lock/replace behavior |
-| Build and distribution | Vite inputs, manifest generation, generated assets, `Triadichrome-extension/`, version |
-| Regression and documents | tests, typecheck, build, README, AGENTS, linked references |
+| Source boundaries | existing `Triadichrome-extension/src/core/` and `src/extension/` owners, Chrome/browser APIs, imports, adapters |
+| SQLite documents | `triadicSchema.ts`, `triadicDatabase.ts`, format identity/version, schema validation, views, foreign keys, database lifetime, export |
+| Files | `triadicFile.ts` and `ExtensionPage.tsx`, file selection/drop, bytes and handles, write/close/abort, cancellation, errors |
+| UI state | actual owner, lifetime, navigation/reset, whether values are memory-only or written to a document |
+| Build and distribution | Vite inputs, manifest generation, sql.js WebAssembly, generated references, source/output coexistence, product version |
+| Regression and documents | normal/UI assertions, verify commands, README, AGENTS, linked references |
 
-Attach implementation paths, protected contracts, owners, verification entry points, and a candidate state to each surface. A surface with no change still needs a `not-found` reason.
+For each surface, attach relevant paths, contracts, owners, verification entry points, and findings. Do not infer unimplemented persistence or migration features from table names, UI controls, or old plans.
 
 ## Candidate states
 
-- `confirmed`: the problem, path, impact, owner, protected contract, and verification are understood.
-- `not-found`: the current HEAD does not show the alleged problem; do not change it.
-- `insufficient-evidence`: more investigation is needed; do not delete or redesign the affected path.
-- `out-of-scope`: explicitly excluded by the user or owned by an external system.
+- `confirmed`: the problem, impact, owner, protected contract, and verification are understood.
+- `not-found`: current evidence does not show the alleged problem; do not change it.
+- `insufficient-evidence`: investigation is still needed; do not delete or redesign the affected path.
+- `out-of-scope`: excluded by the request or owned by an external system.
 
-“Long”, “old”, or “duplicated” is an investigation prompt, not evidence for a refactor. A change unit needs a purpose, non-purpose, affected path, dependencies, compatibility contract, verification, and a safe removal condition for replaced paths.
+Record why an inspected surface needs no change. “Long”, “old”, or “duplicated” is an investigation prompt, not evidence of a defect. Each proposed unit needs an actual purpose, affected dependencies, compatibility condition, verification, and safe removal condition for replaced paths.

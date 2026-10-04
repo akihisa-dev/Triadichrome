@@ -2,11 +2,13 @@
 
 Judge efficiency by the cost and risk of producing the same result, not by line or file count. Compare only the affected scenario and equivalent inputs.
 
-- initialization, file reads/writes, CSV parsing, IndexedDB transactions, DOM work, render work, timers, listeners, observers, and subscriptions;
-- cache creation/hit/miss/invalidation and work skipped for unchanged inputs;
-- state owners, synchronization points, adapters, public entry points, compatibility branches, generated references, and documents to update;
-- failure, cancellation, retry, replacement, and recovery cost.
+- sql.js/WebAssembly initialization, database opens/closes, validation queries, exports, byte-array copies, file reads/writes, DOM/render work, timers, listeners, and subscriptions;
+- cache lifetime and invalidation, including whether cached bytes or a database become stale after editing or opening another file;
+- ownership of database connections, UI state, file handles, public entry points, generated references, and documents;
+- cancellation, write/close/abort failures, retry, cleanup, and recovery cost.
 
-After moving a consumer, scan old functions/classes, exports, event registration, subscriptions, manifest and Vite inputs, assets, tests, fixtures, and documentation. Keep a path only when a current consumer, public compatibility contract, generated source, or verification requires it. A temporary compatibility path needs an owner, reason, protected check, and removal condition. “Just in case” is not a retention reason.
+An optimization must preserve format validation and foreign-key enforcement, correct exported bytes, error propagation, and resource cleanup. Do not skip validation, retain a database indefinitely, or duplicate persisted state merely to reduce work on a successful path.
 
-Do not add instrumentation solely to claim an improvement and leave it in product code. Do not perform unrelated cleanup during a modernization wave.
+After moving a consumer, scan old functions/classes, exports, event registration, manifest/Vite inputs, assets, tests, fixtures, and documentation. Keep a path only for a current consumer, compatibility contract, generated reference, or required check. A temporary compatibility path needs a reason, protected check, and removal condition.
+
+Do not leave measurement-only instrumentation in product code or perform unrelated cleanup during the requested change.

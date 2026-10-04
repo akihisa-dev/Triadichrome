@@ -2,28 +2,30 @@
 
 ## Before editing
 
-Present a short scope contract: requested surfaces, explicit exclusions, current `confirmed`/`not-found`/`insufficient-evidence` items, dependency order, and the final completion condition. Establish a baseline from the current HEAD, worktree, Node/npm versions, current generated output if present, and the relevant `npm run typecheck`/`npm run build` results.
+State the requested surfaces, exclusions, current evidence, dependency order, and completion condition briefly. Establish a baseline from HEAD, worktree and staged changes, Node/npm versions, current generated output, and valid verification results. Select any missing checks through [AGENTS.md](../../../../AGENTS.md#検証と完了条件) and the [verification reference](compatibility-and-verification.md).
 
-Do not treat a failed baseline as success. Separate pre-existing, environment, and change-caused failures before proceeding.
+Separate pre-existing failures, environment failures, and regressions from the proposed change. Protect unrelated staged work, including version files; do not incorporate it into the modernization commit.
 
-## Change waves
+## Order dependent changes
 
-1. Fix the contract and impact map.
-2. Add or update characterization and static boundary checks when needed.
-3. Move pure logic and adapters without changing consumers.
-4. Move state ownership, persistence, asynchronous lifecycle, cancellation, and reset behavior.
-5. Reconnect the service worker, independent page, CSV/file adapters, and future UI consumers.
-6. Remove an old path only after all consumers, manifest/build references, tests, and documents are migrated.
-7. Synchronize the source-of-truth documents, version policy, and final audit.
+Adapt the sequence to the actual dependency graph:
 
-Keep each wave verifiable. If an intermediate state cannot be checked safely, keep the dependent edits in one change unit. A successful single wave, build, or commit is not completion of a broad program.
+1. Identify the compatibility contract and affected consumers.
+2. Add meaningful regression checks for behavior that is moving or lacks necessary coverage.
+3. Separate schema/database processing from browser and UI ownership without changing accepted `.triadic` files.
+4. Move state ownership, database lifetime, asynchronous cancellation, and error handling as needed.
+5. Reconnect the service worker, page, database-byte/file-handle boundary, and existing UI consumers.
+6. Remove a replaced path only after callers, manifest/build references, tests, and documents have migrated.
+7. Update source-of-truth documentation, apply the version/commit rules, and review the complete requested result.
 
-## Checkpoints and handoff
+Keep each independent purpose verifiable. Keep dependent edits together when an intermediate state cannot be checked safely. One successful unit, build, or commit does not prove that the whole request is complete.
 
-When pausing, record the base/current HEAD, worktree and cached diff, assigned paths, completed units and checks, incomplete units and dependencies, known failures, and next safe operation. Label it `全体プログラム未完了` until the selected scope has been re-audited.
+## Resume or hand off
 
-On resume, re-check status, HEAD, diffs, paths, version, and other-agent changes before using the old plan. Do not silently continue from stale assumptions.
+When work is interrupted or handed off, record HEAD, worktree/staged state, affected paths, completed checks, remaining work, dependencies, and the next safe action in the handoff message. Do not accumulate a work log in project documentation.
 
-## External and Git boundary
+On resume, recheck HEAD, status, relevant diffs, versions, and changed paths before relying on earlier evidence. Proceed with safely separable work; report only the overlapping portion that cannot be completed safely.
 
-Workers and sub-tasks do not commit, tag, push, publish, or mutate external Issues unless the parent task explicitly assigns that action. The repository `AGENTS.md` owns the Japanese commit and SemVer rules; this workflow only records when those checks belong in the final wave.
+## Git and external actions
+
+[AGENTS.md](../../../../AGENTS.md) owns commit timing, SemVer, and authorization for push, tags, releases, and Issue changes. If delegated work is explicitly authorized, its assignment must state any Git or external actions it owns; ordinary subtask completion does not grant that authority.

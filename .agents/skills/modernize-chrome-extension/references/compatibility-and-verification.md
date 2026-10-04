@@ -1,27 +1,30 @@
 # Compatibility and verification
 
-## Verification by surface
+## Select existing checks
 
-| Surface | Minimum confirmation |
+Use [AGENTS.md](../../../../AGENTS.md#検証と完了条件) for verification requirements and [README](../../../../README.md#検証とgitフック) for command contents. Confirm scripts in the current root `package.json` before running them.
+
+Choose `npm run verify` or `npm run verify:full` according to the changed surfaces. Both include the build's typecheck, generated-output checks, normal tests, and version consistency; the full command also runs existing UI tests. Reuse successful checks for the same state and environment instead of running overlapping suites repeatedly. Use `npm run verify:release` only when the requested work calls for release verification.
+
+Current normal-test entry points include `scripts/test-files.mjs` for database/file behavior and `tests/repository-workflow.test.mjs` for Git/version safeguards. UI checks live under `tests/ui/`, use memory-backed file operations, and include comparison with built output. Inspect actual assertions before treating a case below as covered; this table is a selection guide, not a claim of existing coverage.
+
+## Verification by affected surface
+
+| Surface | Conditions to protect when that surface changes |
 | --- | --- |
-| Manifest and generated output | JSON validity, MV3 fields, service-worker/page references, generated asset existence, no source/test leakage, version consistency |
-| Core and extension boundary | no unintended `chrome.*` import into core, dependency direction, entry syntax |
-| Persistence and CSV | existing keys/columns, defaults, read/write/update/remove, malformed input, conflicts, failure and recovery |
-| File System Access | permission denial, abort, lock conflict, replacement failure, retry, handle invalidation |
-| Async lifecycle | stale completion, cancellation, retry, re-entry, shutdown, duplicate notification |
-| Extension page | relative asset paths, React bootstrap, blank/no-UI contract when requested |
-| Documents and diff | README/AGENTS links, generated output, `git diff --check`, status |
+| Manifest and distribution | MV3 fields, service-worker/page references, local WebAssembly and other asset paths, no source/test leakage into generated assets, version consistency |
+| Core/extension boundary | database code does not acquire Chrome/file handles; moved exports, runtime imports, and initialization still resolve |
+| File-format validation | valid existing documents still open; malformed bytes, wrong identity/version, missing tables/views/columns, invalid plan count, and foreign-key violations remain rejected |
+| Schema or requested migration | metadata and `user_version` agree; supported files retain records, constraints, and derived results; unsupported files are rejected without overwrite; migration failure preserves the original document |
+| Database lifecycle | temporary databases close on success/failure; opened databases have an explicit owner; foreign-key enforcement remains enabled after export |
+| File write lifecycle | exact byte view is written; acquisition, write, and close failures propagate; write/close failure attempts abort; abort failure does not hide the original error |
+| UI and async state | picker cancellation, invalid-file rejection, retries, busy-state cleanup, stale/repeated actions, memory-only state, page navigation, and generated-output parity remain consistent |
+| Documents and diff | referenced paths and commands exist; source/generated versions agree; diff checks and final status are clean of unintended changes |
 
-## Current npm checks
+For storage changes, use disposable fixtures representing accepted and rejected documents. Preserve the bytes and contents needed to compare before and after a failed operation. Do not use the user's working files as test fixtures or introduce migrations as part of a behavior-preserving refactor.
 
-Use only scripts that exist in the root `package.json`. The current baseline commands are:
+## Limits and completion
 
-- `npm run typecheck`
-- `npm run build`
-- `node --check Triadichrome-extension/src/extension/background.js` after a successful build
+Mocked streams can prove error propagation and abort calls; memory-backed UI tests can prove visible state and interaction. They do not prove filesystem durability, real picker permissions, disk-full recovery, concurrent-writer behavior, extension icon launch, or service-worker lifecycle. Perform real-file/site checks only within the authorization in AGENTS.md and report remaining limits precisely.
 
-Run targeted checks immediately after a related change. Before a requested commit, run the appropriate complete set once and reuse a successful result for the same HEAD and environment. Do not claim that a typecheck/build proves real Chrome loading, target-site behavior, performance, or OS-specific packaging.
-
-## Completion
-
-The selected change is complete only when the affected contract and failure paths are covered, generated output and source references agree, no unresolved `confirmed` or `insufficient-evidence` item remains in scope, and the final diff/status/version are inspected. Report any unrequested real-browser, external, OS, or performance checks as not run.
+A browser startup failure is a failed UI check, not a skipped success. Do not weaken assertions to conceal a regression. Completion requires the affected contracts and failure paths to be verified at the appropriate boundary, with unresolved cases reported rather than implied to be covered by typecheck or build alone.
