@@ -1,25 +1,19 @@
 import { type Account } from "../core/accountMaster";
 
-const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
-
-type Month = typeof months[number];
-
-export type InitiativeEntryDraft = {
-  name: string;
-  note: string;
-  rows: { accountId: number | null; amounts: Partial<Record<Month, string>> }[];
-};
+import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/initiatives";
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   onOpenMaster: () => void;
+  isSaving: boolean;
+  onRegister: () => void;
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMaster }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMaster, isSaving, onRegister }: InitiativeEntryPageProps) {
   return (
-    <main className="initiative-entry-page" aria-labelledby="initiative-entry-title">
+    <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving}>
       <h1 id="initiative-entry-title">施策入力</h1>
       <div className="initiative-name-row">
         <div className="initiative-field">
@@ -28,12 +22,17 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
             id="initiative-name"
             name="initiativeName"
             type="text"
+            disabled={isSaving}
             autoComplete="off"
             value={draft.name}
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        <button className="primary-button" type="button" disabled title="登録機能は未実装です">登録</button>
+        <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim()} onClick={event => {
+          const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
+          for (const input of inputs) if (!input.reportValidity()) return;
+          onRegister();
+        }}>登録</button>
       </div>
       <div className="initiative-field">
         <label htmlFor="initiative-note">備考</label>
@@ -41,14 +40,21 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
           id="initiative-note"
           name="initiativeNote"
           type="text"
+          disabled={isSaving}
           autoComplete="off"
           value={draft.note}
           onChange={event => onDraftChange({ ...draft, note: event.target.value })}
         />
       </div>
+      <div className="initiative-field initiative-year-field">
+        <label htmlFor="initiative-year">年度</label>
+        <input id="initiative-year" type="number" min="1" max="9998" step="1" value={draft.fiscalYear} disabled={isSaving}
+          aria-describedby="initiative-year-hint" onChange={event => onDraftChange({ ...draft, fiscalYear: event.target.value })} />
+        <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
+      </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
-        <button className="secondary-button" type="button" onClick={onOpenMaster}>勘定科目マスタを開く</button>
+        <button className="secondary-button" type="button" disabled={isSaving} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
       <div className="initiative-amount-table-container" role="region" aria-label="月別計画金額の入力表" tabIndex={0}>
         <table className="initiative-amount-table" aria-label="月別計画金額">
@@ -63,7 +69,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
               const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
               return <tr key={index}>
                 <th scope="row">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={accounts.length === 0}
+                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0}
                     onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
                     <option value="">科目を選択</option>
@@ -77,7 +83,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
                       step="any"
                       inputMode="decimal"
                       aria-label={`${accountName} ${month}月の金額`}
-                      disabled={row.accountId === null}
+                      disabled={isSaving || row.accountId === null}
                       value={row.amounts[month] ?? ""}
                       onChange={event => onDraftChange({
                         ...draft,
@@ -93,7 +99,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
         </table>
       </div>
       <div className="initiative-row-actions">
-        <button className="secondary-button" type="button" disabled={accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
+        <button className="secondary-button" type="button" disabled={isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
           onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
     </main>

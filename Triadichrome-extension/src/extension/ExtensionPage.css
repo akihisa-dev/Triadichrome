@@ -312,17 +312,20 @@ button:disabled {
 
 .home-view,
 .initiative-entry-page,
+.initiative-list-page,
 .master-page {
   min-height: 100%;
 }
 
 .initiative-entry-page,
+.initiative-list-page,
 .master-page {
   min-width: 0;
   padding: clamp(16px, 3vw, 32px);
 }
 
 .initiative-entry-page h1,
+.initiative-list-page h1,
 .master-page h1 {
   margin: 0;
   font-size: 24px;
@@ -360,7 +363,9 @@ button:disabled {
 }
 
 .initiative-field input,
-.account-master-table input {
+.initiative-field select,
+.account-master-table input,
+.account-master-table select {
   width: 100%;
   min-width: 0;
   min-height: 44px;
@@ -379,12 +384,16 @@ button:disabled {
 }
 
 .initiative-field input:hover,
-.account-master-table input:hover {
+.initiative-field select:hover,
+.account-master-table input:hover,
+.account-master-table select:hover {
   border-color: var(--muted);
 }
 
 .initiative-field input:focus-visible,
-.account-master-table input:focus-visible {
+.initiative-field select:focus-visible,
+.account-master-table input:focus-visible,
+.account-master-table select:focus-visible {
   border-color: var(--focus);
   outline-color: var(--focus);
 }
@@ -526,10 +535,25 @@ button:disabled {
 .master-menu-item:hover { border-color: var(--control-line); background: var(--soft); }
 .master-menu-item strong { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 600; }
 .master-menu-item span span { color: var(--muted); font-size: 13px; line-height: 1.7; }
-.account-master-form { max-width: 40rem; }
+.initiative-year-field { width: 10rem; max-width: 100%; }
+.initiative-list-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 32px; }
+.initiative-list-heading .initiative-field { margin: 0; }
+.initiative-list-container { max-width: 100%; margin-top: 24px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
+.initiative-list-container:focus-visible { outline-color: var(--focus); }
+.initiative-list-table { width: 100%; min-width: 2908px; table-layout: fixed; border-spacing: 0; font-variant-numeric: tabular-nums; }
+.initiative-list-table th, .initiative-list-table td { padding: 12px; border-bottom: 1px solid var(--line); }
+.initiative-list-table thead th { font-size: 14px; font-weight: 500; background: var(--soft); }
+.initiative-list-table thead th[colspan] { border-right: 1px solid var(--line); text-align: center; }
+.initiative-list-table tbody th { font-weight: 400; }
+.initiative-list-table td { text-align: right; }
+.initiative-list-table .initiative-list-name { position: sticky; left: 0; z-index: 1; width: 220px; text-align: left; overflow-wrap: anywhere; background: var(--canvas); border-right: 1px solid var(--line); }
+.initiative-list-table thead .initiative-list-name { vertical-align: bottom; background: var(--soft); }
+.initiative-list-table .initiative-month-end { border-right: 1px solid var(--line); }
+.account-master-form { max-width: 52rem; }
 .account-master-fields { display: flex; flex-wrap: wrap; gap: 0 20px; align-items: flex-start; }
 .account-master-fields .initiative-field { width: auto; flex: 1 1 180px; }
 .account-master-fields .account-code-field { flex: 0 1 140px; }
+.account-master-fields .account-type-field { flex: 0 1 140px; }
 .field-hint { font-size: 12px; color: var(--muted); }
 .account-code { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 .account-master-form > .form-actions { margin-top: 16px; }
@@ -600,20 +624,21 @@ button:disabled {
 .confirmation-dialog h2 { margin: 0; font-size: 20px; line-height: 1.5; }
 .confirmation-dialog p { margin: 16px 0 24px; overflow-wrap: anywhere; font-size: 15px; line-height: 1.7; }
 .confirmation-dialog .form-actions { justify-content: flex-end; }
-.account-master-list { max-width: 40rem; margin-top: 40px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
+.account-master-list { max-width: 52rem; margin-top: 40px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
 .account-master-list:focus-visible { outline-color: var(--focus); }
-.account-master-table { width: 100%; min-width: 360px; border-collapse: collapse; table-layout: fixed; text-align: left; }
+.account-master-table { width: 100%; min-width: 520px; border-collapse: collapse; table-layout: fixed; text-align: left; }
 .account-master-table th, .account-master-table td { padding: 12px 8px; }
 .account-master-table thead { border-bottom: 1px solid var(--line); }
 .account-master-table thead th { color: var(--muted); font-size: 13px; font-weight: 500; }
 .account-master-table thead th:first-child { width: 100px; }
+.account-master-table thead th:nth-child(3) { width: 120px; }
 .account-master-table thead th:last-child { width: 152px; }
 .account-master-table tr > :first-child { padding-left: 0; }
 .account-master-table tr > :last-child { padding-right: 0; }
 .account-master-table tbody { border-bottom: 1px solid var(--line); }
 .account-master-table .form-actions { flex-wrap: nowrap; }
 .account-master-table .text-button { min-height: 44px; }
-.account-master-table input { padding: 8px; font-size: 14px; outline-offset: -2px; }
+.account-master-table input, .account-master-table select { padding: 8px; font-size: 14px; outline-offset: -2px; }
 .account-master-name { overflow-wrap: anywhere; font-size: 15px; font-weight: 400; line-height: 1.7; }
 
 .home-header {

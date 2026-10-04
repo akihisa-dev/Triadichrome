@@ -1,23 +1,22 @@
 import { type Database } from "sql.js";
 import { exportTriadicDatabase, openTriadicDatabase } from "./triadicDatabase";
-import { ACCOUNT_CODE_COLUMN_SQL } from "./triadicSchema";
+import { isAccountType, type AccountType } from "./accountTypes";
+import { hasColumn, migrateTriadicDatabase } from "./triadicMigration";
 
-export type Account = { id: number; accountCode: string | null; accountName: string; inUse: boolean };
+export type Account = { id: number; accountCode: string | null; accountName: string; accountType: AccountType | null; inUse: boolean };
 export type AccountChange =
-  | { type: "add"; accountCode: string; accountName: string }
-  | { type: "update"; id: number; accountCode: string; accountName: string }
+  | { type: "add"; accountCode: string; accountName: string; accountType: AccountType | "" }
+  | { type: "update"; id: number; accountCode: string; accountName: string; accountType: AccountType | "" }
   | { type: "delete"; id: number };
 
-function hasAccountCode(database: Database): boolean {
-  return database.exec("PRAGMA table_info(accounts)")[0]!.values.some(column => column[1] === "code");
-}
-
-function listAccounts(database: Database): Account[] {
-  const code = hasAccountCode(database) ? "code" : "NULL";
-  return (database.exec(`SELECT id, ${code} AS account_code, name,
-    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id)
+export function listAccounts(database: Database): Account[] {
+  const code = hasColumn(database, "accounts", "code") ? "code" : "NULL";
+  const hasType = hasColumn(database, "accounts", "attribute");
+  const rowUsage = hasType ? "OR EXISTS(SELECT 1 FROM initiative_rows WHERE account_id = accounts.id)" : "";
+  return (database.exec(`SELECT id, ${code} AS account_code, name, ${hasType ? "attribute" : "NULL"},
+    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id) ${rowUsage}
     FROM accounts WHERE budget_id = 1 ORDER BY account_code IS NULL, account_code, sort_order, id`)[0]?.values ?? [])
-    .map(([id, accountCode, accountName, inUse]) => ({ id: Number(id), accountCode: accountCode === null ? null : String(accountCode), accountName: String(accountName), inUse: Boolean(inUse) }));
+    .map(([id, accountCode, accountName, accountType, inUse]) => ({ id: Number(id), accountCode: accountCode === null ? null : String(accountCode), accountName: String(accountName), accountType: isAccountType(accountType) ? accountType : null, inUse: Boolean(inUse) }));
 }
 
 export async function readAccountMaster(bytes: Uint8Array): Promise<Account[]> {
@@ -37,6 +36,7 @@ export function validateAccountChange(accounts: Account[], change: AccountChange
   const name = change.accountName.trim();
   if (!/^[0-9]{3}$/.test(code)) throw new Error("科目コードは半角数字3桁で入力してください。");
   if (!name) throw new Error("科目名を入力してください。");
+  if (!isAccountType(change.accountType)) throw new Error("科目属性を選択してください。");
   if (accounts.some(item => item.accountCode === code && item.id !== account?.id)) {
     throw new Error("同じ科目コードが登録されています。");
   }
@@ -49,9 +49,7 @@ export function validateAccountChange(accounts: Account[], change: AccountChange
 export async function changeAccountMaster(bytes: Uint8Array, change: AccountChange) {
   const database = await openTriadicDatabase(bytes);
   try {
-    // Additive migration on the copy being saved; reading old files never rewrites them.
-    if (!hasAccountCode(database)) database.run(`ALTER TABLE accounts ADD COLUMN ${ACCOUNT_CODE_COLUMN_SQL}`);
-    database.run("CREATE UNIQUE INDEX IF NOT EXISTS accounts_code_idx ON accounts (budget_id, code)");
+    migrateTriadicDatabase(database);
     validateAccountChange(listAccounts(database), change);
     if (change.type === "delete") {
       database.run("DELETE FROM accounts WHERE budget_id = 1 AND id = ?", [change.id]);
@@ -59,10 +57,10 @@ export async function changeAccountMaster(bytes: Uint8Array, change: AccountChan
       const code = change.accountCode.trim();
       const name = change.accountName.trim();
       if (change.type === "add") {
-        database.run(`INSERT INTO accounts (budget_id, code, name, sort_order)
-          VALUES (1, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM accounts WHERE budget_id = 1))`, [code, name]);
+        database.run(`INSERT INTO accounts (budget_id, code, name, attribute, sort_order)
+          VALUES (1, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM accounts WHERE budget_id = 1))`, [code, name, change.accountType]);
       } else {
-        database.run("UPDATE accounts SET code = ?, name = ? WHERE budget_id = 1 AND id = ?", [code, name, change.id]);
+        database.run("UPDATE accounts SET code = ?, name = ?, attribute = ? WHERE budget_id = 1 AND id = ?", [code, name, change.accountType, change.id]);
       }
     }
     database.run("UPDATE budgets SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);

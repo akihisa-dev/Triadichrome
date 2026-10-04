@@ -167,6 +167,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"]]) {
         await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code!);
         await app.getByRole("textbox", { name: "科目名", exact: true }).fill(name!);
+        await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
         await app.getByRole("button", { name: "登録", exact: true }).click();
         await expect(app.getByRole("button", { name: `${name}を編集` })).toBeVisible();
       }

@@ -60,15 +60,22 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    metadataValues.get("format_version") !== String(TRIADIC_FORMAT_VERSION) ||
+    !["1", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
   }
 
   const userVersion = database.exec("PRAGMA user_version")[0]?.values[0]?.[0];
-  if (userVersion !== TRIADIC_FORMAT_VERSION) {
+  if (String(userVersion) !== metadataValues.get("format_version")) {
     invalidDatabase();
+  }
+
+  if (userVersion === 2) {
+    database.exec(`SELECT attribute FROM accounts LIMIT 0;
+      SELECT note, fiscal_year FROM initiatives LIMIT 0;
+      SELECT id, initiative_id, account_id, sort_order FROM initiative_rows LIMIT 0;
+      SELECT entry_row_id FROM details LIMIT 0;`);
   }
 
   database.exec(`

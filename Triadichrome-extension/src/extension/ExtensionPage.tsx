@@ -1,7 +1,10 @@
 import { useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
-import { readAccountMaster, type AccountChange } from "../core/accountMaster";
-import { saveAccountMaster, type OpenPlan } from "./accountMasterFile";
+import { type AccountChange } from "../core/accountMaster";
+import { saveAccountMaster } from "./accountMasterFile";
+import { type OpenPlan } from "./planFile";
+import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
+import { saveInitiative } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
@@ -39,8 +42,8 @@ export function ExtensionPage() {
   const open = async (file: File, handle?: FileSystemFileHandle) => {
     if (!file.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error(".triadicファイルを選択してください。");
     const bytes = new Uint8Array(await file.arrayBuffer());
-    const accounts = await readAccountMaster(bytes);
-    plan.current = { name: file.name, bytes, accounts, ...(handle ? { handle } : {}) };
+    const contents = await readPlanContents(bytes);
+    plan.current = { name: file.name, bytes, ...contents, ...(handle ? { handle } : {}) };
     setDisplayName(file.name);
     setFileName(file.name);
   };
@@ -62,20 +65,22 @@ export function ExtensionPage() {
     await writeTriadicFile(handle, bytes);
     await open(await handle.getFile(), handle);
   });
-  const changeMaster = async (change: AccountChange) => {
+  const saveChange = async (operation: (current: OpenPlan, chooseDestination: () => Promise<FileSystemFileHandle>) => Promise<OpenPlan>) => {
     if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
     busy.current = true;
     try {
-      const saved = await saveAccountMaster(plan.current, change, () => {
+      const saved = await operation(plan.current, () => {
         const picker = (window as PickerWindow).showSaveFilePicker;
         if (!picker) throw new Error("この環境では保存できません。ファイルを保存できるChromeで開いてください。");
         return picker.call(window, { suggestedName: plan.current!.name, types: fileTypes });
       });
       plan.current = saved;
       setDisplayName(saved.name);
-      return saved.accounts;
+      return { accounts: saved.accounts, initiatives: saved.initiatives };
     } finally { busy.current = false; }
   };
+  const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination));
+  const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
   const drag = (event: DragEvent<HTMLElement>) => {
     if (!Array.from(event.dataTransfer.types).includes("Files")) return;
     event.preventDefault();
@@ -83,7 +88,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialAccounts={plan.current!.accounts} onChangeMaster={changeMaster}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onRegisterInitiative={register}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

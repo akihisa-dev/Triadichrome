@@ -7,6 +7,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("501");
   await app.getByRole("textbox", { name: "科目名", exact: true }).fill("消耗品費");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
@@ -39,7 +40,7 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("heading", { name: "マスタ", exact: true })).toBeVisible();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await expect(master).toHaveAttribute("aria-current", "page");
-  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("columnheader")).toHaveText(["科目コード", "科目名", "操作"]);
+  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("columnheader")).toHaveText(["科目コード", "科目名", "科目属性", "操作"]);
   const name = app.getByRole("textbox", { name: "科目名", exact: true });
   const register = app.getByRole("button", { name: "登録", exact: true });
   await name.fill("   ");
@@ -49,28 +50,32 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(name).toHaveAttribute("name", "accountName");
   await name.fill("売上高");
   await code.fill("12");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await register.click();
   await expect(app.getByRole("alert")).toHaveText("科目コードは半角数字3桁で入力してください。");
   await expect(code).toHaveValue("12");
   for (const [code, value] of [["100", "売上高"], ["501", "消耗品費"]] as const) {
     await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code);
     await name.fill(value);
+    await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
     await register.click();
     await expect(app.getByRole("button", { name: `${value}を編集` })).toBeVisible();
   }
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("101");
   await name.fill(" 売上高 ");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await register.click();
   await expect(app.getByRole("alert")).toHaveText("同じ名前の勘定科目が登録されています。");
   await expect(name).toHaveValue(" 売上高 ");
   await code.fill("100");
   await name.fill("別の科目");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await register.click();
   await expect(app.getByRole("alert")).toHaveText("同じ科目コードが登録されています。");
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
   const select = app.getByRole("combobox", { name: "1行目の勘定科目" });
   await expect(select).toHaveValue("");
-  await expect(app.getByRole("spinbutton").first()).toBeDisabled();
+  await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").first()).toBeDisabled();
   await select.selectOption({ label: "100 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.5");
   await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
@@ -133,11 +138,12 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toBeDisabled();
-  await expect(app.getByRole("spinbutton")).toHaveCount(12);
+  await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton")).toHaveCount(12);
   await app.getByRole("button", { name: "勘定科目マスタを開く" }).click();
   const name = app.getByRole("textbox", { name: "科目名", exact: true });
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("100");
   await name.fill("売上高");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");
   await expect(name).toHaveValue("売上高");
@@ -154,6 +160,7 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   for (let index = 1; index <= 12; index++) {
     await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(String(100 + index));
     await app.getByRole("textbox", { name: "科目名", exact: true }).fill(`科目${index}`);
+    await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
     await app.getByRole("button", { name: "登録", exact: true }).click();
     await expect(app.getByRole("button", { name: `科目${index}を削除`, exact: true })).toBeVisible();
   }

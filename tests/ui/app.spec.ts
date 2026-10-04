@@ -10,6 +10,7 @@ async function prepareAccountRows(target: FrameLocator | Page) {
   for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"], ["600", "給与手当"]] as const) {
     await target.getByRole("textbox", { name: "科目コード", exact: true }).fill(code);
     await target.getByRole("textbox", { name: "科目名", exact: true }).fill(name);
+    await target.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
     await target.getByRole("button", { name: "登録", exact: true }).click();
     await expect(target.getByRole("button", { name: `${name}を編集`, exact: true })).toBeVisible();
   }
@@ -95,7 +96,7 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力", "マスタ"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "マスタ"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Tab");
@@ -200,7 +201,7 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toHaveValue("");
   await expect(note).toHaveValue("");
-  expect(await app.getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
+  expect(await app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
 });
 
 test("金額表の各セルを編集でき、狭い画面でも最後の月に入力できる", async ({ page, app }, testInfo) => {
@@ -387,6 +388,14 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
       }
       await settleMotion(app.locator("body"));
       await settleMotion(production.locator("body"));
+      if (state === "施策入力") {
+        // Filling a lower row can scroll an iframe and a top-level page by
+        // different amounts. Compare the same explicit viewing position.
+        for (const target of [app, production]) {
+          await target.locator(".home-content").evaluate(node => node.scrollTo(0, 0));
+          await target.locator(".initiative-amount-table-container").evaluate(node => node.scrollTo(0, 0));
+        }
+      }
       await expect(app.locator("img")).toHaveCount(1);
       await expect.poll(() => app.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
       await expect.poll(() => production.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
