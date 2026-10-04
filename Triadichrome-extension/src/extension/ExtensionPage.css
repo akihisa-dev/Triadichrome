@@ -407,7 +407,7 @@ button:disabled {
 
 .initiative-amount-table {
   width: 100%;
-  min-width: 800px;
+  min-width: 1440px;
   border-spacing: 0;
   table-layout: fixed;
 }

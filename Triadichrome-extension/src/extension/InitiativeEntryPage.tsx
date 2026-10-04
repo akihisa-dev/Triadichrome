@@ -1,4 +1,4 @@
-const months = [4, 5, 6, 7, 8, 9] as const;
+const months = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
 const accounts = [
   { id: "sales", name: "売上高" },
   { id: "supplies", name: "消耗品費" },
