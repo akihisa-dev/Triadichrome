@@ -11,6 +11,7 @@ import { type AccountChange } from "../core/accountMaster";
 import { type AggregationChange } from "../core/aggregationMaster";
 import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
+import { useSidebar } from "./useSidebar";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
 type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "master" | "account-master" | "aggregation-master";
@@ -26,7 +27,9 @@ type HomePageProps = {
 
 export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onRegisterInitiative, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const sidebar = useSidebar();
+  const isSidebarOpen = sidebar.expanded;
+  const collapseSidebar = sidebar.collapse;
   const [page, setPage] = useState<Page>("home");
   const [initiativeDraft, setInitiativeDraft] = useState(createInitiativeDraft);
   const [contents, setContents] = useState(initialContents);
@@ -82,9 +85,9 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
   };
 
   const closeSidebar = useCallback(() => {
-    setIsSidebarOpen(false);
+    collapseSidebar();
     menuButton.current?.focus();
-  }, []);
+  }, [collapseSidebar]);
 
   useEffect(() => {
     if (!isSidebarOpen) return;
@@ -108,7 +111,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
           aria-label={isSidebarOpen ? "サイドバーを閉じる" : "サイドバーを開く"}
           aria-controls="home-sidebar"
           aria-expanded={isSidebarOpen}
-          onClick={() => setIsSidebarOpen(open => !open)}
+          onClick={() => isSidebarOpen ? closeSidebar() : sidebar.pin()}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
             <path d="M4 6h16M4 12h16M4 18h16" />
@@ -121,53 +124,60 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
       </header>
       <div className="home-layout">
-        <aside id="home-sidebar" className={`sidebar-panel${isSidebarOpen ? " is-open" : ""}`} aria-labelledby="sidebar-title" aria-hidden={!isSidebarOpen} inert={!isSidebarOpen}>
+        <aside id="home-sidebar" className={`sidebar-panel${isSidebarOpen ? " is-open" : ""}`} aria-label="メニュー"
+          onPointerEnter={sidebar.onPointerEnter} onPointerLeave={sidebar.onPointerLeave}
+          onFocusCapture={sidebar.onFocusCapture} onBlurCapture={sidebar.onBlurCapture}>
           <div className="sidebar-inner">
           <header className="sidebar-header">
-            <h2 id="sidebar-title">メニュー</h2>
-            <button className="home-icon-button" type="button" aria-label="サイドバーを閉じる" onClick={closeSidebar}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8M8 17h8" />
+            </svg>
+            <strong className="sidebar-label sidebar-file-name" title={fileName}>{fileName}</strong>
+            <button className="home-icon-button sidebar-close" type="button" aria-label="サイドバーを閉じる" aria-hidden={!isSidebarOpen} inert={!isSidebarOpen} onClick={closeSidebar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <path d="m6 6 12 12M18 6 6 18" />
               </svg>
             </button>
           </header>
-          <div className="sidebar-file">
-            <strong title={fileName}>{fileName}</strong>
-          </div>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
+            <button className="sidebar-item" type="button" aria-label="Home" disabled={isSaving} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
               </svg>
-              <span>Home</span>
+              <span className="sidebar-label">Home</span>
             </button>
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
+            <button className="sidebar-item" type="button" aria-label="施策入力" disabled={isSaving} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
               </svg>
-              <span>施策入力</span>
+              <span className="sidebar-label">施策入力</span>
             </button>
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
+            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={isSaving} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M10 4v16" />
               </svg>
-              <span>施策一覧</span>
+              <span className="sidebar-label">施策一覧</span>
             </button>
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "cost-table" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("cost-table"); }}>
+            <button className="sidebar-item" type="button" aria-label="総原価表" disabled={isSaving} aria-current={page === "cost-table" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("cost-table"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 15h18M11 4v16M16 9v11" />
               </svg>
-              <span>総原価表</span>
+              <span className="sidebar-label">総原価表</span>
             </button>
-            <button className="sidebar-item" type="button" disabled={isSaving} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" ? "page" : undefined} onClick={() => setPage("master")}>
+            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={isSaving} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
               </svg>
-              <span>マスタ</span>
+              <span className="sidebar-label">マスタ</span>
             </button>
           </nav>
           <footer className="sidebar-footer">
-            <button className="sidebar-item" type="button" disabled={isSaving} onClick={onCloseFile}>ファイルを閉じる</button>
+            <button className="sidebar-item" type="button" aria-label="ファイルを閉じる" disabled={isSaving} onClick={onCloseFile}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M10 4H4v16h6M10 12h11m-4-4 4 4-4 4" />
+              </svg>
+              <span className="sidebar-label">ファイルを閉じる</span>
+            </button>
           </footer>
           </div>
         </aside>

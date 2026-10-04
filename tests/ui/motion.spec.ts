@@ -42,7 +42,8 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         const trigger = body.querySelector<HTMLButtonElement>(".home-header button")!;
         const sidebar = body.querySelector<HTMLElement>(".sidebar-panel")!;
         const main = body.querySelector<HTMLElement>(".home-content")!;
-        const targetWidth = body.querySelector<HTMLElement>(".sidebar-inner")!.getBoundingClientRect().width;
+        const railWidth = sidebar.getBoundingClientRect().width;
+        const targetWidth = Math.min(280, body.clientWidth / 2);
         const samples: { phase: number; width: number; gap: number; total: number }[] = [];
         const jumps: number[] = [];
         let phase = 0;
@@ -54,7 +55,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
           const sideBox = sidebar.getBoundingClientRect();
           const mainBox = main.getBoundingClientRect();
           samples.push({ phase, width: sideBox.width, gap: mainBox.x - sideBox.right, total: sideBox.width + mainBox.width });
-          if ((phase === 0 && sideBox.width > targetWidth * 0.4) || (phase === 1 && sideBox.width < reversalWidth * 0.7)) {
+          if ((phase === 0 && sideBox.width > railWidth + (targetWidth - railWidth) * 0.4) || (phase === 1 && sideBox.width < railWidth + (reversalWidth - railWidth) * 0.7)) {
             reversalWidth = sideBox.width;
             trigger.click();
             await Promise.resolve();
@@ -64,15 +65,15 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
           }
           if (phase === 2 && Math.abs(sideBox.width - targetWidth) < 0.1) break;
         }
-        return { samples, jumps, closingInert, targetWidth, phase };
+        return { samples, jumps, closingInert, railWidth, targetWidth, phase };
       });
       await testInfo.attach("幅の推移", { body: JSON.stringify(result, null, 2), contentType: "application/json" });
       expect(result.phase).toBe(2);
       expect(result.jumps).toHaveLength(2);
       expect(result.jumps.every(jump => jump < 1)).toBe(true);
-      expect(result.closingInert).toBe(true);
+      expect(result.closingInert).toBe(false);
       for (const phase of [0, 1, 2]) {
-        expect(result.samples.some(sample => sample.phase === phase && sample.width > 0 && sample.width < result.targetWidth)).toBe(true);
+        expect(result.samples.some(sample => sample.phase === phase && sample.width > result.railWidth && sample.width < result.targetWidth)).toBe(true);
       }
       const total = result.samples[0]!.total;
       for (const sample of result.samples) {
@@ -82,8 +83,8 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await settleMotion(app.locator("body"));
       await app.locator(".home-header button").click();
       await settleMotion(app.locator("body"));
-      expect(await app.locator(".sidebar-panel").evaluate(node => node.getBoundingClientRect().width)).toBe(0);
-      await expect(app.getByRole("navigation")).toHaveCount(0);
+      expect(await app.locator(".sidebar-panel").evaluate(node => node.getBoundingClientRect().width)).toBe(64);
+      await expect(app.getByRole("navigation")).toHaveCount(1);
     });
 
     test("画面と案内はフェードを通り、連打した場合も最後の画面へ到達する", async ({ app }) => {
