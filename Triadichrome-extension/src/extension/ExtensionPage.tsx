@@ -142,7 +142,7 @@ export function ExtensionPage() {
     } finally { busy.current = false; }
   };
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
-  const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination));
+  const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination), change.type === "update");
   const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
   const update = (id: number, year: number | null, draft: InitiativeEntryDraft) => saveChange(current => saveInitiativeUpdate(current, id, year, draft), true);
   const drag = (event: DragEvent<HTMLElement>) => {

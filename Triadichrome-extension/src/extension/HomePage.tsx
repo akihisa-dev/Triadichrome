@@ -208,7 +208,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} />;
-                case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onChange={changeAggregations} onBack={() => setPage("master")} />;
+                case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeAggregations} onBack={() => setPage("master")} />;
                 case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;
               }
             }}

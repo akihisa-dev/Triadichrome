@@ -21,6 +21,7 @@ try {
       'export * from "./Triadichrome-extension/src/core/initiatives.ts";',
       'export * from "./Triadichrome-extension/src/core/autoSave.ts";',
       'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
+      'export * from "./Triadichrome-extension/src/core/aggregationGraph.ts";',
       'export * from "./Triadichrome-extension/src/core/costTable.ts";',
       'export * from "./Triadichrome-extension/src/extension/aggregationMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',

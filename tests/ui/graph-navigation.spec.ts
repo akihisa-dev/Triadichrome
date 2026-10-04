@@ -1,0 +1,147 @@
+import { test, expect, settleMotion } from "./fixtures";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+test("関係図をパン・ポインター中心のズーム・全体表示で操作できる", async ({ app, page }, testInfo) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^集計マスタ/ }).click();
+  const viewport = app.getByRole("region", { name: "集計の関係図", exact: true });
+  const canvas = app.locator(".aggregation-canvas");
+  const node = app.getByRole("region", { name: "売上集計", exact: true });
+  await app.getByRole("button", { name: "全体表示", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  const bounds = (await viewport.boundingBox())!;
+  const before = (await node.boundingBox())!;
+  await page.mouse.move(bounds.x + 8, bounds.y + bounds.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(bounds.x + 82, bounds.y + bounds.height / 2 - 35, { steps: 8 });
+  await page.mouse.up();
+  const panned = (await node.boundingBox())!;
+  expect(panned.x - before.x).toBeCloseTo(74, 0);
+  expect(panned.y - before.y).toBeCloseTo(-35, 0);
+  const transform = async () => canvas.evaluate(element => {
+    const matrix = new DOMMatrix(getComputedStyle(element).transform);
+    return { x: matrix.e, y: matrix.f, scale: matrix.a };
+  });
+  const previous = await transform();
+  const at = { x: bounds.width / 2, y: bounds.height / 2 };
+  const scrollBefore = await app.locator(".home-content").evaluate(element => element.scrollTop);
+  await page.mouse.move(bounds.x + at.x, bounds.y + at.y);
+  await page.mouse.wheel(0, -120);
+  await expect.poll(async () => (await transform()).scale).toBeGreaterThan(previous.scale);
+  const zoomed = await transform();
+  // Browser input rounds coordinates to screen pixels; the anchored point must stay within one pixel.
+  expect(Math.abs(zoomed.x + (at.x - previous.x) / previous.scale * zoomed.scale - at.x)).toBeLessThan(1);
+  expect(Math.abs(zoomed.y + (at.y - previous.y) / previous.scale * zoomed.scale - at.y)).toBeLessThan(1);
+  expect(await app.locator(".home-content").evaluate(element => element.scrollTop)).toBe(scrollBefore);
+  await app.getByRole("button", { name: "100%で表示", exact: true }).click();
+  await expect(app.getByRole("button", { name: "100%で表示", exact: true })).toHaveText("100%");
+  await app.getByRole("button", { name: "関係図を拡大", exact: true }).click();
+  await expect(app.getByRole("button", { name: "100%で表示", exact: true })).toHaveText("125%");
+  await app.getByRole("button", { name: "関係図を縮小", exact: true }).click();
+  await expect(app.getByRole("button", { name: "100%で表示", exact: true })).toHaveText("100%");
+  const beforeKey = await transform();
+  await viewport.press("ArrowRight");
+  expect((await transform()).x).toBeCloseTo(beforeKey.x - 60, 1);
+  // Focus on an off-screen node reveals it without creating a hidden native scroll position.
+  for (let index = 0; index < 10; index++) await viewport.press("ArrowRight");
+  const handle = app.getByRole("button", { name: "経常利益の所属を移動", exact: true });
+  await handle.focus();
+  const focused = (await handle.boundingBox())!;
+  expect(focused.x).toBeGreaterThanOrEqual(bounds.x);
+  expect(focused.x + focused.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+  await viewport.press("Home");
+  for (const name of ["売上集計", "費用集計", "営業利益", "経常利益"]) {
+    const box = (await app.getByRole("region", { name, exact: true }).boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(bounds.x);
+    expect(box.y).toBeGreaterThanOrEqual(bounds.y);
+    expect(box.x + box.width).toBeLessThanOrEqual(bounds.x + bounds.width);
+    expect(box.y + box.height).toBeLessThanOrEqual(bounds.y + bounds.height);
+  }
+  expect(await viewport.evaluate(element => ({ overflow: getComputedStyle(element).overflow, x: element.scrollLeft, y: element.scrollTop }))).toEqual({ overflow: "clip", x: 0, y: 0 });
+  await expect(app.locator(".graph-edge-sign")).toHaveCount(0);
+  await page.screenshot({ path: join(tmpdir(), `triadichrome-pan-zoom-${testInfo.project.name}.png`) });
+});
+
+test("倍率変更後も科目を集計へドラッグできる", async ({ app, page }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+  await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("500");
+  await app.getByRole("textbox", { name: "科目名", exact: true }).fill("費用科目1");
+  await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
+  await app.getByRole("button", { name: "登録", exact: true }).click();
+  await app.getByRole("button", { name: "← マスタへ戻る", exact: true }).click();
+  await app.getByRole("button", { name: /^集計マスタ/ }).click();
+  await app.getByRole("button", { name: "全体表示", exact: true }).click();
+  await app.getByRole("button", { name: "関係図を縮小", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  await app.getByRole("button", { name: /^未所属 / }).click();
+  const source = (await app.getByRole("button", { name: "500 費用科目1の所属を移動", exact: true }).boundingBox())!;
+  const target = (await app.getByRole("region", { name: "費用集計", exact: true }).boundingBox())!;
+  await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
+  const drop = app.getByRole("button", { name: "費用集計に加算として移動", exact: true });
+  await expect(drop).toBeVisible();
+  const destination = (await drop.boundingBox())!;
+  await page.mouse.move(destination.x + destination.width / 2, destination.y + destination.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(app.getByRole("region", { name: "費用集計", exact: true }).locator(".graph-account-label")).toHaveText(["500費用科目1"]);
+  await expect(app.getByRole("region", { name: "未所属", exact: true }).locator(".graph-account")).toHaveCount(0);
+});
+
+test("マップが画面の残り全体を占め、編集・追加・未所属一覧で狭くならない", async ({ app, page }, testInfo) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^集計マスタ/ }).click();
+  await settleMotion(app.locator("body"));
+  const viewport = app.getByRole("region", { name: "集計の関係図", exact: true });
+  const content = app.locator(".home-content");
+  const bounds = (await viewport.boundingBox())!;
+  const outer = (await content.boundingBox())!;
+  expect(bounds.height / outer.height).toBeGreaterThan(0.85);
+  expect(bounds.width / outer.width).toBeGreaterThan(0.9);
+  expect(outer.y + outer.height - bounds.y - bounds.height).toBeLessThanOrEqual(14);
+  expect(await content.evaluate(element => element.scrollHeight <= element.clientHeight && element.scrollWidth <= element.clientWidth)).toBe(true);
+  await expect(app.getByRole("heading", { name: "集計のつながり", exact: true })).toHaveCount(0);
+  await app.getByRole("button", { name: /^未所属 / }).click();
+  expect((await viewport.boundingBox())!.height).toBe(bounds.height);
+  await app.getByRole("button", { name: /^未所属 / }).click();
+  await app.getByRole("button", { name: "売上集計を編集", exact: true }).click();
+  expect((await viewport.boundingBox())!.height).toBe(bounds.height);
+  await expect(app.locator(".graph-editor").getByText("保存済み", { exact: true })).toBeVisible();
+  await expect(app.getByRole("button", { name: "保存を再試行", exact: true })).toBeHidden();
+  await app.getByRole("button", { name: "完了", exact: true }).click();
+  await app.getByRole("button", { name: "＋ 集計を追加", exact: true }).click();
+  expect((await viewport.boundingBox())!.height).toBe(bounds.height);
+  await app.getByRole("button", { name: "キャンセル", exact: true }).click();
+  await page.screenshot({ path: join(tmpdir(), `triadichrome-map-space-${testInfo.project.name}.png`) });
+});
+
+test("二本指のピンチで拡縮し、残った一本指でパンを続けられる", async ({ app, page }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^集計マスタ/ }).click();
+  await app.getByRole("button", { name: "全体表示", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  const box = (await app.getByRole("region", { name: "集計の関係図", exact: true }).boundingBox())!;
+  const canvas = app.locator(".aggregation-canvas");
+  const scale = () => canvas.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).a);
+  const before = await scale();
+  const client = await page.context().newCDPSession(page);
+  const points = [{ x: box.x + 25, y: box.y + 16, id: 1 }, { x: box.x + 65, y: box.y + 16, id: 2 }];
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: points });
+  points[1]!.x += 40;
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: points });
+  await expect.poll(scale).toBeCloseTo(before * 2, 2);
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [points[1]!] });
+  const x = await canvas.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).e);
+  points[0]!.x += 30;
+  await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [points[0]!] });
+  await expect.poll(() => canvas.evaluate(element => new DOMMatrix(getComputedStyle(element).transform).e)).toBeCloseTo(x + 30, 1);
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(app.locator(".aggregation-viewport")).not.toHaveClass(/is-panning/);
+  await client.detach();
+});

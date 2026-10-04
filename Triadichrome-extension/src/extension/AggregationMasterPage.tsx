@@ -4,106 +4,111 @@ import { type Aggregation, type AggregationMember } from "../core/aggregations";
 import { type AggregationChange } from "../core/aggregationMaster";
 import { StatusNotice } from "./StatusNotice";
 import { ConfirmationDialog } from "./ConfirmationDialog";
+import { AggregationGraph } from "./AggregationGraph";
+import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
+import { AutoSaveStatus } from "./AutoSaveStatus";
 
-type Props = { accounts: Account[]; groups: Aggregation[]; isSaving: boolean; onChange: (change: AggregationChange) => Promise<void>; onBack: () => void };
+type Props = AutoSaveProps & { accounts: Account[]; groups: Aggregation[]; isSaving: boolean; onChange: (change: AggregationChange) => Promise<void>; onBack: () => void };
 type MemberDraft = { key: number; target: string; sign: 1 | -1 };
 type Draft = { id: number; name: string; members: MemberDraft[] };
 
-export function AggregationMasterPage({ accounts, groups, isSaving, onChange, onBack }: Props) {
+export function AggregationMasterPage({ accounts, groups, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [name, setName] = useState("");
-  const [editing, setEditing] = useState<Draft | null>(null);
+  const [adding, setAdding] = useState(false);
+  const autoSave = useAutoSave<Draft>(draft => {
+    if (draft.members.some(member => !member.target)) throw new Error("集計対象を選択してください。");
+    return onChange({ type: "update", id: draft.id, name: draft.name, members: draft.members.map(member => {
+      const [kind, id] = member.target.split(":");
+      return { kind: kind as AggregationMember["kind"], id: Number(id), sign: member.sign };
+    }) });
+  }, onPendingChange);
+  const { draft: editing, controller } = autoSave;
+  const setEditing = (draft: Draft) => controller.change(draft);
   const [deleting, setDeleting] = useState<Aggregation | null>(null);
   const [notice, setNotice] = useState({ message: "", error: false });
   const dismiss = useCallback(() => setNotice({ message: "", error: false }), []);
   const serial = useRef(0);
-  const nameInput = useRef<HTMLInputElement>(null);
-  const focusEdit = useRef<number | null>(null);
+  const page = useRef<HTMLElement>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
   const targets = [
     ...accounts.map(account => ({ value: `account:${account.id}`, label: `${account.accountCode ?? "未設定"} ${account.accountName}` })),
     ...groups.map(group => ({ value: `group:${group.id}`, label: group.name })),
   ];
-  const label = (member: AggregationMember) => targets.find(target => target.value === `${member.kind}:${member.id}`)!.label;
   const owners = new Map<string, number>(groups.flatMap(group => group.members.map(member => [`${member.kind}:${member.id}`, group.id] as const)));
   const ancestors = new Set<number>();
   let ancestor = editing?.id;
   while (ancestor !== undefined) { ancestors.add(ancestor); ancestor = owners.get(`group:${ancestor}`); }
+  const focusGroup = (id: number) => requestAnimationFrame(() => page.current?.querySelector<HTMLButtonElement>(`[data-move-key="group:${id}"]`)?.focus({ preventScroll: true }));
   const save = async (change: AggregationChange) => {
     dismiss();
     try {
       await onChange(change);
-      if (change.type === "add") { setName(""); nameInput.current?.focus({ preventScroll: true }); }
-      if (change.type === "update") { focusEdit.current = change.id; setEditing(null); }
+      if (change.type === "add") { setName(""); setAdding(false); requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true })); }
       setDeleting(null);
-      setNotice({ message: change.type === "delete" ? "集計を削除しました。" : "集計を保存しました。", error: false });
+      setNotice({ message: change.type === "delete" ? "集計を削除しました。" : change.type === "move" ? "所属・加減算を保存しました。" : "集計を保存しました。", error: false });
+      return true;
     } catch (failure) {
       setDeleting(null);
       const cancelled = failure instanceof DOMException && failure.name === "AbortError";
-      setNotice({ message: cancelled ? "保存をキャンセルしました。入力内容は残っています。" : failure instanceof Error ? failure.message : "保存できませんでした。", error: !cancelled });
+      setNotice({ message: cancelled ? change.type === "move" ? "保存をキャンセルしました。元の所属を保っています。" : "保存をキャンセルしました。入力内容は残っています。" : failure instanceof Error ? failure.message : "保存できませんでした。", error: !cancelled });
+      return false;
     }
   };
-  const edit = (group: Aggregation) => { dismiss(); setEditing({ id: group.id, name: group.name, members: group.members.map(member => ({ key: serial.current++, target: `${member.kind}:${member.id}`, sign: member.sign })) }); };
-  const cancel = () => { focusEdit.current = editing?.id ?? null; setEditing(null); dismiss(); };
-  const updateMember = (key: number, change: Partial<MemberDraft>) => setEditing(current => current && ({ ...current, members: current.members.map(member => member.key === key ? { ...member, ...change } : member) }));
-
-  return <main className="master-page" aria-labelledby="aggregation-master-title" aria-busy={isSaving}>
-    <button type="button" className="text-button master-back" disabled={isSaving} onClick={onBack}>← マスタへ戻る</button>
-    <h1 id="aggregation-master-title">集計マスタ</h1>
-    <p className="page-description">科目・集計を一つの所属先にまとめ、＋・−で計算します。必須の4集計は削除できません。</p>
-    <form className="account-master-form" onSubmit={event => { event.preventDefault(); if (!isSaving) void save({ type: "add", name }); }}>
-      <div className="initiative-field"><label htmlFor="aggregation-name">集計名</label>
-        <input id="aggregation-name" ref={nameInput} value={name} disabled={isSaving || editing !== null} onChange={event => setName(event.target.value)} autoComplete="off" />
+  const edit = (group: Aggregation) => { dismiss(); controller.begin({ id: group.id, name: group.name, members: group.members.map(member => ({ key: serial.current++, target: `${member.kind}:${member.id}`, sign: member.sign })) }); };
+  const cancel = () => { if (editing) focusGroup(editing.id); controller.end(); dismiss(); };
+  const updateMember = (key: number, change: Partial<MemberDraft>) => editing && setEditing({ ...editing, members: editing.members.map(member => member.key === key ? { ...member, ...change } : member) });
+  const editor = (group: Aggregation) => {
+    const draft = editing;
+    if (!draft || draft.id !== group.id) return null;
+    return <form className="graph-editor" onKeyDown={event => {
+      if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!autoSave.pending) cancel(); }
+    }} onSubmit={event => {
+      event.preventDefault();
+      if (!autoSave.pending) cancel();
+    }}>
+      {!group.required && <input autoFocus aria-label={`${group.name}の集計名`} value={draft.name} onChange={event => setEditing({ ...draft, name: event.target.value })} />}
+      <div className="aggregation-members">
+        {draft.members.map((member, index) => <div className="aggregation-member" key={member.key}>
+          <select aria-label={`${index + 1}番目の加減算`} value={member.sign} onChange={event => updateMember(member.key, { sign: Number(event.target.value) as 1 | -1 })}>
+            <option value={1}>＋</option><option value={-1}>−</option>
+          </select>
+          <select aria-label={`${index + 1}番目の集計対象`} value={member.target} onChange={event => updateMember(member.key, { target: event.target.value })}>
+            <option value="">科目・集計を選択</option>
+            {targets.map(target => {
+              const owner = owners.get(target.value);
+              const blocked = (owner !== undefined && owner !== group.id) || draft.members.some(other => other.key !== member.key && other.target === target.value)
+                || (target.value.startsWith("group:") && ancestors.has(Number(target.value.split(":")[1])));
+              return <option key={target.value} value={target.value} disabled={blocked}>{target.label}{owner !== undefined && owner !== group.id ? "（所属済み）" : ""}</option>;
+            })}
+          </select>
+          <button type="button" className="text-button" aria-label={`${index + 1}番目の対象を外す`} onClick={() => setEditing({ ...draft, members: draft.members.filter(item => item.key !== member.key) })}>×</button>
+        </div>)}
+        <button type="button" className="text-button" autoFocus={group.required !== null} onClick={() => setEditing({ ...draft, members: [...draft.members, { key: serial.current++, target: "", sign: 1 }] })}>＋ 対象を追加</button>
       </div>
-      <div className="form-actions"><button type="submit" className="primary-button" disabled={isSaving || editing !== null || !name.trim()}>登録</button></div>
-    </form>
+      <div className="form-actions">
+        <button type="submit" className="text-button" disabled={autoSave.pending}>完了</button>
+      </div>
+      <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
+    </form>;
+  };
+
+  return <main ref={page} onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page aggregation-page" aria-labelledby="aggregation-master-title" aria-busy={isSaving}>
+    <div className="aggregation-heading"><h1 id="aggregation-master-title">集計マスタ</h1>
+      <div className="form-actions"><button type="button" className="text-button graph-back" aria-label="← マスタへ戻る" title="マスタへ戻る" disabled={isSaving || autoSave.pending} onClick={onBack}>←</button>
+        <button ref={addButton} className="primary-button" type="button" disabled={isSaving || editing !== null || adding} onClick={() => setAdding(true)}>＋ 集計を追加</button></div>
+    </div>
+    {adding && <form className="graph-add-form" onSubmit={event => { event.preventDefault(); if (!isSaving) void save({ type: "add", name }); }}>
+      <div className="initiative-field"><label htmlFor="aggregation-name">集計名</label>
+        <input id="aggregation-name" autoFocus value={name} disabled={isSaving} onChange={event => setName(event.target.value)} autoComplete="off" />
+      </div>
+      <div className="form-actions"><button type="submit" className="primary-button" disabled={isSaving || !name.trim()}>登録</button>
+        <button type="button" className="text-button" disabled={isSaving} onClick={() => { setAdding(false); addButton.current?.focus(); }}>キャンセル</button></div>
+    </form>}
     <StatusNotice {...notice} onDismiss={dismiss} />
     <ConfirmationDialog open={deleting !== null} title="集計を削除" message={deleting ? `「${deleting.name}」を削除しますか？` : ""} confirmLabel="削除する" busy={isSaving}
       onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
-    <div className="aggregation-list" role="region" aria-label="集計一覧" tabIndex={0}>
-      <table className="account-master-table aggregation-table" aria-label="集計一覧">
-        <thead><tr><th scope="col">集計名</th><th scope="col">計算対象</th><th scope="col">操作</th></tr></thead>
-        <tbody>{groups.map(group => {
-          const draft = editing?.id === group.id ? editing : null;
-          const inUse = group.members.length > 0 || owners.has(`group:${group.id}`);
-          const formId = `aggregation-edit-${group.id}`;
-          return <tr key={group.id} onKeyDown={event => { if (draft && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!isSaving) cancel(); } }}>
-            <th scope="row" className="account-master-name">
-              {draft && !group.required ? <input autoFocus form={formId} aria-label={`${group.name}の集計名`} value={draft.name} disabled={isSaving} onChange={event => setEditing({ ...draft, name: event.target.value })} /> : group.name}
-              {group.required && <span className="required-marker">必須</span>}
-            </th>
-            <td>{draft ? <div className="aggregation-members">
-              {draft.members.map((member, index) => <div className="aggregation-member" key={member.key}>
-                <select form={formId} aria-label={`${index + 1}番目の加減算`} value={member.sign} disabled={isSaving} onChange={event => updateMember(member.key, { sign: Number(event.target.value) as 1 | -1 })}>
-                  <option value={1}>＋</option><option value={-1}>−</option>
-                </select>
-                <select form={formId} aria-label={`${index + 1}番目の集計対象`} value={member.target} disabled={isSaving} onChange={event => updateMember(member.key, { target: event.target.value })}>
-                  <option value="">科目・集計を選択</option>
-                  {targets.map(target => {
-                    const owner = owners.get(target.value);
-                    const blocked = (owner !== undefined && owner !== group.id) || draft.members.some(other => other.key !== member.key && other.target === target.value)
-                      || (target.value.startsWith("group:") && ancestors.has(Number(target.value.split(":")[1])));
-                    return <option key={target.value} value={target.value} disabled={blocked}>{target.label}{owner !== undefined && owner !== group.id ? "（所属済み）" : ""}</option>;
-                  })}
-                </select>
-                <button type="button" className="text-button" disabled={isSaving} aria-label={`${index + 1}番目の対象を外す`} onClick={() => setEditing({ ...draft, members: draft.members.filter(item => item.key !== member.key) })}>×</button>
-              </div>)}
-              <button type="button" className="text-button" disabled={isSaving} onClick={() => setEditing({ ...draft, members: [...draft.members, { key: serial.current++, target: "", sign: 1 }] })}>＋ 対象を追加</button>
-            </div> : <span className="aggregation-expression">{group.members.length ? group.members.map(member => `${member.sign === 1 ? "＋" : "−"} ${label(member)}`).join("　") : "未設定"}</span>}</td>
-            <td>{draft ? <form id={formId} className="form-actions" onSubmit={event => {
-              event.preventDefault();
-              if (!isSaving) void save({ type: "update", id: group.id, name: draft.name, members: draft.members.map(member => {
-                const [kind, id] = member.target.split(":");
-                return { kind: kind as AggregationMember["kind"], id: Number(id), sign: member.sign };
-              }) });
-            }}>
-              <button type="submit" className="text-button" disabled={isSaving || !draft.name.trim() || draft.members.some(member => !member.target)}>保存</button>
-              <button type="button" className="text-button" disabled={isSaving} onClick={cancel}>キャンセル</button>
-            </form> : <div className="form-actions">
-              <button type="button" className="text-button" ref={button => { if (button && focusEdit.current === group.id) { button.focus({ preventScroll: true }); focusEdit.current = null; } }} aria-label={`${group.name}を編集`} disabled={isSaving || editing !== null} onClick={() => edit(group)}>編集</button>
-              <button type="button" className="text-button" aria-label={`${group.name}を削除`} disabled={isSaving || editing !== null || group.required !== null || inUse} title={group.required ? "必須集計は削除できません" : inUse ? "先に所属を解除してください" : undefined} onClick={() => { dismiss(); setDeleting(group); }}>削除</button>
-            </div>}</td>
-          </tr>;
-        })}</tbody>
-      </table>
-    </div>
+    <AggregationGraph accounts={accounts} groups={groups} disabled={isSaving || adding} editingId={editing?.id ?? null}
+      renderEditor={editor} onEdit={edit} onDelete={group => { dismiss(); setDeleting(group); }}
+      onMove={(member, parentId, sign) => save({ type: "move", member, parentId, sign })} />
   </main>;
 }

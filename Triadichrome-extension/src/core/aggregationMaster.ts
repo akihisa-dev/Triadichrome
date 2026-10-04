@@ -6,12 +6,24 @@ import { migrateTriadicDatabase } from "./triadicMigration";
 export type AggregationChange =
   | { type: "add"; name: string }
   | { type: "update"; id: number; name: string; members: AggregationMember[] }
+  | { type: "move"; member: Pick<AggregationMember, "kind" | "id">; parentId: number | null; sign: 1 | -1 }
   | { type: "delete"; id: number };
 
 export function changedAggregations(groups: Aggregation[], accounts: Account[], change: AggregationChange): Aggregation[] {
   let next: Aggregation[];
   if (change.type === "add") {
     next = [...groups, { id: Math.max(0, ...groups.map(group => group.id)) + 1, name: change.name.trim(), required: null, members: [] }];
+  } else if (change.type === "move") {
+    const { member, parentId, sign } = change;
+    if (!(member.kind === "account" ? accounts : member.kind === "group" ? groups : []).some(item => item.id === member.id)) throw new Error("移動する科目・集計が見つかりません。");
+    if (parentId !== null && !groups.some(group => group.id === parentId)) throw new Error("所属先の集計が見つかりません。");
+    if (sign !== 1 && sign !== -1) throw new Error("加算または減算を選択してください。");
+    // Remove and attach in one change: saving must never leave an item between parents.
+    next = groups.map(group => {
+      const members = group.members.filter(item => item.kind !== member.kind || item.id !== member.id);
+      if (group.id === parentId) members.push({ ...member, sign });
+      return { ...group, members };
+    });
   } else {
     const current = groups.find(group => group.id === change.id);
     if (!current) throw new Error("集計が見つかりません。");
@@ -35,7 +47,12 @@ export async function changeAggregationMaster(bytes: Uint8Array, change: Aggrega
       const added = next[next.length - 1]!;
       database.run("INSERT INTO aggregation_groups (id, name, sort_order) VALUES (?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM aggregation_groups))", [added.id, added.name]);
     } else if (change.type === "delete") database.run("DELETE FROM aggregation_groups WHERE id = ?", [change.id]);
-    else {
+    else if (change.type === "move") {
+      const { member, parentId, sign } = change;
+      database.run(member.kind === "account" ? "DELETE FROM aggregation_members WHERE account_id = ?" : "DELETE FROM aggregation_members WHERE group_id = ?", [member.id]);
+      if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM aggregation_members WHERE parent_id = ?))",
+        [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, parentId]);
+    } else {
       database.run("UPDATE aggregation_groups SET name = ? WHERE id = ?", [change.name.trim(), change.id]);
       database.run("DELETE FROM aggregation_members WHERE parent_id = ?", [change.id]);
       change.members.forEach((member, position) => database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, ?)",
