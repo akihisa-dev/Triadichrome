@@ -362,8 +362,8 @@ button:disabled {
   min-width: 0;
   min-height: 44px;
   padding: 10px 12px;
-  border: 1px solid var(--control-line);
-  border-radius: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
   outline: 2px solid transparent;
   outline-offset: 2px;
   color: var(--ink);
@@ -393,9 +393,9 @@ button:disabled {
 
 .initiative-amount-table-container {
   max-width: 100%;
-  margin-top: 24px;
+  margin-top: 32px;
   overflow: auto;
-  border: 1px solid var(--control-line);
+  border-radius: 8px;
   outline: 2px solid transparent;
   outline-offset: 2px;
   transition: outline-color var(--motion-feedback) var(--motion-ease);
@@ -410,26 +410,24 @@ button:disabled {
   min-width: 800px;
   border-spacing: 0;
   table-layout: fixed;
-  background: var(--surface);
 }
 
 .initiative-amount-table th,
 .initiative-amount-table td {
-  height: 44px;
-  padding: 0;
-  border-right: 1px solid var(--control-line);
-  border-bottom: 1px solid var(--control-line);
+  padding: 8px 6px;
 }
 
 .initiative-amount-table th {
-  padding: 10px 12px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   text-align: right;
 }
 
 .initiative-amount-table thead th {
-  background: #bfc1c0;
+  padding: 0 18px 8px;
+  color: var(--muted);
+  font-size: 13px;
+  background: var(--canvas);
 }
 
 .initiative-amount-table th:first-child {
@@ -437,19 +435,21 @@ button:disabled {
   z-index: 1;
   left: 0;
   width: clamp(96px, 16vw, 180px);
+  padding-left: 0;
+  padding-right: 16px;
   text-align: left;
 }
 
 .initiative-amount-table tbody th {
-  background: #dddddd;
+  background: var(--canvas);
 }
 
-.initiative-amount-table tr > :last-child {
-  border-right: 0;
+.initiative-amount-table td:last-child {
+  padding-right: 0;
 }
 
-.initiative-amount-table tbody tr:last-child > * {
-  border-bottom: 0;
+.initiative-amount-table thead th:last-child {
+  padding-right: 12px;
 }
 
 .initiative-amount-table input {
@@ -459,16 +459,18 @@ button:disabled {
   min-height: 44px;
   padding: 10px 12px;
   appearance: textfield;
-  border: 0;
+  border: 1px solid transparent;
+  border-radius: 8px;
   outline: 2px solid transparent;
   outline-offset: -2px;
   color: var(--ink);
-  background: transparent;
+  background: var(--soft);
   font: inherit;
   font-variant-numeric: tabular-nums;
   text-align: right;
   transition:
     background-color var(--motion-feedback) var(--motion-ease),
+    border-color var(--motion-feedback) var(--motion-ease),
     outline-color var(--motion-feedback) var(--motion-ease);
 }
 
@@ -479,10 +481,11 @@ button:disabled {
 }
 
 .initiative-amount-table input:hover {
-  background: var(--soft);
+  border-color: var(--line);
 }
 
 .initiative-amount-table input:focus-visible {
+  background: var(--surface);
   outline-color: var(--focus);
 }
 

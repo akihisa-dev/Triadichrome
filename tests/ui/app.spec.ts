@@ -222,7 +222,7 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   const regionBox = (await region.boundingBox())!;
   const lastCellBox = (await salaries.boundingBox())!;
   expect(headerAfter.x).toBe(headerBefore.x);
-  expect(headerAfter.x).toBeCloseTo(regionBox.x + 1);
+  expect(headerAfter.x).toBeCloseTo(regionBox.x);
   expect(lastCellBox.x + lastCellBox.width).toBeLessThanOrEqual(regionBox.x + regionBox.width);
   if (testInfo.project.name === "narrow") {
     expect(await region.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
