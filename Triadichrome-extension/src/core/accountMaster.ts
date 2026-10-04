@@ -7,15 +7,18 @@ export type Account = { id: number; accountCode: string | null; accountName: str
 export type AccountChange =
   | { type: "add"; accountCode: string; accountName: string; accountType: AccountType | "" }
   | { type: "update"; id: number; accountCode: string; accountName: string; accountType: AccountType | "" }
+  | { type: "reorder"; ids: number[] }
   | { type: "delete"; id: number };
 
 export function listAccounts(database: Database): Account[] {
   const code = hasColumn(database, "accounts", "code") ? "code" : "NULL";
   const hasType = hasColumn(database, "accounts", "attribute");
   const rowUsage = hasType ? "OR EXISTS(SELECT 1 FROM initiative_rows WHERE account_id = accounts.id)" : "";
+  const manualOrder = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) >= 3;
+  const groupUsage = manualOrder ? "OR EXISTS(SELECT 1 FROM aggregation_members WHERE account_id = accounts.id)" : "";
   return (database.exec(`SELECT id, ${code} AS account_code, name, ${hasType ? "attribute" : "NULL"},
-    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id) ${rowUsage}
-    FROM accounts WHERE budget_id = 1 ORDER BY account_code IS NULL, account_code, sort_order, id`)[0]?.values ?? [])
+    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id) ${rowUsage} ${groupUsage}
+    FROM accounts WHERE budget_id = 1 ORDER BY ${manualOrder ? "sort_order, id" : "account_code IS NULL, account_code, sort_order, id"}`)[0]?.values ?? [])
     .map(([id, accountCode, accountName, accountType, inUse]) => ({ id: Number(id), accountCode: accountCode === null ? null : String(accountCode), accountName: String(accountName), accountType: isAccountType(accountType) ? accountType : null, inUse: Boolean(inUse) }));
 }
 
@@ -26,10 +29,15 @@ export async function readAccountMaster(bytes: Uint8Array): Promise<Account[]> {
 }
 
 export function validateAccountChange(accounts: Account[], change: AccountChange): void {
+  if (change.type === "reorder") {
+    const ids = new Set(change.ids);
+    if (ids.size !== accounts.length || change.ids.length !== accounts.length || accounts.some(account => !ids.has(account.id))) throw new Error("並べ替える科目が一致しません。");
+    return;
+  }
   const account = change.type === "add" ? undefined : accounts.find(item => item.id === change.id);
   if (change.type !== "add" && !account) throw new Error("勘定科目が見つかりません。");
   if (change.type === "delete") {
-    if (account?.inUse) throw new Error("明細で使用している勘定科目は削除できません。");
+    if (account?.inUse) throw new Error("施策・明細・集計で使用している勘定科目は削除できません。");
     return;
   }
   const code = change.accountCode.trim();
@@ -51,7 +59,9 @@ export async function changeAccountMaster(bytes: Uint8Array, change: AccountChan
   try {
     migrateTriadicDatabase(database);
     validateAccountChange(listAccounts(database), change);
-    if (change.type === "delete") {
+    if (change.type === "reorder") {
+      change.ids.forEach((id, index) => database.run("UPDATE accounts SET sort_order = ? WHERE budget_id = 1 AND id = ?", [index, id]));
+    } else if (change.type === "delete") {
       database.run("DELETE FROM accounts WHERE budget_id = 1 AND id = ?", [change.id]);
     } else {
       const code = change.accountCode.trim();

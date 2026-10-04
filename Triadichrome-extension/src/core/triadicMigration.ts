@@ -1,4 +1,5 @@
 import { type Database } from "sql.js";
+import { AGGREGATION_SQL } from "./aggregationSchema";
 import { ACCOUNT_CODE_COLUMN_SQL, DETAILS_SQL, INITIATIVE_ROWS_SQL, TRIADIC_VIEWS_SQL } from "./triadicSchema";
 
 export function hasColumn(database: Database, table: "accounts" | "initiatives", column: string): boolean {
@@ -25,6 +26,13 @@ export function migrateTriadicDatabase(database: Database): void {
         CREATE INDEX details_period_idx${indexes}`);
       database.exec(TRIADIC_VIEWS_SQL);
       database.exec("PRAGMA user_version = 2; UPDATE triadic_metadata SET value = '2' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 3) {
+      // Preserve the order previously shown to the user before enabling manual order.
+      const rows = database.exec("SELECT id FROM accounts WHERE budget_id = 1 ORDER BY code IS NULL, code, sort_order, id")[0]?.values ?? [];
+      rows.forEach(([id], index) => database.run("UPDATE accounts SET sort_order = ? WHERE id = ?", [index, Number(id)]));
+      database.exec(AGGREGATION_SQL);
+      database.exec("PRAGMA user_version = 3; UPDATE triadic_metadata SET value = '3' WHERE key = 'format_version';");
     }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

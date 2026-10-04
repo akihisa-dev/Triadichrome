@@ -2,6 +2,7 @@ import { type Database } from "sql.js";
 import { listAccounts, type Account } from "./accountMaster";
 import { exportTriadicDatabase, openTriadicDatabase } from "./triadicDatabase";
 import { hasColumn, migrateTriadicDatabase } from "./triadicMigration";
+import { listAggregations, type Aggregation } from "./aggregations";
 
 export const initiativeMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3] as const;
 export type InitiativeMonth = typeof initiativeMonths[number];
@@ -15,7 +16,7 @@ export type Initiative = {
   rows: InitiativeRow[];
   months: Partial<Record<InitiativeMonth, { sales: number | null; profit: number | null }>>;
 };
-export type PlanContents = { accounts: Account[]; initiatives: Initiative[] };
+export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[] };
 
 export function currentFiscalYear(): number {
   const now = new Date();
@@ -47,7 +48,8 @@ function listInitiatives(database: Database): Initiative[] {
         if (Number(year) - (Number(month) < 4 ? 1 : 0) !== fiscalYear) continue;
         const key = rowId === null ? `account:${accountId}` : `row:${rowId}`;
         const row = rows.get(key) ?? { accountId: Number(accountId), amounts: {} };
-        row.amounts[Number(month) as InitiativeMonth] = String(amount);
+        const keyMonth = Number(month) as InitiativeMonth;
+        row.amounts[keyMonth] = String(Number(row.amounts[keyMonth] ?? 0) + Number(amount));
         rows.set(key, row);
       }
       const months: Initiative["months"] = {};
@@ -67,7 +69,7 @@ function listInitiatives(database: Database): Initiative[] {
 
 export async function readPlanContents(bytes: Uint8Array): Promise<PlanContents> {
   const database = await openTriadicDatabase(bytes);
-  try { return { accounts: listAccounts(database), initiatives: listInitiatives(database) }; }
+  try { return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database) }; }
   finally { database.close(); }
 }
 

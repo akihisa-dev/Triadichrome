@@ -1,5 +1,6 @@
 import initSqlJs, { type Database } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
+import { listAggregations, validateAggregations } from "./aggregations";
 import {
   TRIADIC_FORMAT_ID,
   TRIADIC_FORMAT_VERSION,
@@ -60,7 +61,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    !["1", "2", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -71,7 +72,7 @@ function assertTriadicDatabase(database: Database): void {
     invalidDatabase();
   }
 
-  if (userVersion === 2) {
+  if (Number(userVersion) >= 2) {
     database.exec(`SELECT attribute FROM accounts LIMIT 0;
       SELECT note, fiscal_year FROM initiatives LIMIT 0;
       SELECT id, initiative_id, account_id, sort_order FROM initiative_rows LIMIT 0;
@@ -111,6 +112,9 @@ function assertTriadicDatabase(database: Database): void {
   }
   if (database.exec("PRAGMA foreign_key_check")[0]?.values.length) {
     invalidDatabase();
+  }
+  if (userVersion === 3) {
+    validateAggregations(listAggregations(database), new Set((database.exec("SELECT id FROM accounts WHERE budget_id = 1")[0]?.values ?? []).map(([id]) => Number(id))));
   }
 }
 

@@ -2,6 +2,8 @@ import { useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { type AccountChange } from "../core/accountMaster";
 import { saveAccountMaster } from "./accountMasterFile";
+import { saveAggregationMaster } from "./aggregationMasterFile";
+import { type AggregationChange } from "../core/aggregationMaster";
 import { type OpenPlan } from "./planFile";
 import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
 import { saveInitiative } from "./initiativeFile";
@@ -76,10 +78,11 @@ export function ExtensionPage() {
       });
       plan.current = saved;
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives };
+      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations };
     } finally { busy.current = false; }
   };
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination));
+  const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination));
   const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
   const drag = (event: DragEvent<HTMLElement>) => {
     if (!Array.from(event.dataTransfer.types).includes("Files")) return;
@@ -88,7 +91,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onRegisterInitiative={register}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onRegisterInitiative={register}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

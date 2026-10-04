@@ -1,0 +1,48 @@
+import { Fragment, useMemo } from "react";
+import { buildCostTable } from "../core/costTable";
+import { currentFiscalYear, initiativeMonths, type PlanContents } from "../core/initiatives";
+
+const format = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 10 });
+const amountText = (amount: number | undefined) => amount === undefined ? "" : format.format(amount);
+
+type Props = { contents: PlanContents; fiscalYear: string; onYearChange: (year: string) => void; onOpenMaster: () => void };
+
+export function CostTablePage({ contents, fiscalYear, onYearChange, onOpenMaster }: Props) {
+  const { accounts, aggregations, initiatives } = contents;
+  const years = [...new Set([Number(fiscalYear), currentFiscalYear(), ...initiatives.flatMap(item => item.fiscalYear === null ? [] : [item.fiscalYear])])].sort((a, b) => b - a);
+  const rows = useMemo(() => buildCostTable(accounts, aggregations, initiatives, Number(fiscalYear)), [accounts, aggregations, initiatives, fiscalYear]);
+  const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
+  const unassigned = accounts.filter(account => !assigned.has(account.id));
+  return <main className="initiative-list-page" aria-labelledby="cost-table-title">
+    <div className="initiative-list-heading">
+      <h1 id="cost-table-title">総原価表</h1>
+      <div className="initiative-field initiative-year-field">
+        <label htmlFor="cost-table-year">年度</label>
+        <select id="cost-table-year" value={fiscalYear} onChange={event => onYearChange(event.target.value)}>
+          {years.map(year => <option key={year} value={year}>{year}年度</option>)}
+        </select>
+      </div>
+    </div>
+    <p className="page-description">予算 ＝ 前年 ＋ 施策の増減合計。前年データは未登録のため空白です。</p>
+    {(unassigned.length > 0 || rows.some(row => !row.configured)) && <p className="page-description cost-master-guide">
+      {unassigned.length > 0 ? `集計に未所属の科目が${unassigned.length}件あります。` : "計算対象が未設定の集計があります。"}
+      <button type="button" className="text-button" onClick={onOpenMaster}>集計マスタを開く</button>
+    </p>}
+    <div className="initiative-list-container" role="region" aria-label="総原価表の月別前年・予算" tabIndex={0}>
+      <table className="initiative-list-table cost-table" aria-label="総原価表">
+        <thead>
+          <tr><th rowSpan={2} scope="col" className="initiative-list-name">科目・集計</th>
+            {initiativeMonths.map(month => <th key={month} colSpan={2} scope="colgroup">{month}月</th>)}
+          </tr>
+          <tr>{initiativeMonths.map(month => <Fragment key={month}><th scope="col">前年</th><th scope="col" className="initiative-month-end">予算</th></Fragment>)}</tr>
+        </thead>
+        <tbody>{rows.map(row => <tr key={`${row.kind}:${row.id}`} className={row.kind === "group" ? `cost-subtotal${row.required ? " cost-required" : ""}` : undefined}>
+          <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
+          {initiativeMonths.map(month => <Fragment key={month}>
+            <td>{amountText(row.previous[month])}</td><td className="initiative-month-end">{amountText(row.budget[month])}</td>
+          </Fragment>)}
+        </tr>)}</tbody>
+      </table>
+    </div>
+  </main>;
+}

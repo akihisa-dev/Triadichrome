@@ -1,4 +1,5 @@
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
+import { verifyAggregationData } from "../tests/aggregation-data.mjs";
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -15,6 +16,9 @@ try {
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
       'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/initiatives.ts";',
+      'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
+      'export * from "./Triadichrome-extension/src/core/costTable.ts";',
+      'export * from "./Triadichrome-extension/src/extension/aggregationMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/accountMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
@@ -132,6 +136,7 @@ try {
   assert.equal(savedImport.handle, handle);
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
   await verifyInitiativeData(await import(pathToFileURL(bundle)), root);
+  await verifyAggregationData(await import(pathToFileURL(bundle)));
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

@@ -40,7 +40,7 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("heading", { name: "マスタ", exact: true })).toBeVisible();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await expect(master).toHaveAttribute("aria-current", "page");
-  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("columnheader")).toHaveText(["科目コード", "科目名", "科目属性", "操作"]);
+  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("columnheader")).toHaveText(["順序", "科目コード", "科目名", "科目属性", "操作"]);
   const name = app.getByRole("textbox", { name: "科目名", exact: true });
   const register = app.getByRole("button", { name: "登録", exact: true });
   await name.fill("   ");
