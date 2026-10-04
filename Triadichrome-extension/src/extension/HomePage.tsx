@@ -14,6 +14,7 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [page, setPage] = useState<Page>("home");
+  const [initiativeName, setInitiativeName] = useState("");
 
   const closeSidebar = useCallback(() => {
     setIsSidebarOpen(false);
@@ -89,7 +90,9 @@ export function HomePage({ fileName, onCloseFile }: HomePageProps) {
         </aside>
         <div className="home-content">
           <FadeSwap value={page} className="page-switch">
-            {displayed => displayed === "home" ? <main className="home-view" aria-label="ホーム" /> : <InitiativeEntryPage />}
+            {displayed => displayed === "home" ? <main className="home-view" aria-label="ホーム" /> : (
+              <InitiativeEntryPage initiativeName={initiativeName} onInitiativeNameChange={setInitiativeName} />
+            )}
           </FadeSwap>
         </div>
       </div>

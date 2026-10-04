@@ -121,6 +121,47 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   await expect(sidebar).not.toBeVisible();
 });
 
+test("施策名を入力・編集し、画面を往復しても入力を保持する", async ({ page, app }, testInfo) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const trigger = app.locator(".home-header").getByRole("button");
+  const sidebar = app.getByRole("complementary", { name: "メニュー" });
+  const name = app.getByRole("textbox", { name: "施策名", exact: true });
+  await trigger.click();
+  await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
+  await expect(name).toBeVisible();
+  await expect(name).toHaveValue("");
+  await trigger.click();
+  await page.keyboard.press("Tab");
+  await expect(name).toBeFocused();
+  await name.fill("業務改善施策");
+  await expect(name).toHaveValue("業務改善施策");
+  await name.fill("");
+  await expect(name).toHaveValue("");
+  await name.fill("業務改善施策（改訂）");
+  await trigger.click();
+  await expect(name).toHaveValue("業務改善施策（改訂）");
+  await sidebar.getByRole("button", { name: "Home", exact: true }).click();
+  await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
+  await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
+  await expect(name).toHaveValue("業務改善施策（改訂）");
+  await trigger.click();
+  await app.getByText("施策名", { exact: true }).click();
+  await expect(name).toBeFocused();
+  await settleMotion(app.locator("body"));
+  const titleBox = (await app.getByRole("heading", { name: "施策入力", exact: true }).boundingBox())!;
+  const nameBox = (await name.boundingBox())!;
+  expect(nameBox.y).toBeGreaterThan(titleBox.y + titleBox.height);
+  expect(nameBox.x).toBe(titleBox.x);
+  await attachImage(testInfo, "施策名入力", await page.locator("#app-preview").screenshot());
+
+  await trigger.click();
+  await sidebar.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await trigger.click();
+  await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
+  await expect(name).toHaveValue("");
+});
+
 test("画面幅を変えてもサイドバーとメインが並び、閉じると幅が戻る", async ({ page, app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const trigger = app.locator(".home-header").getByRole("button");
@@ -140,6 +181,9 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     expect(mainBox.x).toBeCloseTo(sidebarBox.x + sidebarBox.width);
     expect(mainBox.x + mainBox.width).toBeCloseTo(frame.x + frame.width);
     expect(mainBox.width).toBeGreaterThanOrEqual(frame.width / 2);
+    const nameBox = (await app.getByRole("textbox", { name: "施策名", exact: true }).boundingBox())!;
+    expect(nameBox.x).toBeGreaterThanOrEqual(mainBox.x);
+    expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     await app.getByRole("heading", { name: "施策入力", exact: true }).click();
     await expect(sidebar).toBeVisible();

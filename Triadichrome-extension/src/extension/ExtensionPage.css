@@ -342,6 +342,46 @@ button:disabled {
   line-height: 1.4;
 }
 
+.initiative-name-field {
+  display: grid;
+  width: min(100%, 40rem);
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.initiative-name-field label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.initiative-name-field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--control-line);
+  border-radius: 6px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  color: var(--ink);
+  background: var(--surface);
+  font: inherit;
+  line-height: 1.5;
+  transition:
+    border-color var(--motion-feedback) var(--motion-ease),
+    outline-color var(--motion-feedback) var(--motion-ease);
+}
+
+.initiative-name-field input:hover {
+  border-color: var(--muted);
+}
+
+.initiative-name-field input:focus-visible {
+  border-color: var(--focus);
+  outline-color: var(--focus);
+}
+
 .home-header {
   display: flex;
   min-height: 60px;
