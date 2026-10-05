@@ -1,7 +1,7 @@
 import { partitionDashboardRects } from "../core/dashboardLayout";
 import type { KeyboardEvent, ReactNode } from "react";
 import type { DashboardFlow, DashboardNode } from "../core/dashboard";
-import { formatAmount } from "../core/amounts";
+import { addAmounts, formatAmount } from "../core/amounts";
 
 export const chartShade = (index: number) => ["#333333", "#595959", "#808080", "#a0a0a0", "#b8b8b8", "#d0d0d0"][index % 6]!;
 const polar = (radius: number, angle: number) => [250 + radius * Math.sin(angle), 165 - radius * Math.cos(angle)];
@@ -85,10 +85,10 @@ export function SankeyChart({ flows, selected, onPick }: { flows: DashboardFlow[
   const keys = (flow: DashboardFlow) => [`expansion:${flow.expansionId}`, `initiative:${flow.initiativeId}`, `account:${flow.accountId}`];
   const names = new Map<string, string>();
   for (const flow of flows) keys(flow).forEach((key, column) => {
-    const totals = columns[column]!; totals.set(key, (totals.get(key) ?? 0) + Math.abs(flow.amount));
+    const totals = columns[column]!; totals.set(key, addAmounts(totals.get(key) ?? 0, Math.abs(flow.amount)));
     names.set(key, [flow.expansion, flow.initiative, flow.account][column]!);
   });
-  const total = [...columns[0]!.values()].reduce((sum, value) => sum + value, 0);
+  const total = [...columns[0]!.values()].reduce(addAmounts, 0);
   const height = Math.max(300, Math.max(...columns.map(column => column.size)) * 24);
   const scale = (height - Math.max(...columns.map(column => column.size)) * 10) / total;
   const positions = columns.map(column => {

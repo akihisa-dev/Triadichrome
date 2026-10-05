@@ -3,8 +3,8 @@ import { applyTableView, emptyTableView, type TableColumn } from "../core/tableV
 import { Fragment, useState } from "react";
 import { initiativeMonths, type Initiative } from "../core/initiatives";
 
-const format = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 3 });
-const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : format.format(amount);
+import { formatAmount } from "../core/amounts";
+const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
 
 type InitiativeListPageProps = {
   initiatives: Initiative[];
@@ -18,8 +18,8 @@ export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOp
     .sort((a, b) => Number(b) - Number(a));
   const [view, setView] = useState(emptyTableView);
   const columns: TableColumn<Initiative>[] = [{ id: "name", label: "施策名", value: item => item.name }, ...initiativeMonths.flatMap(month => [
-    { id: `sales-${month}`, label: `${month}月売上`, numeric: true, value: (item: Initiative) => item.months[month]?.sales ?? null },
-    { id: `profit-${month}`, label: `${month}月利益`, numeric: true, value: (item: Initiative) => item.months[month]?.profit ?? null },
+    { id: `sales-${month}`, label: `${month}月売上`, numeric: true, amount: true, value: (item: Initiative) => item.months[month]?.sales ?? null },
+    { id: `profit-${month}`, label: `${month}月利益`, numeric: true, amount: true, value: (item: Initiative) => item.months[month]?.profit ?? null },
   ])];
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   const visible = applyTableView(source, columns, view);

@@ -14,8 +14,11 @@ test("明細の直接編集・フィルター・ソート・施策への移動�
   await amount.dblclick();
   await app.getByLabel("金額を編集", { exact: true }).fill("12.345");
   await app.getByLabel("金額を編集", { exact: true }).press("Tab");
-  await expect(amount).toHaveText("12.345");
+  await expect(amount).toHaveText("12");
   await expect(app.locator(`[data-cell="${id}-note"]`)).toBeFocused();
+  await amount.dblclick();
+  await expect(app.getByLabel("金額を編集", { exact: true })).toHaveValue("12.345");
+  await app.getByLabel("金額を編集", { exact: true }).press("Escape");
   await table.getByRole("button", { name: "施策名のフィルター", exact: true }).click();
   await app.getByRole("checkbox", { name: "すべて", exact: true }).uncheck();
   await app.getByRole("checkbox", { name: "前年度の販売施策", exact: true }).check();

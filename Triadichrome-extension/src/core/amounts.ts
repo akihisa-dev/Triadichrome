@@ -9,9 +9,19 @@ export function addAmounts(left: number, right: number): number {
   if (!Number.isSafeInteger(yen)) throw new Error("金額の合計が正確に計算できる範囲を超えています。");
   return yen / 1000;
 }
-const amountFormat = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 3 });
+const amountFormat = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 });
 const rateFormat = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-export const formatAmount = (amount: number | undefined) => amount === undefined ? "" : amountFormat.format(amount);
+/** Round only for display; editable strings and stored yen keep all three decimals. */
+export function formatAmount(amount: number | string | undefined): string {
+  if (amount === undefined) return "";
+  if (typeof amount === "string") {
+    const yen = BigInt(amountToYen(amount));
+    const absolute = yen < 0n ? -yen : yen;
+    const rounded = (absolute + 500n) / 1000n;
+    return amountFormat.format(yen < 0n ? -rounded : rounded);
+  }
+  return amountFormat.format(Math.abs(amount) < 0.5 ? 0 : amount);
+}
 export const formatRate = (amount: number | undefined, difference = false) => amount === undefined ? "" : `${rateFormat.format(amount)}${difference ? "pt" : "%"}`;
 
 /** Parse decimal thousands without a floating-point multiply or silent rounding. */

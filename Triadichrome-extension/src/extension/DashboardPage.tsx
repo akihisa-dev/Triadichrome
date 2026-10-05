@@ -15,7 +15,7 @@ function findNode(root: DashboardNode, key: string): DashboardNode | undefined {
   for (const child of root.children) { const found = findNode(child, key); if (found) return found; }
   return undefined;
 }
-const amountText = (value: number | null) => value === null ? "未入力" : `${value > 0 ? "+" : ""}${formatAmount(value)}`;
+const amountText = (value: number | null) => value === null ? "未入力" : `${value >= 0.5 ? "+" : ""}${formatAmount(value)}`;
 const metricName = (metric: DashboardMetric) => metric === "sales" ? "売上" : "利益";
 function Card({ title, subtitle, empty, children, actions }: { title: string; subtitle: string; empty: boolean; children: ReactNode; actions?: ReactNode }) {
   return <section className="dashboard-card" aria-label={title}><header><div><h2>{title}</h2><p>{subtitle}</p></div>{actions}</header>

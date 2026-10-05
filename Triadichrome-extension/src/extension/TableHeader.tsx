@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { tableValue, type TableColumn, type TableView } from "../core/tableView";
+import { tableDisplayValue, type TableColumn, type TableView } from "../core/tableView";
 import "./TableHeader.css";
 
 export function TableHeader<T>({ column, rows, view, onChange, disabled = false }: { column: TableColumn<T>; rows: T[]; view: TableView; onChange: (view: TableView) => void; disabled?: boolean }) {
@@ -9,7 +9,7 @@ export function TableHeader<T>({ column, rows, view, onChange, disabled = false 
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const [search, setSearch] = useState("");
   const selected = view.filters[column.id];
-  const values = [...new Set(rows.map(row => tableValue(column.value(row))))].sort(new Intl.Collator("ja", { numeric: true }).compare);
+  const values = [...new Set(rows.map(row => tableDisplayValue(column, row)))].sort(new Intl.Collator("ja", { numeric: true }).compare);
   const filtered = values.filter(value => value.includes(search));
   const sort = view.sort?.column === column.id ? view.sort.direction : null;
   useEffect(() => {

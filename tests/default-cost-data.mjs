@@ -62,7 +62,9 @@ export async function verifyDefaultCostData(api) {
   assert.equal(table[0].comparison[5], undefined, "前年未登録は差額も空欄");
   assert.equal(table[0].budget[3], -0.001);
   assert.equal(table[0].budget[6], 0);
-  assert.equal(formatAmount(-0.001), "-0.001");
+  for (const [value, expected] of [[-0.001, "0"], [1.234, "1"], [1.5, "2"], [-1.5, "-2"], [1234.567, "1,235"], ["9007199254740.499", "9,007,199,254,740"], ["-0.499", "0"]]) {
+    assert.equal(formatAmount(value), expected);
+  }
   assert.equal(formatRate(1.25), "1.3%");
   assert.equal(formatRate(-1.25), "-1.3%");
   assert.equal(formatRate(undefined), "");
@@ -82,6 +84,7 @@ export async function verifyDefaultCostData(api) {
   const preciseTable = buildCostTable(precision.accounts, precision.aggregations, precision.initiatives, 2026);
   assert.equal(preciseTable[0].budget[4], 0.3, "1円精度の加算で浮動小数点の誤差を出さない");
   assert.equal(preciseTable[0].budget[5], 0);
+  assert.equal(formatAmount(preciseTable[0].budget[4]), "0");
   const first = defaults.aggregations[0];
   const renamed = await changeAggregationMaster(bytes, { type: "update", id: first.id, name: first.name, displayName: "確認用小計", members: first.members });
   assert.equal((await readPlanContents(renamed)).aggregations[0].displayName, "確認用小計");

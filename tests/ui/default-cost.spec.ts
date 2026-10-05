@@ -29,7 +29,7 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
   const sales = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) });
   await expect(sales.getByRole("cell").nth(0)).toHaveText("");
-  await expect(sales.getByRole("cell").nth(1)).toHaveText("1.001");
+  await expect(sales.getByRole("cell").nth(1)).toHaveText("1");
   await expect(sales.getByRole("cell").nth(2)).toHaveText("");
   const ratio = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "利益率", exact: true }) });
   await expect(ratio.getByRole("cell").nth(1)).toHaveText("100.0%");
@@ -41,7 +41,10 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
-  await expect(sales.getByRole("cell").nth(1)).toHaveText("1.001");
+  await expect(sales.getByRole("cell").nth(1)).toHaveText("1");
   await expect(ratio.getByRole("cell").nth(1)).toHaveText("100.0%");
   await expect(table.getByRole("rowheader")).toHaveCount(73);
+  await app.getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("button", { name: "1円精度の確認", exact: true }).click();
+  await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true })).toHaveValue("1.001");
 });

@@ -44,5 +44,10 @@ export async function verifyExpansionTable(api) {
   malformed.exec("PRAGMA foreign_keys = OFF; UPDATE initiatives SET expansion_id = 999;");
   const invalid = malformed.export(); malformed.close();
   await assert.rejects(validateTriadicDatabase(invalid));
+  const fractions = [0.1, 0.2, 0.3].map(amount => ({ months: { 4: { sales: amount, profit: amount } } }));
+  const fractionalTable = buildExpansionTable({ ...contents, initiatives: fractions.map((item, id) => ({ ...item, id, fiscalYear: 2026, expansionId: 1 })) }, 2026, "registered");
+  assert.equal(fractionalTable.total[4].profit, 0.6, "表示で丸めず1円精度で合算する");
+  const overflow = { ...contents.initiatives[0], months: { 4: { sales: 9007199254740, profit: 9007199254740 } } };
+  assert.throws(() => buildExpansionTable({ ...contents, initiatives: [overflow, { ...overflow, months: { 4: { sales: 1, profit: 1 } } }] }, 2026, "registered"), /範囲/);
   console.log("PASS: expansion assignment, grouped totals, sorting, year isolation, reassignment and deletion protection");
 }

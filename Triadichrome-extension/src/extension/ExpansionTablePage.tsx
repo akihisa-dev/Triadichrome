@@ -4,8 +4,8 @@ import { Fragment } from "react";
 import { initiativeMonths, type Initiative, type PlanContents } from "../core/initiatives";
 import { buildExpansionTable, type ExpansionSort, type ExpansionTotals } from "../core/expansionTable";
 
-const format = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 3 });
-const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : format.format(amount);
+import { formatAmount } from "../core/amounts";
+const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
 
 function AmountCells({ months }: { months: Initiative["months"] | ExpansionTotals }) {
   return initiativeMonths.map(month => <Fragment key={month}>
@@ -30,8 +30,8 @@ export function ExpansionTablePage({ contents, fiscalYear, onYearChange, sort, o
     .sort((a, b) => Number(b) - Number(a));
   const table = buildExpansionTable(contents, Number(fiscalYear), sort);
   const columns: TableColumn<Initiative>[] = [{ id: "name", label: "施策名", value: item => item.name }, { id: "expansion", label: "展開名", value: item => contents.expansions.find(group => group.id === item.expansionId)?.expansionName ?? null }, ...initiativeMonths.flatMap(month => [
-    { id: `sales-${month}`, label: `${month}月売上`, numeric: true, value: (item: Initiative) => item.months[month]?.sales ?? null },
-    { id: `profit-${month}`, label: `${month}月利益`, numeric: true, value: (item: Initiative) => item.months[month]?.profit ?? null },
+    { id: `sales-${month}`, label: `${month}月売上`, numeric: true, amount: true, value: (item: Initiative) => item.months[month]?.sales ?? null },
+    { id: `profit-${month}`, label: `${month}月利益`, numeric: true, amount: true, value: (item: Initiative) => item.months[month]?.profit ?? null },
   ])];
   const source = table.groups.flatMap(group => group.initiatives);
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">

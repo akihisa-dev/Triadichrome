@@ -54,7 +54,7 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
   await expect(table.getByRole("combobox")).toHaveCount(2);
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("100");
   await expect(app.getByRole("spinbutton", { name: "売上高 5月の金額", exact: true }).first()).toHaveValue("0");
-  await expect(app.getByRole("spinbutton", { name: "売上高 6月の金額", exact: true }).first()).toHaveValue("");
+  await expect(app.getByRole("spinbutton", { name: "売上高 6月の金額", exact: true }).first()).toHaveValue("0");
   await expect(app.getByRole("spinbutton", { name: "売上高 3月の金額", exact: true }).nth(1)).toHaveValue("25.5");
   expect(await app.getByRole("main").locator("input").evaluateAll(inputs => inputs.every(input => input instanceof HTMLInputElement && !input.readOnly))).toBe(true);
   await expect(app.getByRole("button", { name: "登録", exact: true })).toHaveCount(0);
@@ -105,10 +105,10 @@ test("属性別に集計した施策を一覧で表示し、年度切替・属�
   const row = list.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "施策A", exact: true }) });
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await expect(app.getByRole("button", { name: "施策一覧", exact: true })).toHaveAttribute("aria-current", "page");
-  await expect(row.getByRole("cell").nth(0)).toHaveText("825.5");
-  await expect(row.getByRole("cell").nth(1)).toHaveText("775.5");
+  await expect(row.getByRole("cell").nth(0)).toHaveText("826");
+  await expect(row.getByRole("cell").nth(1)).toHaveText("776");
   await expect(row.getByRole("cell").nth(2)).toHaveText("0");
-  await expect(row.getByRole("cell").nth(4)).toHaveText("");
+  await expect(row.getByRole("cell").nth(4)).toHaveText("0");
   await expect(row.getByRole("cell").nth(23)).toHaveText("300");
   await expect(row.getByRole("rowheader")).toHaveAttribute("title", "登録時の備考");
   await app.locator(".home-header button").click();
@@ -139,13 +139,13 @@ test("属性別に集計した施策を一覧で表示し、年度切替・属�
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await expect(app.getByRole("button", { name: "費用を編集", exact: true })).toBeVisible();
   await app.getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(row.getByRole("cell").nth(1)).toHaveText("975.5");
+  await expect(row.getByRole("cell").nth(1)).toHaveText("976");
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("combobox", { name: "年度", exact: true }).selectOption("2026");
-  await expect(row.getByRole("cell").nth(1)).toHaveText("975.5");
+  await expect(row.getByRole("cell").nth(1)).toHaveText("976");
   await expect(row.getByRole("rowheader")).toHaveAttribute("title", "登録時の備考");
 });
 

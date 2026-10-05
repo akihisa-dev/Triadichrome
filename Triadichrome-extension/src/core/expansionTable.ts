@@ -1,3 +1,4 @@
+import { addAmounts } from "./amounts";
 import { initiativeMonths, type Initiative, type PlanContents } from "./initiatives";
 
 export type ExpansionSort = "registered" | "asc" | "desc";
@@ -8,7 +9,7 @@ export function totalInitiatives(initiatives: Initiative[]): ExpansionTotals {
   return Object.fromEntries(initiativeMonths.map(month => {
     const values = initiatives.map(item => item.months[month]);
     const sum = (key: "sales" | "profit") => values.some(value => value?.[key] === null) ? null
-      : Math.round(values.reduce((total, value) => total + (value?.[key] ?? 0), 0) * 1000) / 1000;
+      : values.reduce((total, value) => addAmounts(total, value?.[key] ?? 0), 0);
     return [month, { sales: sum("sales"), profit: sum("profit") }];
   }));
 }

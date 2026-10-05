@@ -18,7 +18,7 @@ test("全機能確認用データを標準で開き、年度・集計・マス�
   await expect(app.getByRole("button", { name: "次年度の販売施策", exact: true })).toBeVisible();
   await year.selectOption(String(selectedYear));
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
-  await expect(app.getByRole("row", { name: /^経常利益/ })).toContainText("67,876.251");
+  await expect(app.getByRole("row", { name: /^経常利益/ })).toContainText("67,876");
   await app.getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^集計マスタ/ }).click();
   await expect(app.getByRole("button", { name: "社外売上小計を編集", exact: true })).toBeVisible();

@@ -14,7 +14,7 @@ export function CostTablePage({ contents, fiscalYear, onYearChange, onOpenMaster
   const rows = useMemo(() => buildCostTable(accounts, aggregations, initiatives, Number(fiscalYear)), [accounts, aggregations, initiatives, fiscalYear]);
   const [view, setView] = useState(emptyTableView);
   type Row = typeof rows[number];
-  const columns: TableColumn<Row>[] = [{ id: "name", label: "科目・集計", value: row => row.name }, ...initiativeMonths.flatMap(month => (["previous", "budget", "comparison"] as const).map(kind => ({ id: `${kind}-${month}`, label: `${month}月${kind === "previous" ? "前年" : kind === "budget" ? "予算" : "対予算"}`, numeric: true, value: (row: Row) => row[kind][month] ?? null })))];
+  const columns: TableColumn<Row>[] = [{ id: "name", label: "科目・集計", value: row => row.name }, ...initiativeMonths.flatMap(month => (["previous", "budget", "comparison"] as const).map(kind => ({ id: `${kind}-${month}`, label: `${month}月${kind === "previous" ? "前年" : kind === "budget" ? "予算" : "対予算"}`, numeric: true, display: (row: Row) => row.kind === "ratio" ? formatRate(row[kind][month], kind === "comparison") : formatAmount(row[kind][month]), value: (row: Row) => row[kind][month] ?? null })))];
   // Keep each calculated subtotal anchored; sort only the account block preceding it.
   const visible: Row[] = []; let block: Row[] = [];
   for (const row of rows) { if (row.kind === "account") block.push(row); else { visible.push(...applyTableView(block, columns, view), ...applyTableView([row], columns, { ...view, sort: null })); block = []; } }

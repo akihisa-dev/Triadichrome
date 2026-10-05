@@ -64,6 +64,10 @@ export async function verifyDetails(api) {
   assert.deepEqual(api.applyTableView(after.details,[column],api.emptyTableView()),after.details);
   const preciseRows = [{ amount: "9007199254740.991" }, { amount: "9007199254740.99" }];
   assert.deepEqual(api.applyTableView(preciseRows, [{ id: "amount", label: "金額", numeric: true, value: row => row.amount }], { sort: { column: "amount", direction: "asc" }, filters: {} }).map(row => row.amount), ["9007199254740.99", "9007199254740.991"]);
+  const amountColumn = { id: "amount", label: "金額", amount: true, numeric: true, value: row => row.amount };
+  const roundedRows = [{ amount: "1.234" }, { amount: "1.499" }, { amount: "1.5" }, { amount: "-0.001" }];
+  assert.deepEqual(api.applyTableView(roundedRows, [amountColumn], { sort: null, filters: { amount: ["1"] } }), roundedRows.slice(0, 2), "表示が同じ金額は同じ候補で絞り込む");
+  assert.deepEqual(api.applyTableView(roundedRows, [amountColumn], { sort: { column: "amount", direction: "desc" }, filters: { amount: ["1"] } }), [roundedRows[1], roundedRows[0]], "丸め前の金額で並べ替える");
   let stored = bytes; let writes = 0;
   const handle = { name:"test.triadic", async getFile(){return new File([stored],this.name);}, async createWritable(){ return { async write(){writes++;},async close(){throw new Error("保存失敗");},async abort(){} }; } };
   const plan = { ...after,bytes,name:handle.name,handle };

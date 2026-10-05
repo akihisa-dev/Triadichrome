@@ -2,7 +2,7 @@ import { accountTypes, isAccountType } from "../core/accountTypes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type DetailChange, type DetailField, type DetailRecord } from "../core/details";
 import { type Initiative, type PlanContents } from "../core/initiatives";
-import { applyTableView, emptyTableView, type TableColumn, type TableView } from "../core/tableView";
+import { applyTableView, emptyTableView, type TableColumn, type TableView, tableDisplayValue } from "../core/tableView";
 import { TableHeader } from "./TableHeader";
 import "./DetailTablePage.css";
 
@@ -30,9 +30,9 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
     { id: "account", label: "科目名", field: "accountId", value: row => row.accountName },
     { id: "attribute", label: "科目属性", value: row => isAccountType(row.accountType) ? accountTypes[row.accountType] : null },
     { id: "month", label: "年月", value: row => `${row.year}-${String(row.month).padStart(2, "0")}` },
-    { id: "amount", label: "金額", field: "amount", numeric: true, value: row => row.amount },
-    { id: "sales", label: "売上への影響", numeric: true, value: row => row.sales },
-    { id: "profit", label: "利益への影響", numeric: true, value: row => row.profit },
+    { id: "amount", label: "金額", field: "amount", numeric: true, amount: true, value: row => row.amount },
+    { id: "sales", label: "売上への影響", numeric: true, amount: true, value: row => row.sales },
+    { id: "profit", label: "利益への影響", numeric: true, amount: true, value: row => row.profit },
     { id: "note", label: "施策備考", field: "note", value: row => row.note },
   ], [contents.expansions, contents.departments, contents.periodTypes]);
   const displayed = useMemo(() => applyTableView(rows, columns, view), [rows, columns, view]);
@@ -91,7 +91,7 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
               : <input autoFocus aria-label={`${column.label}を編集`} value={editing.value} disabled={saving} inputMode={editing.field === "amount" ? "decimal" : editing.field === "fiscalYear" ? "numeric" : undefined} onChange={event => setEditing({ ...editing, value: event.target.value })} />}
             <div><button type="button" disabled={saving} onClick={() => void commit()}>{saving ? "保存中" : "確定"}</button><button type="button" disabled={saving} onClick={() => { setEditing(null); setError(""); }}>取消</button></div>
             {error && <><p role="alert">{error}</p><button type="button" disabled={saving} onClick={() => { void onPrepareSave().then(() => commit()).catch(failure => setError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")); }}>保存を再試行</button></>}
-          </div> : column.id === "initiativeName" ? <button type="button" className="detail-initiative-link" disabled={editing !== null} onClick={event => { if (event.detail > 1) return; clickTimer.current = setTimeout(() => { const initiative = contents.initiatives.find(item => item.id === row.initiativeId); if (initiative) onOpenInitiative(initiative); }, 650); }}>{row.initiativeName}</button> : column.value(row) ?? "未選択"}
+          </div> : column.id === "initiativeName" ? <button type="button" className="detail-initiative-link" disabled={editing !== null} onClick={event => { if (event.detail > 1) return; clickTimer.current = setTimeout(() => { const initiative = contents.initiatives.find(item => item.id === row.initiativeId); if (initiative) onOpenInitiative(initiative); }, 650); }}>{row.initiativeName}</button> : tableDisplayValue(column, row)}
         </td>;
       })}</tr>)}</tbody></table>
       {!displayed.length && <p className="detail-empty">表示する明細がありません。</p>}

@@ -7,7 +7,7 @@ test("6種類のグラフと年度・正負・影響額切替、ゼロ補完", a
   const year = app.getByRole("combobox", { name: "年度", exact: true });
   const current = Number(await year.inputValue());
   const annual = app.getByRole("button", { name: /^年間の利益増減/ });
-  await expect(annual).toContainText("+2,153,515.012");
+  await expect(annual).toContainText("+2,153,515");
   await annual.click();
   const detail = app.getByRole("region", { name: "選択した内訳" });
   await expect(detail.getByRole("button", { name: /^ゼロと相殺の確認/ })).toContainText("0");

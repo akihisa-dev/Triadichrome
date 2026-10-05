@@ -28,6 +28,9 @@ export async function verifySamplePlan(api) {
   assert.deepEqual(zero.months[5], { sales: 0, profit: 0 });
   assert.deepEqual(zero.months[6], { sales: 0, profit: 0 });
   assert.equal(initiatives.find(item => item.name === "通信運搬費と消耗品費の削減").months[4].profit, 3750.75);
+  const reduction = initiatives.find(item => item.name === "通信運搬費と消耗品費の削減");
+  assert.equal(reduction.rows[1].amounts[3], "-1250.251");
+  assert.equal(reduction.months[3].profit, 3750.751, "1円の端数を保存・再読込・計算で保持する");
   for (const year of [2025, 2026, 2027]) {
     const table = buildCostTable(accounts, aggregations, initiatives, year);
     assert.ok(table.every(item => Object.keys(item.previous).length === 0), "別年度の施策を前年合計値にしない");
