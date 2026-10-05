@@ -1,3 +1,4 @@
+import { verifyHomeMasterCoverage } from "../tests/home-master-coverage.mjs";
 import { verifyKindData } from "../tests/kind-data.mjs";
 import { verifyDetails } from "../tests/details.mjs";
 import { verifyPeriodData } from "../tests/period-data.mjs";
@@ -24,6 +25,8 @@ try {
   const bundle = join(temporary, "tests.mjs");
   await build({
     stdin: { contents: [
+      'export * from "./Triadichrome-extension/src/extension/MasterPage.tsx";',
+      'export * from "./Triadichrome-extension/src/extension/HomeRelationsPage.tsx";',
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
       'export * from "./Triadichrome-extension/src/core/details.ts";',
       'export * from "./Triadichrome-extension/src/core/tableView.ts";',
@@ -54,6 +57,7 @@ try {
       'export * from "./tests/ui/empty-plan.ts";',
       'export * from "./Triadichrome-extension/src/core/amounts.ts";',
     ].join("\n"), resolveDir: root },
+    loader: { ".css": "empty" },
     outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
     plugins: [{ name: "local-wasm", setup(api) {
       api.onResolve({ filter: /\.wasm\?url$/ }, () => ({ path: "wasm", namespace: "local-wasm" }));
@@ -63,6 +67,7 @@ try {
     } }],
   });
   const productionApi = await import(pathToFileURL(bundle));
+  verifyHomeMasterCoverage(productionApi);
   await verifyDetails(productionApi);
   await verifyDefaultCostData(productionApi);
   await verifyExpansionTable(productionApi);

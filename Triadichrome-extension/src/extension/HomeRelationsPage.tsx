@@ -8,6 +8,7 @@ const nodes = [
   { page: "department-master", name: "部署マスタ", x: 20, y: 235, master: true },
   { page: "period-master", name: "期間マスタ", x: 20, y: 325, master: true },
   { page: "expansion-master", name: "展開マスタ", x: 20, y: 415, master: true },
+  { page: "kind-master", name: "種別マスタ", x: 20, y: 535, master: true },
   { page: "initiative-entry", name: "施策入力", x: 500, y: 270, master: false },
   { page: "cost-table", name: "総原価表", x: 1000, y: 30, master: false },
   { page: "initiative-list", name: "施策一覧", x: 1000, y: 200, master: false },
@@ -50,8 +51,8 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   const fit = () => {
     const node = viewport.current;
     if (!node) return;
-    const scale = Math.max(MIN_SCALE, Math.min(1, (node.clientWidth - 32) / 1240, (node.clientHeight - 32) / 550));
-    update({ x: (node.clientWidth - 1240 * scale) / 2, y: (node.clientHeight - 550 * scale) / 2, scale, fitted: true });
+    const scale = Math.max(MIN_SCALE, Math.min(1, (node.clientWidth - 32) / 1240, (node.clientHeight - 32) / 640));
+    update({ x: (node.clientWidth - 1240 * scale) / 2, y: (node.clientHeight - 640 * scale) / 2, scale, fitted: true });
   };
   const zoom = (factor: number, x: number, y: number) => {
     const current = view.current ?? camera;
@@ -134,7 +135,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
         else if (event.key === "-") { event.preventDefault(); zoomCenter(.8); }
         else if (event.key === "Home" || event.key === "0") { event.preventDefault(); fit(); }
       }}>
-      <svg className="home-relations-map" viewBox="0 0 1240 550" aria-label="画面とマスタの関係" style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }} onMouseLeave={() => setActive(null)}>
+      <svg className="home-relations-map" viewBox="0 0 1240 640" aria-label="画面とマスタの関係" style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }} onMouseLeave={() => setActive(null)}>
         {edges.map(edge => <g key={`${edge.from}-${edge.to}`} className={`home-relation${active && (edge.from === active || edge.to === active) ? " is-active" : active ? " is-muted" : ""}`}>
           <path d={edge.path} />
           <rect x={edge.x - (edge.label.length * 7 + 16)} y={edge.y - 16} width={edge.label.length * 14 + 32} height={32} rx={16} />
