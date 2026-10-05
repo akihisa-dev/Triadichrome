@@ -4,13 +4,13 @@ export async function verifyKindData(api) {
   const { createTriadicDatabase, readPlanContents, changeKindMaster, saveKindMaster, openTriadicDatabase, validateTriadicDatabase, createSamplePlan, registerInitiative } = api;
   const bytes = await createTriadicDatabase();
   const initial = await readPlanContents(bytes);
-  assert.deepEqual(initial.kinds.map(item => item.kindName), ["前年", "一次", "確定", "修正", "見通し"]);
+  assert.deepEqual(initial.kinds.map(item => item.kindName), ["前年", "一次予算", "確定予算", "修正予算", "見通し", "実績"]);
   let changed = await changeKindMaster(bytes, { type: "add", kindName: " 追加種別 " });
   const added = (await readPlanContents(changed)).kinds.at(-1);
   assert.equal(added.kindName, "追加種別");
   for (const kindName of ["", " ", "　", "\n"]) await assert.rejects(changeKindMaster(bytes, { type: "add", kindName }), /種別/);
   await assert.rejects(changeKindMaster(bytes, { type: "add", kindName: "前年" }), /同じ種別/);
-  await assert.rejects(changeKindMaster(changed, { type: "update", id: added.id, kindName: "一次" }), /同じ種別/);
+  await assert.rejects(changeKindMaster(changed, { type: "update", id: added.id, kindName: "一次予算" }), /同じ種別/);
   changed = await changeKindMaster(changed, { type: "update", id: added.id, kindName: "改定種別" });
   assert.deepEqual((await readPlanContents(changed)).kinds.at(-1), { id: added.id, kindName: "改定種別" });
   changed = await changeKindMaster(changed, { type: "delete", id: added.id });

@@ -13,6 +13,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   let bytes = await createTriadicDatabase();
   const kinds = (await readPlanContents(bytes)).kinds;
   if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
+  if (kinds.find(item => item.id === 6)?.kindName !== "実績") throw new Error("実績の種別を確認できません。");
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
   const periodTypes = (await readPlanContents(bytes)).periodTypes;
