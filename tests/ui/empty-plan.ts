@@ -15,7 +15,7 @@ export async function asLegacyTestPlan(bytes: Uint8Array): Promise<Uint8Array> {
     for (const name of [...names].reverse()) db.run(`DELETE FROM ${name}`);
     for (const { name, result } of data) {
       if (!result) continue;
-      const columns = result.columns.filter(column => column !== "revision");
+      const columns = result.columns.filter(column => column !== "revision" && column !== "industry_id");
       for (const row of result.values) db.run(`INSERT INTO ${name} (${columns.join(",")}) VALUES (${columns.map(() => "?").join(",")})`, columns.map(column => row[result.columns.indexOf(column)]!));
     }
     db.exec("PRAGMA user_version = 9; UPDATE triadic_metadata SET value = '9' WHERE key = 'format_version';");

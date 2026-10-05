@@ -8,7 +8,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 10;
+export const TRIADIC_FORMAT_VERSION = 11;
 // Nullable only for accounts in older files, whose codes must be assigned by the user.
 export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
@@ -193,6 +193,8 @@ DROP VIEW expansion_view; DROP VIEW cost_view; DROP VIEW detail_view;
 DROP TABLE details; DROP TABLE initiative_rows; DROP TABLE initiatives;
 ${NORMALIZED_TABLES_SQL}
 ${normalizedViews(TRIADIC_VIEWS_SQL)}
-PRAGMA user_version = 10;
-UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';
+ALTER TABLE initiatives ADD COLUMN industry_id INTEGER REFERENCES industries(id) ON DELETE RESTRICT;
+CREATE INDEX initiatives_industry_idx ON initiatives(industry_id);
+PRAGMA user_version = 11;
+UPDATE triadic_metadata SET value = '11' WHERE key = 'format_version';
 `;

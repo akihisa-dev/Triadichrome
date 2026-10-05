@@ -37,7 +37,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: name === "助成金の受入れ" ? null : departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: name === "助成金の受入れ" ? null : industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: name === "助成金の受入れ" ? null : departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [

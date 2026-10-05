@@ -44,6 +44,31 @@ export async function verifyIndustryData(api) {
   const untouched = await openTriadicDatabase(legacy);
   assert.equal(untouched.exec("PRAGMA user_version")[0].values[0][0], 4); untouched.close();
 
+  const accountPlan = await changeAccountMaster(bytes, { type: "add", accountCode: "002", accountName: "業種選択確認", accountType: "sales" });
+  const contents = await readPlanContents(accountPlan.bytes);
+  const draft = { name: "業種選択施策", note: "", fiscalYear: "2026", expansionId: contents.expansions[0].id, industryId: 1, rows: [{ accountId: contents.accounts[0].id, amounts: { 4: "1.001" } }] };
+  let assigned = await api.registerInitiative(accountPlan.bytes, draft);
+  assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, 1);
+  await assert.rejects(api.registerInitiative(accountPlan.bytes, { ...draft, industryId: 999 }), /業種名/);
+  await assert.rejects(changeIndustryMaster(assigned, { type: "delete", id: 1 }), /使用/);
+  assigned = await changeIndustryMaster(assigned, { type: "update", id: 1, industryCode: "01", industryName: "参照保持" });
+  assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, 1);
+  const beforeUpdate = (await readPlanContents(assigned)).initiatives[0];
+  assigned = await api.updateInitiative(assigned, beforeUpdate.id, 2026, { ...draft, industryId: 2 });
+  assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, 2);
+  assert.deepEqual((await readPlanContents(assigned)).initiatives[0].months, beforeUpdate.months);
+  assigned = await api.updateInitiative(assigned, beforeUpdate.id, 2026, { ...draft, industryId: null });
+  assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, null);
+  assigned = await changeIndustryMaster(assigned, { type: "delete", id: 2 });
+  const v10 = await openTriadicDatabase(assigned);
+  v10.exec("DROP INDEX initiatives_industry_idx; ALTER TABLE initiatives DROP COLUMN industry_id; PRAGMA user_version = 10; UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';");
+  const oldBytes = v10.export(); v10.close();
+  assert.equal((await readPlanContents(oldBytes)).initiatives[0].industryId, null);
+  const migratedIndustry = await api.updateInitiative(oldBytes, beforeUpdate.id, 2026, { ...draft, industryId: 1 });
+  assert.equal((await readPlanContents(migratedIndustry)).initiatives[0].industryId, 1);
+  const untouchedV10 = await openTriadicDatabase(oldBytes);
+  assert.equal(untouchedV10.exec("PRAGMA user_version")[0].values[0][0], 10); untouchedV10.close();
+
   let stored = bytes;
   let writes = 0;
   const handle = { name: "industry.triadic", async getFile() { return new File([stored], this.name); }, async createWritable() {

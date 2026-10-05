@@ -2,7 +2,7 @@
 
 この文書は、明細画面と将来の拡張に向けた保存構造の設計である。
 製品の操作と計算の要件は[REQUIREMENTS.md](REQUIREMENTS.md#明細)、実装済みの保存形式は[README](README.md#保存形式の方針)を正本とする。
-施策・入力行・月別金額と明細画面は形式バージョン10で実装している。前年合計値・将来の実績と版管理は拡張設計であり、未実装である。
+現在の保存形式はバージョン11で、施策・入力行・月別金額と明細画面を実装している。前年合計値・将来の実績と版管理は拡張設計であり、未実装である。
 互換性のため、一計画の参照 `budget_id` と年月の参照用 `periods` を残す。月別金額の正本は `initiative_amounts` とし、`details` は旧集計用の読み取りビューである。
 
 ## 元データと画面の関係
@@ -28,6 +28,7 @@ erDiagram
     expansions ||--o{ initiatives : "展開"
     departments o|--o{ initiatives : "任意の部署"
     period_types o|--o{ initiatives : "任意の期間分類"
+    industries o|--o{ initiatives : "任意の業種"
     baseline_sets ||--o{ baseline_rows : "将来の前年金額"
     accounts ||--o{ baseline_rows : "前年金額の科目"
     baseline_rows ||--|{ baseline_amounts : "各行に12か月"
@@ -37,6 +38,8 @@ erDiagram
 図の前年金額用の表は、施策とは異なる種類の金額を追加する際の設計である。
 前年金額の入力方法や実績管理を、今回の設計だけで実装対象へ追加しない。
 
+業種の選択は`initiatives.industry_id`で`industries.id`を参照する。未選択はNULLとし、参照中の業種の削除を拒否する。形式10以前の施策は業種未選択で保持し、保存成功時に形式11へ移行する。
+
 ## 保存する単位と識別キー
 
 一つの専用ファイルが一つの計画を持つ現行の境界を維持する。
@@ -45,7 +48,7 @@ erDiagram
 
 | 表 | 一件の意味 | 所有する値 | 重複を防ぐ条件 |
 |---|---|---|---|
-| `initiatives` | 一つの施策 | 名称、施策備考、年度、展開、部署、期間分類、登録順 | 計画内の施策名が一意 |
+| `initiatives` | 一つの施策 | 名称、施策備考、年度、展開、部署、期間分類、業種、登録順 | 計画内の施策名が一意 |
 | `initiative_rows` | 施策入力の一つの科目行 | 施策への参照、科目への参照、入力行順 | 科目の重複は許可 |
 | `initiative_amounts` | 一つの入力行の一月分 | 入力行への参照、固定の月、金額 | 入力行と月の組が一意 |
 | 各マスタ | 一つの選択肢 | コード、名称、属性、マスタ固有の設定 | 現行の重複禁止条件を維持 |
@@ -118,6 +121,7 @@ CREATE TABLE initiatives (
   expansion_id INTEGER REFERENCES expansions(id) ON DELETE RESTRICT,
   department_id INTEGER REFERENCES departments(id) ON DELETE RESTRICT,
   period_type_id INTEGER REFERENCES period_types(id) ON DELETE RESTRICT,
+  industry_id INTEGER REFERENCES industries(id) ON DELETE RESTRICT,
   sort_order INTEGER NOT NULL CHECK (sort_order >= 0),
   revision INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)
 );

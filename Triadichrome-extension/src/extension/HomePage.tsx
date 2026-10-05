@@ -112,6 +112,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeIndustries = async (change: IndustryChange) => {
+    if (change.type === "delete" && initiativeDraft.industryId === change.id) throw new Error("施策入力で選択している業種は削除できません。");
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangeIndustries(change)); }
@@ -278,8 +279,8 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
               switch (displayed) {
                 case "details": return <DetailTablePage contents={contents} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <DashboardPage onRestoreScroll={restoreDashboardScroll} contents={contents} view={dashboardView} onChange={setDashboardView} onOpenInitiative={openInitiative} />;
-                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
+                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage view={expansionView} onViewChange={setExpansionView} contents={contents} fiscalYear={expansionYear} onYearChange={setExpansionYear} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} />;

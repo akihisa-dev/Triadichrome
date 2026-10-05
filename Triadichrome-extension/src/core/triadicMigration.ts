@@ -73,6 +73,11 @@ export function migrateTriadicDatabase(database: Database): void {
       database.exec("PRAGMA user_version = 9; UPDATE triadic_metadata SET value = '9' WHERE key = 'format_version';");
     }
     if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 10) migrateTo10(database);
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 11) {
+      database.run("ALTER TABLE initiatives ADD COLUMN industry_id INTEGER REFERENCES industries(id) ON DELETE RESTRICT");
+      database.run("CREATE INDEX initiatives_industry_idx ON initiatives(industry_id)");
+      database.exec("PRAGMA user_version = 11; UPDATE triadic_metadata SET value = '11' WHERE key = 'format_version';");
+    }
     validateNormalizedData(database);
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

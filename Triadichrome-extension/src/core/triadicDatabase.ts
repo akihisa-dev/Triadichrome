@@ -41,7 +41,7 @@ function assertTriadicDatabase(database: Database): void {
     schemaObjects?.values.map(([type, name]) => `${String(type)}:${String(name)}`),
   );
 
-  const normalized = String(database.exec("PRAGMA user_version")[0]?.values[0]?.[0]) === "10";
+  const normalized = Number(database.exec("PRAGMA user_version")[0]?.values[0]?.[0]) >= 10;
   if (
     !TRIADIC_SCHEMA_OBJECTS.every(({ type, name }) =>
       schemaObjectKeys.has(`${normalized && name === "details" ? "view" : type}:${name}`),
@@ -64,7 +64,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", "2", "3", "4", "5", "6", "7", "8", "9", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    !["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -135,6 +135,7 @@ function assertTriadicDatabase(database: Database): void {
     if (database.exec("SELECT id FROM period_types WHERE typeof(name) != 'text' OR trim(name) = ''").length ||
         database.exec("SELECT name FROM period_types GROUP BY name HAVING COUNT(*) > 1").length) invalidDatabase();
   }
+  if (Number(userVersion) >= 11) database.exec("SELECT industry_id FROM initiatives LIMIT 0");
   if (normalized) {
     database.exec("SELECT id, row_id, month, amount_yen, revision FROM initiative_amounts LIMIT 0; SELECT * FROM initiative_detail_view LIMIT 0; SELECT * FROM legacy_detail_payloads LIMIT 0;");
     validateNormalizedData(database);
