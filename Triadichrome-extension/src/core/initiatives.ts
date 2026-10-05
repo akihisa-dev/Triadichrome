@@ -1,3 +1,4 @@
+import { listExpansions, type Expansion } from "./expansionMaster";
 import { type Database } from "sql.js";
 import { listAccounts, type Account } from "./accountMaster";
 import { exportTriadicDatabase, openTriadicDatabase } from "./triadicDatabase";
@@ -16,7 +17,7 @@ export type Initiative = {
   rows: InitiativeRow[];
   months: Partial<Record<InitiativeMonth, { sales: number | null; profit: number | null }>>;
 };
-export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[] };
+export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[] };
 
 export function currentFiscalYear(): number {
   const now = new Date();
@@ -69,7 +70,7 @@ function listInitiatives(database: Database): Initiative[] {
 
 export async function readPlanContents(bytes: Uint8Array): Promise<PlanContents> {
   const database = await openTriadicDatabase(bytes);
-  try { return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database) }; }
+  try { return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database), expansions: listExpansions(database) }; }
   finally { database.close(); }
 }
 

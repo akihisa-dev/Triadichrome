@@ -1,3 +1,4 @@
+import { EXPANSION_SQL } from "./expansionSchema";
 import { type Database } from "sql.js";
 import { AGGREGATION_SQL } from "./aggregationSchema";
 import { ACCOUNT_CODE_COLUMN_SQL, DETAILS_SQL, INITIATIVE_ROWS_SQL, TRIADIC_VIEWS_SQL } from "./triadicSchema";
@@ -33,6 +34,10 @@ export function migrateTriadicDatabase(database: Database): void {
       rows.forEach(([id], index) => database.run("UPDATE accounts SET sort_order = ? WHERE id = ?", [index, Number(id)]));
       database.exec(AGGREGATION_SQL);
       database.exec("PRAGMA user_version = 3; UPDATE triadic_metadata SET value = '3' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 4) {
+      database.exec(EXPANSION_SQL);
+      database.exec("PRAGMA user_version = 4; UPDATE triadic_metadata SET value = '4' WHERE key = 'format_version';");
     }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

@@ -1,3 +1,5 @@
+import { type ExpansionChange } from "../core/expansionMaster";
+import { saveExpansionMaster } from "./expansionMasterFile";
 import { useEffect, useRef, useState, type DragEvent } from "react";
 import { createTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
 import { type AccountChange } from "../core/accountMaster";
@@ -138,10 +140,11 @@ export function ExtensionPage() {
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations };
+      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions };
     } finally { busy.current = false; }
   };
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
+  const changeExpansions = (change: ExpansionChange) => saveChange((current, chooseDestination) => saveExpansionMaster(current, change, chooseDestination), change.type === "update");
   const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination), change.type === "update");
   const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
   const update = (id: number, year: number | null, draft: InitiativeEntryDraft) => saveChange(current => saveInitiativeUpdate(current, id, year, draft), true);
@@ -152,7 +155,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

@@ -98,7 +98,7 @@ export async function verifyInitiativeData(api, root) {
   await validateTriadicDatabase(migrated.bytes);
   const migratedDb = await openTriadicDatabase(migrated.bytes);
   assert.deepEqual(migratedDb.exec("SELECT id, budget_amount, actual_amount, note FROM details")[0].values, [[1, 123.5, 7, "旧備考"]]);
-  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 3);
+  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 4);
   migratedDb.close();
   assert.equal((await readPlanContents(legacyBytes)).accounts[0].accountType, null);
   assert.deepEqual((await readPlanContents(migrated.bytes)).initiatives[0].months[4], { sales: 123.5, profit: 123.5 });

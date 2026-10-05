@@ -4,7 +4,8 @@ export async function verifySamplePlan(api) {
   const { createSamplePlan, validateTriadicDatabase, readPlanContents, buildCostTable, initiativeMonths, changeAccountMaster, changeAggregationMaster, openTriadicDatabase } = api;
   const bytes = await createSamplePlan(2026);
   await validateTriadicDatabase(bytes);
-  const { accounts, initiatives, aggregations } = await readPlanContents(bytes);
+  const { accounts, initiatives, aggregations, expansions } = await readPlanContents(bytes);
+  assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
   assert.equal(accounts.length, 16);
   assert.equal(aggregations.length, 11);
   assert.equal(initiatives.length, 13);

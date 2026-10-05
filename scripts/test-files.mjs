@@ -1,3 +1,4 @@
+import { verifyExpansionData } from "../tests/expansion-data.mjs";
 import { verifyRecentFile } from "../tests/recent-file.mjs";
 import { verifyAutoSave } from "../tests/auto-save.mjs";
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
@@ -18,6 +19,8 @@ try {
     stdin: { contents: [
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
       'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
+      'export * from "./Triadichrome-extension/src/core/expansionMaster.ts";',
+      'export * from "./Triadichrome-extension/src/extension/expansionMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/core/initiatives.ts";',
       'export * from "./Triadichrome-extension/src/core/autoSave.ts";',
       'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
@@ -142,6 +145,7 @@ try {
   assert.equal(savedImport.accounts[0].accountName, "コピー");
   assert.equal(savedImport.handle, handle);
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
+  await verifyExpansionData(await import(pathToFileURL(bundle)));
   await verifyAutoSave(await import(pathToFileURL(bundle)));
   await verifyInitiativeData(await import(pathToFileURL(bundle)), root);
   await verifyAggregationData(await import(pathToFileURL(bundle)));

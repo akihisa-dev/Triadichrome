@@ -113,7 +113,7 @@ export async function verifyAggregationData(api) {
   assert.deepEqual(incomplete.find(row => row.name === "経常利益").budget, {}, "未設定の子集計を含む部分合計を確定額として出さない");
 
   const legacyDb = await openTriadicDatabase(original);
-  legacyDb.exec("DROP TABLE aggregation_members; DROP TABLE aggregation_groups; PRAGMA user_version = 2; UPDATE triadic_metadata SET value = '2' WHERE key = 'format_version';");
+  legacyDb.exec("DROP TABLE expansions; DROP TABLE aggregation_members; DROP TABLE aggregation_groups; PRAGMA user_version = 2; UPDATE triadic_metadata SET value = '2' WHERE key = 'format_version';");
   const legacyBytes = legacyDb.export(); legacyDb.close();
   const legacy = await readPlanContents(legacyBytes);
   assert.deepEqual(legacy.accounts.map(account => account.accountName), ["売上", "原価", "費用", "利益"], "旧版のコード順を読込時に維持");

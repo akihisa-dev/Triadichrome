@@ -61,7 +61,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", "2", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    !["1", "2", "3", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -106,6 +106,12 @@ function assertTriadicDatabase(database: Database): void {
       FROM expansion_view LIMIT 0;
   `);
 
+  if (Number(userVersion) >= 4) {
+    database.exec("SELECT id, code, name FROM expansions LIMIT 0");
+    if (database.exec("SELECT id FROM expansions WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR typeof(name) != 'text' OR trim(name) = ''").length ||
+        database.exec("SELECT code FROM expansions GROUP BY code HAVING COUNT(*) > 1").length ||
+        database.exec("SELECT name FROM expansions GROUP BY name HAVING COUNT(*) > 1").length) invalidDatabase();
+  }
   const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
   if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {
     invalidDatabase();
@@ -113,7 +119,7 @@ function assertTriadicDatabase(database: Database): void {
   if (database.exec("PRAGMA foreign_key_check")[0]?.values.length) {
     invalidDatabase();
   }
-  if (userVersion === 3) {
+  if (Number(userVersion) >= 3) {
     validateAggregations(listAggregations(database), new Set((database.exec("SELECT id FROM accounts WHERE budget_id = 1")[0]?.values ?? []).map(([id]) => Number(id))));
   }
 }
