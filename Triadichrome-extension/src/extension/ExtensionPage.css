@@ -1017,6 +1017,9 @@ button:disabled {
 
 .expansion-table-page .initiative-list-heading .initiative-field:last-child { width: 12rem; max-width: 100%; }
 
+.account-master-list .period-master-table,
 .account-master-list .department-master-table { min-width: 300px; }
+.account-master-list .period-master-table thead th:first-child,
 .account-master-list .department-master-table thead th:first-child { width: auto; }
+.account-master-list .period-master-table thead th:last-child,
 .account-master-list .department-master-table thead th:last-child { width: 152px; }

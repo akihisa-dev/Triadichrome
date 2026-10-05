@@ -1,3 +1,4 @@
+import { PERIOD_MASTER_SQL } from "./periodMasterSchema";
 import { DEPARTMENT_SQL } from "./departmentSchema";
 import { INDUSTRY_SQL } from "./industrySchema";
 import { EXPANSION_SQL, withoutLegacyExpansionPrefixes } from "./expansionSchema";
@@ -64,6 +65,11 @@ export function migrateTriadicDatabase(database: Database): void {
       if (!database.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'departments'").length) database.exec(DEPARTMENT_SQL);
       if (!hasColumn(database, "initiatives", "department_id")) database.run("ALTER TABLE initiatives ADD COLUMN department_id INTEGER REFERENCES departments(id)");
       database.exec("PRAGMA user_version = 8; UPDATE triadic_metadata SET value = '8' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 9) {
+      if (!database.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'period_types'").length) database.exec(PERIOD_MASTER_SQL);
+      if (!hasColumn(database, "initiatives", "period_type_id")) database.run("ALTER TABLE initiatives ADD COLUMN period_type_id INTEGER REFERENCES period_types(id)");
+      database.exec("PRAGMA user_version = 9; UPDATE triadic_metadata SET value = '9' WHERE key = 'format_version';");
     }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

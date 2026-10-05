@@ -1,3 +1,5 @@
+import { type PeriodTypeChange } from "../core/periodMaster";
+import { savePeriodMaster } from "./periodMasterFile";
 import { type DepartmentChange } from "../core/departmentMaster";
 import { saveDepartmentMaster } from "./departmentMasterFile";
 import { type IndustryChange } from "../core/industryMaster";
@@ -144,10 +146,11 @@ export function ExtensionPage() {
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments };
+      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes };
     } finally { busy.current = false; }
   };
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
+  const changePeriodTypes = (change: PeriodTypeChange) => saveChange((current, chooseDestination) => savePeriodMaster(current, change, chooseDestination), change.type === "update");
   const changeDepartments = (change: DepartmentChange) => saveChange((current, chooseDestination) => saveDepartmentMaster(current, change, chooseDestination), change.type === "update");
   const changeIndustries = (change: IndustryChange) => saveChange((current, chooseDestination) => saveIndustryMaster(current, change, chooseDestination), change.type === "update");
   const changeExpansions = (change: ExpansionChange) => saveChange((current, chooseDestination) => saveExpansionMaster(current, change, chooseDestination), change.type === "update");
@@ -161,7 +164,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

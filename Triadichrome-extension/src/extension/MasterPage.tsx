@@ -1,6 +1,6 @@
-type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void };
+type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void };
 
-export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments }: MasterPageProps) {
+export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods }: MasterPageProps) {
   return <main className="master-page" aria-labelledby="master-title">
     <h1 id="master-title">マスタ</h1>
     <p className="page-description">計画の入力に使う項目を管理します。</p>
@@ -23,6 +23,10 @@ export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansion
       </button>
       <button className="master-menu-item" type="button" onClick={onOpenDepartments}>
         <span><strong>部署マスタ</strong><span>部署名</span></span>
+        <span aria-hidden="true">→</span>
+      </button>
+      <button className="master-menu-item" type="button" onClick={onOpenPeriods}>
+        <span><strong>期間マスタ</strong><span>期間名</span></span>
         <span aria-hidden="true">→</span>
       </button>
     </div>

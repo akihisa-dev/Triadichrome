@@ -1,3 +1,4 @@
+import { type PeriodType } from "../core/periodMaster";
 import { type Department } from "../core/departmentMaster";
 import { type Expansion } from "../core/expansionMaster";
 import { isValidAmount } from "../core/amounts";
@@ -12,13 +13,14 @@ type InitiativeEntryPageProps = {
   accounts: Account[];
   expansions: Expansion[];
   departments: Department[];
+  periodTypes: PeriodType[];
   onOpenMaster: () => void;
   isSaving: boolean;
   onRegister: () => void;
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
   return (
     <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
@@ -77,6 +79,14 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           onChange={event => onDraftChange({ ...draft, departmentId: event.target.value ? Number(event.target.value) : null })}>
           <option value="">部署名を選択</option>
           {departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
+        </select>
+      </div>
+      <div className="initiative-field initiative-expansion-field">
+        <label htmlFor="initiative-period">期間名</label>
+        <select id="initiative-period" value={draft.periodTypeId ?? ""} disabled={isSaving}
+          onChange={event => onDraftChange({ ...draft, periodTypeId: event.target.value ? Number(event.target.value) : null })}>
+          <option value="">期間名を選択</option>
+          {periodTypes.map(item => <option key={item.id} value={item.id}>{item.periodName}</option>)}
         </select>
       </div>
       </div>
