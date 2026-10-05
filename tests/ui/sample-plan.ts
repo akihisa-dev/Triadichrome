@@ -1,3 +1,4 @@
+import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/departmentSchema";
 import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/industrySchema";
 import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/expansionSchema";
 import { changeAccountMaster } from "../../Triadichrome-extension/src/core/accountMaster";
@@ -10,6 +11,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   let bytes = await createTriadicDatabase();
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
+  const departments = (await readPlanContents(bytes)).departments;
+  if (departments.length !== INITIAL_DEPARTMENTS.length || departments.some((item, index) => item.departmentName !== INITIAL_DEPARTMENTS[index]!.departmentName)) throw new Error("部署マスタの初期データが一致しません。");
   const industries = (await readPlanContents(bytes)).industries;
   if (industries.length !== INITIAL_INDUSTRIES.length || industries.some((item, index) => item.industryName !== INITIAL_INDUSTRIES[index]!.industryName)) throw new Error("業種マスタの初期データが一致しません。");
   const accounts = new Map((await readPlanContents(bytes)).accounts.map(account => [account.accountName, account.id]));
@@ -31,7 +34,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, fiscalYear: String(year), rows });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [

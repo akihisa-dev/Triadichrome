@@ -1,3 +1,4 @@
+import { verifyDepartmentData } from "../tests/department-data.mjs";
 import { verifyExpansionTable } from "../tests/expansion-table.mjs";
 import { verifyDefaultCostData } from "../tests/default-cost-data.mjs";
 import { verifyIndustryData } from "../tests/industry-data.mjs";
@@ -23,6 +24,8 @@ try {
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
       'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/expansionMaster.ts";',
+      'export * from "./Triadichrome-extension/src/core/departmentMaster.ts";',
+      'export * from "./Triadichrome-extension/src/extension/departmentMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/core/industryMaster.ts";',
       'export * from "./Triadichrome-extension/src/extension/industryMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/expansionMasterFile.ts";',
@@ -158,6 +161,7 @@ try {
   assert.equal(savedImport.accounts[0].accountName, "コピー");
   assert.equal(savedImport.handle, handle);
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
+  await verifyDepartmentData(productionApi);
   await verifyIndustryData(api);
   await verifyExpansionData(api);
   await verifyAutoSave(api);

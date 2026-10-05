@@ -1,3 +1,4 @@
+import { DEPARTMENT_SQL } from "./departmentSchema";
 import { INDUSTRY_SQL } from "./industrySchema";
 import { EXPANSION_SQL } from "./expansionSchema";
 import { AGGREGATION_SQL } from "./aggregationSchema";
@@ -5,7 +6,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 7;
+export const TRIADIC_FORMAT_VERSION = 8;
 // Nullable only for accounts in older files, whose codes must be assigned by the user.
 export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
@@ -154,6 +155,7 @@ CREATE TABLE initiatives (
   name TEXT NOT NULL,
   note TEXT NOT NULL DEFAULT '',
   expansion_id INTEGER REFERENCES expansions(id),
+  department_id INTEGER REFERENCES departments(id),
   fiscal_year INTEGER CHECK (fiscal_year BETWEEN 1 AND 9998),
   sort_order INTEGER NOT NULL DEFAULT 0,
   UNIQUE (budget_id, name)
@@ -171,6 +173,7 @@ CREATE TABLE accounts (
 
 CREATE UNIQUE INDEX accounts_code_idx ON accounts (budget_id, code);
 
+${DEPARTMENT_SQL}
 ${INDUSTRY_SQL}
 ${EXPANSION_SQL}
 ${AGGREGATION_SQL}

@@ -1,3 +1,4 @@
+import { DEPARTMENT_SQL } from "./departmentSchema";
 import { INDUSTRY_SQL } from "./industrySchema";
 import { EXPANSION_SQL, withoutLegacyExpansionPrefixes } from "./expansionSchema";
 import { type Database } from "sql.js";
@@ -58,6 +59,11 @@ export function migrateTriadicDatabase(database: Database): void {
     if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 7) {
       if (!hasColumn(database, "initiatives", "expansion_id")) database.run("ALTER TABLE initiatives ADD COLUMN expansion_id INTEGER REFERENCES expansions(id)");
       database.exec("PRAGMA user_version = 7; UPDATE triadic_metadata SET value = '7' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 8) {
+      if (!database.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'departments'").length) database.exec(DEPARTMENT_SQL);
+      if (!hasColumn(database, "initiatives", "department_id")) database.run("ALTER TABLE initiatives ADD COLUMN department_id INTEGER REFERENCES departments(id)");
+      database.exec("PRAGMA user_version = 8; UPDATE triadic_metadata SET value = '8' WHERE key = 'format_version';");
     }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

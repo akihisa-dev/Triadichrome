@@ -1,3 +1,5 @@
+import { type DepartmentChange } from "../core/departmentMaster";
+import { DepartmentMasterPage } from "./DepartmentMasterPage";
 import { ExpansionTablePage } from "./ExpansionTablePage";
 import { type IndustryChange } from "../core/industryMaster";
 import { IndustryMasterPage } from "./IndustryMasterPage";
@@ -19,12 +21,13 @@ import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master";
+type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master";
 
 type HomePageProps = {
   fileName: string;
   initialContents: PlanContents;
   onChangeMaster: (change: AccountChange) => Promise<PlanContents>;
+  onChangeDepartments: (change: DepartmentChange) => Promise<PlanContents>;
   onChangeIndustries: (change: IndustryChange) => Promise<PlanContents>;
   onChangeExpansions: (change: ExpansionChange) => Promise<PlanContents>;
   onChangeAggregations: (change: AggregationChange) => Promise<PlanContents>;
@@ -34,7 +37,7 @@ type HomePageProps = {
   onCloseFile: () => void;
 };
 
-export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onCloseFile }: HomePageProps) {
+export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
@@ -72,6 +75,13 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
     finally { saving.current = false; setIsSaving(false); }
   };
 
+  const changeDepartments = async (change: DepartmentChange) => {
+    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+    if (change.type === "delete" && initiativeDraft.departmentId === change.id) throw new Error("施策入力で選択している部署は削除できません。");
+    saving.current = true; setIsSaving(true);
+    try { setContents(await onChangeDepartments(change)); }
+    finally { saving.current = false; setIsSaving(false); }
+  };
   const changeIndustries = async (change: IndustryChange) => {
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
@@ -213,7 +223,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
               </svg>
               <span className="sidebar-label">展開表</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" ? "page" : undefined} onClick={() => setPage("master")}>
+            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
               </svg>
@@ -235,12 +245,13 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             {displayed => {
               switch (displayed) {
                 case "home": return <main className="home-view" aria-label="ホーム" />;
-                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
+                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage contents={contents} fiscalYear={expansionYear} onYearChange={setExpansionYear} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} />;
-                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} />;
+                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} />;
+                case "department-master": return <DepartmentMasterPage departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;
                 case "industry-master": return <IndustryMasterPage industries={contents.industries} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeIndustries} onBack={() => setPage("master")} />;
                 case "expansion-master": return <ExpansionMasterPage usedExpansionIds={new Set([...initiatives.map(item => item.expansionId), initiativeDraft.expansionId].filter((id): id is number => id !== null))} expansions={contents.expansions} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeExpansions} onBack={() => setPage("master")} />;
                 case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeAggregations} onBack={() => setPage("master")} />;

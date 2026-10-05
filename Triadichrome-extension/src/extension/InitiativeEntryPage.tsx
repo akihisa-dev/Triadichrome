@@ -1,3 +1,4 @@
+import { type Department } from "../core/departmentMaster";
 import { type Expansion } from "../core/expansionMaster";
 import { isValidAmount } from "../core/amounts";
 import { type ReactNode } from "react";
@@ -10,13 +11,14 @@ type InitiativeEntryPageProps = {
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   expansions: Expansion[];
+  departments: Department[];
   onOpenMaster: () => void;
   isSaving: boolean;
   onRegister: () => void;
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
   return (
     <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
@@ -67,6 +69,14 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           onChange={event => onDraftChange({ ...draft, expansionId: event.target.value ? Number(event.target.value) : null })}>
           <option value="">展開名を選択</option>
           {expansions.map(item => <option key={item.id} value={item.id}>{item.expansionName}</option>)}
+        </select>
+      </div>
+      <div className="initiative-field initiative-expansion-field">
+        <label htmlFor="initiative-department">部署名</label>
+        <select id="initiative-department" value={draft.departmentId ?? ""} disabled={isSaving}
+          onChange={event => onDraftChange({ ...draft, departmentId: event.target.value ? Number(event.target.value) : null })}>
+          <option value="">部署名を選択</option>
+          {departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
         </select>
       </div>
       </div>
