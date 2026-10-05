@@ -4,8 +4,9 @@ export async function verifySamplePlan(api) {
   const { createSamplePlan, validateTriadicDatabase, readPlanContents, buildCostTable, initiativeMonths, changeAccountMaster, changeAggregationMaster, openTriadicDatabase } = api;
   const bytes = await createSamplePlan(2026);
   await validateTriadicDatabase(bytes);
-  const { accounts, initiatives, aggregations, expansions } = await readPlanContents(bytes);
+  const { accounts, initiatives, aggregations, expansions, industries } = await readPlanContents(bytes);
   assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
+  assert.deepEqual(industries.map(item => item.industryName), ["直営自動車", "自動車取扱", "不動産A", "不動産B", "納品代行", "雑作業", "業務費B", "一般管理費", "営業外"]);
   assert.equal(accounts.length, 16);
   assert.equal(aggregations.length, 11);
   assert.equal(initiatives.length, 13);

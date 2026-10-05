@@ -1,6 +1,6 @@
-type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void };
+type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void };
 
-export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions }: MasterPageProps) {
+export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries }: MasterPageProps) {
   return <main className="master-page" aria-labelledby="master-title">
     <h1 id="master-title">マスタ</h1>
     <p className="page-description">計画の入力に使う項目を管理します。</p>
@@ -15,6 +15,10 @@ export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansion
       </button>
       <button className="master-menu-item" type="button" onClick={onOpenExpansions}>
         <span><strong>展開マスタ</strong><span>展開コードと展開名</span></span>
+        <span aria-hidden="true">→</span>
+      </button>
+      <button className="master-menu-item" type="button" onClick={onOpenIndustries}>
+        <span><strong>業種マスタ</strong><span>業種コードと業種名</span></span>
         <span aria-hidden="true">→</span>
       </button>
     </div>

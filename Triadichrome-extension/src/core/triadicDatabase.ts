@@ -61,7 +61,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", "2", "3", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    !["1", "2", "3", "4", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -111,6 +111,12 @@ function assertTriadicDatabase(database: Database): void {
     if (database.exec("SELECT id FROM expansions WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR typeof(name) != 'text' OR trim(name) = ''").length ||
         database.exec("SELECT code FROM expansions GROUP BY code HAVING COUNT(*) > 1").length ||
         database.exec("SELECT name FROM expansions GROUP BY name HAVING COUNT(*) > 1").length) invalidDatabase();
+  }
+  if (Number(userVersion) >= 5) {
+    database.exec("SELECT id, code, name FROM industries LIMIT 0");
+    if (database.exec("SELECT id FROM industries WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR typeof(name) != 'text' OR trim(name) = ''").length ||
+        database.exec("SELECT code FROM industries GROUP BY code HAVING COUNT(*) > 1").length ||
+        database.exec("SELECT name FROM industries GROUP BY name HAVING COUNT(*) > 1").length) invalidDatabase();
   }
   const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
   if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {

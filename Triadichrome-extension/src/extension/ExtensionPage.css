@@ -863,9 +863,13 @@ button:disabled {
 .account-master-list .account-master-table thead th:nth-child(2) { width: 110px; }
 .account-master-list .account-master-table thead th:nth-child(3) { width: auto; }
 .account-master-list .account-master-table thead th:nth-child(4) { width: 120px; }
+.account-master-list .industry-master-table,
 .account-master-list .expansion-master-table { min-width: 400px; }
+.account-master-list .industry-master-table thead th:first-child,
 .account-master-list .expansion-master-table thead th:first-child { width: 110px; white-space: nowrap; }
+.account-master-list .industry-master-table thead th:nth-child(2),
 .account-master-list .expansion-master-table thead th:nth-child(2) { width: auto; }
+.account-master-list .industry-master-table thead th:last-child,
 .account-master-list .expansion-master-table thead th:last-child { width: 152px; }
 .account-drag-handle { cursor: grab; font-size: 22px; touch-action: none; }
 .account-drag-handle:active:not(:disabled) { cursor: grabbing; }

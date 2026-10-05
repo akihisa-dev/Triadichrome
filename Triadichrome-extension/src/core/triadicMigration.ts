@@ -1,3 +1,4 @@
+import { INDUSTRY_SQL } from "./industrySchema";
 import { EXPANSION_SQL } from "./expansionSchema";
 import { type Database } from "sql.js";
 import { AGGREGATION_SQL } from "./aggregationSchema";
@@ -38,6 +39,10 @@ export function migrateTriadicDatabase(database: Database): void {
     if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 4) {
       database.exec(EXPANSION_SQL);
       database.exec("PRAGMA user_version = 4; UPDATE triadic_metadata SET value = '4' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 5) {
+      database.exec(INDUSTRY_SQL);
+      database.exec("PRAGMA user_version = 5; UPDATE triadic_metadata SET value = '5' WHERE key = 'format_version';");
     }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");

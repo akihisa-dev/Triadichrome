@@ -1,3 +1,4 @@
+import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/industrySchema";
 import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/expansionSchema";
 import { changeAccountMaster } from "../../Triadichrome-extension/src/core/accountMaster";
 import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/aggregationMaster";
@@ -10,6 +11,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   let bytes = await createTriadicDatabase();
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
+  const industries = (await readPlanContents(bytes)).industries;
+  if (industries.length !== INITIAL_INDUSTRIES.length || industries.some((item, index) => item.industryName !== INITIAL_INDUSTRIES[index]!.industryName)) throw new Error("業種マスタの初期データが一致しません。");
   const accounts = new Map<string, number>();
   for (const [accountCode, accountName, accountType] of [
     ["001", "商品売上", "sales"], ["110", "保守サービス売上", "sales"], ["120", "利用料売上", "sales"],

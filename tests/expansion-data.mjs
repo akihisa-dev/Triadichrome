@@ -33,7 +33,7 @@ export async function verifyExpansionData(api) {
 
   const populated = await changeAccountMaster(bytes, { type: "add", accountCode: "001", accountName: "移行確認", accountType: "expense" });
   const legacyDb = await openTriadicDatabase(populated.bytes);
-  legacyDb.exec("DROP TABLE expansions; PRAGMA user_version = 3; UPDATE triadic_metadata SET value = '3' WHERE key = 'format_version';");
+  legacyDb.exec("DROP TABLE industries; DROP TABLE expansions; PRAGMA user_version = 3; UPDATE triadic_metadata SET value = '3' WHERE key = 'format_version';");
   const legacy = legacyDb.export(); legacyDb.close();
   assert.deepEqual((await readPlanContents(legacy)).expansions, initial);
   const migrated = await changeExpansionMaster(legacy, { type: "update", id: 8, expansionCode: "8", expansionName: "効率改善" });
