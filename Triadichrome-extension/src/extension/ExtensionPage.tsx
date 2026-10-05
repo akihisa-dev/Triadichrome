@@ -1,3 +1,5 @@
+import { type KindChange } from "../core/kindMaster";
+import { saveKindMaster } from "./kindMasterFile";
 import { type DetailChange } from "../core/details";
 import { saveDetailChange } from "./detailFile";
 import { type PeriodTypeChange } from "../core/periodMaster";
@@ -158,11 +160,12 @@ export function ExtensionPage() {
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
+      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
     } finally { busy.current = false; }
   };
   const changeDetail = (change: DetailChange) => saveChange(current => saveDetailChange(current, change), true);
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
+  const changeKinds = (change: KindChange) => saveChange((current, chooseDestination) => saveKindMaster(current, change, chooseDestination), change.type === "update");
   const changePeriodTypes = (change: PeriodTypeChange) => saveChange((current, chooseDestination) => savePeriodMaster(current, change, chooseDestination), change.type === "update");
   const changeDepartments = (change: DepartmentChange) => saveChange((current, chooseDestination) => saveDepartmentMaster(current, change, chooseDestination), change.type === "update");
   const changeIndustries = (change: IndustryChange) => saveChange((current, chooseDestination) => saveIndustryMaster(current, change, chooseDestination), change.type === "update");
@@ -177,7 +180,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onChangeKinds={changeKinds} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

@@ -7,6 +7,7 @@ export async function verifySamplePlan(api) {
   const { accounts, initiatives, aggregations, expansions, industries } = await readPlanContents(bytes);
   assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
   assert.deepEqual((await readPlanContents(bytes)).departments.map(item => item.departmentName), ["部署A", "部署B"]);
+  assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["前年", "一次", "確定", "修正", "見通し"]);
   assert.deepEqual((await readPlanContents(bytes)).periodTypes.map(item => item.periodName), ["期間差", "新規"]);
   assert.deepEqual(new Set(initiatives.map(item => item.industryId)), new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, null]));
   assert.deepEqual(new Set(initiatives.map(item => item.periodTypeId)), new Set([1, 2]));

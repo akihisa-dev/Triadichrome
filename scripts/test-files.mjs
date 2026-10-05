@@ -1,3 +1,4 @@
+import { verifyKindData } from "../tests/kind-data.mjs";
 import { verifyDetails } from "../tests/details.mjs";
 import { verifyPeriodData } from "../tests/period-data.mjs";
 import { verifyDepartmentData } from "../tests/department-data.mjs";
@@ -29,6 +30,8 @@ try {
       'export * from "./Triadichrome-extension/src/extension/detailFile.ts";',
       'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/expansionMaster.ts";',
+      'export * from "./Triadichrome-extension/src/core/kindMaster.ts";',
+      'export * from "./Triadichrome-extension/src/extension/kindMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/core/periodMaster.ts";',
       'export * from "./Triadichrome-extension/src/extension/periodMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/core/departmentMaster.ts";',
@@ -169,6 +172,7 @@ try {
   assert.equal(savedImport.accounts[0].accountName, "コピー");
   assert.equal(savedImport.handle, handle);
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
+  await verifyKindData(productionApi);
   await verifyPeriodData(productionApi);
   await verifyDepartmentData(productionApi);
   await verifyIndustryData(api);

@@ -1,3 +1,4 @@
+import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/kindMasterSchema";
 import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/periodMasterSchema";
 import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/departmentSchema";
 import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/industrySchema";
@@ -10,6 +11,8 @@ import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiati
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase();
+  const kinds = (await readPlanContents(bytes)).kinds;
+  if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
   const periodTypes = (await readPlanContents(bytes)).periodTypes;

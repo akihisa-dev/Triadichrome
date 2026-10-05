@@ -61,7 +61,7 @@ export async function verifyIndustryData(api) {
   assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, null);
   assigned = await changeIndustryMaster(assigned, { type: "delete", id: 2 });
   const v10 = await openTriadicDatabase(assigned);
-  v10.exec("DROP INDEX initiatives_industry_idx; ALTER TABLE initiatives DROP COLUMN industry_id; PRAGMA user_version = 10; UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';");
+  v10.exec("DROP TABLE kind_types; DROP INDEX initiatives_industry_idx; ALTER TABLE initiatives DROP COLUMN industry_id; PRAGMA user_version = 10; UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';");
   const oldBytes = v10.export(); v10.close();
   assert.equal((await readPlanContents(oldBytes)).initiatives[0].industryId, null);
   const migratedIndustry = await api.updateInitiative(oldBytes, beforeUpdate.id, 2026, { ...draft, industryId: 1 });

@@ -1,3 +1,4 @@
+import { listKinds, type Kind } from "./kindMaster";
 import { ensureFiscalPeriods, validateNormalizedData } from "./migration10";
 import { listDetailRecords, type DetailRecord } from "./details";
 import { listPeriodTypes, type PeriodType } from "./periodMaster";
@@ -24,7 +25,7 @@ export type Initiative = {
   rows: InitiativeRow[];
   months: Partial<Record<InitiativeMonth, { sales: number | null; profit: number | null }>>;
 };
-export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[]; details?: DetailRecord[] | undefined; formatVersion?: number | undefined; migrationError?: string | undefined };
+export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[]; kinds: Kind[]; details?: DetailRecord[] | undefined; formatVersion?: number | undefined; migrationError?: string | undefined };
 
 export function currentFiscalYear(): number {
   const now = new Date();
@@ -86,10 +87,10 @@ export async function readPlanContents(bytes: Uint8Array): Promise<PlanContents>
   try {
     const formatVersion = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]);
     let migrationError: string | undefined;
-    if (formatVersion < 11) {
+    if (formatVersion < 12) {
       try { migrateTriadicDatabase(database); } catch (error) { migrationError = error instanceof Error ? error.message : "保存形式を移行できません。"; }
     }
-    return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database), expansions: listExpansions(database), industries: listIndustries(database), departments: listDepartments(database), periodTypes: listPeriodTypes(database), formatVersion, migrationError, details: listDetailRecords(database) }; }
+    return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database), expansions: listExpansions(database), industries: listIndustries(database), departments: listDepartments(database), periodTypes: listPeriodTypes(database), kinds: listKinds(database), formatVersion, migrationError, details: listDetailRecords(database) }; }
   finally { database.close(); }
 }
 

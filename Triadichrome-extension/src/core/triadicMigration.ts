@@ -1,3 +1,4 @@
+import { KIND_MASTER_SQL } from "./kindMasterSchema";
 import { migrateTo10, validateNormalizedData } from "./migration10";
 import { PERIOD_MASTER_SQL } from "./periodMasterSchema";
 import { DEPARTMENT_SQL } from "./departmentSchema";
@@ -77,6 +78,10 @@ export function migrateTriadicDatabase(database: Database): void {
       database.run("ALTER TABLE initiatives ADD COLUMN industry_id INTEGER REFERENCES industries(id) ON DELETE RESTRICT");
       database.run("CREATE INDEX initiatives_industry_idx ON initiatives(industry_id)");
       database.exec("PRAGMA user_version = 11; UPDATE triadic_metadata SET value = '11' WHERE key = 'format_version';");
+    }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 12) {
+      database.exec(KIND_MASTER_SQL);
+      database.exec("PRAGMA user_version = 12; UPDATE triadic_metadata SET value = '12' WHERE key = 'format_version';");
     }
     validateNormalizedData(database);
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");

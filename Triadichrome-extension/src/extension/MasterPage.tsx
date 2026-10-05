@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void };
+type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void; onOpenKinds: () => void };
 
 const icons: ReactNode[] = [
   <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 7h6M9 11h6M9 15h2m3 0h1M9 18h2m3 0h1" /></>,
@@ -9,9 +9,10 @@ const icons: ReactNode[] = [
   <><path d="M3 21V9l8-4v16M11 21V3h10v18M2 21h20M6 11v1m0 3v1m9-9h2m-2 4h2m-2 4h2" /></>,
   <><circle cx="9" cy="7" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 11v-3a6 6 0 0 0-2-4" /></>,
   <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3M7 18h3" /></>,
+  <><path d="M3 4h9l9 9-8 8-10-10V4Z" /><circle cx="7.5" cy="8.5" r="1" /></>,
 ];
 
-export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods }: MasterPageProps) {
+export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods, onOpenKinds }: MasterPageProps) {
   const items = [
     { name: "勘定科目マスタ", description: "科目コード・科目名・科目属性", open: onOpenAccounts },
     { name: "集計マスタ", description: "科目・集計の所属と加減算", open: onOpenAggregations },
@@ -19,6 +20,7 @@ export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansion
     { name: "業種マスタ", description: "業種コード・業種名", open: onOpenIndustries },
     { name: "部署マスタ", description: "部署名", open: onOpenDepartments },
     { name: "期間マスタ", description: "期間名", open: onOpenPeriods },
+    { name: "種別マスタ", description: "種別", open: onOpenKinds },
   ];
   return <main className="master-page master-index" aria-labelledby="master-title">
     <h1 id="master-title">マスタ</h1>
