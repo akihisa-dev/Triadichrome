@@ -1,3 +1,4 @@
+import { verifyDefaultCostData } from "../tests/default-cost-data.mjs";
 import { verifyIndustryData } from "../tests/industry-data.mjs";
 import { verifyExpansionData } from "../tests/expansion-data.mjs";
 import { verifyRecentFile } from "../tests/recent-file.mjs";
@@ -35,6 +36,8 @@ try {
       'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/recentFile.ts";',
       'export * from "./tests/ui/sample-plan.ts";',
+      'export * from "./tests/ui/empty-plan.ts";',
+      'export * from "./Triadichrome-extension/src/core/amounts.ts";',
     ].join("\n"), resolveDir: root },
     outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
     plugins: [{ name: "local-wasm", setup(api) {
@@ -44,8 +47,12 @@ try {
       }));
     } }],
   });
+  const productionApi = await import(pathToFileURL(bundle));
+  await verifyDefaultCostData(productionApi);
+  // Legacy empty-master fixtures keep CRUD regressions independent of new defaults.
+  const api = { ...productionApi, createTriadicDatabase: productionApi.createEmptyTestPlan };
   const { createTriadicDatabase, validateTriadicDatabase, openTriadicDatabase, writeTriadicFile,
-    readAccountMaster, changeAccountMaster, saveAccountMaster } = await import(pathToFileURL(bundle));
+    readAccountMaster, changeAccountMaster, saveAccountMaster } = api;
   const bytes = await createTriadicDatabase();
   await validateTriadicDatabase(bytes);
   await assert.rejects(validateTriadicDatabase(new Uint8Array([1, 2, 3])));
@@ -148,13 +155,13 @@ try {
   assert.equal(savedImport.accounts[0].accountName, "コピー");
   assert.equal(savedImport.handle, handle);
   console.log("PASS: account master CRUD, references, persistence, conflicts and failed/cancelled saves");
-  await verifyIndustryData(await import(pathToFileURL(bundle)));
-  await verifyExpansionData(await import(pathToFileURL(bundle)));
-  await verifyAutoSave(await import(pathToFileURL(bundle)));
-  await verifyInitiativeData(await import(pathToFileURL(bundle)), root);
-  await verifyAggregationData(await import(pathToFileURL(bundle)));
-  await verifySamplePlan(await import(pathToFileURL(bundle)));
-  await verifyRecentFile(await import(pathToFileURL(bundle)));
+  await verifyIndustryData(api);
+  await verifyExpansionData(api);
+  await verifyAutoSave(api);
+  await verifyInitiativeData(api, root);
+  await verifyAggregationData(api);
+  await verifySamplePlan(productionApi);
+  await verifyRecentFile(api);
 } finally {
   await rm(temporary, { recursive: true, force: true });
 }

@@ -10,14 +10,14 @@ import { AutoSaveStatus } from "./AutoSaveStatus";
 
 type Props = AutoSaveProps & { accounts: Account[]; groups: Aggregation[]; isSaving: boolean; onChange: (change: AggregationChange) => Promise<void>; onBack: () => void };
 type MemberDraft = { key: number; target: string; sign: 1 | -1 };
-type Draft = { id: number; name: string; members: MemberDraft[] };
+type Draft = { id: number; name: string; displayName: string; members: MemberDraft[] };
 
 export function AggregationMasterPage({ accounts, groups, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [name, setName] = useState("");
   const [adding, setAdding] = useState(false);
   const autoSave = useAutoSave<Draft>(draft => {
     if (draft.members.some(member => !member.target)) throw new Error("集計対象を選択してください。");
-    return onChange({ type: "update", id: draft.id, name: draft.name, members: draft.members.map(member => {
+    return onChange({ type: "update", id: draft.id, name: draft.name, displayName: draft.displayName, members: draft.members.map(member => {
       const [kind, id] = member.target.split(":");
       return { kind: kind as AggregationMember["kind"], id: Number(id), sign: member.sign };
     }) });
@@ -54,7 +54,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
       return false;
     }
   };
-  const edit = (group: Aggregation) => { dismiss(); controller.begin({ id: group.id, name: group.name, members: group.members.map(member => ({ key: serial.current++, target: `${member.kind}:${member.id}`, sign: member.sign })) }); };
+  const edit = (group: Aggregation) => { dismiss(); controller.begin({ id: group.id, name: group.name, displayName: group.displayName ?? group.name, members: group.members.map(member => ({ key: serial.current++, target: `${member.kind}:${member.id}`, sign: member.sign })) }); };
   const cancel = () => { if (editing) focusGroup(editing.id); controller.end(); dismiss(); };
   const updateMember = (key: number, change: Partial<MemberDraft>) => editing && setEditing({ ...editing, members: editing.members.map(member => member.key === key ? { ...member, ...change } : member) });
   const editor = (group: Aggregation) => {
@@ -67,6 +67,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
       if (!autoSave.pending) cancel();
     }}>
       {!group.required && <input autoFocus aria-label={`${group.name}の集計名`} value={draft.name} onChange={event => setEditing({ ...draft, name: event.target.value })} />}
+      <label>総原価表の表示名<input aria-label={`${group.name}の総原価表の表示名`} value={draft.displayName} onChange={event => setEditing({ ...draft, displayName: event.target.value })} /></label>
       <div className="aggregation-members">
         {draft.members.map((member, index) => <div className="aggregation-member" key={member.key}>
           <select aria-label={`${index + 1}番目の加減算`} value={member.sign} onChange={event => updateMember(member.key, { sign: Number(event.target.value) as 1 | -1 })}>

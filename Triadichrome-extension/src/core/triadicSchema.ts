@@ -5,7 +5,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 5;
+export const TRIADIC_FORMAT_VERSION = 6;
 // Nullable only for accounts in older files, whose codes must be assigned by the user.
 export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
@@ -88,11 +88,11 @@ SELECT
   p.month,
   d.account_id,
   a.name AS account_name,
-  SUM(d.budget_amount) AS budget_amount,
+  ROUND(SUM(d.budget_amount), 3) AS budget_amount,
   SUM(d.actual_amount) AS actual_amount,
-  CASE WHEN COUNT(*) = COUNT(d.budget_sales_amount) THEN SUM(d.budget_sales_amount) END AS budget_sales_amount,
+  CASE WHEN COUNT(*) = COUNT(d.budget_sales_amount) THEN ROUND(SUM(d.budget_sales_amount), 3) END AS budget_sales_amount,
   SUM(d.actual_sales_amount) AS actual_sales_amount,
-  CASE WHEN COUNT(*) = COUNT(d.budget_profit_amount) THEN SUM(d.budget_profit_amount) END AS budget_profit_amount,
+  CASE WHEN COUNT(*) = COUNT(d.budget_profit_amount) THEN ROUND(SUM(d.budget_profit_amount), 3) END AS budget_profit_amount,
   SUM(d.actual_profit_amount) AS actual_profit_amount
 FROM detail_view AS d
 JOIN periods AS p ON p.id = d.period_id
@@ -107,9 +107,9 @@ SELECT
   p.month,
   d.initiative_id,
   i.name AS initiative_name,
-  CASE WHEN COUNT(*) = COUNT(d.budget_sales_amount) THEN SUM(d.budget_sales_amount) END AS budget_sales_amount,
+  CASE WHEN COUNT(*) = COUNT(d.budget_sales_amount) THEN ROUND(SUM(d.budget_sales_amount), 3) END AS budget_sales_amount,
   SUM(d.actual_sales_amount) AS actual_sales_amount,
-  CASE WHEN COUNT(*) = COUNT(d.budget_profit_amount) THEN SUM(d.budget_profit_amount) END AS budget_profit_amount,
+  CASE WHEN COUNT(*) = COUNT(d.budget_profit_amount) THEN ROUND(SUM(d.budget_profit_amount), 3) END AS budget_profit_amount,
   SUM(d.actual_profit_amount) AS actual_profit_amount
 FROM detail_view AS d
 JOIN periods AS p ON p.id = d.period_id
@@ -173,6 +173,7 @@ CREATE UNIQUE INDEX accounts_code_idx ON accounts (budget_id, code);
 ${INDUSTRY_SQL}
 ${EXPANSION_SQL}
 ${AGGREGATION_SQL}
+ALTER TABLE aggregation_groups ADD COLUMN display_name TEXT CHECK (display_name IS NULL OR length(trim(display_name)) > 0);
 ${INITIATIVE_ROWS_SQL}
 ${DETAILS_SQL}
 ${TRIADIC_VIEWS_SQL}

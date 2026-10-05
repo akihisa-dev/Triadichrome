@@ -18,14 +18,14 @@ test("全機能確認用データを標準で開き、年度・集計・マス�
   await expect(app.getByRole("button", { name: "次年度の販売施策", exact: true })).toBeVisible();
   await year.selectOption(String(selectedYear));
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
-  await expect(app.getByRole("row", { name: /^経常利益/ })).toContainText("67,876.25");
+  await expect(app.getByRole("row", { name: /^経常利益/ })).toContainText("67,876.251");
   await app.getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^集計マスタ/ }).click();
-  await expect(app.getByRole("button", { name: "商品売上小計を編集", exact: true })).toBeVisible();
-  await expect(app.getByRole("button", { name: "営業外収益を編集", exact: true })).toBeAttached();
+  await expect(app.getByRole("button", { name: "社外売上小計を編集", exact: true })).toBeVisible();
+  await expect(app.getByRole("button", { name: "営業外収益計を編集", exact: true })).toBeAttached();
   await app.getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
-  await expect(app.getByRole("button", { name: "商品売上を削除", exact: true })).toBeDisabled();
+  await expect(app.getByRole("button", { name: "売上高を削除", exact: true })).toBeDisabled();
   await expect(app.getByRole("button", { name: "未所属費用を削除", exact: true })).toBeDisabled();
   await app.getByRole("button", { name: "削除確認用科目を削除", exact: true }).click();
   await app.getByRole("alertdialog").getByRole("button", { name: "削除する", exact: true }).click();

@@ -53,7 +53,7 @@ test("再読み込み後に記憶したファイルを開き、最新の内容�
   await expect(page.locator(".home-file-name")).toHaveText("再開テスト.triadic");
   await page.getByRole("button", { name: "マスタ", exact: true }).click();
   await page.getByRole("button", { name: /^勘定科目マスタ/ }).click();
-  await expect(page.getByRole("button", { name: "商品売上を編集", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "売上高を編集", exact: true })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

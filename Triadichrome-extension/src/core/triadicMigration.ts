@@ -49,6 +49,12 @@ export function migrateTriadicDatabase(database: Database): void {
     withoutLegacyExpansionPrefixes(expansions).forEach((item, index) => {
       if (item.expansionName !== expansions[index]!.expansionName) database.run("UPDATE expansions SET name = ? WHERE id = ?", [item.expansionName, item.id]);
     });
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 6) {
+      database.exec("ALTER TABLE aggregation_groups ADD COLUMN display_name TEXT CHECK (display_name IS NULL OR length(trim(display_name)) > 0)");
+      database.exec("DROP VIEW expansion_view; DROP VIEW cost_view; DROP VIEW detail_view;");
+      database.exec(TRIADIC_VIEWS_SQL);
+      database.exec("PRAGMA user_version = 6; UPDATE triadic_metadata SET value = '6' WHERE key = 'format_version';");
+    }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");
   } catch (error) {

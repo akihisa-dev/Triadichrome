@@ -1,3 +1,4 @@
+import { createEmptyTestPlan } from "./empty-plan";
 import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
 import { installMemoryFiles, type FileScenario } from "./memory-files";
 import { createSamplePlan } from "./sample-plan";
@@ -9,10 +10,12 @@ const scenario = document.querySelector<HTMLSelectElement>("#scenario")!;
 const dataset = document.querySelector<HTMLSelectElement>("#dataset")!;
 const status = document.querySelector<HTMLOutputElement>("#status")!;
 const reset = document.querySelector<HTMLButtonElement>("#reset")!;
-const emptyBytes = Array.from(await createTriadicDatabase());
+const emptyBytes = Array.from(await createEmptyTestPlan());
+const defaultBytes = Array.from(await createTriadicDatabase());
 const sampleBytes = Array.from(await createSamplePlan());
-dataset.value = new URLSearchParams(location.search).get("data") === "empty" ? "empty" : "full";
-export let fixtureBytes = dataset.value === "empty" ? emptyBytes : sampleBytes;
+const requested = new URLSearchParams(location.search).get("data");
+dataset.value = requested === "empty" || requested === "defaults" ? requested : "full";
+export let fixtureBytes = dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
 
 frame.addEventListener("load", () => {
   const target = frame.contentWindow as Window & typeof globalThis;
@@ -23,7 +26,7 @@ frame.addEventListener("load", () => {
 });
 
 function reload() {
-  fixtureBytes = dataset.value === "empty" ? emptyBytes : sampleBytes;
+  fixtureBytes = dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
   status.textContent = "準備中";
   frame.inert = true;
   frame.src = "/";

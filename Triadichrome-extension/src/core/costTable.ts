@@ -1,16 +1,17 @@
+import { addAmounts } from "./amounts";
 import { type Account } from "./accountMaster";
 import { validateAggregations, type Aggregation } from "./aggregations";
 import { initiativeMonths, type Initiative, type InitiativeMonth } from "./initiatives";
 
 type MonthlyAmounts = Partial<Record<InitiativeMonth, number>>;
 export type CostRow = {
-  kind: "account" | "group"; id: number; name: string; required: boolean; configured: boolean;
-  previous: MonthlyAmounts; changes: MonthlyAmounts; budget: MonthlyAmounts;
+  kind: "account" | "group" | "ratio"; id: number; name: string; required: boolean; configured: boolean;
+  previous: MonthlyAmounts; changes: MonthlyAmounts; budget: MonthlyAmounts; comparison: MonthlyAmounts;
 };
 
 function sum(target: MonthlyAmounts, source: MonthlyAmounts, sign = 1): void {
   for (const month of initiativeMonths) {
-    if (source[month] !== undefined) target[month] = (target[month] ?? 0) + source[month]! * sign;
+    if (source[month] !== undefined) target[month] = addAmounts(target[month] ?? 0, source[month]! * sign);
   }
 }
 
@@ -22,7 +23,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
   const positions = new Map(accounts.map((account, index) => [account.id, index]));
   for (const account of accounts) byAccount.set(account.id, {
     kind: "account", id: account.id, name: account.accountName, required: false, configured: true,
-    previous: { ...previousAmounts.get(account.id) }, changes: {}, budget: {},
+    previous: { ...previousAmounts.get(account.id) }, changes: {}, budget: {}, comparison: {},
   });
   for (const initiative of initiatives) {
     if (initiative.fiscalYear !== fiscalYear) continue;
@@ -53,8 +54,8 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
   }
   for (let index = 0; index < queue.length; index++) {
     const group = queue[index]!;
-    const row: CostRow = { kind: "group", id: group.id, name: group.name, required: group.required !== null,
-      configured: group.members.length > 0, previous: {}, changes: {}, budget: {} };
+    const row: CostRow = { kind: "group", id: group.id, name: group.displayName ?? group.name, required: group.required !== null,
+      configured: group.members.length > 0, previous: {}, changes: {}, budget: {}, comparison: {} };
     let position = -1;
     for (const member of group.members) {
       const child = (member.kind === "account" ? byAccount : byGroup).get(member.id)!;
@@ -83,5 +84,26 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     while (cursor < subtotals.length && groupPositions.get(subtotals[cursor]!.id) === index) output.push(subtotals[cursor++]!);
   }
   output.push(...subtotals.slice(cursor));
+  const sales = byGroup.get(groups.find(group => group.required === "sales")!.id)!;
+  const ordinary = byGroup.get(groups.find(group => group.required === "ordinary")!.id)!;
+  const ratio: CostRow = { kind: "ratio", id: ordinary.id, name: "利益率", required: true,
+    configured: sales.configured && ordinary.configured, previous: {}, changes: {}, budget: {}, comparison: {} };
+  for (const column of ["previous", "budget"] as const) {
+    for (const month of initiativeMonths) {
+      const denominator = sales[column][month];
+      const numerator = ordinary[column][month];
+      if (ratio.configured && denominator !== undefined && denominator !== 0 && numerator !== undefined) {
+        ratio[column][month] = numerator / denominator * 100;
+      }
+    }
+  }
+  output.splice(output.indexOf(ordinary) + 1, 0, ratio);
+  for (const row of output) for (const month of initiativeMonths) {
+    const previous = row.previous[month];
+    const budget = row.budget[month];
+    if (previous !== undefined && budget !== undefined) {
+      row.comparison[month] = row.kind === "ratio" ? previous - budget : addAmounts(previous, -budget);
+    }
+  }
   return output;
 }

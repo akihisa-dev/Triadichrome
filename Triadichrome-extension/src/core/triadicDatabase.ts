@@ -1,3 +1,4 @@
+import { seedDefaultCostMaster } from "./defaultCostMaster";
 import initSqlJs, { type Database } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
 import { listAggregations, validateAggregations } from "./aggregations";
@@ -61,7 +62,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", "2", "3", "4", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    !["1", "2", "3", "4", "5", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -118,6 +119,9 @@ function assertTriadicDatabase(database: Database): void {
         database.exec("SELECT code FROM industries GROUP BY code HAVING COUNT(*) > 1").length ||
         database.exec("SELECT name FROM industries GROUP BY name HAVING COUNT(*) > 1").length) invalidDatabase();
   }
+  if (Number(userVersion) >= 6) {
+    database.exec("SELECT display_name FROM aggregation_groups LIMIT 0");
+  }
   const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
   if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {
     invalidDatabase();
@@ -141,6 +145,7 @@ export async function createTriadicDatabase(): Promise<Uint8Array> {
       "INSERT INTO budgets (id, created_at, updated_at) VALUES (1, ?, ?)",
       [now, now],
     );
+    seedDefaultCostMaster(database);
     return database.export();
   } finally {
     database.close();

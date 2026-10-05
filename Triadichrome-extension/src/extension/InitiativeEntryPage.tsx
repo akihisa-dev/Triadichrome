@@ -1,3 +1,4 @@
+import { isValidAmount } from "../core/amounts";
 import { type ReactNode } from "react";
 import { type Account } from "../core/accountMaster";
 
@@ -61,6 +62,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
         <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
+      <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-amount-table-container" role="region" aria-label="月別計画金額の入力表" tabIndex={0}>
         <table className="initiative-amount-table" aria-label="月別計画金額">
           <thead>
@@ -85,7 +87,11 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
                   <td key={month}>
                     <input
                       type="number"
-                      step="any"
+                      step="0.001"
+                      ref={input => {
+                        if (input) input.setCustomValidity(input.value === "" || isValidAmount(input.value)
+                          ? "" : "金額は千円単位・小数点以下3桁までで入力してください。");
+                      }}
                       inputMode="decimal"
                       aria-label={`${accountName} ${month}月の金額`}
                       disabled={isSaving || row.accountId === null}

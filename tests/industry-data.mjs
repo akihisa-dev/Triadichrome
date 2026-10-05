@@ -34,7 +34,7 @@ export async function verifyIndustryData(api) {
   const populated = await changeAccountMaster(bytes, { type: "add", accountCode: "001", accountName: "移行確認", accountType: "expense" });
   const legacyDb = await openTriadicDatabase(populated.bytes);
   legacyDb.run("UPDATE expansions SET name = ? WHERE id = 1", ["移行前の展開名"]);
-  legacyDb.exec("DROP TABLE industries; PRAGMA user_version = 4; UPDATE triadic_metadata SET value = '4' WHERE key = 'format_version';");
+  legacyDb.exec("ALTER TABLE aggregation_groups DROP COLUMN display_name; DROP TABLE industries; PRAGMA user_version = 4; UPDATE triadic_metadata SET value = '4' WHERE key = 'format_version';");
   const legacy = legacyDb.export(); legacyDb.close();
   assert.deepEqual((await readPlanContents(legacy)).industries, initial);
   const migrated = await changeIndustryMaster(legacy, { type: "update", id: 8, industryCode: "8", industryName: "管理費改定" });

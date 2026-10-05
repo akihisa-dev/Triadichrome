@@ -70,16 +70,16 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   }
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
   const table = app.getByRole("table", { name: "総原価表", exact: true });
-  await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "原価科目1", "売上集計", "費用科目1", "費用集計", "営業利益", "利益科目1", "経常利益"]);
+  await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "原価科目1", "売上集計", "費用科目1", "費用集計", "営業利益", "利益科目1", "経常利益", "利益率"]);
   const ordinary = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "経常利益", exact: true }) });
   await expect(ordinary.getByRole("cell").nth(0)).toHaveText("");
   await expect(ordinary.getByRole("cell").nth(1)).toHaveText("90.5");
-  await expect(ordinary.getByRole("cell").nth(3)).toHaveText("0");
-  await expect(ordinary.getByRole("cell").nth(5)).toHaveText("");
+  await expect(ordinary.getByRole("cell").nth(4)).toHaveText("0");
+  await expect(ordinary.getByRole("cell").nth(7)).toHaveText("");
   await app.locator(".home-header button").click();
   await settleMotion(app.locator("body"));
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
-  const region = app.getByRole("region", { name: "総原価表の月別前年・予算", exact: true });
+  const region = app.getByRole("region", { name: "総原価表の月別前年・予算・対予算", exact: true });
   const left = (await ordinary.getByRole("rowheader").boundingBox())!.x;
   await region.evaluate(node => { node.scrollLeft = node.scrollWidth; });
   expect((await ordinary.getByRole("rowheader").boundingBox())!.x).toBe(left);
@@ -104,7 +104,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
-  await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "費用科目1", "費用集計", "原価科目1", "売上集計", "営業利益", "利益科目1", "経常利益"]);
+  await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "費用科目1", "費用集計", "原価科目1", "売上集計", "営業利益", "利益科目1", "経常利益", "利益率"]);
   await expect(ordinary.getByRole("cell").nth(1)).toHaveText("90.5");
 });
 

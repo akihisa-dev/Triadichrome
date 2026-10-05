@@ -5,7 +5,7 @@ export const requiredAggregations = {
 } as const;
 export type RequiredAggregation = keyof typeof requiredAggregations;
 export type AggregationMember = { kind: "account" | "group"; id: number; sign: 1 | -1 };
-export type Aggregation = { id: number; name: string; required: RequiredAggregation | null; members: AggregationMember[] };
+export type Aggregation = { id: number; name: string; required: RequiredAggregation | null; displayName?: string; members: AggregationMember[] };
 
 export function initialAggregations(): Aggregation[] {
   return Object.entries(requiredAggregations).map(([required, name], index) => ({
@@ -15,8 +15,10 @@ export function initialAggregations(): Aggregation[] {
 
 export function listAggregations(database: Database): Aggregation[] {
   if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 3) return initialAggregations();
+  const displayColumn = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) >= 6 ? "display_name" : "NULL";
   const members = database.exec("SELECT parent_id, account_id, group_id, sign FROM aggregation_members ORDER BY parent_id, position")[0]?.values ?? [];
-  return (database.exec("SELECT id, name, required_key FROM aggregation_groups ORDER BY sort_order, id")[0]?.values ?? []).map(([id, name, required]) => ({
+  return (database.exec(`SELECT id, name, required_key, ${displayColumn} FROM aggregation_groups ORDER BY sort_order, id`)[0]?.values ?? []).map(([id, name, required, displayName]) => ({
+    ...(displayName === null ? {} : { displayName: String(displayName) }),
     id: Number(id), name: String(name), required: required === null ? null : required as RequiredAggregation,
     members: members.filter(row => row[0] === id).map(([, accountId, groupId, sign]) => ({
       kind: accountId === null ? "group" : "account", id: Number(accountId ?? groupId), sign: Number(sign) as 1 | -1,
@@ -36,6 +38,7 @@ export function validateAggregations(groups: Aggregation[], accountIds: Set<numb
   }
   for (const group of groups) {
     if (group.required !== null && !Object.hasOwn(requiredAggregations, group.required)) throw new Error("必須集計の種類が正しくありません。");
+    if (group.displayName !== undefined && !group.displayName.trim()) throw new Error("総原価表の表示名を入力してください。");
     if (!group.name.trim()) throw new Error("集計名を入力してください。");
     if (names.has(group.name.trim())) throw new Error("同じ名前の集計が登録されています。");
     names.add(group.name.trim());

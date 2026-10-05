@@ -1,3 +1,4 @@
+import { isValidAmount } from "./amounts";
 import { listIndustries, type Industry } from "./industryMaster";
 import { listExpansions, type Expansion } from "./expansionMaster";
 import { type Database } from "sql.js";
@@ -90,7 +91,7 @@ export function validateInitiative(draft: InitiativeEntryDraft, accounts: Accoun
     if (!account.accountType) throw new Error(`「${account.accountName}」の科目属性をマスタで設定してください。`);
     for (const [month, amount] of Object.entries(row.amounts)) {
       if (!initiativeMonths.includes(Number(month) as InitiativeMonth)) throw new Error("対象月が正しくありません。");
-      if (amount !== "" && (!amount.trim() || !Number.isFinite(Number(amount)))) throw new Error(`${index + 1}行目の${month}月に有効な金額を入力してください。`);
+      if (amount !== "" && !isValidAmount(amount)) throw new Error(`${index + 1}行目の${month}月に有効な金額を千円単位・小数点以下3桁までで入力してください。`);
     }
   });
 }

@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { initiativeMonths, type Initiative } from "../core/initiatives";
 
-const format = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 10 });
+const format = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 3 });
 const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : format.format(amount);
 
 type InitiativeListPageProps = {
@@ -18,6 +18,7 @@ export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOp
   return <main className="initiative-list-page" aria-labelledby="initiative-list-title">
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
+      <span className="field-hint">単位：千円</span>
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-list-year">年度</label>
         <select id="initiative-list-year" value={fiscalYear} onChange={event => onYearChange(event.target.value)}>

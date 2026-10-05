@@ -5,7 +5,7 @@ import { migrateTriadicDatabase } from "./triadicMigration";
 
 export type AggregationChange =
   | { type: "add"; name: string }
-  | { type: "update"; id: number; name: string; members: AggregationMember[] }
+  | { type: "update"; id: number; name: string; displayName?: string; members: AggregationMember[] }
   | { type: "move"; member: Pick<AggregationMember, "kind" | "id">; parentId: number | null; sign: 1 | -1 }
   | { type: "delete"; id: number };
 
@@ -31,7 +31,7 @@ export function changedAggregations(groups: Aggregation[], accounts: Account[], 
       if (current.required) throw new Error("必須集計は削除できません。");
       if (current.members.length || groups.some(group => group.members.some(member => member.kind === "group" && member.id === current.id))) throw new Error("使用中の集計は削除できません。先に所属を解除してください。");
       next = groups.filter(group => group.id !== current.id);
-    } else next = groups.map(group => group.id === current.id ? { ...group, name: change.name.trim(), members: change.members } : group);
+    } else next = groups.map(group => group.id === current.id ? { ...group, name: change.name.trim(), ...(change.displayName === undefined ? {} : { displayName: change.displayName.trim() }), members: change.members } : group);
   }
   validateAggregations(next, new Set(accounts.map(account => account.id)));
   return next;
@@ -53,7 +53,8 @@ export async function changeAggregationMaster(bytes: Uint8Array, change: Aggrega
       if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM aggregation_members WHERE parent_id = ?))",
         [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, parentId]);
     } else {
-      database.run("UPDATE aggregation_groups SET name = ? WHERE id = ?", [change.name.trim(), change.id]);
+      const updated = next.find(group => group.id === change.id)!;
+      database.run("UPDATE aggregation_groups SET name = ?, display_name = ? WHERE id = ?", [updated.name, updated.displayName ?? null, change.id]);
       database.run("DELETE FROM aggregation_members WHERE parent_id = ?", [change.id]);
       change.members.forEach((member, position) => database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, ?)",
         [change.id, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, member.sign, position]));
