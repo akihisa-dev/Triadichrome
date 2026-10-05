@@ -23,7 +23,6 @@ export function CostTablePage({ contents, fiscalYear, onYearChange, onOpenMaster
         </select>
       </div>
     </div>
-    <p className="page-description">予算 ＝ 前年 ＋ 施策の増減合計。前年データは未登録のため空白です。</p>
     {(unassigned.length > 0 || rows.some(row => !row.configured)) && <p className="page-description cost-master-guide">
       {unassigned.length > 0 ? `集計に未所属の科目が${unassigned.length}件あります。` : "計算対象が未設定の集計があります。"}
       <button type="button" className="text-button" onClick={onOpenMaster}>集計マスタを開く</button>
