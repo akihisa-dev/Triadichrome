@@ -1,5 +1,5 @@
 import { type Database } from "sql.js";
-import { INITIAL_EXPANSIONS } from "./expansionSchema";
+import { INITIAL_EXPANSIONS, withoutLegacyExpansionPrefixes } from "./expansionSchema";
 import { openTriadicDatabase, exportTriadicDatabase } from "./triadicDatabase";
 import { migrateTriadicDatabase } from "./triadicMigration";
 
@@ -11,8 +11,8 @@ export type ExpansionChange =
 
 export function listExpansions(database: Database): Expansion[] {
   if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 4) return INITIAL_EXPANSIONS.map(item => ({ ...item }));
-  return (database.exec("SELECT id, code, name FROM expansions ORDER BY length(code), code, id")[0]?.values ?? [])
-    .map(([id, code, name]) => ({ id: Number(id), expansionCode: String(code), expansionName: String(name) }));
+  return withoutLegacyExpansionPrefixes((database.exec("SELECT id, code, name FROM expansions ORDER BY length(code), code, id")[0]?.values ?? [])
+    .map(([id, code, name]) => ({ id: Number(id), expansionCode: String(code), expansionName: String(name) })));
 }
 
 export function validateExpansionChange(items: Expansion[], change: ExpansionChange): void {

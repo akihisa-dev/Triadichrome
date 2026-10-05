@@ -1,5 +1,5 @@
 import { INDUSTRY_SQL } from "./industrySchema";
-import { EXPANSION_SQL } from "./expansionSchema";
+import { EXPANSION_SQL, withoutLegacyExpansionPrefixes } from "./expansionSchema";
 import { type Database } from "sql.js";
 import { AGGREGATION_SQL } from "./aggregationSchema";
 import { ACCOUNT_CODE_COLUMN_SQL, DETAILS_SQL, INITIATIVE_ROWS_SQL, TRIADIC_VIEWS_SQL } from "./triadicSchema";
@@ -44,6 +44,11 @@ export function migrateTriadicDatabase(database: Database): void {
       database.exec(INDUSTRY_SQL);
       database.exec("PRAGMA user_version = 5; UPDATE triadic_metadata SET value = '5' WHERE key = 'format_version';");
     }
+    const expansions = (database.exec("SELECT id, code, name FROM expansions")[0]?.values ?? [])
+      .map(([id, code, name]) => ({ id: Number(id), expansionCode: String(code), expansionName: String(name) }));
+    withoutLegacyExpansionPrefixes(expansions).forEach((item, index) => {
+      if (item.expansionName !== expansions[index]!.expansionName) database.run("UPDATE expansions SET name = ? WHERE id = ?", [item.expansionName, item.id]);
+    });
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");
   } catch (error) {

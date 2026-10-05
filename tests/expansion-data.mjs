@@ -5,14 +5,32 @@ export async function verifyExpansionData(api) {
   const bytes = await createTriadicDatabase();
   const initial = (await readPlanContents(bytes)).expansions;
   assert.deepEqual(initial.map(item => [item.expansionCode, item.expansionName]), [
-    ["1", "①コスト"], ["2", "②料改"], ["3", "③撤退"], ["4", "④物量"], ["5", "⑤拡販"], ["8", "⑧効率"], ["9", "⑨移管"],
+    ["1", "コスト"], ["2", "料改"], ["3", "撤退"], ["4", "物量"], ["5", "拡販"], ["8", "効率"], ["9", "移管"],
   ]);
+  const prefixedDb = await openTriadicDatabase(bytes);
+  const prefixes = ["①", "②", "③", "④", "⑤", "⑧", "⑨"];
+  initial.forEach((item, index) => prefixedDb.run("UPDATE expansions SET name = ? WHERE id = ?", [prefixes[index] + item.expansionName, item.id]));
+  const prefixed = prefixedDb.export(); prefixedDb.close();
+  assert.deepEqual((await readPlanContents(prefixed)).expansions, initial, "既存の初期名称も丸数字なしで表示する");
+  const renamed = await changeExpansionMaster(prefixed, { type: "update", id: 1, expansionCode: "1", expansionName: "コスト" });
+  const renamedDb = await openTriadicDatabase(renamed);
+  assert.deepEqual(renamedDb.exec("SELECT name FROM expansions ORDER BY id")[0].values.flat(), initial.map(item => item.expansionName));
+  renamedDb.close();
+  const originalDb = await openTriadicDatabase(prefixed);
+  assert.equal(originalDb.exec("SELECT name FROM expansions WHERE id = 1")[0].values[0][0], "①コスト", "読込だけで元のファイルを変更しない");
+  originalDb.run("INSERT INTO expansions (code, name) VALUES ('6', 'コスト')");
+  originalDb.run("UPDATE expansions SET name = '⑧独自名称' WHERE id = 8");
+  const collision = originalDb.export(); originalDb.close();
+  const collisionContents = await readPlanContents(collision);
+  assert.equal(collisionContents.expansions.find(item => item.id === 1).expansionName, "①コスト", "名称が重複する変更を避ける");
+  assert.equal(collisionContents.expansions.find(item => item.id === 8).expansionName, "⑧独自名称", "利用者が変更した名称は保護する");
+  await validateTriadicDatabase(await changeExpansionMaster(collision, { type: "update", id: 9, expansionCode: "9", expansionName: "移管" }));
   let changed = await changeExpansionMaster(bytes, { type: "add", expansionCode: "010", expansionName: "追加確認" });
   assert.equal((await readPlanContents(changed)).expansions.at(-1).expansionCode, "010");
   for (const code of ["", "１", "-1", "1.2", "a"]) await assert.rejects(changeExpansionMaster(bytes, { type: "add", expansionCode: code, expansionName: "無効" }), /半角数字/);
   await assert.rejects(changeExpansionMaster(bytes, { type: "add", expansionCode: "6", expansionName: " " }), /展開名/);
   await assert.rejects(changeExpansionMaster(bytes, { type: "add", expansionCode: "1", expansionName: "追加" }), /同じ展開コード/);
-  await assert.rejects(changeExpansionMaster(bytes, { type: "add", expansionCode: "6", expansionName: "①コスト" }), /同じ展開名/);
+  await assert.rejects(changeExpansionMaster(bytes, { type: "add", expansionCode: "6", expansionName: "コスト" }), /同じ展開名/);
   changed = await changeExpansionMaster(changed, { type: "update", id: 1, expansionCode: "01", expansionName: "コスト改定" });
   assert.equal((await readPlanContents(changed)).expansions.find(item => item.id === 1).expansionName, "コスト改定");
   changed = await changeExpansionMaster(changed, { type: "delete", id: 2 });
