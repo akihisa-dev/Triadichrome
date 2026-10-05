@@ -1,7 +1,7 @@
 import { DetailTablePage } from "./DetailTablePage";
 import { type DetailChange } from "../core/details";
 import { emptyTableView } from "../core/tableView";
-import { DashboardPage, createDashboardView } from "./DashboardPage";
+import { HomeRelationsPage } from "./HomeRelationsPage";
 import { type PeriodTypeChange } from "../core/periodMaster";
 import { PeriodMasterPage } from "./PeriodMasterPage";
 import { type DepartmentChange } from "../core/departmentMaster";
@@ -48,15 +48,13 @@ type HomePageProps = {
 export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const homeContent = useRef<HTMLDivElement>(null);
-  const dashboardScroll = useRef(0);
-  const restoreDashboardScroll = useCallback(() => { if (homeContent.current) homeContent.current.scrollTop = dashboardScroll.current; }, []);
+  const relationScroll = useRef({ top: 0, left: 0 });
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
   const collapseSidebar = sidebar.collapse;
   const [page, setPage] = useState<Page>("home");
   const [detailView, setDetailView] = useState(emptyTableView);
   const detailScroll = useRef({ top: 0, left: 0 });
-  const [dashboardView, setDashboardView] = useState(() => createDashboardView(initialContents));
   const [initiativeDraft, setInitiativeDraft] = useState(createInitiativeDraft);
   const [contents, setContents] = useState(initialContents);
   const { accounts, initiatives } = contents;
@@ -65,7 +63,6 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
   const [detailOrigin, setDetailOrigin] = useState<"details" | "home" | "initiative-list" | "expansion-table">("initiative-list");
   const openInitiative = (initiative: Initiative) => {
     dismissNotice();
-    if (page === "home") dashboardScroll.current = homeContent.current?.scrollTop ?? 0;
     setDetailOrigin(page === "details" ? "details" : page === "home" ? "home" : page === "expansion-table" ? "expansion-table" : "initiative-list");
     setSelectedInitiative({ id: initiative.id, fiscalYear: initiative.fiscalYear });
     setPage("initiative-detail");
@@ -278,7 +275,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             {displayed => {
               switch (displayed) {
                 case "details": return <DetailTablePage contents={contents} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
-                case "home": return <DashboardPage onRestoreScroll={restoreDashboardScroll} contents={contents} view={dashboardView} onChange={setDashboardView} onOpenInitiative={openInitiative} />;
+                case "home": return <HomeRelationsPage scroll={relationScroll} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
                 case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
