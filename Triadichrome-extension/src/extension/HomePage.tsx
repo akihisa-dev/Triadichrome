@@ -27,6 +27,7 @@ import { type AggregationChange } from "../core/aggregationMaster";
 import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
+import { SidebarIcon } from "./SidebarIcon";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
 type Page = "details" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
@@ -218,9 +219,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
           onFocusCapture={sidebar.onFocusCapture} onBlurCapture={sidebar.onBlurCapture}>
           <div className="sidebar-inner">
           <header className="sidebar-header">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M14 3H5v18h14V8l-5-5Zm0 0v5h5M8 13h8M8 17h8" />
-            </svg>
+            <SidebarIcon name="file" />
             <strong className="sidebar-label sidebar-file-name" title={fileName}>{fileName}</strong>
             <button className="home-icon-button sidebar-close" type="button" aria-label="サイドバーを閉じる" aria-hidden={!isSidebarOpen} inert={!isSidebarOpen} onClick={closeSidebar}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
@@ -230,50 +229,36 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
           </header>
           <nav className="sidebar-navigation" aria-label="メインナビゲーション">
             <button className="sidebar-item" type="button" aria-label="Home" disabled={navigationBlocked} aria-current={page === "home" ? "page" : undefined} onClick={() => setPage("home")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m3 10 9-7 9 7M5 9v12h14V9M9 21v-8h6v8" />
-              </svg>
+              <SidebarIcon name="home" />
               <span className="sidebar-label">Home</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="施策入力" disabled={navigationBlocked} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="m16 3 5 5-12 12-6 1 1-6L16 3Zm-3 3 5 5" />
-              </svg>
+              <SidebarIcon name="entry" />
               <span className="sidebar-label">施策入力</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || (page === "initiative-detail" && detailOrigin === "initiative-list") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M10 4v16" />
-              </svg>
+              <SidebarIcon name="list" />
               <span className="sidebar-label">施策一覧</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="総原価表" disabled={navigationBlocked} aria-current={page === "cost-table" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("cost-table"); }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 15h18M11 4v16M16 9v11" />
-              </svg>
+              <SidebarIcon name="cost" />
               <span className="sidebar-label">総原価表</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="展開表" disabled={navigationBlocked} aria-current={page === "expansion-table" || (page === "initiative-detail" && detailOrigin === "expansion-table") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("expansion-table"); }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
-                <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M9 9v11M15 4v16M9 14h12" />
-              </svg>
+              <SidebarIcon name="expansion" />
               <span className="sidebar-label">展開表</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="明細" disabled={navigationBlocked} aria-current={page === "details" || (page === "initiative-detail" && detailOrigin === "details") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("details"); }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M9 4v16M15 4v16" /></svg><span className="sidebar-label">明細</span>
+              <SidebarIcon name="details" /><span className="sidebar-label">明細</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-              </svg>
+              <SidebarIcon name="master" />
               <span className="sidebar-label">マスタ</span>
             </button>
           </nav>
           <footer className="sidebar-footer">
             <button className="sidebar-item" type="button" aria-label="ファイルを閉じる" disabled={navigationBlocked} onClick={onCloseFile}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M10 4H4v16h6M10 12h11m-4-4 4 4-4 4" />
-              </svg>
+              <SidebarIcon name="close-file" />
               <span className="sidebar-label">ファイルを閉じる</span>
             </button>
           </footer>
