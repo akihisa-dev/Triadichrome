@@ -81,7 +81,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         expect(sample.total).toBeCloseTo(total);
       }
       await settleMotion(app.locator("body"));
-      await app.locator(".home-header button").click();
+      await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
       await settleMotion(app.locator("body"));
       expect(await app.locator(".sidebar-panel").evaluate(node => node.getBoundingClientRect().width)).toBe(64);
       await expect(app.getByRole("navigation")).toHaveCount(1);
@@ -90,11 +90,11 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     test("画面と案内はフェードを通り、連打した場合も最後の画面へ到達する", async ({ app }) => {
       const opening = await app.locator("body").evaluate(sampleChange, {
         observe: ".app-switch",
-        actions: [{ frame: 0, selector: ".entry-open-button" }],
+        actions: [{ frame: 0, selector: ".entry-actions button:first-child" }],
       });
       expect(opening.some(sample => sample.text.includes("ファイルを開く") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(opening.some(sample => sample.text.includes("画面テスト.triadic") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(opening.find(sample => sample.text.includes("画面テスト.triadic"))!.opacity).toBeLessThan(0.25);
+      expect(opening.some(sample => sample.text.includes("前年入力") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      expect(opening.find(sample => sample.text.includes("前年入力"))!.opacity).toBeLessThan(0.25);
       await settleMotion(app.locator("body"));
       await app.getByRole("button", { name: "サイドバーを開く" }).click();
       await settleMotion(app.locator("body"));
@@ -102,22 +102,22 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const pages = await app.locator("body").evaluate(sampleChange, {
         observe: ".page-switch",
         actions: [
-          { frame: 0, selector: ".sidebar-navigation button:nth-child(2)" },
+          { frame: 0, selector: ".sidebar-navigation button:nth-child(3)" },
           { frame: 2, selector: ".sidebar-navigation button:nth-child(1)" },
-          { frame: 4, selector: ".sidebar-navigation button:nth-child(2)" },
+          { frame: 4, selector: ".sidebar-navigation button:nth-child(3)" },
           { frame: 5, selector: ".sidebar-navigation button:nth-child(1)" },
-          { frame: 6, selector: ".sidebar-navigation button:nth-child(2)" },
+          { frame: 6, selector: ".sidebar-navigation button:nth-child(3)" },
         ],
       });
-      expect(pages.some(sample => sample.text === "" && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(pages.some(sample => sample.text.includes("施策入力") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(pages.find(sample => sample.text.includes("施策入力"))!.opacity).toBeLessThan(0.25);
+      expect(pages.some(sample => sample.text.startsWith("Home") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      expect(pages.some(sample => sample.text.startsWith("施策入力") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      expect(pages.find(sample => sample.text.startsWith("施策入力"))!.opacity).toBeLessThan(0.25);
       await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
       await expect(app.getByRole("button", { name: "施策入力", exact: true })).toHaveAttribute("aria-current", "page");
 
       const closing = await app.locator("body").evaluate(sampleChange, {
         observe: ".app-switch",
-        actions: [{ frame: 0, selector: ".sidebar-footer button" }],
+        actions: [{ frame: 0, selector: ".sidebar-footer button" }, { frame: 2, selector: ".confirmation-dialog[open] .primary-button" }],
       });
       expect(closing.some(sample => sample.text.includes("画面テスト.triadic") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
       expect(closing.find(sample => sample.text.includes("ファイルを開く"))!.opacity).toBeLessThan(0.25);
@@ -144,7 +144,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const samples = await app.locator("body").evaluate(sampleChange, {
         observe: ".status-notice-layer .fade-swap",
         anchors: ".entry-logo, .entry-title, .entry-drop-zone",
-        actions: [{ frame: 0, selector: ".entry-open-button" }],
+        actions: [{ frame: 0, selector: ".entry-actions button:first-child" }],
       });
       await expect(app.getByRole("alert")).toHaveText("Triadicファイルを読み込めませんでした。");
       expect(samples[0]!.positions).toHaveLength(3);
@@ -164,7 +164,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await app.getByRole("button", { name: "サイドバーを開く" }).click();
       await app.getByRole("button", { name: "マスタ", exact: true }).click();
       await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
-      await app.locator(".home-header button").click();
+      await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
       for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"]]) {
         await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code!);
         await app.getByRole("textbox", { name: "科目名", exact: true }).fill(name!);
@@ -182,22 +182,19 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         actions: [{ frame: 0, selector: ".account-master-table button[type=submit]" }],
       };
       const failure = await app.locator("body").evaluate(sampleChange, options);
-      await expect(app.getByRole("alert")).toHaveText("同じ科目コードが登録されています。");
+      await expect(app.getByRole("alert")).toContainText("同じ科目コードが登録されています。");
       const positions = failure[0]!.positions;
       expect(positions).toHaveLength(4);
       for (const sample of failure) expect(sample.positions).toEqual(positions);
       await code.fill("100");
       await app.getByRole("textbox", { name: "売上高の科目名", exact: true }).fill("売上");
-      const saved = await app.locator("body").evaluate(sampleChange, options);
-      await expect(app.getByRole("status")).toHaveText("勘定科目を保存しました。");
-      await expect(app.getByRole("button", { name: "売上を編集" })).toBeFocused();
+      const saved = await app.locator("body").evaluate(sampleChange, { ...options, actions: [] });
+      await expect(app.getByRole("alert")).toHaveCount(0);
+      await expect(app.getByRole("button", { name: "完了", exact: true })).toBeEnabled();
       for (const sample of saved) expect(sample.positions).toEqual(positions);
-      await attachImage(testInfo, "位置が変わらない保存通知", await page.locator("#app-preview").screenshot());
-      const dismissal = await app.locator("body").evaluate(sampleChange, {
-        ...options, actions: [{ frame: 0, selector: ".status-notice button" }],
-      });
-      await expect(app.getByRole("status")).toHaveCount(0);
-      for (const sample of dismissal) expect(sample.positions).toEqual(positions);
+      await attachImage(testInfo, "位置が変わらない自動保存", await page.locator("#app-preview").screenshot());
+      await app.getByRole("button", { name: "完了", exact: true }).click();
+      await expect(app.getByRole("button", { name: "売上を編集" })).toBeFocused();
     });
   });
 }

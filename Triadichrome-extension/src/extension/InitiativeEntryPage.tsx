@@ -1,3 +1,6 @@
+import { INITIAL_KINDS } from "../core/kindMasterSchema";
+import { canChangeAccountRow, isLateMonth, resolvedAmount, type KindId } from "../core/kindAmounts";
+import { useState } from "react";
 import { type Industry } from "../core/industryMaster";
 import { type PeriodType } from "../core/periodMaster";
 import { type Department } from "../core/departmentMaster";
@@ -10,6 +13,7 @@ import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/i
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
+  revisedActive?: boolean;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   expansions: Expansion[];
@@ -22,7 +26,8 @@ type InitiativeEntryPageProps = {
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, revisedActive = false }: InitiativeEntryPageProps) {
+  const [kind, setKind] = useState<KindId>(1);
   return (
     <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
@@ -41,7 +46,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim() || draft.expansionId === null} onClick={event => {
+        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
           const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
@@ -62,9 +67,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       <div className="initiative-classification-row">
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-year">年度</label>
-        <input id="initiative-year" type="number" min="1" max="9998" step="1" value={draft.fiscalYear} disabled={isSaving}
-          aria-describedby="initiative-year-hint" onChange={event => onDraftChange({ ...draft, fiscalYear: event.target.value,
-            invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput) })} />
+        <output id="initiative-year">{draft.fiscalYear}</output>
         <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
       </div>
       <div className="initiative-field initiative-expansion-field">
@@ -77,7 +80,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       <div className="initiative-field initiative-expansion-field">
         <label htmlFor="initiative-department">部署名</label>
-        <select id="initiative-department" value={draft.departmentId ?? ""} disabled={isSaving}
+        <select id="initiative-department" value={draft.departmentId ?? ""} disabled={isSaving} required
           onChange={event => onDraftChange({ ...draft, departmentId: event.target.value ? Number(event.target.value) : null })}>
           <option value="">部署名を選択</option>
           {departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
@@ -93,7 +96,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       <div className="initiative-field initiative-expansion-field">
         <label htmlFor="initiative-industry">業種名</label>
-        <select id="initiative-industry" value={draft.industryId ?? ""} disabled={isSaving}
+        <select id="initiative-industry" value={draft.industryId ?? ""} disabled={isSaving} required
           onChange={event => onDraftChange({ ...draft, industryId: event.target.value ? Number(event.target.value) : null })}>
           <option value="">業種名を選択</option>
           {industries.map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
@@ -104,8 +107,9 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
         <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
-      <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
-      <div className="initiative-amount-table-container" role="region" aria-label="月別計画金額の入力表" tabIndex={0}>
+      <div className="kind-tabs" role="tablist" aria-label="入力する種別">{INITIAL_KINDS.map(item => <button key={item.id} id={`kind-tab-${item.id}`} type="button" role="tab" aria-selected={kind === item.id} aria-controls="kind-amount-panel" onClick={() => setKind(item.id)}>{item.kindName}</button>)}</div>
+      <span className="field-hint">前年差・単位：千円（小数点以下3桁まで）</span>
+      <div className="initiative-amount-table-container" id="kind-amount-panel" role="tabpanel" aria-labelledby={`kind-tab-${kind}`} aria-label="月別計画金額の入力表" tabIndex={0}>
         <table className="initiative-amount-table" aria-label="月別計画金額">
           <thead>
             <tr>
@@ -118,12 +122,13 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
               const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
               return <tr key={index}>
                 <th scope="row">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0}
+                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
                     onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
                     <option value="">科目を選択</option>
                     {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
                   </select>
+                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
                 </th>
                 {months.map(month => (
                   <td key={month}>
@@ -136,15 +141,22 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
                       }}
                       inputMode="decimal"
                       aria-label={`${accountName} ${month}月の金額`}
-                      disabled={isSaving || row.accountId === null}
-                      value={row.amounts[month] ?? ""}
+                      disabled={isSaving || row.accountId === null || (kind === 3 && !isLateMonth(month))}
+                      value={kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month, revisedActive)}
                       onChange={event => onDraftChange({
                         ...draft,
                         invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput),
                         rows: draft.rows.map((current, currentIndex) => currentIndex === index
-                          ? { ...current, amounts: { ...current.amounts, [month]: event.target.value } } : current),
+                          ? kind === 1 ? { ...current, amounts: { ...current.amounts, [month]: event.target.value } } : { ...current, overrides: { ...current.overrides, [kind]: { ...current.overrides?.[kind], [month]: event.target.value } } } : current),
                       })}
                     />
+                    {kind !== 1 && <div className="amount-source">{row.overrides?.[kind]?.[month] !== undefined
+                      ? <button type="button" className="text-button" aria-label={`${accountName} ${month}月を引き継ぎに戻す`} disabled={isSaving} onClick={() => {
+                        const overrides = { ...row.overrides, [kind]: { ...row.overrides?.[kind] } };
+                        delete overrides[kind]![month];
+                        onDraftChange({ ...draft, rows: draft.rows.map((current, position) => position === index ? { ...current, overrides } : current) });
+                      }}>引き継ぎに戻す</button>
+                      : <span>{kind === 3 && !isLateMonth(month) ? "実績から" : "引き継ぎ"}</span>}</div>}
                   </td>
                 ))}
               </tr>;
@@ -154,7 +166,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       <div className="initiative-row-actions">
         <button className="secondary-button" type="button" disabled={isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
-          onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
+          onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { clientKey: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
     </main>
   );

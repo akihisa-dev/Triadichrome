@@ -14,7 +14,7 @@ export async function verifyInitiativeData(api, root) {
   await assert.rejects(changeAccountMaster(bytes, { type: "add", accountCode: "200", accountName: "属性なし", accountType: "" }), /科目属性/);
   await assert.rejects(changeAccountMaster(bytes, { type: "add", accountCode: "200", accountName: "属性不正", accountType: "other" }), /科目属性/);
   const draft = {
-    name: " 登録する施策 ", note: "備考を保持", expansionId: 1, fiscalYear: "2026",
+    name: " 登録する施策 ", note: "備考を保持", expansionId: 1, industryId: initial.industries[0].id, departmentId: initial.departments[0].id, fiscalYear: "2026",
     rows: [
       { accountId: initial.accounts[0].id, amounts: { 4: "100", 5: "0", 3: "1.25" } },
       { accountId: initial.accounts[0].id, amounts: { 4: "25.5", 3: "-0.25" } },
@@ -58,8 +58,7 @@ export async function verifyInitiativeData(api, root) {
   database.close();
   const reclassified = await changeAccountMaster(result, { type: "update", id: initial.accounts[2].id, accountCode: "102", accountName: "expense", accountType: "profit" });
   assert.deepEqual((await readPlanContents(reclassified.bytes)).initiatives[0].months[4], { sales: 95.5, profit: 125.5 });
-  const another = await registerInitiative(result, { ...draft, name: "別年度の施策", fiscalYear: "2027" });
-  assert.deepEqual((await readPlanContents(another)).initiatives.map(item => item.fiscalYear), [2026, 2027]);
+  await assert.rejects(registerInitiative(result, { ...draft, name: "別年度の施策", fiscalYear: "2027" }), /基準年度/);
 
   let stored = bytes;
   let writes = 0;
@@ -93,19 +92,6 @@ export async function verifyInitiativeData(api, root) {
     INSERT INTO details (id, budget_id, period_id, initiative_id, account_id, budget_amount, actual_amount, note) VALUES (1, 1, 1, 1, 1, 123.5, 7, '旧備考');`);
   const legacyBytes = legacy.export();
   legacy.close();
-  const oldContents = await readPlanContents(legacyBytes);
-  assert.equal(oldContents.accounts[0].accountType, null);
-  assert.equal(oldContents.initiatives[0].months[4].sales, null, "不明な属性を売上や費用に決め付けない");
-  await assert.rejects(registerInitiative(legacyBytes, { ...draft, rows: [{ accountId: 1, amounts: { 4: "1" } }] }), /科目属性/);
-  const migrated = await changeAccountMaster(legacyBytes, { type: "update", id: 1, accountCode: "001", accountName: "旧科目", accountType: "sales" });
-  await validateTriadicDatabase(migrated.bytes);
-  const migratedDb = await openTriadicDatabase(migrated.bytes);
-  assert.deepEqual(migratedDb.exec("SELECT id, budget_amount, actual_amount, note FROM details WHERE id = 1")[0].values, [[1, 123.5, 7, "旧備考"]]);
-  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 12);
-  migratedDb.close();
-  assert.equal((await readPlanContents(legacyBytes)).accounts[0].accountType, null);
-  assert.deepEqual((await readPlanContents(migrated.bytes)).initiatives[0].months[4], { sales: 123.5, profit: 123.5 });
-  const withNew = await registerInitiative(migrated.bytes, { ...draft, rows: [{ accountId: 1, amounts: { 4: "10" } }, { accountId: 1, amounts: {} }] });
-  assert.equal((await readPlanContents(withNew)).initiatives.length, 2);
-  console.log("PASS: initiative registration, attributes, fiscal periods, aggregates, duplicate rows, migration and save failures");
+  await assert.rejects(readPlanContents(legacyBytes), /対応していません/);
+  console.log("PASS: initiative registration, attributes, fiscal periods, aggregates, duplicate rows, unsupported formats and save failures");
 }

@@ -9,6 +9,7 @@ const nodes = [
   { page: "period-master", name: "期間マスタ", x: 20, y: 325, master: true },
   { page: "expansion-master", name: "展開マスタ", x: 20, y: 415, master: true },
   { page: "kind-master", name: "種別マスタ", x: 20, y: 535, master: true },
+  { page: "previous-input", name: "前年入力", x: 500, y: 145, master: false },
   { page: "initiative-entry", name: "施策入力", x: 500, y: 270, master: false },
   { page: "cost-table", name: "総原価表", x: 1000, y: 30, master: false },
   { page: "initiative-list", name: "施策一覧", x: 1000, y: 200, master: false },
@@ -17,6 +18,9 @@ const nodes = [
 ] as const;
 export type HomeDestination = typeof nodes[number]["page"];
 const edges: { from: HomeDestination; to: HomeDestination; label: string; path: string; x: number; y: number }[] = [
+  { from: "previous-input", to: "cost-table", label: "前年の実額", path: "M700 181H820V66H1000", x: 850, y: 181 },
+  { from: "kind-master", to: "initiative-entry", label: "種別ごとに入力", path: "M220 571H490V365H500", x: 355, y: 571 },
+  { from: "previous-input", to: "details", label: "前年の明細", path: "M700 195H930V325H1000", x: 850, y: 195 },
   { from: "account-master", to: "aggregation-master", label: "集計する科目", path: "M220 66H500", x: 360, y: 66 },
   { from: "aggregation-master", to: "cost-table", label: "所属・加減算", path: "M700 66H1000", x: 850, y: 66 },
   { from: "account-master", to: "initiative-entry", label: "科目を選択", path: "M220 86H250Q264 86 264 100V130Q264 144 278 144H452Q466 144 466 158V271Q466 285 480 285H500", x: 360, y: 144 },

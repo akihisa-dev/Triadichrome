@@ -1,4 +1,5 @@
 import { validateNormalizedData } from "./migration10";
+import { INITIAL_KINDS } from "./kindMasterSchema";
 import { seedDefaultCostMaster } from "./defaultCostMaster";
 import initSqlJs, { type Database } from "sql.js";
 import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
@@ -31,6 +32,8 @@ function invalidDatabase(): never {
 }
 
 function assertTriadicDatabase(database: Database): void {
+  const version = Number(database.exec("PRAGMA user_version")[0]?.values[0]?.[0]);
+  if (version !== TRIADIC_FORMAT_VERSION) throw new TriadicFileError("この保存形式には対応していません。基準年度を指定して新しいファイルを作成してください。");
   const schemaObjectNames = TRIADIC_SCHEMA_OBJECTS.map(({ name }) => `'${name}'`).join(
     ", ",
   );
@@ -64,7 +67,7 @@ function assertTriadicDatabase(database: Database): void {
 
   if (
     metadataValues.get("format_id") !== TRIADIC_FORMAT_ID ||
-    !["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", String(TRIADIC_FORMAT_VERSION)].includes(metadataValues.get("format_version") ?? "") ||
+    metadataValues.get("format_version") !== String(TRIADIC_FORMAT_VERSION) ||
     metadataValues.get("container") !== "sqlite"
   ) {
     invalidDatabase();
@@ -142,9 +145,22 @@ function assertTriadicDatabase(database: Database): void {
     if (names.some(([name]) => typeof name !== "string" || !name.trim()) || new Set(names.map(([name]) => name)).size !== names.length) invalidDatabase();
   }
   if (normalized) {
-    database.exec("SELECT id, row_id, month, amount_yen, revision FROM initiative_amounts LIMIT 0; SELECT * FROM initiative_detail_view LIMIT 0; SELECT * FROM legacy_detail_payloads LIMIT 0;");
+    database.exec("SELECT id, row_id, month, amount_yen, revision FROM initiative_amounts LIMIT 0; SELECT * FROM initiative_detail_view LIMIT 0;");
     validateNormalizedData(database);
   }
+  const settings = database.exec("SELECT fiscal_year, revised_active FROM budgets WHERE id = 1")[0]?.values[0];
+  if (!settings || !Number.isInteger(settings[0]) || Number(settings[0]) < 1 || Number(settings[0]) > 9998 || ![0, 1].includes(Number(settings[1]))) invalidDatabase();
+  if (database.exec("SELECT id FROM initiatives WHERE fiscal_year != (SELECT fiscal_year FROM budgets WHERE id = 1) OR expansion_id IS NULL OR industry_id IS NULL OR department_id IS NULL").length) invalidDatabase();
+  const kinds = database.exec("SELECT id, name FROM kind_types ORDER BY id")[0]?.values ?? [];
+  if (kinds.length !== INITIAL_KINDS.length || kinds.some(([id, name], index) => id !== INITIAL_KINDS[index]?.id || name !== INITIAL_KINDS[index]?.kindName)) invalidDatabase();
+  database.exec("SELECT row_id, kind_id, month, amount_yen, revision FROM amount_overrides LIMIT 0; SELECT account_id, industry_id, department_id, month, amount_yen, revision FROM previous_amounts LIMIT 0; SELECT screen, first_kind, second_kind FROM kind_selections LIMIT 0;");
+  if (database.exec(`SELECT row_id FROM amount_overrides WHERE kind_id NOT BETWEEN 2 AND 5 OR month NOT BETWEEN 1 AND 12
+    OR (kind_id = 3 AND month BETWEEN 4 AND 9) OR typeof(amount_yen) != 'integer' OR amount_yen NOT BETWEEN -9007199254740991 AND 9007199254740991
+    OR typeof(revision) != 'integer' OR revision < 0
+    UNION ALL SELECT account_id FROM previous_amounts WHERE month NOT BETWEEN 1 AND 12 OR typeof(amount_yen) != 'integer'
+    OR amount_yen NOT BETWEEN -9007199254740991 AND 9007199254740991 OR typeof(revision) != 'integer' OR revision < 0`).length) invalidDatabase();
+  const selections = database.exec("SELECT screen, first_kind, second_kind FROM kind_selections")[0]?.values ?? [];
+  if (selections.length !== 3 || new Set(selections.map(row => row[0])).size !== 3 || selections.some(([screen, first, second]) => !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1, 2, 3, 4, 5].includes(Number(first)) || (second !== null && (![1, 2, 3, 4, 5].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null) || (screen === "expansion-table" && second === null))) invalidDatabase();
   const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
   if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {
     invalidDatabase();
@@ -157,7 +173,8 @@ function assertTriadicDatabase(database: Database): void {
   }
 }
 
-export async function createTriadicDatabase(): Promise<Uint8Array> {
+export async function createTriadicDatabase(fiscalYear = new Date().getFullYear() - (new Date().getMonth() < 3 ? 1 : 0)): Promise<Uint8Array> {
+  if (!Number.isInteger(fiscalYear) || fiscalYear < 1 || fiscalYear > 9998) throw new TriadicFileError("年度は1〜9998の整数で入力してください。");
   const sql = await sqlJsPromise;
   const database = new sql.Database();
 
@@ -165,8 +182,8 @@ export async function createTriadicDatabase(): Promise<Uint8Array> {
     database.exec(TRIADIC_SCHEMA_SQL);
     const now = new Date().toISOString();
     database.run(
-      "INSERT INTO budgets (id, created_at, updated_at) VALUES (1, ?, ?)",
-      [now, now],
+      "INSERT INTO budgets (id, fiscal_year, created_at, updated_at) VALUES (1, ?, ?, ?)",
+      [fiscalYear, now, now],
     );
     seedDefaultCostMaster(database);
     return database.export();
@@ -206,6 +223,7 @@ export async function validateTriadicDatabase(
 
 export function exportTriadicDatabase(database: Database): Uint8Array {
   try {
+    assertTriadicDatabase(database);
     return database.export();
   } finally {
     // sql.js reopens its connection on export, resetting connection pragmas.

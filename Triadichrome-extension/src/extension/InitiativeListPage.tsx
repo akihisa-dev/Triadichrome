@@ -9,13 +9,10 @@ const amountText = (amount: number | null | undefined) => amount === undefined ?
 type InitiativeListPageProps = {
   initiatives: Initiative[];
   fiscalYear: string;
-  onYearChange: (year: string) => void;
   onOpenInitiative: (initiative: Initiative) => void;
 };
 
-export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOpenInitiative }: InitiativeListPageProps) {
-  const years = [...new Set([fiscalYear, ...initiatives.map(item => item.fiscalYear === null ? "" : String(item.fiscalYear))])]
-    .sort((a, b) => Number(b) - Number(a));
+export function InitiativeListPage({ initiatives, fiscalYear, onOpenInitiative }: InitiativeListPageProps) {
   const [view, setView] = useState(emptyTableView);
   const columns: TableColumn<Initiative>[] = [{ id: "name", label: "施策名", value: item => item.name }, ...initiativeMonths.flatMap(month => [
     { id: `sales-${month}`, label: `${month}月売上`, numeric: true, amount: true, value: (item: Initiative) => item.months[month]?.sales ?? null },
@@ -30,9 +27,7 @@ export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOp
       <span className="field-hint">単位：千円</span>
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-list-year">年度</label>
-        <select id="initiative-list-year" value={fiscalYear} onChange={event => onYearChange(event.target.value)}>
-          {years.map(year => <option key={year} value={year}>{year ? `${year}年度` : "年度未設定"}</option>)}
-        </select>
+        <output id="initiative-list-year">{fiscalYear}年度</output>
       </div>
     </div>
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・利益" tabIndex={0}>
@@ -57,6 +52,6 @@ export function InitiativeListPage({ initiatives, fiscalYear, onYearChange, onOp
         </tr>)}</tbody>
       </table>
     </div>
-    {visible.length === 0 && <p className="page-description">この年度の施策はまだ登録されていません。</p>}
+    {visible.length === 0 && <p className="page-description">表示する施策がありません。</p>}
   </main>;
 }

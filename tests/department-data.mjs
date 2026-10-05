@@ -13,8 +13,9 @@ export async function verifyDepartmentData(api) {
   changed = await changeDepartmentMaster(changed, { type: "delete", id: 2 });
   assert.deepEqual((await readPlanContents(changed)).departments.map(item => item.departmentName), ["部署改定", "部署C"]);
   await assert.rejects(changeDepartmentMaster(changed, { type: "delete", id: 999 }), /見つかりません/);
-  const draft = { name: "部署選択確認", note: "保持確認", fiscalYear: "2026", expansionId: initial.expansions[0].id, departmentId: 1, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: "1.001" } }] };
+  const draft = { name: "部署選択確認", note: "保持確認", fiscalYear: "2026", expansionId: initial.expansions[0].id, industryId: initial.industries[0].id, departmentId: 1, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: "1.001" } }] };
   let assigned = await registerInitiative(bytes, draft);
+  draft.rows[0].id = (await readPlanContents(assigned)).initiatives[0].rows[0].id;
   assert.equal((await readPlanContents(assigned)).initiatives[0].departmentId, 1);
   await assert.rejects(changeDepartmentMaster(assigned, { type: "delete", id: 1 }), /使用中/);
   await assert.rejects(registerInitiative(bytes, { ...draft, departmentId: 999 }), /部署名/);
@@ -22,21 +23,10 @@ export async function verifyDepartmentData(api) {
   assert.equal((await readPlanContents(assigned)).initiatives[0].departmentId, 2);
   assigned = await changeDepartmentMaster(assigned, { type: "update", id: 2, departmentName: "部署B改定" });
   assert.equal((await readPlanContents(assigned)).initiatives[0].departmentId, 2);
-  assigned = await updateInitiative(assigned, 1, 2026, { ...draft, departmentId: null });
-  assert.equal((await readPlanContents(assigned)).initiatives[0].departmentId, null);
+  await assert.rejects(updateInitiative(assigned, 1, 2026, { ...draft, departmentId: null }), /部署名/);
   let empty = bytes;
   for (const item of initial.departments) empty = await changeDepartmentMaster(empty, { type: "delete", id: item.id });
   assert.deepEqual((await readPlanContents(empty)).departments, []);
-  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(assigned));
-  legacyDb.exec("ALTER TABLE initiatives DROP COLUMN department_id; DROP TABLE departments; PRAGMA user_version = 7; UPDATE triadic_metadata SET value = '7' WHERE key = 'format_version';");
-  const legacy = legacyDb.export(); legacyDb.close();
-  const oldContents = await readPlanContents(legacy);
-  assert.deepEqual(oldContents.departments, initial.departments);
-  assert.equal(oldContents.initiatives[0].departmentId, null);
-  const migrated = await changeDepartmentMaster(legacy, { type: "update", id: 1, departmentName: "移行確認" });
-  assert.deepEqual((await readPlanContents(migrated)).initiatives, oldContents.initiatives);
-  const unchanged = await openTriadicDatabase(legacy);
-  assert.equal(unchanged.exec("PRAGMA user_version")[0].values[0][0], 7); unchanged.close();
   const malformed = await openTriadicDatabase(bytes);
   malformed.exec("DROP TABLE departments");
   const invalid = malformed.export(); malformed.close();
@@ -56,5 +46,5 @@ export async function verifyDepartmentData(api) {
   assert.deepEqual(stored, before);
   await assert.rejects(saveDepartmentMaster({ ...plan, handle: undefined }, { type: "add", departmentName: "キャンセル確認" }, async () => { throw new DOMException("キャンセル", "AbortError"); }), { name: "AbortError" });
   assert.deepEqual((await readPlanContents(bytes)).departments, initial.departments);
-  console.log("PASS: department CRUD, defaults, initiative assignment, migration and failed/cancelled/conflicting saves");
+  console.log("PASS: department CRUD, defaults, initiative assignment, failed/cancelled/conflicting saves");
 }

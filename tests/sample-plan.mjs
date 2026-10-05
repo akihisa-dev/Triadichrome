@@ -7,18 +7,18 @@ export async function verifySamplePlan(api) {
   const { accounts, initiatives, aggregations, expansions, industries } = await readPlanContents(bytes);
   assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
   assert.deepEqual((await readPlanContents(bytes)).departments.map(item => item.departmentName), ["部署A", "部署B"]);
-  assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["前年", "一次予算", "確定予算", "修正予算", "見通し", "実績"]);
+  assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["一次予算", "確定予算", "修正予算", "見通し", "実績"]);
   assert.deepEqual((await readPlanContents(bytes)).periodTypes.map(item => item.periodName), ["期間差", "新規"]);
-  assert.deepEqual(new Set(initiatives.map(item => item.industryId)), new Set([1, 2, 3, 4, 5, 6, 7, 8, 9, null]));
+  assert.deepEqual(new Set(initiatives.map(item => item.industryId)), new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]));
   assert.deepEqual(new Set(initiatives.map(item => item.periodTypeId)), new Set([1, 2]));
   assert.deepEqual(industries.map(item => item.industryName), ["直営自動車", "自動車取扱", "不動産A", "不動産B", "納品代行", "雑作業", "業務費B", "一般管理費", "営業外"]);
   assert.equal(accounts.length, 59);
   assert.equal(aggregations.length, 16);
   assert.equal(initiatives.length, 13);
-  assert.equal(initiatives.find(item => item.name === "助成金の受入れ").departmentId, null, "ホームで部署未選択の構成を確認できる");
+  assert.ok(initiatives.every(item => item.departmentId != null && item.industryId != null), "全施策に業種・部署がある");
   assert.deepEqual(new Set(accounts.map(account => account.accountType)), new Set(["sales", "cost", "expense", "profit"]));
   assert.equal(accounts[0].accountCode, "401");
-  assert.deepEqual([...new Set(initiatives.map(item => item.fiscalYear))].sort(), [2025, 2026, 2027]);
+  assert.deepEqual([...new Set(initiatives.map(item => item.fiscalYear))].sort(), [2026]);
   const product = initiatives.find(item => item.name === "既存商品の販売拡大");
   assert.equal(product.rows[0].accountId, product.rows[1].accountId);
   assert.equal(product.rows[0].amounts[4], "120000");
@@ -33,7 +33,7 @@ export async function verifySamplePlan(api) {
   const reduction = initiatives.find(item => item.name === "通信運搬費と消耗品費の削減");
   assert.equal(reduction.rows[1].amounts[3], "-1250.251");
   assert.equal(reduction.months[3].profit, 3750.751, "1円の端数を保存・再読込・計算で保持する");
-  for (const year of [2025, 2026, 2027]) {
+  for (const year of [2026]) {
     const table = buildCostTable(accounts, aggregations, initiatives, year);
     assert.ok(table.every(item => Object.keys(item.previous).length === 0), "別年度の施策を前年合計値にしない");
     assert.ok(table.filter(item => item.required).every(item => item.configured), "必須4集計をすぐ確認できる");
@@ -43,6 +43,17 @@ export async function verifySamplePlan(api) {
       assert.equal(ordinary.budget[month], Math.round(expected * 1000) / 1000, "科目属性による施策別利益と集計マスタの階層計算が一致する");
     }
   }
+  const plan = await readPlanContents(bytes);
+  assert.equal(plan.previousAmounts.length, 9 * 2 * 4 * 12);
+  assert.equal(api.previousTotals(plan)[4].sales, 18090);
+  assert.equal(api.previousTotals(plan)[4].profit, 14670);
+  const combined = api.buildKindExpansionTable(plan, [2, 4], "registered");
+  assert.equal(combined.changes[0][4].sales, 125320);
+  assert.equal(combined.total[0][4].sales, 143410);
+  assert.equal(combined.total[0][4].profit, 92866.251);
+  assert.equal(plan.details.length, 2664);
+  assert.ok(plan.details.every(row => row.fiscalYear === 2026));
+  assert.ok(plan.details.filter(row => row.kindId === 0).every(row => row.initiativeName === "前年" && row.kindName === "前年"));
   const unused = accounts.find(item => item.accountName === "削除確認用科目");
   assert.equal(unused.inUse, false);
   assert.equal((await changeAccountMaster(bytes, { type: "delete", id: unused.id })).accounts.length, 58);

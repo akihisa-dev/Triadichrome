@@ -7,9 +7,9 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "展開表", exact: true }).click();
   const table = app.getByRole("table", { name: "展開表", exact: true });
   await expect(table).toBeVisible();
-  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").first()).toHaveText("");
-  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) }).getByRole("cell").first()).toHaveText("115,000");
-  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "展開計", exact: true }) }).getByRole("cell").first()).toHaveText("115,000");
+  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").first()).toHaveText("18,090");
+  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) }).getByRole("cell").first()).toHaveText("143,410");
+  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "展開計", exact: true }) }).getByRole("cell").first()).toHaveText("125,320");
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "撤退計", exact: true }) }).getByRole("cell").first()).toHaveText("0");
   await table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true }).click();
   const asc = await table.getByRole("button").allTextContents();
@@ -35,10 +35,11 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await expect(table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true })).toHaveText("施策名");
   await expect(movedGroup.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
   await settleMotion(app.locator("body"));
-  const region = app.getByRole("region", { name: "展開表の月別売上・利益", exact: true });
+  const region = app.getByRole("region", { name: "展開表の月別種別・比較", exact: true });
   expect(await region.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
+  await table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").last().scrollIntoViewIfNeeded();
   await region.evaluate(node => { node.scrollLeft = node.scrollWidth; });
-  await expect(table.getByRole("columnheader", { name: "3月", exact: true })).toBeInViewport();
+  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").last()).toBeInViewport();
   await region.evaluate(node => { node.scrollLeft = 0; });
   await attachImage(testInfo, "展開表", await page.locator("#app-preview").screenshot());
 });
@@ -65,6 +66,8 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("展開割り当て確認");
   await expect(app.getByRole("button", { name: "登録", exact: true })).toBeDisabled();
   await expansion.selectOption("2");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption({ label: "401 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.456");
   await app.getByRole("button", { name: "登録", exact: true }).click();

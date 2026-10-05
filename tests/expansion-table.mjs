@@ -6,14 +6,14 @@ export async function verifyExpansionTable(api) {
   let bytes = await createTriadicDatabase();
   const initial = await readPlanContents(bytes);
   const accountId = initial.accounts.find(item => item.accountType === "sales").id;
-  const draft = { ...createInitiativeDraft("2026"), name: "施策B", rows: [{ accountId, amounts: { 4: "100.001", 5: "0" } }] };
+  const draft = { ...createInitiativeDraft("2026"), industryId: 1, departmentId: 1, name: "施策B", rows: [{ accountId, amounts: { 4: "100.001", 5: "0" } }] };
   assert.equal(draft.expansionId, null);
   await assert.rejects(registerInitiative(bytes, draft), /展開名/);
   await assert.rejects(registerInitiative(bytes, { ...draft, expansionId: 999 }), /展開名/);
   bytes = await registerInitiative(bytes, { ...draft, expansionId: 1 });
   bytes = await registerInitiative(bytes, { ...draft, name: "施策A", expansionId: 1, rows: [{ accountId, amounts: { 4: "-0.001" } }] });
   bytes = await registerInitiative(bytes, { ...draft, name: "別展開", expansionId: 2 });
-  bytes = await registerInitiative(bytes, { ...draft, name: "別年度", expansionId: 1, fiscalYear: "2025" });
+  await assert.rejects(registerInitiative(bytes, { ...draft, name: "別年度", expansionId: 1, fiscalYear: "2025" }), /基準年度/);
   const contents = await readPlanContents(bytes);
   const build = sort => buildExpansionTable(contents, 2026, sort);
   assert.equal(build("registered").groups.length, 7);
@@ -30,7 +30,7 @@ export async function verifyExpansionTable(api) {
   await assert.rejects(changeExpansionMaster(bytes, { type: "delete", id: 1 }), /使用/);
   const original = contents.initiatives[0];
   await assert.rejects(updateInitiative(bytes, original.id, 2026, { ...draft, expansionId: null }), /展開名/);
-  const reassigned = await updateInitiative(bytes, original.id, 2026, { ...draft, expansionId: 8 });
+  const reassigned = await updateInitiative(bytes, original.id, 2026, { ...draft, rows: original.rows, expansionId: 8 });
   const after = await readPlanContents(reassigned);
   assert.equal(after.initiatives[0].expansionId, 8);
   assert.equal(buildExpansionTable(after, 2026, "registered").groups.find(item => item.expansion.id === 8).initiatives[0].id, original.id);

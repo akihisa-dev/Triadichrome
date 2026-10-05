@@ -1,3 +1,4 @@
+import { changePlanSettings, type PlanChange } from "../core/kindAmounts";
 import { type KindChange } from "../core/kindMaster";
 import { saveKindMaster } from "./kindMasterFile";
 import { type DetailChange } from "../core/details";
@@ -16,8 +17,8 @@ import { type AccountChange } from "../core/accountMaster";
 import { saveAccountMaster } from "./accountMasterFile";
 import { saveAggregationMaster } from "./aggregationMasterFile";
 import { type AggregationChange } from "../core/aggregationMaster";
-import { type OpenPlan } from "./planFile";
-import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
+import { writePlanChange, type OpenPlan } from "./planFile";
+import { currentFiscalYear, readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
 import { saveInitiative, saveInitiativeUpdate } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
 import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
@@ -120,12 +121,14 @@ export function ExtensionPage() {
       if (handle) await open(await handle.getFile(), handle);
     });
   };
+  const [newFiscalYear, setNewFiscalYear] = useState(String(currentFiscalYear()));
   const create = () => void run(async () => {
+    if (!/^\d{1,4}$/.test(newFiscalYear) || Number(newFiscalYear) < 1 || Number(newFiscalYear) > 9998) throw new Error("年度は1〜9998の整数で入力してください。");
     const picker = (window as PickerWindow).showSaveFilePicker;
     if (!picker) throw new Error("この環境ではファイルを新規作成できません。");
     const handle = await picker.call(window, { suggestedName: `Untitled${TRIADIC_FILE_EXTENSION}`, types: fileTypes });
     if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
-    const bytes = await createTriadicDatabase();
+    const bytes = await createTriadicDatabase(Number(newFiscalYear));
     await writeTriadicFile(handle, bytes);
     await open(await handle.getFile(), handle);
   });
@@ -170,9 +173,10 @@ export function ExtensionPage() {
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
+      return { fiscalYear: saved.fiscalYear, revisedActive: saved.revisedActive, kindSelections: saved.kindSelections, previousAmounts: saved.previousAmounts, accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
     } finally { busy.current = false; }
   };
+  const changePlan = (change: PlanChange) => saveChange(async (current, destination) => writePlanChange(current, current.handle ?? await destination(), await changePlanSettings(current.bytes, change)), change.type === "previous");
   const changeDetail = (change: DetailChange) => saveChange(current => saveDetailChange(current, change), true);
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
   const changeKinds = (change: KindChange) => saveChange((current, chooseDestination) => saveKindMaster(current, change, chooseDestination), change.type === "update");
@@ -190,7 +194,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onChangeKinds={changeKinds} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onChangeKinds={changeKinds} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) setCloseRequested(true); }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
@@ -229,6 +233,7 @@ export function ExtensionPage() {
           <button className="entry-forget-button" type="button" disabled={isBusy || recentLoading || !recentFile}
             onClick={forget}>記憶を消す</button>
         </div>
+        <div className="initiative-field"><label htmlFor="new-fiscal-year">新規ファイルの年度</label><input id="new-fiscal-year" type="number" min="1" max="9998" step="1" disabled={isBusy} value={newFiscalYear} onChange={event => setNewFiscalYear(event.target.value)} /></div>
         <div className="entry-actions">
           <button className="entry-new-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
           <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新規作成</button>

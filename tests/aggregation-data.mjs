@@ -86,8 +86,7 @@ export async function verifyAggregationData(api) {
     ["施策A", "2026", [{ accountId: salesAccount.id, amounts: { 4: "100", 5: "0", 3: "1.25" } }, { accountId: salesAccount.id, amounts: { 4: "25.5" } },
       { accountId: costAccount.id, amounts: { 4: "30" } }, { accountId: expenseAccount.id, amounts: { 4: "20", 6: "-5.5" } }, { accountId: profitAccount.id, amounts: { 4: "10" } }]],
     ["施策B", "2026", [{ accountId: salesAccount.id, amounts: { 4: "-5.5", 3: "-0.25" } }]],
-    ["前年の増減施策", "2025", [{ accountId: salesAccount.id, amounts: { 4: "9999" } }]],
-  ]) bytes = await registerInitiative(bytes, { name, note: "", expansionId: 1, fiscalYear: year, rows });
+  ]) bytes = await registerInitiative(bytes, { name, note: "", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: year, rows });
   contents = await readPlanContents(bytes);
   const build = (year = 2026, previous) => buildCostTable(contents.accounts, contents.aggregations, contents.initiatives, year, previous);
   const table = build();
@@ -104,7 +103,7 @@ export async function verifyAggregationData(api) {
   assert.equal(expanded[0].budget[7], 50, "施策なしでも前年値は維持");
   assert.equal(expanded.find(row => row.name === "経常利益").previous[4], 510);
   assert.equal(expanded.find(row => row.name === "経常利益").budget[4], 590, "前年＋増減と階層集計が一致");
-  assert.equal(build(2025)[0].budget[4], 9999);
+  assert.ok(build(2025).every(row => Object.keys(row.budget).length === 0));
   assert.ok(build(2027).every(row => Object.keys(row.budget).length === 0));
   const unconfigured = structuredClone(contents.aggregations);
   unconfigured.find(group => group.id === custom.id).members = [];
@@ -112,16 +111,6 @@ export async function verifyAggregationData(api) {
   assert.equal(incomplete.find(row => row.name === "経常利益").configured, false);
   assert.deepEqual(incomplete.find(row => row.name === "経常利益").budget, {}, "未設定の子集計を含む部分合計を確定額として出さない");
 
-  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(original));
-  legacyDb.exec("DROP TABLE industries; DROP TABLE expansions; DROP TABLE aggregation_members; DROP TABLE aggregation_groups; PRAGMA user_version = 2; UPDATE triadic_metadata SET value = '2' WHERE key = 'format_version';");
-  const legacyBytes = legacyDb.export(); legacyDb.close();
-  const legacy = await readPlanContents(legacyBytes);
-  assert.deepEqual(legacy.accounts.map(account => account.accountName), ["売上", "原価", "費用", "利益"], "旧版のコード順を読込時に維持");
-  assert.equal(legacy.aggregations.length, 4);
-  const migrated = await changeAggregationMaster(legacyBytes, { type: "add", name: "移行後の集計" });
-  assert.deepEqual((await readPlanContents(migrated)).accounts.map(account => account.accountName), legacy.accounts.map(account => account.accountName));
-  const untouched = await openTriadicDatabase(legacyBytes);
-  assert.equal(untouched.exec("PRAGMA user_version")[0].values[0][0], 2); untouched.close();
   const invalid = await openTriadicDatabase(bytes);
   invalid.exec("DELETE FROM aggregation_members; DELETE FROM aggregation_groups WHERE required_key = 'sales';");
   await assert.rejects(validateTriadicDatabase(invalid.export())); invalid.close();
@@ -155,5 +144,5 @@ export async function verifyAggregationData(api) {
   await assert.rejects(saveAggregationMaster({ ...contents, bytes, name: handle.name }, move("group", custom.id, 2), async () => { throw new DOMException("キャンセル", "AbortError"); }), { name: "AbortError" });
   const removed = await changeAggregationMaster(saved.bytes, { type: "delete", id: saved.aggregations.at(-1).id });
   assert.deepEqual((await readPlanContents(removed)).aggregations, contents.aggregations);
-  console.log("PASS: mandatory aggregations, nested +/- totals, unique membership, cycles, baseline expansion, ordering, migration and protected saves");
+  console.log("PASS: mandatory aggregations, nested +/- totals, unique membership, cycles, baseline expansion, ordering and protected saves");
 }

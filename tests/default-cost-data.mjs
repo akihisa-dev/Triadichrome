@@ -21,14 +21,14 @@ export async function verifyDefaultCostData(api) {
   const { createTriadicDatabase, readPlanContents, buildCostTable, registerInitiative, updateInitiative,
     changeAggregationMaster, changeAccountMaster, openTriadicDatabase, validateTriadicDatabase,
     createEmptyTestPlan, formatAmount, formatRate, isValidAmount } = api;
-  const bytes = await createTriadicDatabase();
+  const bytes = await createTriadicDatabase(2026);
   await validateTriadicDatabase(bytes);
   const defaults = await readPlanContents(bytes);
   assert.deepEqual(defaults.accounts.map(a => [a.accountCode, a.accountName]), expectedAccounts);
   assert.deepEqual(defaults.accounts.map((a, i) => a.accountType), expectedAccounts.map((a, i) => i < 4 ? "sales" : i < 6 ? "cost" : a[0] === "713" ? "profit" : "expense"));
   assert.equal(defaults.aggregations.length, 15);
   assert.equal(defaults.initiatives.length, 0);
-  assert.deepEqual((await readPlanContents(await createTriadicDatabase())).accounts, defaults.accounts, "すべての新規ファイルに同じデフォルトを用意する");
+  assert.deepEqual((await readPlanContents(await createTriadicDatabase(2026))).accounts, defaults.accounts, "すべての新規ファイルに同じデフォルトを用意する");
   const empty = buildCostTable(defaults.accounts, defaults.aggregations, [], 2026);
   const expectedRows = [];
   const endings = new Map([
@@ -41,7 +41,7 @@ export async function verifyDefaultCostData(api) {
   assert.ok(empty.every(row => row.configured), "新規作成時に集計が設定済み");
   assert.ok(empty.every(row => !Object.keys(row.budget).length && !Object.keys(row.previous).length && !Object.keys(row.comparison).length));
 
-  const draft = { name: "全科目の集計確認", note: "", expansionId: 1, fiscalYear: "2026", rows: defaults.accounts.map(a => ({ accountId: a.id, amounts: { 4: "100", 5: "0", 3: "-0.001" } })) };
+  const draft = { name: "全科目の集計確認", note: "", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: "2026", rows: defaults.accounts.map(a => ({ accountId: a.id, amounts: { 4: "100", 5: "0", 3: "-0.001" } })) };
   const registered = await registerInitiative(bytes, draft);
   const contents = await readPlanContents(registered);
   const baseline = new Map(defaults.accounts.map((a, i) => [a.id, { 4: i < 4 ? 1000 : i < 6 ? 100 : a.accountCode === "713" ? 30 : a.accountCode === "731" ? 20 : 10 }]));
@@ -90,18 +90,8 @@ export async function verifyDefaultCostData(api) {
   assert.equal((await readPlanContents(renamed)).aggregations[0].displayName, "確認用小計");
   await assert.rejects(changeAggregationMaster(bytes, { type: "update", id: first.id, name: first.name, displayName: " ", members: first.members }), /表示名/);
 
-  // A genuine v5 file gets only the new optional column, never default accounts/groups.
   const oldBytes = await createEmptyTestPlan();
-  const oldContents = await readPlanContents(oldBytes);
-  const oldDb = await openTriadicDatabase(oldBytes);
-  const beforeTables = ["accounts", "aggregation_groups", "aggregation_members", "initiatives", "details"].map(name => [name, oldDb.exec(`SELECT * FROM ${name}`)]);
-  oldDb.close();
-  const migrated = await changeAccountMaster(oldBytes, { type: "add", accountCode: "001", accountName: "独自科目", accountType: "expense" });
-  assert.equal(migrated.accounts.length, 1);
-  assert.equal((await readPlanContents(migrated.bytes)).aggregations.length, oldContents.aggregations.length);
-  const untouched = await openTriadicDatabase(oldBytes);
-  assert.equal(untouched.exec("PRAGMA user_version")[0].values[0][0], 5);
-  assert.deepEqual(["accounts", "aggregation_groups", "aggregation_members", "initiatives", "details"].map(name => [name, untouched.exec(`SELECT * FROM ${name}`)]), beforeTables);
-  untouched.close();
-  console.log("PASS: approved default accounts/codes/order, all subtotal formulas, prior-minus-budget, rate/zero/rounding, yen precision, validation and non-destructive legacy migration");
+  await assert.rejects(readPlanContents(oldBytes), /対応していません/);
+  await assert.rejects(changeAccountMaster(oldBytes, { type: "add", accountCode: "001", accountName: "独自科目", accountType: "expense" }), /対応していません/);
+  console.log("PASS: approved default accounts/codes/order, all subtotal formulas, prior-minus-budget, rate/zero/rounding, yen precision, validation and unsupported-file protection");
 }

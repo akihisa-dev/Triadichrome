@@ -31,23 +31,11 @@ export async function verifyIndustryData(api) {
   const malformedBytes = malformed.export(); malformed.close();
   await assert.rejects(validateTriadicDatabase(malformedBytes));
 
-  const populated = await changeAccountMaster(bytes, { type: "add", accountCode: "001", accountName: "移行確認", accountType: "expense" });
-  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(populated.bytes));
-  legacyDb.run("UPDATE expansions SET name = ? WHERE id = 1", ["移行前の展開名"]);
-  legacyDb.exec("ALTER TABLE aggregation_groups DROP COLUMN display_name; DROP TABLE industries; PRAGMA user_version = 4; UPDATE triadic_metadata SET value = '4' WHERE key = 'format_version';");
-  const legacy = legacyDb.export(); legacyDb.close();
-  assert.deepEqual((await readPlanContents(legacy)).industries, initial);
-  const migrated = await changeIndustryMaster(legacy, { type: "update", id: 8, industryCode: "8", industryName: "管理費改定" });
-  assert.equal((await readPlanContents(migrated)).accounts[0].accountName, "移行確認");
-  assert.equal((await readPlanContents(migrated)).industries.find(item => item.id === 8).industryName, "管理費改定");
-  assert.equal((await readPlanContents(migrated)).expansions.find(item => item.id === 1).expansionName, "移行前の展開名");
-  const untouched = await openTriadicDatabase(legacy);
-  assert.equal(untouched.exec("PRAGMA user_version")[0].values[0][0], 4); untouched.close();
-
   const accountPlan = await changeAccountMaster(bytes, { type: "add", accountCode: "002", accountName: "業種選択確認", accountType: "sales" });
   const contents = await readPlanContents(accountPlan.bytes);
-  const draft = { name: "業種選択施策", note: "", fiscalYear: "2026", expansionId: contents.expansions[0].id, industryId: 1, rows: [{ accountId: contents.accounts[0].id, amounts: { 4: "1.001" } }] };
+  const draft = { name: "業種選択施策", note: "", fiscalYear: "2026", expansionId: contents.expansions[0].id, industryId: 1, departmentId: contents.departments[0].id, rows: [{ accountId: contents.accounts[0].id, amounts: { 4: "1.001" } }] };
   let assigned = await api.registerInitiative(accountPlan.bytes, draft);
+  draft.rows[0].id = (await readPlanContents(assigned)).initiatives[0].rows[0].id;
   assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, 1);
   await assert.rejects(api.registerInitiative(accountPlan.bytes, { ...draft, industryId: 999 }), /業種名/);
   await assert.rejects(changeIndustryMaster(assigned, { type: "delete", id: 1 }), /使用/);
@@ -57,17 +45,7 @@ export async function verifyIndustryData(api) {
   assigned = await api.updateInitiative(assigned, beforeUpdate.id, 2026, { ...draft, industryId: 2 });
   assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, 2);
   assert.deepEqual((await readPlanContents(assigned)).initiatives[0].months, beforeUpdate.months);
-  assigned = await api.updateInitiative(assigned, beforeUpdate.id, 2026, { ...draft, industryId: null });
-  assert.equal((await readPlanContents(assigned)).initiatives[0].industryId, null);
-  assigned = await changeIndustryMaster(assigned, { type: "delete", id: 2 });
-  const v10 = await openTriadicDatabase(assigned);
-  v10.exec("DROP TABLE kind_types; DROP INDEX initiatives_industry_idx; ALTER TABLE initiatives DROP COLUMN industry_id; PRAGMA user_version = 10; UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';");
-  const oldBytes = v10.export(); v10.close();
-  assert.equal((await readPlanContents(oldBytes)).initiatives[0].industryId, null);
-  const migratedIndustry = await api.updateInitiative(oldBytes, beforeUpdate.id, 2026, { ...draft, industryId: 1 });
-  assert.equal((await readPlanContents(migratedIndustry)).initiatives[0].industryId, 1);
-  const untouchedV10 = await openTriadicDatabase(oldBytes);
-  assert.equal(untouchedV10.exec("PRAGMA user_version")[0].values[0][0], 10); untouchedV10.close();
+  await assert.rejects(api.updateInitiative(assigned, beforeUpdate.id, 2026, { ...draft, industryId: null }), /業種名/);
 
   let stored = bytes;
   let writes = 0;
@@ -88,5 +66,5 @@ export async function verifyIndustryData(api) {
   assert.deepEqual(stored, before);
   await assert.rejects(saveIndustryMaster({ ...plan, handle: undefined }, add, async () => { throw new DOMException("キャンセル", "AbortError"); }), { name: "AbortError" });
   assert.deepEqual((await readPlanContents(bytes)).industries, initial);
-  console.log("PASS: industry defaults, CRUD, validation, legacy migration, persistence and failed/cancelled/conflicting saves");
+  console.log("PASS: industry defaults, CRUD, validation, persistence and failed/cancelled/conflicting saves");
 }

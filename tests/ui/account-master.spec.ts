@@ -12,6 +12,8 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   const add = app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true });
   for (const index of [1, 2, 3]) {
     if (index > 1) await add.click();
@@ -28,9 +30,11 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await expect(april.nth(0)).toHaveValue("0");
   await expect(april.nth(1)).toHaveValue("-25.5");
-  await expect(april.nth(2)).toHaveValue("");
+  await expect(april.nth(2)).toHaveValue("0");
   await expect(app.getByRole("combobox", { name: /行目の勘定科目/ }).locator("option:checked")).toHaveText(Array(3).fill("501 消耗品費"));
 });
 
@@ -76,6 +80,8 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("alert")).toContainText("同じ科目コードが登録されています。");
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   const select = app.getByRole("combobox", { name: "1行目の勘定科目" });
   await expect(select).toHaveValue("");
   await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").first()).toBeDisabled();
@@ -121,6 +127,8 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await attachImage(testInfo, "勘定科目マスタ", await page.locator("#app-preview").screenshot());
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await expect(app.getByRole("spinbutton", { name: "売上 4月の金額", exact: true })).toHaveValue("123.5");
   await expect(select.locator("option:checked")).toHaveText("001 売上");
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
@@ -143,6 +151,8 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toBeDisabled();
   await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton")).toHaveCount(12);
   await app.getByRole("button", { name: "勘定科目マスタを開く" }).click();
@@ -162,7 +172,7 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
-  await app.locator(".home-header button").click();
+  await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
   for (let index = 1; index <= 25; index++) {
     await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(String(100 + index));
     await app.getByRole("textbox", { name: "科目名", exact: true }).fill(`科目${index}`);

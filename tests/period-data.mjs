@@ -13,8 +13,9 @@ export async function verifyPeriodData(api) {
   changed = await changePeriodMaster(changed, { type: "delete", id: 2 });
   assert.deepEqual((await readPlanContents(changed)).periodTypes.map(item => item.periodName), ["期間改定", "期間C"]);
   await assert.rejects(changePeriodMaster(changed, { type: "delete", id: 999 }), /見つかりません/);
-  const draft = { name: "期間選択確認", note: "保持確認", fiscalYear: "2026", expansionId: initial.expansions[0].id, departmentId: 2, periodTypeId: 1, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: "1.001" } }] };
+  const draft = { name: "期間選択確認", note: "保持確認", fiscalYear: "2026", expansionId: initial.expansions[0].id, industryId: initial.industries[0].id, departmentId: 2, periodTypeId: 1, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: "1.001" } }] };
   let assigned = await registerInitiative(bytes, draft);
+  draft.rows[0].id = (await readPlanContents(assigned)).initiatives[0].rows[0].id;
   assert.equal((await readPlanContents(assigned)).initiatives[0].periodTypeId, 1);
   await assert.rejects(changePeriodMaster(assigned, { type: "delete", id: 1 }), /使用中/);
   await assert.rejects(registerInitiative(bytes, { ...draft, periodTypeId: 999 }), /期間名/);
@@ -30,16 +31,6 @@ export async function verifyPeriodData(api) {
   assert.deepEqual((await readPlanContents(empty)).periodTypes, []);
   const emptySaved = await registerInitiative(empty, { ...draft, periodTypeId: null });
   assert.deepEqual((await readPlanContents(emptySaved)).periodTypes, []);
-  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(assigned));
-  legacyDb.exec("ALTER TABLE initiatives DROP COLUMN period_type_id; DROP TABLE period_types; PRAGMA user_version = 8; UPDATE triadic_metadata SET value = '8' WHERE key = 'format_version';");
-  const legacy = legacyDb.export(); legacyDb.close();
-  const oldContents = await readPlanContents(legacy);
-  assert.deepEqual(oldContents.periodTypes, initial.periodTypes);
-  assert.equal(oldContents.initiatives[0].periodTypeId, null);
-  const migrated = await changePeriodMaster(legacy, { type: "update", id: 1, periodName: "移行確認" });
-  assert.deepEqual((await readPlanContents(migrated)).initiatives, oldContents.initiatives);
-  const unchanged = await openTriadicDatabase(legacy);
-  assert.equal(unchanged.exec("PRAGMA user_version")[0].values[0][0], 8); unchanged.close();
   const malformed = await openTriadicDatabase(bytes);
   malformed.exec("DROP TABLE period_types");
   const invalid = malformed.export(); malformed.close();
@@ -59,5 +50,5 @@ export async function verifyPeriodData(api) {
   assert.deepEqual(stored, before);
   await assert.rejects(savePeriodMaster({ ...plan, handle: undefined }, { type: "add", periodName: "キャンセル確認" }, async () => { throw new DOMException("キャンセル", "AbortError"); }), { name: "AbortError" });
   assert.deepEqual((await readPlanContents(bytes)).periodTypes, initial.periodTypes);
-  console.log("PASS: period master CRUD, defaults, initiative assignment, migration and failed/cancelled/conflicting saves");
+  console.log("PASS: period master CRUD, defaults, initiative assignment, failed/cancelled/conflicting saves");
 }

@@ -17,7 +17,7 @@ export function listAccounts(database: Database): Account[] {
   const manualOrder = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) >= 3;
   const groupUsage = manualOrder ? "OR EXISTS(SELECT 1 FROM aggregation_members WHERE account_id = accounts.id)" : "";
   return (database.exec(`SELECT id, ${code} AS account_code, name, ${hasType ? "attribute" : "NULL"},
-    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id) ${rowUsage} ${groupUsage}
+    EXISTS(SELECT 1 FROM details WHERE account_id = accounts.id) ${rowUsage} ${groupUsage} OR EXISTS(SELECT 1 FROM previous_amounts WHERE account_id = accounts.id)
     FROM accounts WHERE budget_id = 1 ORDER BY ${manualOrder ? "sort_order, id" : "account_code IS NULL, account_code, sort_order, id"}`)[0]?.values ?? [])
     .map(([id, accountCode, accountName, accountType, inUse]) => ({ id: Number(id), accountCode: accountCode === null ? null : String(accountCode), accountName: String(accountName), accountType: isAccountType(accountType) ? accountType : null, inUse: Boolean(inUse) }));
 }

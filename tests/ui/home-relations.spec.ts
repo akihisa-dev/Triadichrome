@@ -50,7 +50,7 @@ test("パン・ズームと表示位置の復元、ドラッグとクリック�
   await viewport.press("+");
   await expect(map).not.toHaveAttribute("style", panned!);
   await input.focus();
-  await expect(home.locator(".home-relation.is-active")).toHaveCount(9);
+  await expect(home.locator(".home-relation.is-active")).toHaveCount(10);
   const saved = await map.getAttribute("style");
   await input.press("Space");
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();

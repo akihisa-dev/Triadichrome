@@ -1,3 +1,4 @@
+import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/kindAmounts";
 import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/kindMasterSchema";
 import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/periodMasterSchema";
 import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/departmentSchema";
@@ -10,10 +11,10 @@ import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiati
 
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
-  let bytes = await createTriadicDatabase();
+  let bytes = await createTriadicDatabase(fiscalYear);
   const kinds = (await readPlanContents(bytes)).kinds;
   if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
-  if (kinds.find(item => item.id === 6)?.kindName !== "実績") throw new Error("実績の種別を確認できません。");
+  if (kinds.find(item => item.id === 5)?.kindName !== "実績") throw new Error("実績の種別を確認できません。");
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
   const periodTypes = (await readPlanContents(bytes)).periodTypes;
@@ -33,7 +34,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   const row = (name: string, amounts: InitiativeRow["amounts"]): InitiativeRow => ({ accountId: accounts.get(name)!, amounts });
   const annual = (name: string, amount: number, growth = 0): InitiativeRow => row(name,
     Object.fromEntries(initiativeMonths.map((month, index) => [month, String(amount + index * growth)])));
-  const add = async (name: string, note: string, rows: InitiativeRow[], year = fiscalYear) => {
+  const add = async (name: string, note: string, rows: InitiativeRow[]) => {
     const codes: Record<string, string> = {
       "既存商品の販売拡大": "5", "保守サービスの新規契約": "5", "季節キャンペーン": "5",
       "通信運搬費と消耗品費の削減": "1", "サブスクリプション事業の拡大": "2",
@@ -41,11 +42,11 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: name === "助成金の受入れ" ? null : industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: name === "助成金の受入れ" ? null : departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [
-    annual("売上高", 120000, 5000), annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
+    { ...annual("売上高", 120000, 5000), overrides: { 2: { 4: "130000" }, 3: { 10: "170000" }, 4: { 11: "0" }, 5: { 4: "125000" } } }, annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
     annual("宣伝広告費", 8000), annual("旅費", 3000), annual("営業外収益", 125.501),
   ]);
   await add("保守サービスの新規契約", "7月開始。4〜6月は未入力、翌年3月まで継続します。", [
@@ -70,15 +71,22 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     row("固定資産減価償却費", { 10: "-5000", 11: "-5000", 12: "-5000", 1: "-5000", 2: "-5000", 3: "-5000" }),
     row("消耗品費", { 9: "25000" }),
   ]);
-  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。業種・部署の未選択を確認できます。", [row("営業外収益", { 9: "100000", 3: "50000" })]);
+  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。業種・部署の分類と利益への加算を確認できます。", [row("営業外収益", { 9: "100000", 3: "50000" })]);
   await add("ゼロと相殺の確認", "4月は明示的なゼロ、5月は同じ科目の正負が相殺、6月以降の空欄は0として保存されます。", [
     row("売上高", { 4: "0", 5: "12000.5" }), row("売上高", { 5: "-12000.5" }),
   ]);
   await add("未確定施策の入力準備", "全月0でも科目は使用中です。未所属費用を集計へ移す操作も試せます。", [row("未所属費用", {})]);
 
-  for (const [year, label, sales, cost] of [[fiscalYear - 1, "前年度", 70000, 25000], [fiscalYear + 1, "次年度", 150000, 55000]] as const) {
-    await add(`${label}の販売施策`, "年度切り替え用の増減計画。総原価表の前年合計値ではありません。", [annual("売上高", sales), annual("本支店売上原価", cost)], year);
-    await add(`${label}のサービス施策`, "別年度の施策が当年度の集計に混ざらないことを確認できます。", [annual("グループ売上高", sales / 2), annual("給料手当", 15000)], year);
+  await add("確定予算の手修正", "確定予算だけを月ごとに手修正します。", [{ ...annual("売上高", 100), overrides: { 2: { 4: "120", 5: "0" } } }]);
+  await add("修正予算の入力準備", "開始前の修正予算10月だけを150に準備しています。開始すると見通しへ伝わります。", [{ ...annual("売上高", 100), overrides: { 3: { 10: "150" } } }]);
+  await add("見通しと実績の手修正", "見通し10月は110、実績4月は90。引き継ぎと手修正を比較できます。", [{ ...annual("グループ売上高", 100), overrides: { 4: { 10: "110" }, 5: { 4: "90" } } }]);
+  await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。", [row("未所属費用", {}), row("売上高", {})]);
+  for (const [index, industry] of industries.entries()) {
+    for (const [departmentIndex, department] of departments.entries()) {
+      bytes = await savePreviousAmounts(bytes, { industryId: industry.id, departmentId: department.id, rows: [
+        annual("売上高", 1000 + index * 100 + departmentIndex * 10), annual("本支店売上原価", 400), annual("給料手当", 200), annual("営業外収益", 10),
+      ].map(row => ({ accountId: row.accountId!, amounts: row.amounts })) });
+    }
   }
   const database = await openTriadicDatabase(bytes);
   try {

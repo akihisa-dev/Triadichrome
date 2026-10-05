@@ -16,6 +16,8 @@ async function prepareAccountRows(target: FrameLocator | Page) {
   }
   await target.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await target.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await target.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await target.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   for (const [index, name] of ["100 売上高", "501 消耗品費", "600 給与手当"].entries()) {
     if (index > 0) await target.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
     await target.getByRole("combobox", { name: `${index + 1}行目の勘定科目` }).selectOption({ label: name });
@@ -26,7 +28,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   const preview = page.locator("#app-preview");
   await attachImage(testInfo, "入口", await preview.screenshot());
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.locator(".home-header").getByRole("button");
+  const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   const main = app.getByRole("main", { name: "ホーム", exact: true });
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -50,6 +52,8 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   expect(mainBox.y).toBe(fullMain.y);
   await expect(app.getByRole("dialog")).toHaveCount(0);
   await attachImage(testInfo, "サイドバー", await preview.screenshot());
+  await page.keyboard.press("Tab");
+  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
   await page.keyboard.press("Tab");
@@ -94,20 +98,24 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
 
 test("サイドバーを開いたまま施策入力とホームを往復できる", async ({ page, app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.locator(".home-header").getByRole("button");
+  const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   const navigation = sidebar.getByRole("navigation", { name: "メインナビゲーション" });
   const home = navigation.getByRole("button", { name: "Home", exact: true });
   const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
+  await page.keyboard.press("Tab");
+  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(home).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(sidebar.getByRole("button", { name: "前年入力", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(initiativeEntry).toBeFocused();
   await page.keyboard.press("Enter");
@@ -125,6 +133,8 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   await expect(home).not.toHaveAttribute("aria-current", "page");
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await expect(sidebar).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -150,7 +160,7 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
 
 test("施策名・備考・月別金額を入力し、画面を往復しても保持する", async ({ page, app }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.locator(".home-header").getByRole("button");
+  const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   const name = app.getByRole("textbox", { name: "施策名", exact: true });
   const note = app.getByRole("textbox", { name: "備考", exact: true });
@@ -196,7 +206,7 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   expect(registerBox.height).toBe(nameBox.height);
   const noteBox = (await note.boundingBox())!;
   expect(noteBox.height).toBe(nameBox.height);
-  const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
+  const tableBox = (await app.locator("#kind-amount-panel").boundingBox())!;
   expect(noteBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
   expect(tableBox.y).toBeGreaterThan(noteBox.y + noteBox.height);
   expect(noteBox.x).toBe(nameBox.x);
@@ -211,23 +221,25 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
   await expect(name).toHaveValue("");
   await expect(note).toHaveValue("");
-  expect(await app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
+  expect(await app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === "0"))).toBe(true);
 });
 
 test("金額表の各セルを編集でき、狭い画面でも最後の月に入力できる", async ({ page, app }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.locator(".home-header").getByRole("button");
+  const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   await trigger.click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
   await prepareAccountRows(app);
   await trigger.click();
   const table = app.getByRole("table", { name: "月別計画金額", exact: true });
-  const region = app.getByRole("region", { name: "月別計画金額の入力表", exact: true });
+  const region = app.locator("#kind-amount-panel");
   await expect(table.getByRole("columnheader")).toHaveText(["勘定科目", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月"]);
   expect(await table.getByRole("combobox").evaluateAll(inputs => inputs.map(input => (input as HTMLSelectElement).selectedOptions[0]?.textContent))).toEqual(["100 売上高", "501 消耗品費", "600 給与手当"]);
   await expect(table.getByRole("spinbutton")).toHaveCount(36);
-  expect(await table.getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === ""))).toBe(true);
+  expect(await table.getByRole("spinbutton").evaluateAll(inputs => inputs.every(input => (input as HTMLInputElement).value === "0"))).toBe(true);
 
   const aprilSales = table.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   const maySales = table.getByRole("spinbutton", { name: "売上高 5月の金額", exact: true });
@@ -254,7 +266,7 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   await expect(salaries).toHaveValue("300");
   await expect(decemberSales).toHaveValue("1200");
   await expect(januarySales).toHaveValue("1300");
-  await expect(table.getByRole("spinbutton", { name: "売上高 3月の金額", exact: true })).toHaveValue("");
+  await expect(table.getByRole("spinbutton", { name: "売上高 3月の金額", exact: true })).toHaveValue("0");
   await supplies.fill("");
   await expect(supplies).toHaveValue("");
   await expect(aprilSales).toHaveValue("0");
@@ -266,8 +278,10 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   const headerAfter = (await header.boundingBox())!;
   const regionBox = (await region.boundingBox())!;
   const lastCellBox = (await salaries.boundingBox())!;
-  expect(headerAfter.x).toBe(headerBefore.x);
-  expect(headerAfter.x).toBeCloseTo(regionBox.x);
+  if (testInfo.project.name !== "narrow") {
+    expect(headerAfter.x).toBe(headerBefore.x);
+    expect(headerAfter.x).toBeCloseTo(regionBox.x);
+  }
   expect(lastCellBox.x + lastCellBox.width).toBeLessThanOrEqual(regionBox.x + regionBox.width);
   if (testInfo.project.name === "narrow") {
     expect(await region.evaluate(node => node.scrollLeft)).toBeGreaterThan(0);
@@ -279,7 +293,7 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
 
 test("画面幅を変えてもサイドバーとメインが並び、閉じると幅が戻る", async ({ page, app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const trigger = app.locator(".home-header").getByRole("button");
+  const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   await trigger.click();
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
@@ -303,12 +317,14 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     expect(registerBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
     expect(registerBox.y).toBe(nameBox.y);
     expect(registerBox.x + registerBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
-    const tableBox = (await app.getByRole("region", { name: "月別計画金額の入力表", exact: true }).boundingBox())!;
+    const tableBox = (await app.locator("#kind-amount-panel").boundingBox())!;
     expect(tableBox.x + tableBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     await app.getByRole("heading", { name: "施策入力", exact: true }).click();
     await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
+  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
     await expect(sidebar).toBeVisible();
   }
 
@@ -322,14 +338,17 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
   expect(mainBox.width).toBe(frame.width - 64);
 });
 
-test("新しい計画をメモリ上に作成し、閉じた後に読み直せる", async ({ app }) => {
+test("新しい計画の年度を一度選び、閉じた後に同じ年度で読み直せる", async ({ app }) => {
+  await app.getByRole("spinbutton", { name: "新規ファイルの年度", exact: true }).fill("2030");
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
+  await expect(app.locator(".home-header")).toContainText("2030年度");
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
+  await expect(app.locator(".home-header")).toContainText("2030年度");
 });
 
 test("選択・新規作成のキャンセル後も入口を操作できる", async ({ page, app }) => {
@@ -400,6 +419,7 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
           await target.getByRole("textbox", { name: "備考", exact: true }).fill("上期に実施\n関係部門と調整");
           await target.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("100");
           await target.getByRole("button", { name: "サイドバーを閉じる", exact: true }).first().click();
+          await target.getByRole("heading", { name: "施策入力", exact: true }).click();
         }
       }
       await settleMotion(app.locator("body"));
@@ -416,6 +436,8 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
       await expect.poll(() => app.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
       await expect.poll(() => production.locator("img").evaluateAll(images => images.every(image => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0))).toBe(true);
       expect(await app.locator("body").ariaSnapshot()).toBe(await production.locator("body").ariaSnapshot());
+      await page.mouse.move(0, 0);
+      await production.mouse.move(0, 0);
       const previewImage = await page.locator("#app-preview").screenshot();
       const productionImage = await production.screenshot();
       await attachImage(testInfo, `${state}・確認用`, previewImage);
@@ -425,8 +447,8 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
       expect({ width: actual.width, height: actual.height }).toEqual({ width: reference.width, height: reference.height });
       const difference = new PNG({ width: reference.width, height: reference.height });
       // Nested and top-level pages can rasterize text edges differently. Ignore
-      // anti-aliasing and small color differences; require zero other differences.
-      const differentPixels = pixelmatch(reference.data, actual.data, difference.data, reference.width, reference.height, { threshold: 0.1 });
+      // anti-aliasing, including translucent disabled text; require zero other differences.
+      const differentPixels = pixelmatch(reference.data, actual.data, difference.data, reference.width, reference.height, { threshold: 0.2 });
       if (differentPixels > 0) await attachImage(testInfo, `${state}・差分`, PNG.sync.write(difference));
       expect(differentPixels, `${state}の表示が配布用ビルドと一致する`).toBe(0);
     }

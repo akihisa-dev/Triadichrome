@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 
-type SidebarIconName = "home" | "entry" | "list" | "cost" | "expansion" | "details" | "master" | "file" | "close-file";
+type SidebarIconName = "home" | "previous" | "entry" | "list" | "cost" | "expansion" | "details" | "master" | "file" | "close-file";
 
 // Each silhouette expresses the destination, even when the labels are collapsed.
 const shapes: Record<SidebarIconName, ReactNode> = {
   home: <><path d="m3 10 9-7 9 7M5 9v12h14V9" /><path d="M9 21v-8h6v8" /></>,
+  previous: <><path d="M6 8a8 8 0 1 1-1 9M6 3v5H1" /><path d="M12 7v6l4 2" /></>,
   entry: <><path d="M10 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-5M7 16h4" /><path d="m15 4 3-3 5 5-3 3-8 8-5 1 1-5 9-9Zm0 0 5 5" /></>,
   list: <><rect x="3" y="4" width="4" height="4" rx="1" /><rect x="3" y="10" width="4" height="4" rx="1" /><rect x="3" y="16" width="4" height="4" rx="1" /><path d="M11 6h10M11 12h10M11 18h10" /></>,
   cost: <><rect x="4" y="3" width="16" height="18" rx="2" /><path d="M8 7h8M8 11h2M14 11h2M8 15h2M14 15h2M8 18h2M14 18h2" /></>,

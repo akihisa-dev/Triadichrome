@@ -33,6 +33,7 @@ export async function changeIndustryMaster(bytes: Uint8Array, change: IndustryCh
     migrateTriadicDatabase(database);
     validateIndustryChange(listIndustries(database), change);
     if (change.type === "delete" && database.exec("SELECT id FROM initiatives WHERE industry_id = ? LIMIT 1", [change.id]).length) throw new Error("施策で使用している業種は削除できません。");
+    if (change.type === "delete" && database.exec("SELECT account_id FROM previous_amounts WHERE industry_id = ? LIMIT 1", [change.id]).length) throw new Error("前年入力で使用中の業種は削除できません。");
     if (change.type === "delete") database.run("DELETE FROM industries WHERE id = ?", [change.id]);
     else if (change.type === "add") database.run("INSERT INTO industries (code, name) VALUES (?, ?)", [change.industryCode.trim(), change.industryName.trim()]);
     else database.run("UPDATE industries SET code = ?, name = ? WHERE id = ?", [change.industryCode.trim(), change.industryName.trim(), change.id]);

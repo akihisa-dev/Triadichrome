@@ -27,16 +27,6 @@ CREATE TABLE initiative_amounts (
   revision INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0),
   UNIQUE (row_id, month)
 );
-CREATE TABLE legacy_detail_payloads (
-  id INTEGER PRIMARY KEY REFERENCES initiative_amounts(id) ON DELETE RESTRICT,
-  budget_id INTEGER NOT NULL, period_id INTEGER NOT NULL,
-  year INTEGER NOT NULL, month INTEGER NOT NULL,
-  initiative_id INTEGER NOT NULL, account_id INTEGER NOT NULL, entry_row_id INTEGER,
-  budget_amount REAL NOT NULL, actual_amount REAL NOT NULL,
-  budget_sales_amount REAL NOT NULL, actual_sales_amount REAL NOT NULL,
-  budget_profit_amount REAL NOT NULL, actual_profit_amount REAL NOT NULL,
-  note TEXT
-);
 CREATE INDEX initiatives_year_idx ON initiatives(fiscal_year, sort_order, id);
 CREATE INDEX initiative_rows_owner_idx ON initiative_rows(initiative_id, sort_order, id);
 CREATE INDEX initiative_rows_account_idx ON initiative_rows(account_id);
@@ -51,12 +41,12 @@ SELECT m.id, 1 AS budget_id,
   (SELECT p.id FROM periods p WHERE p.year = i.fiscal_year + (m.month < 4) AND p.month = m.month) AS period_id,
   i.id AS initiative_id, r.account_id, r.id AS entry_row_id,
   m.amount_yen / 1000.0 AS budget_amount,
-  COALESCE(l.actual_amount, 0) AS actual_amount,
-  0 AS budget_sales_amount, COALESCE(l.actual_sales_amount, 0) AS actual_sales_amount,
-  0 AS budget_profit_amount, COALESCE(l.actual_profit_amount, 0) AS actual_profit_amount,
-  l.note
+  0 AS actual_amount,
+  0 AS budget_sales_amount, 0 AS actual_sales_amount,
+  0 AS budget_profit_amount, 0 AS actual_profit_amount,
+  NULL AS note
 FROM initiative_amounts m JOIN initiative_rows r ON r.id = m.row_id
-JOIN initiatives i ON i.id = r.initiative_id LEFT JOIN legacy_detail_payloads l ON l.id = m.id;
+JOIN initiatives i ON i.id = r.initiative_id;
 ${legacyViews}
 CREATE VIEW initiative_detail_view AS
 SELECT m.id AS detail_id, r.id AS row_id, i.id AS initiative_id,
