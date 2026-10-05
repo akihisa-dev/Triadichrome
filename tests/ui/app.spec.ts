@@ -5,7 +5,7 @@ import pixelmatch from "pixelmatch";
 import { type FrameLocator, type Page } from "@playwright/test";
 
 async function prepareAccountRows(target: FrameLocator | Page) {
-  await target.getByRole("button", { name: "マスタ", exact: true }).click();
+  await target.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await target.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"], ["600", "給与手当"]] as const) {
     await target.getByRole("textbox", { name: "科目コード", exact: true }).fill(code);
@@ -14,7 +14,7 @@ async function prepareAccountRows(target: FrameLocator | Page) {
     await target.getByRole("button", { name: "登録", exact: true }).click();
     await expect(target.getByRole("button", { name: `${name}を編集`, exact: true })).toBeVisible();
   }
-  await target.getByRole("button", { name: "施策入力", exact: true }).click();
+  await target.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await target.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   for (const [index, name] of ["100 売上高", "501 消耗品費", "600 給与手当"].entries()) {
     if (index > 0) await target.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
@@ -84,6 +84,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
 
   await trigger.click();
   await sidebar.getByRole("button", { name: "ファイルを閉じる" }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
@@ -100,7 +101,7 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "総原価表", "展開表", "マスタ"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Tab");
@@ -139,6 +140,7 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   await expect(home).toHaveAttribute("aria-current", "page");
   await initiativeEntry.click();
   await sidebar.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(app.getByRole("heading", { name: "Triadichrome" })).toBeVisible();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
@@ -203,6 +205,7 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
 
   await trigger.click();
   await sidebar.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await trigger.click();
   await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
@@ -215,7 +218,7 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const trigger = app.locator(".home-header").getByRole("button");
   await trigger.click();
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await prepareAccountRows(app);
   await trigger.click();
@@ -324,6 +327,7 @@ test("新しい計画をメモリ上に作成し、閉じた後に読み直せ�
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
 });
@@ -380,8 +384,10 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
     for (const state of ["入口", "ホーム", "サイドバー", "施策入力"] as const) {
       if (state !== "入口") {
         const name = state === "ホーム" ? "ファイルを開く" : state === "サイドバー" ? "サイドバーを開く" : "施策入力";
-        await app.getByRole("button", { name, exact: true }).click();
-        await production.getByRole("button", { name, exact: true }).click();
+        const previewTarget = state === "施策入力" ? app.getByRole("complementary", { name: "メニュー" }) : app;
+        const productionTarget = state === "施策入力" ? production.getByRole("complementary", { name: "メニュー" }) : production;
+        await previewTarget.getByRole("button", { name, exact: true }).click();
+        await productionTarget.getByRole("button", { name, exact: true }).click();
       }
       if (state === "ホーム") {
         await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();

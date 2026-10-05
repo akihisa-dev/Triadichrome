@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 async function master(app: FrameLocator, name: string) {
-  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: new RegExp(`^${name}`) }).click();
 }
 
@@ -56,7 +56,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: join(tmpdir(), `triadichrome-aggregation-${testInfo.project.name}.png`) });
   for (const [name, amounts] of [["施策A", ["100", "30", "20", "10"]], ["施策B", ["25.5", "0", "-5", "0"]]] as const) {
-    await app.getByRole("button", { name: "施策入力", exact: true }).click();
+    await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
     await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
     await app.getByRole("textbox", { name: "施策名", exact: true }).fill(name);
     await app.getByRole("spinbutton", { name: "年度", exact: true }).fill("2026");
@@ -69,7 +69,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
     await app.getByRole("button", { name: "登録", exact: true }).click();
     await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   }
-  await app.getByRole("button", { name: "総原価表", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "総原価表", exact: true }).click();
   const table = app.getByRole("table", { name: "総原価表", exact: true });
   await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "原価科目1", "売上集計", "費用科目1", "費用集計", "営業利益", "利益科目1", "経常利益", "利益率"]);
   const ordinary = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "経常利益", exact: true }) });
@@ -102,9 +102,10 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("button", { name: "総原価表", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "総原価表", exact: true }).click();
   await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "費用科目1", "費用集計", "原価科目1", "売上集計", "営業利益", "利益科目1", "経常利益", "利益率"]);
   await expect(ordinary.getByRole("cell").nth(1)).toHaveText("90.5");
 });
@@ -129,7 +130,7 @@ test("集計の保存失敗で入力と必須集計を保持する", async ({ ap
   await expect(app.getByRole("combobox", { name: "1番目の集計対象", exact: true })).toHaveValue("group:1");
   await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
   await app.getByRole("button", { name: "完了", exact: true }).click();
-  await app.getByRole("button", { name: "総原価表", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "総原価表", exact: true }).click();
   await expect(app.getByText("営業利益未設定", { exact: true })).toBeVisible();
 });
 
@@ -193,6 +194,7 @@ test("関係図で所属と加減算を移動し、配下・科目順・再読�
   await page.screenshot({ path: join(tmpdir(), `triadichrome-graph-${testInfo.project.name}.png`) });
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await master(app, "集計マスタ");

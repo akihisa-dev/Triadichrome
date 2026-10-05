@@ -4,7 +4,7 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("button", { name: "展開表", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "展開表", exact: true }).click();
   const table = app.getByRole("table", { name: "展開表", exact: true });
   await expect(table).toBeVisible();
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").first()).toHaveText("");
@@ -24,13 +24,14 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await expect(table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true })).toHaveText("施策名 ↓");
   const movedGroup = table.locator("tbody").filter({ has: app.getByRole("rowheader", { name: "効率", exact: true }) });
   await expect(movedGroup.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
-  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^展開マスタ/ }).click();
   await expect(app.getByRole("button", { name: "効率を削除", exact: true })).toBeDisabled();
   await expect(app.getByRole("button", { name: "撤退を削除", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("button", { name: "展開表", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "展開表", exact: true }).click();
   await expect(table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true })).toHaveText("施策名");
   await expect(movedGroup.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
   await settleMotion(app.locator("body"));
@@ -58,7 +59,7 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
     } });
   });
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   const expansion = app.getByRole("combobox", { name: "展開名", exact: true });
   await expect(expansion).toHaveValue("");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("展開割り当て確認");

@@ -3,14 +3,14 @@ import { test, expect, settleMotion, attachImage } from "./fixtures";
 test("一つの勘定科目を複数行で選択し、金額を行ごとに保持する", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("501");
   await app.getByRole("textbox", { name: "科目名", exact: true }).fill("消耗品費");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   const add = app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true });
   for (const index of [1, 2, 3]) {
@@ -26,7 +26,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await april.nth(0).fill("0");
   await app.getByRole("button", { name: "Home", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await expect(april.nth(0)).toHaveValue("0");
   await expect(april.nth(1)).toHaveValue("-25.5");
@@ -37,7 +37,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
 test("マスタから科目を管理し、施策で選択して再読込できる", async ({ page, app }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  const master = app.getByRole("button", { name: "マスタ", exact: true });
+  const master = app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true });
   await master.click();
   await expect(app.getByRole("heading", { name: "マスタ", exact: true })).toBeVisible();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
@@ -74,7 +74,7 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await register.click();
   await expect(app.getByRole("alert")).toContainText("同じ科目コードが登録されています。");
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   const select = app.getByRole("combobox", { name: "1行目の勘定科目" });
   await expect(select).toHaveValue("");
@@ -119,11 +119,12 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await settleMotion(app.locator("body"));
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   await attachImage(testInfo, "勘定科目マスタ", await page.locator("#app-preview").screenshot());
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await expect(app.getByRole("spinbutton", { name: "売上 4月の金額", exact: true })).toHaveValue("123.5");
   await expect(select.locator("option:checked")).toHaveText("001 売上");
   await app.getByRole("button", { name: "ファイルを閉じる" }).click();
+  await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await master.click();
@@ -140,7 +141,7 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("save-failure");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toBeDisabled();
   await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton")).toHaveCount(12);
@@ -159,7 +160,7 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
 test("一覧が長くても削除確認は画面中央に開き、キャンセルで表の位置を保つ", async ({ page, app }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.locator(".home-header button").click();
   for (let index = 1; index <= 25; index++) {

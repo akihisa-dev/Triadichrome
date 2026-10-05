@@ -21,6 +21,7 @@ import { readPlanContents, type InitiativeEntryDraft } from "../core/initiatives
 import { saveInitiative, saveInitiativeUpdate } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
 import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
+import { ConfirmationDialog } from "./ConfirmationDialog";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
 import { StatusNotice } from "./StatusNotice";
@@ -37,6 +38,15 @@ export function ExtensionPage() {
   const input = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
   const plan = useRef<OpenPlan | null>(null);
+  const [closeRequested, setCloseRequested] = useState(false);
+  useEffect(() => {
+    const confirmExit = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", confirmExit);
+    return () => window.removeEventListener("beforeunload", confirmExit);
+  }, []);
   const [isBusy, setIsBusy] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -181,7 +191,7 @@ export function ExtensionPage() {
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
     ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onChangeKinds={changeKinds} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
-      onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
+      onCloseFile={() => { if (!busy.current) setCloseRequested(true); }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
     onDrop={(event) => {
@@ -229,5 +239,11 @@ export function ExtensionPage() {
         onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void run(() => open(file)); }} />
       <StatusNotice message={error} error onDismiss={() => setError("")} />
     </div>
-  </main>}</FadeSwap></div>;
+  </main>}</FadeSwap>
+    <ConfirmationDialog open={closeRequested} title="ファイルを閉じる" message={`「${displayName}」を閉じますか？ 登録前の入力は失われます。`} confirmLabel="閉じる" busy={isBusy}
+      onCancel={() => setCloseRequested(false)} onConfirm={() => {
+        if (busy.current) return;
+        setCloseRequested(false); setFileName(null); setError(""); setDragging(false);
+      }} />
+  </div>;
 }

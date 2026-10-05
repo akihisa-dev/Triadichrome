@@ -19,6 +19,7 @@ async function filePicker(page: Page, name = "再開テスト.triadic", bytes = 
 
 async function closeFile(page: Page) {
   await page.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+  await page.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Triadichrome", exact: true })).toBeVisible();
 }
 
