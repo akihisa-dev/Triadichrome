@@ -1,8 +1,15 @@
 .home-relations { min-width: 0; padding: clamp(12px, 2vw, 24px); }
 .home-relations h1 { margin: 0 0 12px; font-size: 24px; font-weight: 600; }
-.home-relations-viewport { width: 100%; overflow: auto; border-radius: 16px; outline-offset: -3px; }
+.home-relations-canvas { position: relative; }
+.home-relations-viewport { position: relative; width: 100%; height: clamp(360px, calc(100dvh - 220px), 740px); overflow: clip; border-radius: 16px; outline-offset: -3px; touch-action: none; user-select: none; cursor: grab; background: radial-gradient(#ddd 1px, transparent 1px) 0 0 / 20px 20px; }
+.home-relations-viewport.is-dragging, .home-relations-viewport.is-dragging * { cursor: grabbing; }
 .home-relations-viewport:focus-visible { outline: 2px solid var(--focus); }
-.home-relations-map { display: block; width: 100%; min-width: 1080px; }
+.home-relations-map { position: absolute; display: block; width: 1240px; height: 550px; max-width: none; transform-origin: 0 0; }
+.home-relations-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 2px 8px #0000000c; }
+.home-relations-controls button { min-width: 40px; min-height: 40px; border: 0; border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
+.home-relations-controls button:hover { background: #eee; }
+.home-relations-controls button:disabled { opacity: .4; cursor: default; }
+.home-relations-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .home-relation { transition: opacity var(--motion-feedback) var(--motion-ease); }
 .home-relation path { fill: none; stroke: #aaa; stroke-width: 1.5; transition: stroke var(--motion-feedback), stroke-width var(--motion-feedback); }
 .home-relation rect { fill: var(--canvas); stroke: var(--line); stroke-width: 1; }

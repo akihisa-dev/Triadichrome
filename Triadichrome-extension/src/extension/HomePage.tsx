@@ -1,7 +1,7 @@
 import { DetailTablePage } from "./DetailTablePage";
 import { type DetailChange } from "../core/details";
 import { emptyTableView } from "../core/tableView";
-import { HomeRelationsPage } from "./HomeRelationsPage";
+import { HomeRelationsPage, type RelationView } from "./HomeRelationsPage";
 import { type PeriodTypeChange } from "../core/periodMaster";
 import { PeriodMasterPage } from "./PeriodMasterPage";
 import { type DepartmentChange } from "../core/departmentMaster";
@@ -48,7 +48,7 @@ type HomePageProps = {
 export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const homeContent = useRef<HTMLDivElement>(null);
-  const relationScroll = useRef({ top: 0, left: 0 });
+  const relationView = useRef<RelationView | null>(null);
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
   const collapseSidebar = sidebar.collapse;
@@ -275,7 +275,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             {displayed => {
               switch (displayed) {
                 case "details": return <DetailTablePage contents={contents} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
-                case "home": return <HomeRelationsPage scroll={relationScroll} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
+                case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
                 case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
