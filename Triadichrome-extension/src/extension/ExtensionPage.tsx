@@ -1,3 +1,5 @@
+import { type DetailChange } from "../core/details";
+import { saveDetailChange } from "./detailFile";
 import { type PeriodTypeChange } from "../core/periodMaster";
 import { savePeriodMaster } from "./periodMasterFile";
 import { type DepartmentChange } from "../core/departmentMaster";
@@ -118,25 +120,35 @@ export function ExtensionPage() {
   const chooseDestination = () => {
     const picker = (window as PickerWindow).showSaveFilePicker;
     if (!picker) throw new Error("この環境では保存できません。ファイルを保存できるChromeで開いてください。");
-    return picker.call(window, { suggestedName: plan.current!.name, types: fileTypes });
+    return picker.call(window, { suggestedName: (plan.current!.formatVersion ?? 10) < 10 ? plan.current!.name.replace(/\.triadic$/i, "-v10.triadic") : plan.current!.name, types: fileTypes });
   };
   const prepareSave = async () => {
     if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
     busy.current = true;
     try {
       const current = plan.current;
-      const handle = current.handle ?? await chooseDestination();
+      const migrating = (current.formatVersion ?? 10) < 10 && !current.destinationBytes;
+      const handle = migrating ? await chooseDestination() : current.handle ?? await chooseDestination();
+      if (migrating && current.handle && (handle === current.handle || (handle.isSameEntry && await handle.isSameEntry(current.handle)))) throw new Error("元ファイルを残すため、別名の保存先を選択してください。");
       if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
       const permission = handle as FileSystemFileHandle & { requestPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> };
       if (permission.requestPermission && await permission.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("ファイルへの保存を許可してください。");
       // Preserve the source database and check the separately selected destination for conflicts.
-      plan.current = { ...current, handle, ...(!current.handle ? { destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) } : {}) };
+      plan.current = { ...current, handle, ...(migrating || !current.handle ? { destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) } : {}) };
     } finally { busy.current = false; }
   };
   const saveChange = async (operation: (current: OpenPlan, chooseDestination: () => Promise<FileSystemFileHandle>) => Promise<OpenPlan>, automatic = false) => {
     if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
     busy.current = true;
     try {
+      if (plan.current.migrationError) throw new Error(plan.current.migrationError);
+      if ((plan.current.formatVersion ?? 10) < 10 && !plan.current.destinationBytes) {
+        if (automatic) throw new Error("旧形式の元ファイルを残します。「保存を再試行」から別名の保存先を選択してください。");
+        const current = plan.current;
+        const handle = await chooseDestination();
+        if (current.handle && (handle === current.handle || (handle.isSameEntry && await handle.isSameEntry(current.handle)))) throw new Error("元ファイルを残すため、別名の保存先を選択してください。");
+        plan.current = { ...current, handle, destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) };
+      }
       if (automatic) {
         const handle = plan.current.handle as (FileSystemFileHandle & { queryPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> }) | undefined;
         if (!handle) throw new Error("「保存を再試行」から保存先を選択してください。");
@@ -146,9 +158,10 @@ export function ExtensionPage() {
       plan.current = saved;
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes };
+      return { accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
     } finally { busy.current = false; }
   };
+  const changeDetail = (change: DetailChange) => saveChange(current => saveDetailChange(current, change), true);
   const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
   const changePeriodTypes = (change: PeriodTypeChange) => saveChange((current, chooseDestination) => savePeriodMaster(current, change, chooseDestination), change.type === "update");
   const changeDepartments = (change: DepartmentChange) => saveChange((current, chooseDestination) => saveDepartmentMaster(current, change, chooseDestination), change.type === "update");
@@ -164,7 +177,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       onCloseFile={() => { if (!busy.current) { setFileName(null); setError(""); setDragging(false); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}

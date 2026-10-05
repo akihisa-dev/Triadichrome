@@ -8,7 +8,7 @@ test("アイコンのレールはホバーで展開し、移動後もカーソ�
   await settleMotion(app.locator("body"));
   expect((await sidebar.boundingBox())!.width).toBe(64);
   await expect(entry.locator("span")).toHaveCSS("opacity", "0");
-  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(5);
+  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(7);
   const icon = (await entry.locator("svg").boundingBox())!;
 
   await entry.hover();

@@ -6,6 +6,10 @@ export type OpenPlan = PlanContents & { name: string; bytes: Uint8Array; handle?
 
 export async function writePlanChange(plan: OpenPlan, handle: FileSystemFileHandle, bytes: Uint8Array): Promise<OpenPlan> {
   if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
+  if ((plan.formatVersion ?? 10) < 10 && plan.handle && !plan.destinationBytes
+    && (handle === plan.handle || (handle.isSameEntry && await handle.isSameEntry(plan.handle)))) {
+    throw new Error("旧形式の元ファイルを残すため、別名の保存先を選択してください。");
+  }
   const contents = await readPlanContents(bytes);
   if (plan.handle) {
     const current = new Uint8Array(await (await handle.getFile()).arrayBuffer());

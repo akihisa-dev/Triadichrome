@@ -1,6 +1,8 @@
+import { ensureFiscalPeriods, validateNormalizedData } from "./migration10";
+import { listDetailRecords, type DetailRecord } from "./details";
 import { listPeriodTypes, type PeriodType } from "./periodMaster";
 import { listDepartments, type Department } from "./departmentMaster";
-import { isValidAmount } from "./amounts";
+import { amountToYen, yenToAmount, isValidAmount } from "./amounts";
 import { listIndustries, type Industry } from "./industryMaster";
 import { listExpansions, type Expansion } from "./expansionMaster";
 import { type Database } from "sql.js";
@@ -22,7 +24,7 @@ export type Initiative = {
   rows: InitiativeRow[];
   months: Partial<Record<InitiativeMonth, { sales: number | null; profit: number | null }>>;
 };
-export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[] };
+export type PlanContents = { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[]; details?: DetailRecord[] | undefined; formatVersion?: number | undefined; migrationError?: string | undefined };
 
 export function currentFiscalYear(): number {
   const now = new Date();
@@ -34,12 +36,14 @@ export function createInitiativeDraft(fiscalYear = String(currentFiscalYear())):
 }
 
 function listInitiatives(database: Database): Initiative[] {
+  const normalized = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) >= 10;
   const modern = hasColumn(database, "initiatives", "fiscal_year");
   const records: Initiative[] = [];
   const headers = database.exec(`SELECT id, name, ${modern ? "note, fiscal_year" : "'', NULL"}, ${hasColumn(database, "initiatives", "expansion_id") ? "expansion_id" : "NULL"}, ${hasColumn(database, "initiatives", "department_id") ? "department_id" : "NULL"}, ${hasColumn(database, "initiatives", "period_type_id") ? "period_type_id" : "NULL"}
     FROM initiatives WHERE budget_id = 1 ORDER BY sort_order, id`)[0]?.values ?? [];
   for (const [id, name, note, declaredYear, expansionId, departmentId, periodTypeId] of headers) {
-    const details = database.exec(`SELECT d.account_id, p.year, p.month, d.budget_amount, ${modern ? "d.entry_row_id" : "NULL"}
+    const details = normalized ? (database.exec(`SELECT r.account_id, i.fiscal_year + (m.month < 4), m.month, m.amount_yen, r.id
+      FROM initiative_amounts m JOIN initiative_rows r ON r.id = m.row_id JOIN initiatives i ON i.id = r.initiative_id WHERE i.id = ? ORDER BY m.id`, [Number(id)])[0]?.values ?? []).map(row => [row[0], row[1], row[2], yenToAmount(Number(row[3])), row[4]]) : database.exec(`SELECT d.account_id, p.year, p.month, d.budget_amount, ${modern ? "d.entry_row_id" : "NULL"}
       FROM details d JOIN periods p ON p.id = d.period_id WHERE d.initiative_id = ? ORDER BY d.id`, [Number(id)])[0]?.values ?? [];
     const years = new Set<number>();
     if (declaredYear !== null) years.add(Number(declaredYear));
@@ -55,12 +59,16 @@ function listInitiatives(database: Database): Initiative[] {
         const key = rowId === null ? `account:${accountId}` : `row:${rowId}`;
         const row = rows.get(key) ?? { ...(rowId === null ? {} : { id: Number(rowId) }), accountId: Number(accountId), amounts: {} };
         const keyMonth = Number(month) as InitiativeMonth;
-        row.amounts[keyMonth] = String(Number(row.amounts[keyMonth] ?? 0) + Number(amount));
+        row.amounts[keyMonth] = normalized ? String(amount) : String(Number(row.amounts[keyMonth] ?? 0) + Number(amount));
         rows.set(key, row);
       }
       const months: Initiative["months"] = {};
       if (fiscalYear !== null) {
-        const totals = database.exec(`SELECT month, budget_sales_amount, budget_profit_amount FROM expansion_view
+        const totals = normalized ? (database.exec(`SELECT month,
+          CASE WHEN COUNT(*) = COUNT(sales_effect_yen) THEN SUM(sales_effect_yen) END,
+          CASE WHEN COUNT(*) = COUNT(profit_effect_yen) THEN SUM(profit_effect_yen) END
+          FROM initiative_detail_view WHERE initiative_id = ? GROUP BY month`, [Number(id)])[0]?.values ?? []).map(row => [row[0], row[1] === null ? null : Number(yenToAmount(Number(row[1]))), row[2] === null ? null : Number(yenToAmount(Number(row[2])))])
+          : database.exec(`SELECT month, budget_sales_amount, budget_profit_amount FROM expansion_view
           WHERE initiative_id = ? AND ((year = ? AND month >= 4) OR (year = ? AND month < 4))`, [Number(id), fiscalYear, fiscalYear + 1])[0]?.values ?? [];
         for (const [month, sales, profit] of totals) months[Number(month) as InitiativeMonth] = {
           sales: !modern || sales === null ? null : Number(sales),
@@ -75,7 +83,13 @@ function listInitiatives(database: Database): Initiative[] {
 
 export async function readPlanContents(bytes: Uint8Array): Promise<PlanContents> {
   const database = await openTriadicDatabase(bytes);
-  try { return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database), expansions: listExpansions(database), industries: listIndustries(database), departments: listDepartments(database), periodTypes: listPeriodTypes(database) }; }
+  try {
+    const formatVersion = Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]);
+    let migrationError: string | undefined;
+    if (formatVersion < 10) {
+      try { migrateTriadicDatabase(database); } catch (error) { migrationError = error instanceof Error ? error.message : "保存形式を移行できません。"; }
+    }
+    return { accounts: listAccounts(database), initiatives: listInitiatives(database), aggregations: listAggregations(database), expansions: listExpansions(database), industries: listIndustries(database), departments: listDepartments(database), periodTypes: listPeriodTypes(database), formatVersion, migrationError, details: listDetailRecords(database) }; }
   finally { database.close(); }
 }
 
@@ -102,40 +116,31 @@ export function validateInitiative(draft: InitiativeEntryDraft, accounts: Accoun
   });
 }
 
-/** Register on a copy. Empty months have no detail, preserving blank versus zero. */
+/** Register 12 fixed months per input row on a private database copy. */
 export async function registerInitiative(bytes: Uint8Array, draft: InitiativeEntryDraft): Promise<Uint8Array> {
   const database = await openTriadicDatabase(bytes);
   try {
     migrateTriadicDatabase(database);
     validateInitiative(draft, listAccounts(database), listInitiatives(database), listExpansions(database), listDepartments(database), listPeriodTypes(database));
     database.run("BEGIN");
-    database.run(`INSERT INTO initiatives (budget_id, name, note, fiscal_year, expansion_id, department_id, period_type_id, sort_order)
-      VALUES (1, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM initiatives))`, [draft.name.trim(), draft.note, Number(draft.fiscalYear), draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null]);
-    const initiativeId = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
-    const periods = new Map<InitiativeMonth, number>();
-    for (const month of initiativeMonths) {
-      const year = Number(draft.fiscalYear) + (month < 4 ? 1 : 0);
-      database.run("INSERT OR IGNORE INTO periods (budget_id, year, month) VALUES (1, ?, ?)", [year, month]);
-      periods.set(month, Number(database.exec("SELECT id FROM periods WHERE budget_id = 1 AND year = ? AND month = ?", [year, month])[0]!.values[0]![0]));
-    }
+    database.run(`INSERT INTO initiatives (name, note, fiscal_year, expansion_id, department_id, period_type_id, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM initiatives))`, [draft.name.trim(), draft.note, Number(draft.fiscalYear), draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null]);
+    const id = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
+    ensureFiscalPeriods(database, Number(draft.fiscalYear));
     for (const [index, row] of draft.rows.entries()) {
       if (row.accountId === null) continue;
-      database.run("INSERT INTO initiative_rows (initiative_id, account_id, sort_order) VALUES (?, ?, ?)", [initiativeId, row.accountId, index]);
+      database.run("INSERT INTO initiative_rows (initiative_id, account_id, sort_order) VALUES (?, ?, ?)", [id, row.accountId, index]);
       const rowId = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
-      for (const month of initiativeMonths) {
-        const amount = row.amounts[month];
-        if (amount === undefined || amount === "") continue;
-        database.run(`INSERT INTO details (budget_id, period_id, initiative_id, account_id, entry_row_id, budget_amount)
-          VALUES (1, ?, ?, ?, ?, ?)`, [periods.get(month)!, initiativeId, row.accountId, rowId, Number(amount)]);
-      }
+      for (const month of initiativeMonths) database.run("INSERT INTO initiative_amounts (row_id, month, amount_yen) VALUES (?, ?, ?)", [rowId, month, amountToYen(row.amounts[month] || "0")]);
     }
+    validateNormalizedData(database);
     database.run("UPDATE budgets SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);
     database.run("COMMIT");
     return exportTriadicDatabase(database);
   } finally { database.close(); }
 }
 
-/** Update only this initiative/year; keep detail identities and unrelated actuals/notes. */
+/** Updating a shared owner keeps its IDs and every month's legacy payload. */
 export async function updateInitiative(bytes: Uint8Array, id: number, previousYear: number | null, draft: InitiativeEntryDraft): Promise<Uint8Array> {
   const database = await openTriadicDatabase(bytes);
   try {
@@ -143,58 +148,22 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
     const initiatives = listInitiatives(database);
     const original = initiatives.find(item => item.id === id && item.fiscalYear === previousYear);
     if (!original) throw new Error("更新する施策が見つかりません。");
-    if (initiatives.filter(item => item.id === id).length > 1) throw new Error("複数年度にまたがる旧形式の施策は、この画面では更新できません。");
     validateInitiative(draft, listAccounts(database), initiatives.filter(item => item.id !== id), listExpansions(database), listDepartments(database), listPeriodTypes(database));
-    const year = Number(draft.fiscalYear);
-    if (year !== previousYear && initiatives.some(item => item.id === id && item.fiscalYear === year)) throw new Error("移動先の年度には同じ施策のデータがあります。");
-    if (draft.rows.length < original.rows.length || original.rows.some((row, index) => draft.rows[index]?.accountId === null || (draft.rows[index]?.id !== undefined && draft.rows[index]?.id !== row.id))) {
-      throw new Error("登録済みの行は削除できません。");
-    }
+    if (draft.rows.length < original.rows.length || original.rows.some((row, index) => draft.rows[index]?.accountId === null || (draft.rows[index]?.id !== undefined && draft.rows[index]?.id !== row.id))) throw new Error("登録済みの行は削除・移動できません。");
     database.run("BEGIN");
-    const snapshots = original.rows.map(oldRow => previousYear === null ? [] : database.exec(`SELECT d.id, p.month, d.actual_amount, d.actual_sales_amount,
-      d.actual_profit_amount, d.note, d.budget_sales_amount, d.budget_profit_amount
-      FROM details d JOIN periods p ON p.id = d.period_id WHERE d.initiative_id = ?
-      AND ${oldRow.id === undefined ? "d.entry_row_id IS NULL AND d.account_id = ?" : "d.entry_row_id = ?"}
-      AND ((p.year = ? AND p.month >= 4) OR (p.year = ? AND p.month < 4))`, [id, oldRow.id ?? oldRow.accountId!, previousYear, previousYear + 1])[0]?.values ?? []);
-    database.run("UPDATE initiatives SET name = ?, note = ?, fiscal_year = ?, expansion_id = ?, department_id = ?, period_type_id = ? WHERE id = ?", [draft.name.trim(), draft.note, year, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, id]);
+    database.run("UPDATE initiatives SET name = ?, note = ?, fiscal_year = ?, expansion_id = ?, department_id = ?, period_type_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, Number(draft.fiscalYear), draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, id]);
+    ensureFiscalPeriods(database, Number(draft.fiscalYear));
     for (const [index, row] of draft.rows.entries()) {
       if (row.accountId === null) continue;
-      const oldRow = original.rows[index];
-      const oldDetails = snapshots[index] ?? [];
-      let rowId = oldRow?.id;
-      if (rowId !== undefined) {
-        const allDetails = Number(database.exec("SELECT COUNT(*) FROM details WHERE entry_row_id = ?", [rowId])[0]!.values[0]![0]);
-        if (allDetails !== oldDetails.length) throw new Error("複数年度にまたがる入力行は、この画面では更新できません。");
-        database.run("UPDATE initiative_rows SET account_id = ? WHERE id = ? AND initiative_id = ?", [row.accountId, rowId, id]);
-      } else {
-        if (new Set(oldDetails.map(detail => detail[1])).size !== oldDetails.length) throw new Error("同じ月に複数の旧形式明細がある施策は、この画面では更新できません。");
+      let rowId = original.rows[index]?.id;
+      if (rowId === undefined) {
         database.run("INSERT INTO initiative_rows (initiative_id, account_id, sort_order) VALUES (?, ?, ?)", [id, row.accountId, index]);
         rowId = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
-        for (const detail of oldDetails) database.run("UPDATE details SET entry_row_id = ? WHERE id = ?", [rowId, Number(detail[0])]);
-      }
-      for (const month of initiativeMonths) {
-        const amount = row.amounts[month];
-        const details = oldDetails.filter(detail => detail[1] === month);
-        if (amount === undefined || amount === "") {
-          if (details.some(detail => detail.slice(2).some(value => value !== null && value !== "" && value !== 0))) {
-            throw new Error("実績や明細備考が残っている月は空欄にできません。金額を入力してください。");
-          }
-          for (const detail of details) database.run("DELETE FROM details WHERE id = ?", [Number(detail[0])]);
-          continue;
-        }
-        const calendarYear = year + (month < 4 ? 1 : 0);
-        database.run("INSERT OR IGNORE INTO periods (budget_id, year, month) VALUES (1, ?, ?)", [calendarYear, month]);
-        const periodId = Number(database.exec("SELECT id FROM periods WHERE budget_id = 1 AND year = ? AND month = ?", [calendarYear, month])[0]!.values[0]![0]);
-        if (details.length) {
-          // Older files may aggregate several details into one visible row; retain their metadata.
-          for (const [detailIndex, detail] of details.entries()) database.run("UPDATE details SET period_id = ?, account_id = ?, budget_amount = ? WHERE id = ?",
-            [periodId, row.accountId, detailIndex === 0 ? Number(amount) : 0, Number(detail[0])]);
-        } else {
-          database.run("INSERT INTO details (budget_id, period_id, initiative_id, account_id, entry_row_id, budget_amount) VALUES (1, ?, ?, ?, ?, ?)",
-            [periodId, id, row.accountId, rowId ?? null, Number(amount)]);
-        }
-      }
+        for (const month of initiativeMonths) database.run("INSERT INTO initiative_amounts (row_id, month) VALUES (?, ?)", [rowId, month]);
+      } else database.run("UPDATE initiative_rows SET account_id = ?, revision = revision + 1 WHERE id = ? AND initiative_id = ?", [row.accountId, rowId, id]);
+      for (const month of initiativeMonths) database.run("UPDATE initiative_amounts SET amount_yen = ?, revision = revision + 1 WHERE row_id = ? AND month = ?", [amountToYen(row.amounts[month] || "0"), rowId, month]);
     }
+    validateNormalizedData(database);
     database.run("UPDATE budgets SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);
     database.run("COMMIT");
     return exportTriadicDatabase(database);

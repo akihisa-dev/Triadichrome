@@ -32,11 +32,14 @@ export async function verifyInitiativeData(api, root) {
   assert.equal(record.note, draft.note);
   assert.equal(record.fiscalYear, 2026);
   assert.equal(record.rows.length, 6, "同一科目と全月空欄の行を個別に保持");
-  assert.deepEqual(record.rows[0].amounts, { 3: "1.25", 4: "100", 5: "0" });
-  assert.deepEqual(record.rows[1].amounts, { 3: "-0.25", 4: "25.5" });
+  assert.equal(Object.keys(record.rows[0].amounts).length, 12);
+  assert.equal(record.rows[0].amounts[3], "1.25");
+  assert.equal(record.rows[0].amounts[4], "100");
+  assert.equal(record.rows[1].amounts[3], "-0.25");
+  assert.equal(record.rows[1].amounts[4], "25.5");
   assert.deepEqual(record.months[4], { sales: 95.5, profit: 85.5 });
   assert.deepEqual(record.months[5], { sales: 0, profit: 0 });
-  assert.equal(record.months[7], undefined, "未入力月はゼロに置換しない");
+  assert.deepEqual(record.months[7], { sales: 0, profit: 0 }, "未入力月はゼロとして保持");
   assert.deepEqual(record.months[6], { sales: 0, profit: 5.5 }, "負の費用は利益に正の影響");
   assert.deepEqual(record.months[3], { sales: 1, profit: 1 });
   assert.equal((await readPlanContents(bytes)).initiatives.length, 0, "入力データの元ファイルを変更しない");
@@ -97,8 +100,8 @@ export async function verifyInitiativeData(api, root) {
   const migrated = await changeAccountMaster(legacyBytes, { type: "update", id: 1, accountCode: "001", accountName: "旧科目", accountType: "sales" });
   await validateTriadicDatabase(migrated.bytes);
   const migratedDb = await openTriadicDatabase(migrated.bytes);
-  assert.deepEqual(migratedDb.exec("SELECT id, budget_amount, actual_amount, note FROM details")[0].values, [[1, 123.5, 7, "旧備考"]]);
-  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 9);
+  assert.deepEqual(migratedDb.exec("SELECT id, budget_amount, actual_amount, note FROM details WHERE id = 1")[0].values, [[1, 123.5, 7, "旧備考"]]);
+  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 10);
   migratedDb.close();
   assert.equal((await readPlanContents(legacyBytes)).accounts[0].accountType, null);
   assert.deepEqual((await readPlanContents(migrated.bytes)).initiatives[0].months[4], { sales: 123.5, profit: 123.5 });

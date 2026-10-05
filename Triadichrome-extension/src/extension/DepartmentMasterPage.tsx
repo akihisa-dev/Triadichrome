@@ -1,3 +1,5 @@
+import { TableHeader } from "./TableHeader";
+import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
 import { useCallback, useState } from "react";
 import { type Department, type DepartmentChange } from "../core/departmentMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -19,6 +21,9 @@ export function DepartmentMasterPage({ departments, isSaving, onChange, onBack, 
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   const autoSave = useAutoSave<Extract<DepartmentChange, { type: "update" }>>(onChange, onPendingChange);
   const { draft, controller } = autoSave;
+  const [view, setView] = useState(emptyTableView);
+  const columns: TableColumn<Department>[] = [{ id: "departmentName", label: "部署名", value: item => item.departmentName }];
+  const visible = applyTableView(departments, columns, view);
   const save = async (change: DepartmentChange) => {
     dismissNotice();
     try {
@@ -51,12 +56,13 @@ export function DepartmentMasterPage({ departments, isSaving, onChange, onBack, 
     <StatusNotice {...notice} onDismiss={dismissNotice} />
     <ConfirmationDialog open={deleting !== null} title="部署を削除" message={deleting ? `「${deleting.departmentName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
+    <button type="button" className="text-button" disabled={isSaving || draft !== null} onClick={() => setView(emptyTableView())}>クリア</button>
     <div className="account-master-list" role="region" aria-label="部署一覧" tabIndex={0}>
       <table className="account-master-table department-master-table" aria-label="部署一覧">
-        <thead><tr><th scope="col">部署名</th><th scope="col">操作</th></tr></thead>
+        <thead><tr><th scope="col"><TableHeader column={columns[0]!} rows={departments} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col">操作</th></tr></thead>
         <tbody>
           {departments.length === 0 && <tr><td colSpan={2} className="page-description">部署はまだ登録されていません。</td></tr>}
-          {departments.map(item => {
+          {visible.map(item => {
             const editing = draft?.id === item.id ? draft : null;
             return <tr key={item.id} onKeyDown={event => {
               if (editing && (event.key === "Escape" || event.key === "Enter") && !event.nativeEvent.isComposing) {

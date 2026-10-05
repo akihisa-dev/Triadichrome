@@ -27,7 +27,7 @@ export async function verifyDepartmentData(api) {
   let empty = bytes;
   for (const item of initial.departments) empty = await changeDepartmentMaster(empty, { type: "delete", id: item.id });
   assert.deepEqual((await readPlanContents(empty)).departments, []);
-  const legacyDb = await openTriadicDatabase(assigned);
+  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(assigned));
   legacyDb.exec("ALTER TABLE initiatives DROP COLUMN department_id; DROP TABLE departments; PRAGMA user_version = 7; UPDATE triadic_metadata SET value = '7' WHERE key = 'format_version';");
   const legacy = legacyDb.export(); legacyDb.close();
   const oldContents = await readPlanContents(legacy);

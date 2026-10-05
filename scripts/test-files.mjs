@@ -1,3 +1,4 @@
+import { verifyDetails } from "../tests/details.mjs";
 import { verifyPeriodData } from "../tests/period-data.mjs";
 import { verifyDepartmentData } from "../tests/department-data.mjs";
 import { verifyExpansionTable } from "../tests/expansion-table.mjs";
@@ -23,6 +24,9 @@ try {
   await build({
     stdin: { contents: [
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
+      'export * from "./Triadichrome-extension/src/core/details.ts";',
+      'export * from "./Triadichrome-extension/src/core/tableView.ts";',
+      'export * from "./Triadichrome-extension/src/extension/detailFile.ts";',
       'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/expansionMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/periodMaster.ts";',
@@ -56,10 +60,11 @@ try {
     } }],
   });
   const productionApi = await import(pathToFileURL(bundle));
+  await verifyDetails(productionApi);
   await verifyDefaultCostData(productionApi);
   await verifyExpansionTable(productionApi);
-  // Legacy empty-master fixtures keep CRUD regressions independent of new defaults.
-  const api = { ...productionApi, createTriadicDatabase: productionApi.createEmptyTestPlan };
+  // Empty-master fixtures keep CRUD regressions independent of new defaults.
+  const api = { ...productionApi, createTriadicDatabase: productionApi.createCurrentEmptyTestPlan };
   const { createTriadicDatabase, validateTriadicDatabase, openTriadicDatabase, writeTriadicFile,
     readAccountMaster, changeAccountMaster, saveAccountMaster } = api;
   const bytes = await createTriadicDatabase();
@@ -100,7 +105,7 @@ try {
   await assert.rejects(changeAccountMaster(master.bytes, { type: "update", accountType: "expense", id: suppliesId, accountCode: "501", accountName: "売上高" }), /同じ名前/);
   master = await changeAccountMaster(master.bytes, { type: "update", accountType: "expense", id: salesId, accountCode: "100", accountName: "売上" });
   assert.equal(master.accounts[0].id, salesId, "名前の変更でも参照先が変わらない");
-  const populated = await openTriadicDatabase(master.bytes);
+  const populated = await openTriadicDatabase(await api.asLegacyTestPlan(master.bytes));
   populated.run("INSERT INTO initiatives (id, budget_id, name) VALUES (1, 1, '検証施策')");
   populated.run("INSERT INTO periods (id, budget_id, year, month) VALUES (1, 1, 2026, 4)");
   populated.run("INSERT INTO details (budget_id, period_id, initiative_id, account_id, budget_amount) VALUES (1, 1, 1, ?, 123.5)", [salesId]);
@@ -111,7 +116,7 @@ try {
   master = await changeAccountMaster(master.bytes, { type: "delete", id: suppliesId });
   assert.equal(master.accounts.length, 1);
   await assert.rejects(changeAccountMaster(master.bytes, { type: "update", accountType: "expense", id: suppliesId, accountCode: "502", accountName: "存在しない科目" }), /見つかりません/);
-  const preserved = await openTriadicDatabase(master.bytes);
+  const preserved = await openTriadicDatabase(await api.asLegacyTestPlan(master.bytes));
   assert.equal(preserved.exec("SELECT budget_amount FROM details")[0].values[0][0], 123.5);
   preserved.run("DROP INDEX accounts_code_idx");
   preserved.run("ALTER TABLE accounts DROP COLUMN code");

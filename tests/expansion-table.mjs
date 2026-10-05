@@ -25,7 +25,7 @@ export async function verifyExpansionTable(api) {
   assert.deepEqual(build("registered").groups[0].total[4], { sales: 100, profit: 100 });
   assert.deepEqual(build("registered").total[4], { sales: 200.001, profit: 200.001 });
   assert.deepEqual(build("registered").groups[2].total[4], { sales: 0, profit: 0 });
-  assert.equal(build("registered").groups[0].initiatives[1].months[5], undefined);
+  assert.deepEqual(build("registered").groups[0].initiatives[1].months[5], { sales: 0, profit: 0 });
   assert.deepEqual(build("registered").groups[0].initiatives[0].months[5], { sales: 0, profit: 0 });
   await assert.rejects(changeExpansionMaster(bytes, { type: "delete", id: 1 }), /使用/);
   const original = contents.initiatives[0];

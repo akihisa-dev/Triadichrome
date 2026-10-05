@@ -37,7 +37,7 @@ export async function verifyAutoSave(api) {
   bytes = await registerInitiative(bytes, draft);
   bytes = await registerInitiative(bytes, { ...draft, name: "別施策" });
   const db = await openTriadicDatabase(bytes);
-  db.run("UPDATE details SET actual_amount = 7, note = '保持する備考' WHERE id = 1");
+  db.run("INSERT INTO legacy_detail_payloads SELECT id, budget_id, period_id, 2026, 4, initiative_id, account_id, entry_row_id, budget_amount, 7, 0, 0, 0, 0, '保持する備考' FROM details WHERE id = 1");
   bytes = db.export(); db.close();
   const before = await readPlanContents(bytes);
   const original = before.initiatives[0];
@@ -46,7 +46,9 @@ export async function verifyAutoSave(api) {
   const updated = await readPlanContents(updatedBytes);
   assert.equal(updated.initiatives[0].name, "更新施策");
   assert.equal(updated.initiatives[0].fiscalYear, 2027);
-  assert.deepEqual(updated.initiatives[0].rows[0].amounts, { 4: "200", 6: "0" });
+  assert.equal(updated.initiatives[0].rows[0].amounts[4], "200");
+  assert.equal(updated.initiatives[0].rows[0].amounts[5], "0");
+  assert.equal(Object.keys(updated.initiatives[0].rows[0].amounts).length, 12);
   assert.deepEqual(updated.initiatives[0].months[4], { sales: 174.5, profit: 174.5 });
   assert.deepEqual(updated.initiatives[1], before.initiatives[1], "別の施策に影響しない");
   const updatedDb = await openTriadicDatabase(updatedBytes);
@@ -55,7 +57,8 @@ export async function verifyAutoSave(api) {
   assert.deepEqual(await readPlanContents(bytes), before);
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2027, { ...edited, name: "別施策" }), /同じ施策名/);
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2027, { ...edited, invalidNumbers: true }), /有効な数値/);
-  await assert.rejects(updateInitiative(updatedBytes, original.id, 2027, { ...edited, rows: [{ ...edited.rows[0], amounts: {} }, edited.rows[1]] }), /実績や明細備考/);
+  const zeroed = await updateInitiative(updatedBytes, original.id, 2027, { ...edited, rows: [{ ...edited.rows[0], amounts: {} }, edited.rows[1]] });
+  assert.equal((await readPlanContents(zeroed)).initiatives[0].rows[0].amounts[4], "0");
   const extended = { ...edited, rows: [...edited.rows, { accountId: 1, amounts: {} }] };
   const extendedBytes = await updateInitiative(updatedBytes, original.id, 2027, extended);
   extended.rows[2].amounts[4] = "10";

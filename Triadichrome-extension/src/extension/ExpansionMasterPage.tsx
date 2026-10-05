@@ -1,3 +1,5 @@
+import { TableHeader } from "./TableHeader";
+import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
 import { useCallback, useState } from "react";
 import { type Expansion, type ExpansionChange } from "../core/expansionMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -21,6 +23,9 @@ export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, on
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   const autoSave = useAutoSave<Extract<ExpansionChange, { type: "update" }>>(onChange, onPendingChange);
   const { draft, controller } = autoSave;
+  const [view, setView] = useState(emptyTableView);
+  const columns: TableColumn<Expansion>[] = [{ id: "expansionCode", label: "展開コード", value: item => item.expansionCode }, { id: "expansionName", label: "展開名", value: item => item.expansionName }];
+  const visible = applyTableView(expansions, columns, view);
   const save = async (change: ExpansionChange) => {
     dismissNotice();
     try {
@@ -58,12 +63,13 @@ export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, on
     <StatusNotice {...notice} onDismiss={dismissNotice} />
     <ConfirmationDialog open={deleting !== null} title="展開を削除" message={deleting ? `「${deleting.expansionCode} ${deleting.expansionName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
+    <button type="button" className="text-button" disabled={isSaving || draft !== null} onClick={() => setView(emptyTableView())}>クリア</button>
     <div className="account-master-list" role="region" aria-label="展開一覧" tabIndex={0}>
       <table className="account-master-table expansion-master-table" aria-label="展開一覧">
-        <thead><tr><th scope="col">展開コード</th><th scope="col">展開名</th><th scope="col">操作</th></tr></thead>
+        <thead><tr><th scope="col"><TableHeader column={columns[0]!} rows={expansions} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col"><TableHeader column={columns[1]!} rows={expansions} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col">操作</th></tr></thead>
         <tbody>
           {expansions.length === 0 && <tr><td colSpan={3} className="page-description">展開はまだ登録されていません。</td></tr>}
-          {expansions.map(item => {
+          {visible.map(item => {
             const editing = draft?.id === item.id ? draft : null;
             return <tr key={item.id} onKeyDown={event => {
               if (editing && (event.key === "Escape" || event.key === "Enter") && !event.nativeEvent.isComposing) {

@@ -11,10 +11,9 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) }).getByRole("cell").first()).toHaveText("115,000");
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "展開計", exact: true }) }).getByRole("cell").first()).toHaveText("115,000");
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "撤退計", exact: true }) }).getByRole("cell").first()).toHaveText("0");
-  const order = app.getByRole("combobox", { name: "施策名の並び順", exact: true });
-  await order.selectOption("asc");
+  await table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true }).click();
   const asc = await table.getByRole("button").allTextContents();
-  await order.selectOption("desc");
+  await table.getByRole("button", { name: "施策名で降順に並べ替え", exact: true }).click();
   const desc = await table.getByRole("button").allTextContents();
   expect(asc).not.toEqual(desc);
   await table.getByRole("button", { name: "既存商品の販売拡大", exact: true }).click();
@@ -22,7 +21,7 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("8");
   await expect(app.getByRole("button", { name: "← 展開表へ戻る", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "← 展開表へ戻る", exact: true }).click();
-  await expect(order).toHaveValue("desc");
+  await expect(table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true })).toHaveText("施策名 ↓");
   const movedGroup = table.locator("tbody").filter({ has: app.getByRole("rowheader", { name: "効率", exact: true }) });
   await expect(movedGroup.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
   await app.getByRole("button", { name: "マスタ", exact: true }).click();
@@ -32,7 +31,7 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "展開表", exact: true }).click();
-  await expect(order).toHaveValue("registered");
+  await expect(table.getByRole("button", { name: "施策名で昇順に並べ替え", exact: true })).toHaveText("施策名");
   await expect(movedGroup.getByRole("button", { name: "既存商品の販売拡大", exact: true })).toBeVisible();
   await settleMotion(app.locator("body"));
   const region = app.getByRole("region", { name: "展開表の月別売上・利益", exact: true });

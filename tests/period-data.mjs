@@ -30,7 +30,7 @@ export async function verifyPeriodData(api) {
   assert.deepEqual((await readPlanContents(empty)).periodTypes, []);
   const emptySaved = await registerInitiative(empty, { ...draft, periodTypeId: null });
   assert.deepEqual((await readPlanContents(emptySaved)).periodTypes, []);
-  const legacyDb = await openTriadicDatabase(assigned);
+  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(assigned));
   legacyDb.exec("ALTER TABLE initiatives DROP COLUMN period_type_id; DROP TABLE period_types; PRAGMA user_version = 8; UPDATE triadic_metadata SET value = '8' WHERE key = 'format_version';");
   const legacy = legacyDb.export(); legacyDb.close();
   const oldContents = await readPlanContents(legacy);

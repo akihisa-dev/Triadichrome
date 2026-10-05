@@ -50,7 +50,7 @@ export async function verifyExpansionData(api) {
   await assert.rejects(validateTriadicDatabase(malformedBytes));
 
   const populated = await changeAccountMaster(bytes, { type: "add", accountCode: "001", accountName: "移行確認", accountType: "expense" });
-  const legacyDb = await openTriadicDatabase(populated.bytes);
+  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(populated.bytes));
   legacyDb.exec("ALTER TABLE aggregation_groups DROP COLUMN display_name; DROP TABLE industries; DROP TABLE expansions; PRAGMA user_version = 3; UPDATE triadic_metadata SET value = '3' WHERE key = 'format_version';");
   const legacy = legacyDb.export(); legacyDb.close();
   assert.deepEqual((await readPlanContents(legacy)).expansions, initial);

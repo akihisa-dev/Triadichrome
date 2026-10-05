@@ -25,7 +25,7 @@ export async function verifySamplePlan(api) {
   const zero = initiatives.find(item => item.name === "ゼロと相殺の確認");
   assert.deepEqual(zero.months[4], { sales: 0, profit: 0 });
   assert.deepEqual(zero.months[5], { sales: 0, profit: 0 });
-  assert.equal(zero.months[6], undefined);
+  assert.deepEqual(zero.months[6], { sales: 0, profit: 0 });
   assert.equal(initiatives.find(item => item.name === "通信運搬費と消耗品費の削減").months[4].profit, 3750.75);
   for (const year of [2025, 2026, 2027]) {
     const table = buildCostTable(accounts, aggregations, initiatives, year);

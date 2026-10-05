@@ -1,4 +1,6 @@
-import { Fragment, useMemo } from "react";
+import { TableHeader } from "./TableHeader";
+import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
+import { Fragment, useMemo, useState } from "react";
 import { buildCostTable } from "../core/costTable";
 import { currentFiscalYear, initiativeMonths, type PlanContents } from "../core/initiatives";
 
@@ -10,11 +12,19 @@ export function CostTablePage({ contents, fiscalYear, onYearChange, onOpenMaster
   const { accounts, aggregations, initiatives } = contents;
   const years = [...new Set([Number(fiscalYear), currentFiscalYear(), ...initiatives.flatMap(item => item.fiscalYear === null ? [] : [item.fiscalYear])])].sort((a, b) => b - a);
   const rows = useMemo(() => buildCostTable(accounts, aggregations, initiatives, Number(fiscalYear)), [accounts, aggregations, initiatives, fiscalYear]);
+  const [view, setView] = useState(emptyTableView);
+  type Row = typeof rows[number];
+  const columns: TableColumn<Row>[] = [{ id: "name", label: "科目・集計", value: row => row.name }, ...initiativeMonths.flatMap(month => (["previous", "budget", "comparison"] as const).map(kind => ({ id: `${kind}-${month}`, label: `${month}月${kind === "previous" ? "前年" : kind === "budget" ? "予算" : "対予算"}`, numeric: true, value: (row: Row) => row[kind][month] ?? null })))];
+  // Keep each calculated subtotal anchored; sort only the account block preceding it.
+  const visible: Row[] = []; let block: Row[] = [];
+  for (const row of rows) { if (row.kind === "account") block.push(row); else { visible.push(...applyTableView(block, columns, view), ...applyTableView([row], columns, { ...view, sort: null })); block = []; } }
+  visible.push(...applyTableView(block, columns, view));
   const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
   const unassigned = accounts.filter(account => !assigned.has(account.id));
   return <main className="initiative-list-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
+      <button type="button" onClick={() => setView(emptyTableView())}>クリア</button>
       <span className="field-hint">単位：千円</span>
       <div className="initiative-field initiative-year-field">
         <label htmlFor="cost-table-year">年度</label>
@@ -30,12 +40,12 @@ export function CostTablePage({ contents, fiscalYear, onYearChange, onOpenMaster
     <div className="initiative-list-container" role="region" aria-label="総原価表の月別前年・予算・対予算" tabIndex={0}>
       <table className="initiative-list-table cost-table" aria-label="総原価表">
         <thead>
-          <tr><th rowSpan={2} scope="col" className="initiative-list-name">科目・集計</th>
+          <tr><th rowSpan={2} scope="col" className="initiative-list-name"><TableHeader column={columns[0]!} rows={rows} view={view} onChange={setView} /></th>
             {initiativeMonths.map(month => <th key={month} colSpan={3} scope="colgroup">{month}月</th>)}
           </tr>
-          <tr>{initiativeMonths.map(month => <Fragment key={month}><th scope="col">前年</th><th scope="col">予算</th><th scope="col" className="initiative-month-end">対予算</th></Fragment>)}</tr>
+          <tr>{initiativeMonths.map(month => <Fragment key={month}>{(["previous", "budget", "comparison"] as const).map(kind => <th key={kind} scope="col"><TableHeader column={columns.find(item => item.id === `${kind}-${month}`)!} rows={rows} view={view} onChange={setView} /></th>)}</Fragment>)}</tr>
         </thead>
-        <tbody>{rows.map(row => <tr key={`${row.kind}:${row.id}`} className={row.kind !== "account" ? `cost-subtotal${row.required ? " cost-required" : ""}` : undefined}>
+        <tbody>{visible.map(row => <tr key={`${row.kind}:${row.id}`} className={row.kind !== "account" ? `cost-subtotal${row.required ? " cost-required" : ""}` : undefined}>
           <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
           {initiativeMonths.map(month => <Fragment key={month}>
             <td>{row.kind === "ratio" ? formatRate(row.previous[month]) : formatAmount(row.previous[month])}</td>

@@ -61,7 +61,7 @@ export async function verifyDefaultCostData(api) {
   assert.equal(table[0].budget[5], 0);
   assert.equal(table[0].comparison[5], undefined, "前年未登録は差額も空欄");
   assert.equal(table[0].budget[3], -0.001);
-  assert.equal(table[0].budget[6], undefined);
+  assert.equal(table[0].budget[6], 0);
   assert.equal(formatAmount(-0.001), "-0.001");
   assert.equal(formatRate(1.25), "1.3%");
   assert.equal(formatRate(-1.25), "-1.3%");

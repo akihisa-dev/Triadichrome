@@ -1,3 +1,4 @@
+import { NORMALIZED_TABLES_SQL, normalizedViews } from "./normalizedSchema";
 import { PERIOD_MASTER_SQL } from "./periodMasterSchema";
 import { DEPARTMENT_SQL } from "./departmentSchema";
 import { INDUSTRY_SQL } from "./industrySchema";
@@ -7,7 +8,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 9;
+export const TRIADIC_FORMAT_VERSION = 10;
 // Nullable only for accounts in older files, whose codes must be assigned by the user.
 export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
@@ -119,9 +120,9 @@ JOIN initiatives AS i ON i.id = d.initiative_id
 GROUP BY d.budget_id, d.period_id, d.initiative_id;
 `;
 
-export const TRIADIC_SCHEMA_SQL = `
+export const LEGACY_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
-PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
+PRAGMA user_version = 9;
 
 CREATE TABLE triadic_metadata (
   key TEXT PRIMARY KEY NOT NULL,
@@ -130,7 +131,7 @@ CREATE TABLE triadic_metadata (
 
 INSERT INTO triadic_metadata (key, value) VALUES
   ('format_id', '${TRIADIC_FORMAT_ID}'),
-  ('format_version', '${TRIADIC_FORMAT_VERSION}'),
+  ('format_version', '9'),
   ('container', 'sqlite');
 
 CREATE TABLE budgets (
@@ -184,4 +185,14 @@ ALTER TABLE aggregation_groups ADD COLUMN display_name TEXT CHECK (display_name 
 ${INITIATIVE_ROWS_SQL}
 ${DETAILS_SQL}
 ${TRIADIC_VIEWS_SQL}
+`;
+
+// New files use the normalized structure; legacy definitions remain migration inputs.
+export const TRIADIC_SCHEMA_SQL = LEGACY_SCHEMA_SQL + `
+DROP VIEW expansion_view; DROP VIEW cost_view; DROP VIEW detail_view;
+DROP TABLE details; DROP TABLE initiative_rows; DROP TABLE initiatives;
+${NORMALIZED_TABLES_SQL}
+${normalizedViews(TRIADIC_VIEWS_SQL)}
+PRAGMA user_version = 10;
+UPDATE triadic_metadata SET value = '10' WHERE key = 'format_version';
 `;

@@ -31,7 +31,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await expect(april.nth(0)).toHaveValue("0");
   await expect(april.nth(1)).toHaveValue("-25.5");
   await expect(april.nth(2)).toHaveValue("");
-  await expect(app.getByRole("combobox").locator("option:checked")).toHaveText(Array(3).fill("501 消耗品費"));
+  await expect(app.getByRole("combobox", { name: /行目の勘定科目/ }).locator("option:checked")).toHaveText(Array(3).fill("501 消耗品費"));
 });
 
 test("マスタから科目を管理し、施策で選択して再読込できる", async ({ page, app }, testInfo) => {
@@ -162,7 +162,7 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   await app.getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.locator(".home-header button").click();
-  for (let index = 1; index <= 12; index++) {
+  for (let index = 1; index <= 25; index++) {
     await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(String(100 + index));
     await app.getByRole("textbox", { name: "科目名", exact: true }).fill(`科目${index}`);
     await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
@@ -170,18 +170,18 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
     await expect(app.getByRole("button", { name: `科目${index}を削除`, exact: true })).toBeVisible();
   }
   await app.getByRole("button", { name: "通知を閉じる" }).click();
-  const trigger = app.getByRole("button", { name: "科目12を削除", exact: true });
+  const trigger = app.getByRole("button", { name: "科目25を削除", exact: true });
   await trigger.scrollIntoViewIfNeeded();
   await settleMotion(app.locator("body"));
   const readPosition = (node: HTMLElement) => ({ scroll: node.scrollTop, table: node.querySelector("table")!.getBoundingClientRect().toJSON() });
-  const before = await app.locator(".home-content").evaluate(readPosition);
+  const before = await app.locator(".account-master-list").evaluate(readPosition);
   expect(before.scroll).toBeGreaterThan(0);
   await trigger.click();
   const dialog = app.getByRole("alertdialog", { name: "勘定科目を削除" });
   await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText("「112 科目12」を削除しますか？");
+  await expect(dialog).toContainText("「125 科目25」を削除しますか？");
   await settleMotion(app.locator("body"));
-  expect(await app.locator(".home-content").evaluate(readPosition)).toEqual(before);
+  expect(await app.locator(".account-master-list").evaluate(readPosition)).toEqual(before);
   const placement = await dialog.evaluate(node => {
     const { x, y, width, height } = node.getBoundingClientRect();
     return { x, y, width, height, viewportWidth: window.innerWidth, viewportHeight: window.innerHeight, modal: node.matches(":modal") };
@@ -202,6 +202,6 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   await cancel.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
-  expect(await app.locator(".home-content").evaluate(readPosition)).toEqual(before);
-  await expect(app.getByRole("table").getByRole("row")).toHaveCount(13);
+  expect(await app.locator(".account-master-list").evaluate(readPosition)).toEqual(before);
+  await expect(app.getByRole("table").getByRole("row")).toHaveCount(26);
 });

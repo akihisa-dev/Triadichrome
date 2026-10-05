@@ -95,7 +95,7 @@ export async function verifyAggregationData(api) {
   assert.deepEqual(table.map(row => row.budget[4]), [120, 120, 30, 90, 20, 20, 70, 10, 80, 80 / 90 * 100]);
   assert.ok(table.every(row => Object.keys(row.previous).length === 0), "前年の増減施策を前年合計値の代わりに使わない");
   assert.equal(table[0].budget[5], 0, "入力ゼロを保持");
-  assert.equal(table[0].budget[7], undefined, "未入力月は空白");
+  assert.equal(table[0].budget[7], 0, "未入力月はゼロ");
   assert.equal(table[0].budget[3], 1, "翌3月も選択年度に含める");
   assert.equal(table.find(row => row.name === "経常利益").budget[6], 5.5, "マイナスの費用は減算時に加算になる");
   const baseline = new Map([[salesAccount.id, { 4: 1000, 7: 50 }], [costAccount.id, { 4: 200 }], [expenseAccount.id, { 4: 300 }], [profitAccount.id, { 4: 10 }]]);
@@ -112,7 +112,7 @@ export async function verifyAggregationData(api) {
   assert.equal(incomplete.find(row => row.name === "経常利益").configured, false);
   assert.deepEqual(incomplete.find(row => row.name === "経常利益").budget, {}, "未設定の子集計を含む部分合計を確定額として出さない");
 
-  const legacyDb = await openTriadicDatabase(original);
+  const legacyDb = await openTriadicDatabase(await api.asLegacyTestPlan(original));
   legacyDb.exec("DROP TABLE industries; DROP TABLE expansions; DROP TABLE aggregation_members; DROP TABLE aggregation_groups; PRAGMA user_version = 2; UPDATE triadic_metadata SET value = '2' WHERE key = 'format_version';");
   const legacyBytes = legacyDb.export(); legacyDb.close();
   const legacy = await readPlanContents(legacyBytes);
