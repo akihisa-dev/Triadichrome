@@ -85,10 +85,11 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     setNotice({ message: "", error: false });
   };
 
-  return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
+  return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page account-master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
+    <div className="account-master-heading">
     <button className="text-button master-back" type="button" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
     <h1 id="account-master-title">勘定科目マスタ</h1>
-    <p className="page-description">この計画で使う勘定科目を管理します。変更は計画ファイルに保存されます。</p>
+    </div>
     <form className="account-master-form" onSubmit={event => {
       event.preventDefault();
       if (!isSaving && !autoSave.pending) void save({ type: "add", accountCode, accountName, accountType });
