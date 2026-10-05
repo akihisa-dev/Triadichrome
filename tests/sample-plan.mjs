@@ -13,6 +13,7 @@ export async function verifySamplePlan(api) {
   assert.equal(accounts.length, 59);
   assert.equal(aggregations.length, 16);
   assert.equal(initiatives.length, 13);
+  assert.equal(initiatives.find(item => item.name === "助成金の受入れ").departmentId, null, "ホームで部署未選択の構成を確認できる");
   assert.deepEqual(new Set(accounts.map(account => account.accountType)), new Set(["sales", "cost", "expense", "profit"]));
   assert.equal(accounts[0].accountCode, "401");
   assert.deepEqual([...new Set(initiatives.map(item => item.fiscalYear))].sort(), [2025, 2026, 2027]);

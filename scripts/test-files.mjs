@@ -1,4 +1,5 @@
 import { verifyDetails } from "../tests/details.mjs";
+import { verifyDashboard } from "../tests/dashboard.mjs";
 import { verifyPeriodData } from "../tests/period-data.mjs";
 import { verifyDepartmentData } from "../tests/department-data.mjs";
 import { verifyExpansionTable } from "../tests/expansion-table.mjs";
@@ -42,6 +43,8 @@ try {
       'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/aggregationGraph.ts";',
       'export * from "./Triadichrome-extension/src/core/costTable.ts";',
+      'export * from "./Triadichrome-extension/src/core/dashboard.ts";',
+      'export * from "./Triadichrome-extension/src/core/dashboardLayout.ts";',
       'export * from "./Triadichrome-extension/src/extension/aggregationMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/accountMasterFile.ts";',
@@ -61,6 +64,7 @@ try {
   });
   const productionApi = await import(pathToFileURL(bundle));
   await verifyDetails(productionApi);
+  await verifyDashboard(productionApi);
   await verifyDefaultCostData(productionApi);
   await verifyExpansionTable(productionApi);
   // Empty-master fixtures keep CRUD regressions independent of new defaults.

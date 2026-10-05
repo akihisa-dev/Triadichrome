@@ -1,0 +1,72 @@
+import { test, expect, settleMotion } from "./fixtures";
+
+test("6種類のグラフと年度・正負・影響額切替、ゼロ補完", async ({ page, app }) => {
+  await page.getByRole("combobox", { name: "テストデータ" }).selectOption("full");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await expect(app.locator(".dashboard-card")).toHaveCount(6);
+  const year = app.getByRole("combobox", { name: "年度", exact: true });
+  const current = Number(await year.inputValue());
+  const annual = app.getByRole("button", { name: /^年間の利益増減/ });
+  await expect(annual).toContainText("+2,153,515.012");
+  await annual.click();
+  const detail = app.getByRole("region", { name: "選択した内訳" });
+  await expect(detail.getByRole("button", { name: /^ゼロと相殺の確認/ })).toContainText("0");
+  await expect(detail.getByRole("button", { name: /^未確定施策の入力準備/ })).toContainText("0");
+  await app.getByRole("button", { name: "選択を解除" }).click();
+  await app.getByRole("button", { name: "減少分", exact: true }).click();
+  await expect(app.getByRole("region", { name: "展開区分・施策の内訳", exact: true })).toContainText("103,000");
+  await app.getByRole("button", { name: "増加分", exact: true }).click();
+  await app.getByRole("combobox", { name: "施策・部署の影響額" }).selectOption("sales");
+  await expect(app.getByRole("region", { name: "展開区分・施策の内訳", exact: true })).toContainText("年間の売上への影響");
+  await year.selectOption(String(current - 1));
+  await app.getByRole("button", { name: /^年間の利益増減/ }).click();
+  await expect(detail).toContainText("前年度の販売施策");
+  await expect(detail).not.toContainText("既存商品の販売拡大");
+  await settleMotion(app.locator("body"));
+  expect(await app.locator(".dashboard").evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
+});
+
+test("グラフの選択、階層を戻る、施策編集からHomeへ戻る", async ({ page, app }) => {
+  await page.getByRole("combobox", { name: "テストデータ" }).selectOption("full");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const sun = app.getByRole("region", { name: "集計・科目の内訳", exact: true });
+  await sun.locator(".dashboard-legend button").first().click();
+  await expect(sun.getByRole("button", { name: "戻る", exact: true })).toBeVisible();
+  await sun.getByRole("button", { name: "戻る", exact: true }).click();
+  const detail = app.getByRole("region", { name: "選択した内訳" });
+  await app.getByRole("region", { name: "展開区分・施策の内訳", exact: true }).getByRole("button", { name: "助成金の受入れ 150,000千円", exact: true }).click();
+  await expect(detail).toContainText("利益への影響");
+  await expect(detail).toContainText("助成金の受入れ");
+  await app.getByRole("button", { name: "選択を解除" }).click();
+  await app.getByRole("region", { name: "金額のつながり", exact: true }).getByRole("button", { name: "助成金の受入れ 150,000千円", exact: true }).locator("text").click();
+  await expect(detail).toContainText("科目金額");
+  await expect(detail).toContainText("150,000");
+  await app.getByRole("button", { name: "選択を解除" }).click();
+  const pie = app.getByRole("region", { name: "部署別の構成", exact: true });
+  await pie.locator(".dashboard-legend button").filter({ hasText: "未選択" }).click();
+  await expect(detail).toBeVisible();
+  await expect(detail).toContainText("助成金の受入れ");
+  const before = await app.locator(".home-content").evaluate(node => node.scrollTop);
+  await detail.getByRole("button", { name: /^助成金の受入れ/ }).click();
+  await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("助成金の受入れ");
+  await app.getByRole("spinbutton", { name: "営業外収益 9月の金額", exact: true }).fill("100001");
+  await expect(app.getByText("保存済み", { exact: true })).toBeVisible();
+  await app.getByRole("button", { name: "← Homeへ戻る", exact: true }).click();
+  await expect(detail).toContainText("150,001");
+  await settleMotion(app.locator("body"));
+  expect(await app.locator(".home-content").evaluate(node => node.scrollTop)).toBeCloseTo(before, 0);
+  await app.getByRole("button", { name: "選択を解除" }).click();
+  await app.getByRole("region", { name: "月別の増減", exact: true }).getByRole("button", { name: /^4月の利益/ }).press("Enter");
+  await expect(detail).toContainText("4月の利益増減");
+  await app.getByRole("button", { name: "選択を解除" }).press("Escape");
+  await expect(detail).toHaveCount(0);
+});
+
+test("新規計画の施策なしと、狭い本文の1列配置", async ({ app }, testInfo) => {
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
+  await expect(app.getByRole("button", { name: /^年間の利益増減/ })).toContainText("施策なし");
+  await expect(app.locator(".dashboard-card")).toHaveCount(6);
+  await settleMotion(app.locator("body"));
+  const columns = await app.locator(".dashboard-grid").evaluate(node => getComputedStyle(node).gridTemplateColumns.split(" ").length);
+  expect(columns).toBe(testInfo.project.name === "narrow" ? 1 : 2);
+});

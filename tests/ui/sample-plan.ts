@@ -37,7 +37,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: name === "助成金の受入れ" ? null : departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(year), rows });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [
@@ -66,7 +66,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     row("固定資産減価償却費", { 10: "-5000", 11: "-5000", 12: "-5000", 1: "-5000", 2: "-5000", 3: "-5000" }),
     row("消耗品費", { 9: "25000" }),
   ]);
-  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。", [row("営業外収益", { 9: "100000", 3: "50000" })]);
+  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。ホームの部署未選択の構成も確認できます。", [row("営業外収益", { 9: "100000", 3: "50000" })]);
   await add("ゼロと相殺の確認", "4月は明示的なゼロ、5月は同じ科目の正負が相殺、6月以降の空欄は0として保存されます。", [
     row("売上高", { 4: "0", 5: "12000.5" }), row("売上高", { 5: "-12000.5" }),
   ]);

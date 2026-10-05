@@ -1,6 +1,7 @@
 import { DetailTablePage } from "./DetailTablePage";
 import { type DetailChange } from "../core/details";
 import { emptyTableView } from "../core/tableView";
+import { DashboardPage, createDashboardView } from "./DashboardPage";
 import { type PeriodTypeChange } from "../core/periodMaster";
 import { PeriodMasterPage } from "./PeriodMasterPage";
 import { type DepartmentChange } from "../core/departmentMaster";
@@ -46,21 +47,26 @@ type HomePageProps = {
 
 export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
+  const homeContent = useRef<HTMLDivElement>(null);
+  const dashboardScroll = useRef(0);
+  const restoreDashboardScroll = useCallback(() => { if (homeContent.current) homeContent.current.scrollTop = dashboardScroll.current; }, []);
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
   const collapseSidebar = sidebar.collapse;
   const [page, setPage] = useState<Page>("home");
   const [detailView, setDetailView] = useState(emptyTableView);
   const detailScroll = useRef({ top: 0, left: 0 });
+  const [dashboardView, setDashboardView] = useState(() => createDashboardView(initialContents));
   const [initiativeDraft, setInitiativeDraft] = useState(createInitiativeDraft);
   const [contents, setContents] = useState(initialContents);
   const { accounts, initiatives } = contents;
   const [selectedInitiative, setSelectedInitiative] = useState<Pick<Initiative, "id" | "fiscalYear"> | null>(null);
   const currentInitiative = initiatives.find(item => item.id === selectedInitiative?.id && item.fiscalYear === selectedInitiative?.fiscalYear);
-  const [detailOrigin, setDetailOrigin] = useState<"details" | "initiative-list" | "expansion-table">("initiative-list");
+  const [detailOrigin, setDetailOrigin] = useState<"details" | "home" | "initiative-list" | "expansion-table">("initiative-list");
   const openInitiative = (initiative: Initiative) => {
     dismissNotice();
-    setDetailOrigin(page === "details" ? "details" : page === "expansion-table" ? "expansion-table" : "initiative-list");
+    if (page === "home") dashboardScroll.current = homeContent.current?.scrollTop ?? 0;
+    setDetailOrigin(page === "details" ? "details" : page === "home" ? "home" : page === "expansion-table" ? "expansion-table" : "initiative-list");
     setSelectedInitiative({ id: initiative.id, fiscalYear: initiative.fiscalYear });
     setPage("initiative-detail");
   };
@@ -266,14 +272,14 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
           </footer>
           </div>
         </aside>
-        <div className="home-content">
+        <div className="home-content" ref={homeContent}>
           <FadeSwap value={page} className="page-switch">
             {displayed => {
               switch (displayed) {
                 case "details": return <DetailTablePage contents={contents} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
-                case "home": return <main className="home-view" aria-label="ホーム" />;
+                case "home": return <DashboardPage onRestoreScroll={restoreDashboardScroll} contents={contents} view={dashboardView} onChange={setDashboardView} onOpenInitiative={openInitiative} />;
                 case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage view={expansionView} onViewChange={setExpansionView} contents={contents} fiscalYear={expansionYear} onYearChange={setExpansionYear} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} />;
