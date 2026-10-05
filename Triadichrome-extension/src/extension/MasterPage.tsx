@@ -1,34 +1,35 @@
+import { type ReactNode } from "react";
+
 type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void };
 
+const icons: ReactNode[] = [
+  <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 7h6M9 11h6M9 15h2m3 0h1M9 18h2m3 0h1" /></>,
+  <><rect x="9" y="3" width="6" height="5" rx="1" /><rect x="3" y="16" width="6" height="5" rx="1" /><rect x="15" y="16" width="6" height="5" rx="1" /><path d="M12 8v4M6 16v-4h12v4" /></>,
+  <><path d="M4 6h12m-4-4 4 4-4 4M20 18H8m4-4-4 4 4 4M4 12h16" /></>,
+  <><path d="M3 21V9l8-4v16M11 21V3h10v18M2 21h20M6 11v1m0 3v1m9-9h2m-2 4h2m-2 4h2" /></>,
+  <><circle cx="9" cy="7" r="3" /><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 11v-3a6 6 0 0 0-2-4" /></>,
+  <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 11h18M7 15h3m4 0h3M7 18h3" /></>,
+];
+
 export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods }: MasterPageProps) {
-  return <main className="master-page" aria-labelledby="master-title">
+  const items = [
+    { name: "勘定科目マスタ", description: "科目コード・科目名・科目属性", open: onOpenAccounts },
+    { name: "集計マスタ", description: "科目・集計の所属と加減算", open: onOpenAggregations },
+    { name: "展開マスタ", description: "展開コード・展開名", open: onOpenExpansions },
+    { name: "業種マスタ", description: "業種コード・業種名", open: onOpenIndustries },
+    { name: "部署マスタ", description: "部署名", open: onOpenDepartments },
+    { name: "期間マスタ", description: "期間名", open: onOpenPeriods },
+  ];
+  return <main className="master-page master-index" aria-labelledby="master-title">
     <h1 id="master-title">マスタ</h1>
-    <p className="page-description">計画の入力に使う項目を管理します。</p>
     <div className="master-menu">
-      <button className="master-menu-item" type="button" onClick={onOpenAccounts}>
-        <span><strong>勘定科目マスタ</strong><span>施策の金額入力で選択する勘定科目</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button className="master-menu-item" type="button" onClick={onOpenAggregations}>
-        <span><strong>集計マスタ</strong><span>総原価表で科目・集計をまとめる計算</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button className="master-menu-item" type="button" onClick={onOpenExpansions}>
-        <span><strong>展開マスタ</strong><span>展開コードと展開名</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button className="master-menu-item" type="button" onClick={onOpenIndustries}>
-        <span><strong>業種マスタ</strong><span>業種コードと業種名</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button className="master-menu-item" type="button" onClick={onOpenDepartments}>
-        <span><strong>部署マスタ</strong><span>部署名</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
-      <button className="master-menu-item" type="button" onClick={onOpenPeriods}>
-        <span><strong>期間マスタ</strong><span>期間名</span></span>
-        <span aria-hidden="true">→</span>
-      </button>
+      {items.map((item, index) => <button key={item.name} className="master-menu-item" type="button" onClick={item.open}>
+        <span className="master-menu-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{icons[index]}</svg>
+        </span>
+        <span className="master-menu-label"><strong>{item.name}</strong><span>{item.description}</span></span>
+        <svg className="master-menu-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>
+      </button>)}
     </div>
   </main>;
 }
