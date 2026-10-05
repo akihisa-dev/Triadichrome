@@ -27,6 +27,7 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("sales");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("保存する施策");
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("1");
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("100");

@@ -14,7 +14,7 @@ export async function verifyInitiativeData(api, root) {
   await assert.rejects(changeAccountMaster(bytes, { type: "add", accountCode: "200", accountName: "属性なし", accountType: "" }), /科目属性/);
   await assert.rejects(changeAccountMaster(bytes, { type: "add", accountCode: "200", accountName: "属性不正", accountType: "other" }), /科目属性/);
   const draft = {
-    name: " 登録する施策 ", note: "備考を保持", fiscalYear: "2026",
+    name: " 登録する施策 ", note: "備考を保持", expansionId: 1, fiscalYear: "2026",
     rows: [
       { accountId: initial.accounts[0].id, amounts: { 4: "100", 5: "0", 3: "1.25" } },
       { accountId: initial.accounts[0].id, amounts: { 4: "25.5", 3: "-0.25" } },
@@ -98,7 +98,7 @@ export async function verifyInitiativeData(api, root) {
   await validateTriadicDatabase(migrated.bytes);
   const migratedDb = await openTriadicDatabase(migrated.bytes);
   assert.deepEqual(migratedDb.exec("SELECT id, budget_amount, actual_amount, note FROM details")[0].values, [[1, 123.5, 7, "旧備考"]]);
-  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 6);
+  assert.equal(migratedDb.exec("PRAGMA user_version")[0].values[0][0], 7);
   migratedDb.close();
   assert.equal((await readPlanContents(legacyBytes)).accounts[0].accountType, null);
   assert.deepEqual((await readPlanContents(migrated.bytes)).initiatives[0].months[4], { sales: 123.5, profit: 123.5 });

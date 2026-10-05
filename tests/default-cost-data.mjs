@@ -41,7 +41,7 @@ export async function verifyDefaultCostData(api) {
   assert.ok(empty.every(row => row.configured), "新規作成時に集計が設定済み");
   assert.ok(empty.every(row => !Object.keys(row.budget).length && !Object.keys(row.previous).length && !Object.keys(row.comparison).length));
 
-  const draft = { name: "全科目の集計確認", note: "", fiscalYear: "2026", rows: defaults.accounts.map(a => ({ accountId: a.id, amounts: { 4: "100", 5: "0", 3: "-0.001" } })) };
+  const draft = { name: "全科目の集計確認", note: "", expansionId: 1, fiscalYear: "2026", rows: defaults.accounts.map(a => ({ accountId: a.id, amounts: { 4: "100", 5: "0", 3: "-0.001" } })) };
   const registered = await registerInitiative(bytes, draft);
   const contents = await readPlanContents(registered);
   const baseline = new Map(defaults.accounts.map((a, i) => [a.id, { 4: i < 4 ? 1000 : i < 6 ? 100 : a.accountCode === "713" ? 30 : a.accountCode === "731" ? 20 : 10 }]));

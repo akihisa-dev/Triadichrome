@@ -5,7 +5,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 6;
+export const TRIADIC_FORMAT_VERSION = 7;
 // Nullable only for accounts in older files, whose codes must be assigned by the user.
 export const ACCOUNT_CODE_COLUMN_SQL = "code TEXT CHECK (code IS NULL OR code GLOB '[0-9][0-9][0-9]')";
 
@@ -153,6 +153,7 @@ CREATE TABLE initiatives (
   budget_id INTEGER NOT NULL REFERENCES budgets(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   note TEXT NOT NULL DEFAULT '',
+  expansion_id INTEGER REFERENCES expansions(id),
   fiscal_year INTEGER CHECK (fiscal_year BETWEEN 1 AND 9998),
   sort_order INTEGER NOT NULL DEFAULT 0,
   UNIQUE (budget_id, name)

@@ -87,7 +87,7 @@ export async function verifyAggregationData(api) {
       { accountId: costAccount.id, amounts: { 4: "30" } }, { accountId: expenseAccount.id, amounts: { 4: "20", 6: "-5.5" } }, { accountId: profitAccount.id, amounts: { 4: "10" } }]],
     ["施策B", "2026", [{ accountId: salesAccount.id, amounts: { 4: "-5.5", 3: "-0.25" } }]],
     ["前年の増減施策", "2025", [{ accountId: salesAccount.id, amounts: { 4: "9999" } }]],
-  ]) bytes = await registerInitiative(bytes, { name, note: "", fiscalYear: year, rows });
+  ]) bytes = await registerInitiative(bytes, { name, note: "", expansionId: 1, fiscalYear: year, rows });
   contents = await readPlanContents(bytes);
   const build = (year = 2026, previous) => buildCostTable(contents.accounts, contents.aggregations, contents.initiatives, year, previous);
   const table = build();

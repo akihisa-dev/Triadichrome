@@ -31,7 +31,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   test.setTimeout(60_000);
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await expect(app.getByRole("navigation").getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "総原価表", "マスタ"]);
+  await expect(app.getByRole("navigation").getByRole("button")).toHaveText(["Home", "施策入力", "施策一覧", "総原価表", "展開表", "マスタ"]);
   await master(app, "勘定科目マスタ");
   for (const [code, name, type] of [["100", "売上科目1", "sales"], ["200", "原価科目1", "cost"], ["500", "費用科目1", "expense"], ["900", "利益科目1", "profit"]] as const) await addAccount(app, code, name, type);
   await master(app, "集計マスタ");
@@ -57,6 +57,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await page.screenshot({ path: join(tmpdir(), `triadichrome-aggregation-${testInfo.project.name}.png`) });
   for (const [name, amounts] of [["施策A", ["100", "30", "20", "10"]], ["施策B", ["25.5", "0", "-5", "0"]]] as const) {
     await app.getByRole("button", { name: "施策入力", exact: true }).click();
+    await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
     await app.getByRole("textbox", { name: "施策名", exact: true }).fill(name);
     await app.getByRole("spinbutton", { name: "年度", exact: true }).fill("2026");
     for (const [index, label] of ["100 売上科目1", "200 原価科目1", "500 費用科目1", "900 利益科目1"].entries()) {

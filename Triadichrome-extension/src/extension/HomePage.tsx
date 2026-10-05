@@ -1,3 +1,4 @@
+import { ExpansionTablePage } from "./ExpansionTablePage";
 import { type IndustryChange } from "../core/industryMaster";
 import { IndustryMasterPage } from "./IndustryMasterPage";
 import { type ExpansionChange } from "../core/expansionMaster";
@@ -18,7 +19,7 @@ import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master";
+type Page = "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master";
 
 type HomePageProps = {
   fileName: string;
@@ -44,12 +45,16 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
   const { accounts, initiatives } = contents;
   const [selectedInitiative, setSelectedInitiative] = useState<Pick<Initiative, "id" | "fiscalYear"> | null>(null);
   const currentInitiative = initiatives.find(item => item.id === selectedInitiative?.id && item.fiscalYear === selectedInitiative?.fiscalYear);
+  const [detailOrigin, setDetailOrigin] = useState<"initiative-list" | "expansion-table">("initiative-list");
   const openInitiative = (initiative: Initiative) => {
     dismissNotice();
+    setDetailOrigin(page === "expansion-table" ? "expansion-table" : "initiative-list");
     setSelectedInitiative({ id: initiative.id, fiscalYear: initiative.fiscalYear });
     setPage("initiative-detail");
   };
   const [listYear, setListYear] = useState(String(initialContents.initiatives[0]?.fiscalYear ?? currentFiscalYear()));
+  const [expansionYear, setExpansionYear] = useState(String(initialContents.initiatives[0]?.fiscalYear ?? currentFiscalYear()));
+  const [expansionSort, setExpansionSort] = useState<"registered" | "asc" | "desc">("registered");
   const [costYear, setCostYear] = useState(String(initialContents.initiatives[0]?.fiscalYear ?? currentFiscalYear()));
   const [notice, setNotice] = useState({ message: "", error: false });
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
@@ -75,6 +80,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
   };
   const changeExpansions = async (change: ExpansionChange) => {
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+    if (change.type === "delete" && initiativeDraft.expansionId === change.id) throw new Error("施策入力で選択している展開名は削除できません。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangeExpansions(change)); }
     finally { saving.current = false; setIsSaving(false); }
@@ -97,6 +103,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
       setSelectedInitiative({ id: selectedInitiative.id, fiscalYear: Number(draft.fiscalYear) });
       setListYear(String(Number(draft.fiscalYear)));
       setCostYear(String(Number(draft.fiscalYear)));
+      setExpansionYear(String(Number(draft.fiscalYear)));
     } finally { saving.current = false; setIsSaving(false); }
   };
 
@@ -110,6 +117,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
       setContents(saved);
       setListYear(String(Number(initiativeDraft.fiscalYear)));
       setCostYear(String(Number(initiativeDraft.fiscalYear)));
+      setExpansionYear(String(Number(initiativeDraft.fiscalYear)));
       setInitiativeDraft(createInitiativeDraft(initiativeDraft.fiscalYear));
       setPage("initiative-list");
       setNotice({ message: "施策を登録しました。", error: false });
@@ -187,7 +195,7 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
               </svg>
               <span className="sidebar-label">施策入力</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || page === "initiative-detail" ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
+            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || (page === "initiative-detail" && detailOrigin === "initiative-list") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 14h18M10 4v16" />
               </svg>
@@ -198,6 +206,12 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
                 <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M3 15h18M11 4v16M16 9v11" />
               </svg>
               <span className="sidebar-label">総原価表</span>
+            </button>
+            <button className="sidebar-item" type="button" aria-label="展開表" disabled={navigationBlocked} aria-current={page === "expansion-table" || (page === "initiative-detail" && detailOrigin === "expansion-table") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("expansion-table"); }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden="true">
+                <rect x="3" y="4" width="18" height="16" rx="1" /><path d="M3 9h18M9 9v11M15 4v16M9 14h12" />
+              </svg>
+              <span className="sidebar-label">展開表</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -221,13 +235,14 @@ export function HomePage({ fileName, initialContents, onChangeMaster, onChangeAg
             {displayed => {
               switch (displayed) {
                 case "home": return <main className="home-view" aria-label="ホーム" />;
-                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={() => setPage("initiative-list")} />;
+                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage initiatives={initiatives} fiscalYear={listYear} onYearChange={setListYear} onOpenInitiative={openInitiative} />;
                 case "cost-table": return <CostTablePage contents={contents} fiscalYear={costYear} onYearChange={setCostYear} onOpenMaster={() => setPage("aggregation-master")} />;
+                case "expansion-table": return <ExpansionTablePage contents={contents} fiscalYear={expansionYear} onYearChange={setExpansionYear} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} />;
                 case "industry-master": return <IndustryMasterPage industries={contents.industries} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeIndustries} onBack={() => setPage("master")} />;
-                case "expansion-master": return <ExpansionMasterPage expansions={contents.expansions} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeExpansions} onBack={() => setPage("master")} />;
+                case "expansion-master": return <ExpansionMasterPage usedExpansionIds={new Set([...initiatives.map(item => item.expansionId), initiativeDraft.expansionId].filter((id): id is number => id !== null))} expansions={contents.expansions} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeExpansions} onBack={() => setPage("master")} />;
                 case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeAggregations} onBack={() => setPage("master")} />;
                 case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;
               }

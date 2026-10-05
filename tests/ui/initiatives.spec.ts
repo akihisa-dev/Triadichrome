@@ -23,6 +23,7 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
   await addAccount(app, "100", "売上高", "sales");
   for (const [name, year, amount] of [["施策A", "2026", "100"], ["施策B", "2027", "200"]]) {
     await app.getByRole("button", { name: "施策入力", exact: true }).click();
+    await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
     await app.getByRole("textbox", { name: "施策名", exact: true }).fill(name!);
     await app.getByRole("textbox", { name: "備考", exact: true }).fill(`${name}の備考`);
     await app.getByRole("spinbutton", { name: "年度", exact: true }).fill(year!);
@@ -36,6 +37,7 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
     await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   }
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("作成中の施策");
   await app.getByRole("textbox", { name: "備考", exact: true }).fill("入力を保持");
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "100 売上高" });
@@ -66,6 +68,7 @@ test("一覧の施策名から該当年度の詳細を開き、新規入力を�
   await expect(app.getByRole("spinbutton", { name: "年度", exact: true })).toHaveValue("2027");
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("200");
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("作成中の施策");
   await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("入力を保持");
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true })).toHaveValue("300");
@@ -86,6 +89,7 @@ test("属性別に集計した施策を一覧で表示し、年度切替・属�
   await openMaster(app);
   for (const [code, name, type] of [["100", "売上高", "sales"], ["200", "売上原価", "cost"], ["500", "費用", "expense"], ["900", "利益", "profit"]] as const) await addAccount(app, code, name, type);
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("施策A");
   await app.getByRole("textbox", { name: "備考", exact: true }).fill("登録時の備考");
   await app.getByRole("spinbutton", { name: "年度", exact: true }).fill("2026");
@@ -118,6 +122,7 @@ test("属性別に集計した施策を一覧で表示し、年度切替・属�
   await page.screenshot({ path: join(tmpdir(), `triadichrome-list-${test.info().project.name}.png`) });
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("施策B");
   await app.getByRole("spinbutton", { name: "年度", exact: true }).fill("2027");
@@ -166,6 +171,7 @@ test("施策保存の失敗で入力と保存済み一覧を保持する", async
   await openMaster(app);
   await addAccount(app, "100", "売上高", "sales");
   await app.getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("保存失敗でも残す施策");
   await app.getByRole("textbox", { name: "備考", exact: true }).fill("備考も残す");
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "100 売上高" });

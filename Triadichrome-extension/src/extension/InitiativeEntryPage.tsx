@@ -1,3 +1,4 @@
+import { type Expansion } from "../core/expansionMaster";
 import { isValidAmount } from "../core/amounts";
 import { type ReactNode } from "react";
 import { type Account } from "../core/accountMaster";
@@ -8,13 +9,14 @@ type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
+  expansions: Expansion[];
   onOpenMaster: () => void;
   isSaving: boolean;
   onRegister: () => void;
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, onOpenMaster, isSaving, onRegister, editing }: InitiativeEntryPageProps) {
   return (
     <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
@@ -33,7 +35,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim()} onClick={event => {
+        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim() || draft.expansionId === null} onClick={event => {
           const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
@@ -51,12 +53,22 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, onOpenMast
           onChange={event => onDraftChange({ ...draft, note: event.target.value })}
         />
       </div>
+      <div className="initiative-classification-row">
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-year">年度</label>
         <input id="initiative-year" type="number" min="1" max="9998" step="1" value={draft.fiscalYear} disabled={isSaving}
           aria-describedby="initiative-year-hint" onChange={event => onDraftChange({ ...draft, fiscalYear: event.target.value,
             invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput) })} />
         <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
+      </div>
+      <div className="initiative-field initiative-expansion-field">
+        <label htmlFor="initiative-expansion">展開名</label>
+        <select id="initiative-expansion" value={draft.expansionId ?? ""} disabled={isSaving} required
+          onChange={event => onDraftChange({ ...draft, expansionId: event.target.value ? Number(event.target.value) : null })}>
+          <option value="">展開名を選択</option>
+          {expansions.map(item => <option key={item.id} value={item.id}>{item.expansionName}</option>)}
+        </select>
+      </div>
       </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>

@@ -55,6 +55,10 @@ export function migrateTriadicDatabase(database: Database): void {
       database.exec(TRIADIC_VIEWS_SQL);
       database.exec("PRAGMA user_version = 6; UPDATE triadic_metadata SET value = '6' WHERE key = 'format_version';");
     }
+    if (Number(database.exec("PRAGMA user_version")[0]!.values[0]![0]) < 7) {
+      if (!hasColumn(database, "initiatives", "expansion_id")) database.run("ALTER TABLE initiatives ADD COLUMN expansion_id INTEGER REFERENCES expansions(id)");
+      database.exec("PRAGMA user_version = 7; UPDATE triadic_metadata SET value = '7' WHERE key = 'format_version';");
+    }
     if (database.exec("PRAGMA foreign_key_check").length) throw new Error("保存データの参照を移行できませんでした。");
     database.run("COMMIT");
   } catch (error) {

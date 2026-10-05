@@ -24,7 +24,14 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   const annual = (name: string, amount: number, growth = 0): InitiativeRow => row(name,
     Object.fromEntries(initiativeMonths.map((month, index) => [month, String(amount + index * growth)])));
   const add = async (name: string, note: string, rows: InitiativeRow[], year = fiscalYear) => {
-    bytes = await registerInitiative(bytes, { name, note, fiscalYear: String(year), rows });
+    const codes: Record<string, string> = {
+      "既存商品の販売拡大": "5", "保守サービスの新規契約": "5", "季節キャンペーン": "5",
+      "通信運搬費と消耗品費の削減": "1", "サブスクリプション事業の拡大": "2",
+      "設備更新と償却費の見直し": "1", "助成金の受入れ": "9",
+      "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
+    };
+    const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
+    bytes = await registerInitiative(bytes, { name, note, expansionId, fiscalYear: String(year), rows });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [

@@ -7,12 +7,13 @@ import { StatusNotice } from "./StatusNotice";
 
 type Props = AutoSaveProps & {
   expansions: Expansion[];
+  usedExpansionIds: Set<number>;
   isSaving: boolean;
   onChange: (change: ExpansionChange) => Promise<void>;
   onBack: () => void;
 };
 
-export function ExpansionMasterPage({ expansions, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
+export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [code, setCode] = useState("");
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState<Expansion | null>(null);
@@ -75,7 +76,7 @@ export function ExpansionMasterPage({ expansions, isSaving, onChange, onBack, on
               <td><div className="form-actions">{editing
                 ? <button className="text-button" type="button" disabled={autoSave.pending} onClick={() => controller.end()}>完了</button>
                 : <><button className="text-button" type="button" aria-label={`${item.expansionName}を編集`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
-                  <button className="text-button" type="button" aria-label={`${item.expansionName}を削除`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
+                  <button className="text-button" type="button" aria-label={`${item.expansionName}を削除`} title={usedExpansionIds.has(item.id) ? "施策で使用中" : undefined} disabled={isSaving || draft !== null || usedExpansionIds.has(item.id)} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
               </div></td>
             </tr>;
           })}

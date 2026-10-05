@@ -2,7 +2,7 @@ import { registerInitiative, updateInitiative, validateInitiative, type Initiati
 import { writePlanChange, type OpenPlan } from "./planFile";
 
 export async function saveInitiative(plan: OpenPlan, draft: InitiativeEntryDraft, chooseDestination: () => Promise<FileSystemFileHandle>): Promise<OpenPlan> {
-  validateInitiative(draft, plan.accounts, plan.initiatives);
+  validateInitiative(draft, plan.accounts, plan.initiatives, plan.expansions);
   // Preserve transient activation for the save picker.
   const handle = plan.handle ?? await chooseDestination();
   const bytes = await registerInitiative(plan.bytes, draft);

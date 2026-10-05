@@ -33,7 +33,7 @@ export async function verifyAutoSave(api) {
 
   let bytes = await createTriadicDatabase();
   bytes = (await changeAccountMaster(bytes, { type: "add", accountCode: "100", accountName: "売上", accountType: "sales" })).bytes;
-  const draft = { name: "施策", note: "備考", fiscalYear: "2026", rows: [{ accountId: 1, amounts: { 4: "100", 5: "0" } }, { accountId: 1, amounts: { 4: "25.5" } }] };
+  const draft = { name: "施策", note: "備考", expansionId: 1, fiscalYear: "2026", rows: [{ accountId: 1, amounts: { 4: "100", 5: "0" } }, { accountId: 1, amounts: { 4: "25.5" } }] };
   bytes = await registerInitiative(bytes, draft);
   bytes = await registerInitiative(bytes, { ...draft, name: "別施策" });
   const db = await openTriadicDatabase(bytes);
@@ -41,7 +41,7 @@ export async function verifyAutoSave(api) {
   bytes = db.export(); db.close();
   const before = await readPlanContents(bytes);
   const original = before.initiatives[0];
-  const edited = { name: "更新施策", note: "更新備考", fiscalYear: "2027", rows: original.rows.map((row, index) => ({ ...row, amounts: index ? { 4: "-25.5" } : { 4: "200", 6: "0" } })) };
+  const edited = { name: "更新施策", note: "更新備考", expansionId: 1, fiscalYear: "2027", rows: original.rows.map((row, index) => ({ ...row, amounts: index ? { 4: "-25.5" } : { 4: "200", 6: "0" } })) };
   const updatedBytes = await updateInitiative(bytes, original.id, 2026, edited);
   const updated = await readPlanContents(updatedBytes);
   assert.equal(updated.initiatives[0].name, "更新施策");

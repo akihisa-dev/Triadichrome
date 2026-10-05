@@ -1,3 +1,4 @@
+import { verifyExpansionTable } from "../tests/expansion-table.mjs";
 import { verifyDefaultCostData } from "../tests/default-cost-data.mjs";
 import { verifyIndustryData } from "../tests/industry-data.mjs";
 import { verifyExpansionData } from "../tests/expansion-data.mjs";
@@ -26,6 +27,7 @@ try {
       'export * from "./Triadichrome-extension/src/extension/industryMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/extension/expansionMasterFile.ts";',
       'export * from "./Triadichrome-extension/src/core/initiatives.ts";',
+      'export * from "./Triadichrome-extension/src/core/expansionTable.ts";',
       'export * from "./Triadichrome-extension/src/core/autoSave.ts";',
       'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
       'export * from "./Triadichrome-extension/src/core/aggregationGraph.ts";',
@@ -49,6 +51,7 @@ try {
   });
   const productionApi = await import(pathToFileURL(bundle));
   await verifyDefaultCostData(productionApi);
+  await verifyExpansionTable(productionApi);
   // Legacy empty-master fixtures keep CRUD regressions independent of new defaults.
   const api = { ...productionApi, createTriadicDatabase: productionApi.createEmptyTestPlan };
   const { createTriadicDatabase, validateTriadicDatabase, openTriadicDatabase, writeTriadicFile,
