@@ -942,6 +942,26 @@ button:disabled { cursor: default; opacity: 0.5; }
 .cost-table .cost-required th, .cost-table .cost-required td { border-top: 1px solid var(--control-line); }
 .cost-unconfigured { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
 .cost-master-guide { margin-bottom: 0; }
+.home-content:has(.cost-table-page) { overflow: hidden; }
+.page-switch:has(> .cost-table-page) { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.cost-table-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 12px 16px; gap: 8px; }
+.cost-table-page .initiative-list-heading { flex-shrink: 0; gap: 8px 16px; }
+.cost-table-page h1 { font-size: 20px; }
+.cost-table-page .cost-master-guide { flex-shrink: 0; margin: 0; font-size: 12px; line-height: 1.5; }
+.cost-table-page .cost-master-guide .text-button { min-height: 24px; padding: 2px 6px; font-size: inherit; }
+.cost-table-page .cost-table-container { flex: 1; min-height: 0; min-width: 0; margin: 0; overflow: scroll; scrollbar-gutter: stable; }
+.cost-table-container::-webkit-scrollbar { width: 12px; height: 12px; }
+.cost-table-container::-webkit-scrollbar-track, .cost-table-container::-webkit-scrollbar-corner { background: var(--soft); }
+.cost-table-container::-webkit-scrollbar-thumb { background: var(--control-line); border: 3px solid var(--soft); border-radius: 6px; }
+.cost-table { width: max-content; min-width: 100%; font-size: 12px; line-height: 18px; }
+.cost-table .cost-name-column { width: 176px; }
+.cost-table .cost-amount-column { width: 64px; }
+.cost-table th, .cost-table td { height: 28px; padding: 4px 6px; white-space: nowrap; }
+.cost-table thead th { font-size: 12px; }
+.cost-table .initiative-list-name { width: 176px; white-space: normal; }
+.cost-table .cost-sales-anchor th, .cost-table .cost-sales-anchor td { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--control-line); }
+.cost-table .cost-sales-anchor .initiative-list-name { z-index: 3; }
+
 
 .initiative-classification-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 24px; }
 .initiative-expansion-field { width: 16rem; max-width: 100%; }
