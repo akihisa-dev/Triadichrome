@@ -1,5 +1,3 @@
-import { TableHeader } from "./TableHeader";
-import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Account, type AccountChange } from "../core/accountMaster";
 import { accountTypes, type AccountType } from "../core/accountTypes";
@@ -25,10 +23,6 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
   const [accountType, setAccountType] = useState<AccountType | "">("");
   const autoSave = useAutoSave<Extract<AccountChange, { type: "update" }>>(onChange, onPendingChange);
   const { draft: editing, controller } = autoSave;
-  const [view, setView] = useState(emptyTableView);
-  const columns: TableColumn<Account>[] = [{ id: "code", label: "科目コード", value: item => item.accountCode }, { id: "name", label: "科目名", value: item => item.accountName }, { id: "type", label: "科目属性", value: item => item.accountType ? accountTypes[item.accountType] : null }];
-  const visible = applyTableView(accounts, columns, view);
-  const displayChanged = view.sort !== null || Object.keys(view.filters).length > 0;
   const setEditing = (draft: NonNullable<typeof editing>) => controller.change(draft);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -78,7 +72,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     }
   };
   const reorder = (id: number, targetId: number, before: boolean) => {
-    if (isSaving || editing || displayChanged || id === targetId) return;
+    if (isSaving || editing || id === targetId) return;
     const ids = accounts.map(account => account.id).filter(item => item !== id);
     ids.splice(ids.indexOf(targetId) + (before ? 0 : 1), 0, id);
     if (ids.every((item, index) => item === accounts[index]!.id)) return;
@@ -127,12 +121,11 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     <ConfirmationDialog open={isDeleteDialogOpen} title="勘定科目を削除" message={deletingAccount ? `「${deletingAccount.accountCode} ${deletingAccount.accountName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleteDialogOpen(false)}
       onConfirm={() => { if (deletingAccount && !isSaving) void save({ type: "delete", id: deletingAccount.id }); }} />
-    <button type="button" className="text-button" disabled={isSaving || editing !== null} onClick={() => setView(emptyTableView())}>クリア</button>
     <div className="account-master-list" role="region" aria-label="勘定科目一覧" tabIndex={0}>
       <table className="account-master-table" aria-label="勘定科目一覧">
-        <thead><tr><th scope="col">順序</th><th scope="col"><TableHeader column={columns[0]!} rows={accounts} view={view} onChange={setView} disabled={isSaving || editing !== null} /></th><th scope="col"><TableHeader column={columns[1]!} rows={accounts} view={view} onChange={setView} disabled={isSaving || editing !== null} /></th><th scope="col"><TableHeader column={columns[2]!} rows={accounts} view={view} onChange={setView} disabled={isSaving || editing !== null} /></th><th scope="col">操作</th></tr></thead>
+        <thead><tr><th scope="col">順序</th><th scope="col">科目コード</th><th scope="col">科目名</th><th scope="col">科目属性</th><th scope="col">操作</th></tr></thead>
         {accounts.length === 0 && <tbody><tr><td colSpan={5} className="page-description">勘定科目はまだ登録されていません。</td></tr></tbody>}
-        {visible.map((account) => {
+        {accounts.map((account) => {
           const index = accounts.findIndex(item => item.id === account.id);
           const inUse = account.inUse || usedAccountIds.has(account.id);
           const draft = editing?.id === account.id ? editing : null;
@@ -140,7 +133,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
           return <tbody key={account.id} ref={element => { if (element) rowElements.current.set(account.id, element); else rowElements.current.delete(account.id); }}
             className={dropTarget?.id === account.id ? dropTarget.before ? "drop-before" : "drop-after" : undefined}
             onDragOver={event => {
-              if (dragged === null || isSaving || editing || displayChanged) return;
+              if (dragged === null || isSaving || editing) return;
               event.preventDefault(); event.dataTransfer.dropEffect = "move";
               const bounds = event.currentTarget.getBoundingClientRect();
               setDropTarget({ id: account.id, before: event.clientY < bounds.top + bounds.height / 2 });
@@ -158,7 +151,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
               }
             }}>
               <td><button type="button" className="text-button account-drag-handle" aria-label={`${account.accountName}を並べ替え`} title="ドラッグ、または上下キーで並べ替え"
-                disabled={isSaving || editing !== null || displayChanged} draggable={!isSaving && editing === null && !displayChanged}
+                disabled={isSaving || editing !== null} draggable={!isSaving && editing === null}
                 onDragStart={event => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(account.id)); setDragged(account.id); }}
                 onDragEnd={() => { setDragged(null); setDropTarget(null); }}
                 onKeyDown={event => {

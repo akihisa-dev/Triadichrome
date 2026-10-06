@@ -1,6 +1,6 @@
 import { test, expect, settleMotion, attachImage } from "./fixtures";
 
-test("明細の直接編集・フィルター・ソート・施策への移動と帰還", async ({ page, app }, testInfo) => {
+test("明細の直接編集・全件表示・施策への移動と帰還", async ({ page, app }, testInfo) => {
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -19,22 +19,14 @@ test("明細の直接編集・フィルター・ソート・施策への移動�
   await amount.dblclick();
   await expect(app.getByLabel("金額を編集", { exact: true })).toHaveValue("12.345");
   await app.getByLabel("金額を編集", { exact: true }).press("Escape");
-  await table.getByRole("button", { name: "施策名のフィルター", exact: true }).click();
-  await app.getByRole("checkbox", { name: "すべて", exact: true }).uncheck();
-  await app.getByRole("checkbox", { name: "修正予算の入力準備", exact: true }).check();
-  await app.getByRole("button", { name: "閉じる", exact: true }).click();
-  await expect(table.locator("tbody tr")).toHaveCount(60);
-  await table.getByRole("button", { name: "金額で昇順に並べ替え", exact: true }).click();
-  await table.getByRole("button", { name: "金額で降順に並べ替え", exact: true }).click();
+  await expect(table.locator("thead button")).toHaveCount(0);
+  await expect(app.getByRole("button", { name: "クリア", exact: true })).toHaveCount(0);
   const link = table.getByRole("button", { name: "修正予算の入力準備", exact: true }).first();
   await link.dblclick();
   await expect(app.getByLabel("施策名を編集", { exact: true })).toBeVisible();
   await app.getByLabel("施策名を編集", { exact: true }).press("Escape");
   await link.click();
   await app.getByRole("button", { name: "← 明細へ戻る", exact: true }).click();
-  await expect(table.locator("tbody tr")).toHaveCount(60);
-  await expect(table.getByRole("button", { name: "金額で昇順に並べ替え", exact: true })).toHaveText("金額 ↓");
-  await app.getByRole("button", { name: "クリア", exact: true }).click();
   await expect(table.locator("tbody tr")).toHaveCount(2664);
   await expect(table.locator("tbody tr").first()).toHaveAttribute("data-detail-id", id!);
   const region = app.locator(".detail-scroll");

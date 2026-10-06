@@ -3,13 +3,12 @@ import { accountTypes, isAccountType } from "../core/accountTypes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type DetailChange, type DetailField, type DetailRecord } from "../core/details";
 import { type Initiative, type PlanContents } from "../core/initiatives";
-import { applyTableView, emptyTableView, type TableColumn, type TableView, tableDisplayValue } from "../core/tableView";
-import { TableHeader } from "./TableHeader";
+import { type TableColumn, tableDisplayValue } from "../core/tableView";
 import "./DetailTablePage.css";
 
 type Column = TableColumn<DetailRecord> & { field?: DetailField };
-export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, onOpenInitiative, onPendingChange, onPrepareSave }: {
-  contents: PlanContents; view: TableView; onViewChange: (view: TableView) => void; scroll: { current: { top: number; left: number } };
+export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, onPendingChange, onPrepareSave }: {
+  contents: PlanContents; scroll: { current: { top: number; left: number } };
   onSave: (change: DetailChange) => Promise<void>; onOpenInitiative: (initiative: Initiative) => void; onPendingChange: (pending: boolean) => void; onPrepareSave: () => Promise<void>;
 }) {
   const rows = contents.details ?? [];
@@ -38,7 +37,6 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
     { id: "profit", label: "利益への影響", numeric: true, amount: true, value: row => row.profit },
     { id: "note", label: "施策備考", field: "note", value: row => row.note },
   ], [contents.expansions, contents.departments, contents.periodTypes, contents.industries]);
-  const displayed = useMemo(() => applyTableView(rows, columns, view), [rows, columns, view]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);
   useEffect(() => { onPendingChange(editing !== null); return () => onPendingChange(false); }, [editing, onPendingChange]);
   useEffect(() => {
@@ -64,7 +62,7 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
       await onSave({ target: current.row, field: current.field, value: current.value });
       setEditing(null);
       if (next) {
-        const cells = displayed.flatMap(row => columns.filter(column => canEdit(row, column.field)).map(column => ({ row, column })));
+        const cells = rows.flatMap(row => columns.filter(column => canEdit(row, column.field)).map(column => ({ row, column })));
         const position = cells.findIndex(cell => cell.row.id === current.row.id && cell.column.id === current.columnId);
         const nextCell = cells[position + 1];
         if (nextCell) requestAnimationFrame(() => container.current?.querySelector<HTMLElement>(`[data-cell="${nextCell.row.id}-${nextCell.column.id}"]`)?.focus());
@@ -75,12 +73,12 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
   const choices = editing?.field === "accountId" ? contents.accounts.filter(item => item.accountType).map(item => ({ id: item.id, name: `${item.accountCode ?? "未設定"} ${item.accountName}` }))
     : editing?.field === "industryId" ? contents.industries.map(item => ({ id: item.id, name: item.industryName })) : editing?.field === "expansionId" ? contents.expansions.map(item => ({ id: item.id, name: item.expansionName })) : editing?.field === "departmentId" ? contents.departments.map(item => ({ id: item.id, name: item.departmentName })) : editing?.field === "periodTypeId" ? contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })) : null;
   return <main className="detail-page">
-    <div className="detail-toolbar"><h1>明細</h1><span>{displayed.length} / {rows.length} 行</span><span>金額：千円</span><button type="button" disabled={editing !== null} onClick={() => onViewChange(emptyTableView())}>クリア</button></div>
+    <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
     <p className="detail-help">セルをダブルクリックして編集します。施策名のクリックで施策画面を開きます。</p>
     {contents.migrationError && <p role="alert">{contents.migrationError}</p>}
     <div ref={container} className="detail-scroll" onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
-      <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col" aria-sort={view.sort?.column === column.id ? view.sort.direction === "asc" ? "ascending" : "descending" : "none"}><TableHeader column={column} rows={rows} view={view} onChange={onViewChange} disabled={editing !== null} /></th>)}</tr></thead>
-      <tbody>{displayed.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {
+      <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
+      <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {
         const active = editing?.row.id === row.id && editing.columnId === column.id;
         return <td key={column.id} data-cell={`${row.id}-${column.id}`} tabIndex={canEdit(row, column.field) && !editing ? 0 : -1} className={column.numeric ? "is-number" : undefined}
           onDoubleClick={() => column.field && begin(row, column.field, column.id)} onKeyDown={event => { if (!active && (event.key === "Enter" || event.key === "F2") && column.field) { event.preventDefault(); begin(row, column.field, column.id); } }}>
@@ -97,7 +95,7 @@ export function DetailTablePage({ contents, view, onViewChange, scroll, onSave, 
           </div> : column.id === "initiativeName" ? <button type="button" className="detail-initiative-link" disabled={editing !== null || row.kindId === 0} onClick={event => { if (event.detail > 1) return; clickTimer.current = setTimeout(() => { const initiative = contents.initiatives.find(item => item.id === row.initiativeId); if (initiative) onOpenInitiative(initiative); }, 650); }}>{row.initiativeName}</button> : tableDisplayValue(column, row)}
         </td>;
       })}</tr>)}</tbody></table>
-      {!displayed.length && <p className="detail-empty">表示する明細がありません。</p>}
+      {!rows.length && <p className="detail-empty">表示する明細がありません。</p>}
     </div>
   </main>;
 }

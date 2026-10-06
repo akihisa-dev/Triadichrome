@@ -7,7 +7,7 @@ test("勘定科目一覧をコンパクトに表示し、縦横スクロール�
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await settleMotion(app.locator("body"));
   const list = app.getByRole("region", { name: "勘定科目一覧", exact: true });
-  const header = list.getByRole("columnheader", { name: "科目コードで昇順に並べ替え 科目コードのフィルター", exact: true });
+  const header = list.getByRole("columnheader", { name: "科目コード", exact: true });
   await expect(list.locator("tbody")).toHaveCount(57);
   const before = await header.evaluate(node => node.getBoundingClientRect().top);
   expect(await list.locator("tbody tr").first().evaluate(node => node.getBoundingClientRect().height)).toBeLessThanOrEqual(44);

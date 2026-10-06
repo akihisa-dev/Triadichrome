@@ -1,5 +1,3 @@
-import { TableHeader } from "./TableHeader";
-import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
 import { useCallback, useState } from "react";
 import { type Industry, type IndustryChange } from "../core/industryMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -22,9 +20,6 @@ export function IndustryMasterPage({ industries, isSaving, onChange, onBack, onP
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   const autoSave = useAutoSave<Extract<IndustryChange, { type: "update" }>>(onChange, onPendingChange);
   const { draft, controller } = autoSave;
-  const [view, setView] = useState(emptyTableView);
-  const columns: TableColumn<Industry>[] = [{ id: "industryCode", label: "業種コード", value: item => item.industryCode }, { id: "industryName", label: "業種名", value: item => item.industryName }];
-  const visible = applyTableView(industries, columns, view);
   const save = async (change: IndustryChange) => {
     dismissNotice();
     try {
@@ -62,13 +57,12 @@ export function IndustryMasterPage({ industries, isSaving, onChange, onBack, onP
     <StatusNotice {...notice} onDismiss={dismissNotice} />
     <ConfirmationDialog open={deleting !== null} title="業種を削除" message={deleting ? `「${deleting.industryCode} ${deleting.industryName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
-    <button type="button" className="text-button" disabled={isSaving || draft !== null} onClick={() => setView(emptyTableView())}>クリア</button>
     <div className="account-master-list" role="region" aria-label="業種一覧" tabIndex={0}>
       <table className="account-master-table industry-master-table" aria-label="業種一覧">
-        <thead><tr><th scope="col"><TableHeader column={columns[0]!} rows={industries} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col"><TableHeader column={columns[1]!} rows={industries} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col">操作</th></tr></thead>
+        <thead><tr><th scope="col">業種コード</th><th scope="col">業種名</th><th scope="col">操作</th></tr></thead>
         <tbody>
           {industries.length === 0 && <tr><td colSpan={3} className="page-description">業種はまだ登録されていません。</td></tr>}
-          {visible.map(item => {
+          {industries.map(item => {
             const editing = draft?.id === item.id ? draft : null;
             return <tr key={item.id} onKeyDown={event => {
               if (editing && (event.key === "Escape" || event.key === "Enter") && !event.nativeEvent.isComposing) {

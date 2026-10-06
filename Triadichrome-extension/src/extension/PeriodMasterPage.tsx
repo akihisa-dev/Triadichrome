@@ -1,5 +1,3 @@
-import { TableHeader } from "./TableHeader";
-import { applyTableView, emptyTableView, type TableColumn } from "../core/tableView";
 import { useCallback, useState } from "react";
 import { type PeriodType, type PeriodTypeChange } from "../core/periodMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -21,9 +19,6 @@ export function PeriodMasterPage({ periodTypes, isSaving, onChange, onBack, onPe
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   const autoSave = useAutoSave<Extract<PeriodTypeChange, { type: "update" }>>(onChange, onPendingChange);
   const { draft, controller } = autoSave;
-  const [view, setView] = useState(emptyTableView);
-  const columns: TableColumn<PeriodType>[] = [{ id: "periodName", label: "期間名", value: item => item.periodName }];
-  const visible = applyTableView(periodTypes, columns, view);
   const save = async (change: PeriodTypeChange) => {
     dismissNotice();
     try {
@@ -56,13 +51,12 @@ export function PeriodMasterPage({ periodTypes, isSaving, onChange, onBack, onPe
     <StatusNotice {...notice} onDismiss={dismissNotice} />
     <ConfirmationDialog open={deleting !== null} title="期間を削除" message={deleting ? `「${deleting.periodName}」を削除しますか？` : ""}
       confirmLabel="削除する" busy={isSaving} onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
-    <button type="button" className="text-button" disabled={isSaving || draft !== null} onClick={() => setView(emptyTableView())}>クリア</button>
     <div className="account-master-list" role="region" aria-label="期間一覧" tabIndex={0}>
       <table className="account-master-table period-master-table" aria-label="期間一覧">
-        <thead><tr><th scope="col"><TableHeader column={columns[0]!} rows={periodTypes} view={view} onChange={setView} disabled={isSaving || draft !== null} /></th><th scope="col">操作</th></tr></thead>
+        <thead><tr><th scope="col">期間名</th><th scope="col">操作</th></tr></thead>
         <tbody>
           {periodTypes.length === 0 && <tr><td colSpan={2} className="page-description">期間はまだ登録されていません。</td></tr>}
-          {visible.map(item => {
+          {periodTypes.map(item => {
             const editing = draft?.id === item.id ? draft : null;
             return <tr key={item.id} onKeyDown={event => {
               if (editing && (event.key === "Escape" || event.key === "Enter") && !event.nativeEvent.isComposing) {
