@@ -84,7 +84,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   for (const [index, industry] of industries.entries()) {
     for (const [departmentIndex, department] of departments.entries()) {
       bytes = await savePreviousAmounts(bytes, { industryId: industry.id, departmentId: department.id, rows: [
-        annual("売上高", 1000 + index * 100 + departmentIndex * 10), annual("本支店売上原価", 400), annual("給料手当", 200), annual("営業外収益", 10),
+        annual("売上高", 1000 + index * 100 + departmentIndex * 10),
+        row("グループ売上高", { 4: "125.125", 5: "-20.001", 6: "0", 3: "0.001" }), annual("本支店売上原価", 400), annual("給料手当", 200), annual("営業外収益", 10),
       ].map(row => ({ accountId: row.accountId!, amounts: row.amounts })) });
     }
   }

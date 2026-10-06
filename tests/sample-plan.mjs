@@ -44,14 +44,14 @@ export async function verifySamplePlan(api) {
     }
   }
   const plan = await readPlanContents(bytes);
-  assert.equal(plan.previousAmounts.length, 9 * 2 * 4 * 12);
-  assert.equal(api.previousTotals(plan)[4].sales, 18090);
-  assert.equal(api.previousTotals(plan)[4].profit, 14670);
+  assert.equal(plan.previousAmounts.length, 9 * 2 * (4 * 12 + 4));
+  assert.equal(api.previousTotals(plan)[4].sales, 20342.25);
+  assert.equal(api.previousTotals(plan)[4].profit, 16922.25);
   const combined = api.buildKindExpansionTable(plan, [2, 4], "registered");
   assert.equal(combined.changes[0][4].sales, 125320);
-  assert.equal(combined.total[0][4].sales, 143410);
-  assert.equal(combined.total[0][4].profit, 92866.251);
-  assert.equal(plan.details.length, 2664);
+  assert.equal(combined.total[0][4].sales, 145662.25);
+  assert.equal(combined.total[0][4].profit, 95118.501);
+  assert.equal(plan.details.length, 2736);
   assert.ok(plan.details.every(row => row.fiscalYear === 2026));
   assert.ok(plan.details.filter(row => row.kindId === 0).every(row => row.initiativeName === "前年" && row.kindName === "前年"));
   const unused = accounts.find(item => item.accountName === "削除確認用科目");

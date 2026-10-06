@@ -66,7 +66,7 @@ test("月別引き継ぎ・手修正0・解除・修正開始と取消・前年�
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
   await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
   await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
-  const previous = app.getByRole("spinbutton", { name: "売上高 4月の前年金額", exact: true });
+  const previous = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   await previous.fill("1001");
   await expect(app.getByRole("combobox", { name: "部署名", exact: true })).toBeEnabled();
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();

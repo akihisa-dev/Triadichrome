@@ -6,7 +6,7 @@ test("明細の直接編集・全件表示・施策への移動と帰還", async
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
   const table = app.locator(".detail-table");
-  await expect(table.locator("tbody tr")).toHaveCount(2664);
+  await expect(table.locator("tbody tr")).toHaveCount(2736);
   await settleMotion(app.locator("body"));
   const first = table.locator("tbody tr").first();
   const id = await first.getAttribute("data-detail-id");
@@ -27,7 +27,7 @@ test("明細の直接編集・全件表示・施策への移動と帰還", async
   await app.getByLabel("施策名を編集", { exact: true }).press("Escape");
   await link.click();
   await app.getByRole("button", { name: "← 明細へ戻る", exact: true }).click();
-  await expect(table.locator("tbody tr")).toHaveCount(2664);
+  await expect(table.locator("tbody tr")).toHaveCount(2736);
   await expect(table.locator("tbody tr").first()).toHaveAttribute("data-detail-id", id!);
   const region = app.locator(".detail-scroll");
   expect(await region.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
