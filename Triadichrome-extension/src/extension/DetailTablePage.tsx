@@ -33,8 +33,9 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     { id: "attribute", label: "科目属性", value: row => isAccountType(row.accountType) ? accountTypes[row.accountType] : null },
     { id: "month", label: "年月", value: row => `${row.year}-${String(row.month).padStart(2, "0")}` },
     { id: "amount", label: "金額", field: "amount", numeric: true, amount: true, value: row => row.amount },
-    { id: "sales", label: "売上への影響", numeric: true, amount: true, value: row => row.sales },
-    { id: "profit", label: "利益への影響", numeric: true, amount: true, value: row => row.profit },
+    { id: "sales", label: "売上", numeric: true, amount: true, value: row => row.sales },
+    { id: "expense", label: "費用", numeric: true, amount: true, value: row => row.accountType === "expense" ? row.amount : "0" },
+    { id: "profit", label: "利益", numeric: true, amount: true, value: row => row.profit },
     { id: "note", label: "施策備考", field: "note", value: row => row.note },
   ], [contents.expansions, contents.departments, contents.periodTypes, contents.industries]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);

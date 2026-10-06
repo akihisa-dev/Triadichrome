@@ -55,3 +55,31 @@ test("不正値と保存失敗で入力を保持し、取消では元の値に�
   await expect(app.getByRole("button", { name: "施策一覧", exact: true })).toBeDisabled();
   await input.press("Escape"); await expect(cell).toHaveText(original);
 });
+
+
+test("明細の売上・費用・利益の列順と科目属性ごとの金額", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
+  const table = app.locator(".detail-table");
+  await expect(table.getByRole("columnheader", { name: "費用", exact: true })).toBeVisible();
+  const headers = await table.getByRole("columnheader").allTextContents();
+  expect(headers.slice(headers.indexOf("売上"), headers.indexOf("利益") + 1)).toEqual(["売上", "費用", "利益"]);
+  expect(headers.some(name => name.includes("への影響"))).toBe(false);
+  for (const [name, account, expected] of [
+    ["前年", "給料手当", ["0", "200", "-200"]],
+    ["既存商品の販売拡大", "売上高", ["120,000", "0", "120,000"]],
+    ["既存商品の販売拡大", "本支店売上原価", ["-60,000", "0", "-60,000"]],
+    ["既存商品の販売拡大", "宣伝広告費", ["0", "8,000", "-8,000"]],
+    ["通信運搬費と消耗品費の削減", "通信運搬費", ["0", "-2,501", "2,501"]],
+    ["既存商品の販売拡大", "営業外収益", ["0", "0", "126"]],
+  ] as const) {
+    const row = table.locator("tbody tr").filter({ has: app.getByRole("button", { name, exact: true }) }).filter({ has: app.getByRole("cell", { name: account, exact: true }) }).first();
+    for (const [index, column] of ["sales", "expense", "profit"].entries()) {
+      const cell = row.locator(`[data-cell$="-${column}"]`);
+      await expect(cell).toHaveText(expected[index]!);
+      await expect(cell).toHaveAttribute("tabindex", "-1");
+    }
+  }
+});

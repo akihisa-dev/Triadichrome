@@ -18,7 +18,7 @@
 | 展開表 | [core/planTables.ts](../Triadichrome-extension/src/core/planTables.ts) | 見通し・実績の2種を選ぶ | 2種と「実績−見通し」を表示。再読込でも選択順を復元 | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |
 | 業種・部署 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 各表で分類を複数選択し、画面を往復 | 同分類内はいずれか一致、分類間は両方一致。画面内の選択は維持、再読込はすべて | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
 | 前年の範囲入力 | [extension/PreviousAmountGrid.tsx](../Triadichrome-extension/src/extension/PreviousAmountGrid.tsx) | 直営自動車・部署Aの売上高とグループ売上高、4〜5月を範囲選択。グループ売上高は4月125.125、5月−20.001、6月0、3月0.001 | コピー・貼り付け・同値入力・消去で科目セルだけを更新し、小計を再計算。不正な貼り付けは全体を拒否 | 通常テスト・previous-grid画面テスト・Codex内のブラウザ | 円精度、範囲操作、部分更新の拒否、保存後の再表示を確認 |
-| 明細 | [core/details.ts](../Triadichrome-extension/src/core/details.ts) | 前年と全種別を表示し、月別金額を編集 | 前年は種別・施策とも「前年」。引き継ぐ値も再集計 | 通常テスト・details画面テスト | 分類・金額・更新番号・変更範囲を通常テストで確認 |
+| 明細 | [core/details.ts](../Triadichrome-extension/src/core/details.ts) | 前年と全種別を表示し、月別金額を編集 | 前年は種別・施策とも「前年」。売上・費用・利益の順に表示。通信運搬費4月は0・−2,501・2,501、前年給料手当は0・200・−200。計算列は編集不可。引き継ぐ値も再集計 | 通常テスト・details画面テスト | 分類・金額・更新番号・変更範囲を通常テストで確認 |
 | 正負・精度 | [core/initiatives.ts](../Triadichrome-extension/src/core/initiatives.ts) | 売上・原価・費用・利益、負数・1円・同一科目の複数行 | 千円単位小数3桁を保持。科目属性に応じ売上・利益に加減算 | 通常テスト | DB・計算を確認。画面は操作手順として準備 |
 | 科目・集計 | [core/aggregationMaster.ts](../Triadichrome-extension/src/core/aggregationMaster.ts) | 59科目・16集計、未所属費用・空の任意集計・削除確認用科目 | 必須集計と任意集計、所属順、空行、未使用科目の削除を確認 | 通常テスト | 集計・所属・制約を確認 |
 | マスタ | [core/accountMaster.ts](../Triadichrome-extension/src/core/accountMaster.ts) | 展開7、業種9、部署2、期間2 | 名称変更を参照に反映。施策・前年で使用する項目の削除を拒否 | 各マスタの通常テスト | 変更・使用中削除・保存失敗・キャンセル・競合を確認 |
