@@ -4,7 +4,7 @@
 .home-relations-viewport { position: relative; width: 100%; height: clamp(360px, calc(100dvh - 220px), 740px); overflow: clip; border-radius: 16px; outline-offset: -3px; touch-action: none; user-select: none; cursor: grab; background: radial-gradient(#ddd 1px, transparent 1px) 0 0 / 20px 20px; }
 .home-relations-viewport.is-dragging, .home-relations-viewport.is-dragging * { cursor: grabbing; }
 .home-relations-viewport:focus-visible { outline: 2px solid var(--focus); }
-.home-relations-map { position: absolute; display: block; width: 1240px; height: 640px; max-width: none; transform-origin: 0 0; }
+.home-relations-map { position: absolute; display: block; width: 1240px; height: 640px; max-width: none; transform-origin: 0 0; overflow: visible; }
 .home-relations-controls { position: absolute; right: 12px; bottom: 12px; display: flex; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 2px 8px #0000000c; }
 .home-relations-controls button { min-width: 40px; min-height: 40px; border: 0; border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
 .home-relations-controls button:hover { background: #eee; }
@@ -12,17 +12,17 @@
 .home-relations-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .home-relation { transition: opacity var(--motion-feedback) var(--motion-ease); }
 .home-relation path { fill: none; stroke: #aaa; stroke-width: 1.5; transition: stroke var(--motion-feedback), stroke-width var(--motion-feedback); }
-.home-relation rect { fill: var(--canvas); stroke: var(--line); stroke-width: 1; }
-.home-relation text { fill: var(--muted); font-family: inherit; font-size: 14px; }
 .home-relation.is-active path { stroke: var(--ink); stroke-width: 2; }
-.home-relation.is-active rect { stroke: #888; }
-.home-relation.is-active text { fill: var(--ink); }
 .home-relation.is-muted { opacity: .35; }
-.home-relation-node { display: flex; align-items: center; justify-content: center; margin: 6px; width: 200px; height: 72px; padding: 12px; border: 1px solid #bcbcbc; border-radius: 16px; background: var(--surface); color: var(--ink); font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 3px 8px #00000006; }
-.home-relation-node.is-master { background: #f0f0f0; }
-.home-relation-node.is-entry { height: 90px; border-color: #888; }
-.home-relation-node:hover, .home-relation-node:focus-visible { background: #e7e7e7; border-color: var(--ink); box-shadow: 0 4px 12px #0000000c; }
-.home-relation-node.is-related { border-color: #888; }
-.home-relation-node.is-selected { background: #e2e2e2; border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+.home-relation-node { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 6px; width: 200px; height: 72px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 16px; font-weight: 500; cursor: grab; }
+.home-relation-node::before { content: ""; flex: 0 0 24px; width: 24px; box-sizing: border-box; border: 1.5px solid #999; border-radius: 50%; background: var(--surface); transition: background var(--motion-feedback), border-color var(--motion-feedback); }
+.home-relation-name { padding: 2px 6px; border-radius: 6px; background: var(--canvas); line-height: 24px; }
+.home-relation-node.is-master::before { background: #ddd; }
+.home-relation-node.is-entry::before { border-width: 2px; border-color: #666; }
+.home-relation-node:hover::before, .home-relation-node:focus-visible::before { border-color: var(--ink); background: #bbb; }
+.home-relation-node:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.home-relation-node.is-related::before { border-color: #777; }
+.home-relation-node.is-selected::before { background: var(--ink); border-color: var(--ink); }
+.home-relation-node.is-selected .home-relation-name { font-weight: 700; }
 .home-relation-node:disabled { opacity: .5; cursor: wait; }
 @media (prefers-reduced-motion: reduce) { .home-relation, .home-relation path { transition: none; } }
