@@ -7,6 +7,7 @@
   --control-line: #a3a3a3;
   --ink: #202020;
   --muted: #626262;
+  --accent: #0033ff;
   --focus: #202020;
   --inverse-muted: #e0e0e0;
   --motion-layout: 320ms;
@@ -358,12 +359,13 @@ button:disabled { cursor: default; opacity: 0.5; }
   border-color: var(--muted);
 }
 
-.initiative-field input:focus-visible,
-.initiative-field select:focus-visible,
-.account-master-table input:focus-visible,
-.account-master-table select:focus-visible {
-  border-color: var(--focus);
-  outline-color: var(--focus);
+.initiative-field input:focus,
+.initiative-field select:focus,
+.account-master-table input:focus,
+.account-master-table select:focus {
+  border-color: var(--accent);
+  outline-color: var(--accent);
+  outline-offset: -1px;
 }
 
 .initiative-amount-table-container {
@@ -457,9 +459,9 @@ button:disabled { cursor: default; opacity: 0.5; }
   border-color: var(--line);
 }
 
-.initiative-amount-table input:focus-visible {
+.initiative-amount-table input:focus {
   background: var(--surface);
-  outline-color: var(--focus);
+  outline-color: var(--accent);
 }
 
 .initiative-amount-table select {
@@ -477,7 +479,7 @@ button:disabled { cursor: default; opacity: 0.5; }
   transition: border-color var(--motion-feedback) var(--motion-ease), outline-color var(--motion-feedback) var(--motion-ease);
 }
 
-.initiative-amount-table select:focus-visible { outline-color: var(--focus); }
+.initiative-amount-table select:focus { outline-color: var(--accent); }
 .initiative-amount-table input:disabled { opacity: 0.45; }
 .initiative-account-cell { display: flex; align-items: center; gap: 4px; }
 .initiative-account-cell select { flex: 1; min-width: 0; }
@@ -802,10 +804,15 @@ button:disabled { cursor: default; opacity: 0.5; }
 .sidebar-item svg {
   display: block;
   flex-shrink: 0;
+  transition: color var(--motion-feedback) var(--motion-ease);
 }
 
 .sidebar-item[aria-current="page"] {
   background: var(--soft);
+}
+
+.sidebar-item[aria-current="page"] svg {
+  color: var(--accent);
 }
 
 .sidebar-footer {
@@ -1052,7 +1059,7 @@ button:disabled { cursor: default; opacity: 0.5; }
 .classification-field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
 .classification-slot { position: relative; height: 108px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
 .classification-slot::before { content: ""; position: absolute; inset: 36px 0; background: var(--soft); border-block: 1px solid var(--line); }
-.classification-slot:focus-within { outline: 2px solid var(--focus); outline-offset: 2px; }
+.classification-slot:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .classification-slot[data-disabled="true"] { opacity: .5; }
 .classification-reel { position: absolute; top: 0; left: 0; width: 100%; transition: transform var(--motion-layout) var(--motion-ease); pointer-events: none; }
 .classification-reel > div { height: 36px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
@@ -1066,3 +1073,12 @@ button:disabled { cursor: default; opacity: 0.5; }
 @media (max-width: 600px) {
   .initiative-classification-slots { flex-basis: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 編集位置だけにアクセントを使い、操作ボタンと図のフォーカスは分ける。 */
+input:focus, textarea:focus { caret-color: var(--accent); }
+.graph-editor input:focus, .graph-editor select:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.year-slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

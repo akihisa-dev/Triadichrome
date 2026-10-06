@@ -7,7 +7,7 @@
 .previous-grid td.previous-input-cell { padding: 0; position: relative; }
 .previous-grid input { width: 100%; min-width: 0; height: 40px; padding: 10px 12px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; font: inherit; text-align: right; box-sizing: border-box; }
 .previous-grid .previous-cell-selected { background: var(--soft); box-shadow: inset 0 0 0 1px var(--control-line); }
-.previous-grid input:focus { outline: 2px solid var(--focus); outline-offset: -2px; }
+.previous-grid input:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .previous-grid input[aria-invalid="true"] { text-decoration: underline wavy; }
 .previous-grid .initiative-list-name { width: 220px; }
 .previous-grid td:has(input) { cursor: cell; }

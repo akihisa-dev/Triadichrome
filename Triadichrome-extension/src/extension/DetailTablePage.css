@@ -14,6 +14,7 @@
 .detail-initiative-link { border: 0; background: none; color: inherit; text-decoration: underline; padding: 0; cursor: pointer; }
 .detail-editor { min-width: 180px; text-align: left; white-space: normal; display: grid; gap: 6px; }
 .detail-editor input { width: 100%; box-sizing: border-box; padding: 6px; border: 1px solid #aaa; border-radius: 3px; }
+.detail-editor input:focus { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -2px; }
 .detail-editor p { color: #a52c2c; max-width: 260px; margin: 0; }
 .detail-options { max-height: 160px; overflow: auto; display: grid; gap: 3px; }
 .detail-options button { text-align: left; }
