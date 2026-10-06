@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 
-export function ClassificationSlot({ id, label, value, options, onChange, disabled, required = false, emptyLabel = "未選択" }: {
+export function ClassificationSlot({ id, label, value, options, onChange, disabled, required = false, emptyLabel = "未選択", allowEmpty = true }: {
   id: string; label: string; value: number | null | undefined;
   options: { id: number; name: string }[]; onChange: (value: number | null) => void;
-  disabled: boolean; required?: boolean; emptyLabel?: string;
+  disabled: boolean; required?: boolean; emptyLabel?: string; allowEmpty?: boolean;
 }) {
   const rowHeight = 24;
-  const items = [{ id: null, name: emptyLabel }, ...options];
+  const items = [...(allowEmpty ? [{ id: null, name: emptyLabel }] : []), ...options];
   const index = Math.max(0, items.findIndex(item => item.id === (value ?? null)));
   const slot = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; index: number; moved: boolean } | null>(null);
@@ -36,7 +36,7 @@ export function ClassificationSlot({ id, label, value, options, onChange, disabl
     <div ref={slot} id={id} className="classification-slot" data-disabled={disabled}
       role="spinbutton" tabIndex={disabled ? -1 : 0} aria-labelledby={`${id}-label`}
       aria-valuemin={0} aria-valuemax={items.length - 1} aria-valuenow={index} aria-valuetext={items[index]!.name}
-      aria-disabled={disabled} aria-invalid={required && index === 0}
+      aria-disabled={disabled} aria-invalid={required && items[index]!.id === null}
       onKeyDown={event => {
         const next = event.key === "ArrowUp" ? index - 1 : event.key === "ArrowDown" ? index + 1 : event.key === "Home" ? 0 : event.key === "End" ? items.length - 1 : null;
         if (next !== null) { event.preventDefault(); select(next); }

@@ -23,7 +23,7 @@ export function hasDataHistory(database: Database): boolean {
   return database.exec("SELECT name FROM sqlite_master WHERE name = 'data_history_state'")[0]?.values.length === 1;
 }
 
-/** Optional extension to format 13: history-free current files remain valid. */
+/** Optional extension to format 14: history-free current files remain valid. */
 export function validateDataHistory(database: Database): void {
   const objects = database.exec("SELECT type, name FROM sqlite_master WHERE name IN ('data_history', 'data_history_state')")[0]?.values ?? [];
   if (!objects.length) return;

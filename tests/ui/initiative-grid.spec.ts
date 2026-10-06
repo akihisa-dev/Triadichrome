@@ -58,13 +58,11 @@ test("複数行・月の貼り付け、範囲コピー・同値入力・消去�
   await april.fill("10");
   await app.getByRole("tab", { name: "確定予算", exact: true }).click();
   await expect(april).toHaveValue("0");
-  await app.getByRole("tab", { name: "見通し", exact: true }).click();
-  await expect(april).toHaveValue("0");
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: testInfo.outputPath("initiative-grid.png") });
 });
 
-test("不正・表外・科目未選択・修正予算の保護とセル移動", async ({ app }) => {
+test("不正・表外・科目未選択の保護とセル移動", async ({ app }) => {
   const cell = (row: number, month: number) => app.getByRole("spinbutton", { name: `売上高 ${month}月の金額`, exact: true }).nth(row);
   const april = cell(0, 4);
   await april.click(); await paste(april, "7\t8\n9\t10");
@@ -82,8 +80,8 @@ test("不正・表外・科目未選択・修正予算の保護とセル移動",
   await cell(1, 4).click(); await paste(cell(1, 4), "1\n2");
   await expect(app.getByRole("alert")).toContainText("勘定科目");
   await expect(cell(1, 4)).toHaveValue("9");
-  await app.getByRole("tab", { name: "修正予算", exact: true }).click();
-  await expect(april).toBeDisabled();
+  await app.getByRole("tab", { name: "確定予算", exact: true }).click();
+  await expect(april).toBeEnabled();
   await cell(0, 10).click();
   await cell(0, 10).press("Escape");
   await paste(cell(0, 10), "15\t-0.001");

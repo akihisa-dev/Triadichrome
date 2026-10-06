@@ -24,7 +24,7 @@ export function previousByAccount(contents: PlanContents) {
 }
 export function buildKindCostTable(contents: PlanContents, selected: KindId[]) {
   const previous = previousByAccount(contents);
-  const kinds = selected.map(kind => buildCostTable(contents.accounts, contents.aggregations, initiativesForKind(contents.initiatives, contents.accounts, kind, contents.revisedActive), contents.fiscalYear, previous));
+  const kinds = selected.map(kind => buildCostTable(contents.accounts, contents.aggregations, initiativesForKind(contents.initiatives, contents.accounts, kind), contents.fiscalYear, previous));
   const skeleton = kinds[0] ?? buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous);
   return skeleton.map((row, index) => ({ ...row, values: [row.previous, ...kinds.map(rows => rows[index]!.budget)] }));
 }
@@ -49,22 +49,21 @@ export function combineTotals(left: Initiative["months"], right: Initiative["mon
   }]));
 }
 export function buildKindExpansionTable(contents: PlanContents, selected: KindId[], sort: ExpansionSort) {
-  const first = initiativesForKind(contents.initiatives, contents.accounts, selected[0] ?? 2, contents.revisedActive);
-  const second = initiativesForKind(contents.initiatives, contents.accounts, selected[1] ?? 4, contents.revisedActive);
-  const table = buildExpansionTable({ ...contents, initiatives: first }, contents.fiscalYear, sort);
+  const projections = selected.map(kind => initiativesForKind(contents.initiatives, contents.accounts, kind));
+  const table = buildExpansionTable({ ...contents, initiatives: projections[0]! }, contents.fiscalYear, sort);
   const prior = previousTotals(contents);
-  const firstTotal = totalInitiatives(first), secondTotal = totalInitiatives(second);
+  const compare = (values: Initiative["months"][]) => selected.length === 2
+    ? [...values, combineTotals(values[selected.indexOf(2)]!, values[selected.indexOf(1)]!, -1)] : values;
+  const totals = projections.map(totalInitiatives);
   return {
-    previous: [prior, prior, combineTotals(prior, prior, -1)],
-    total: [combineTotals(prior, firstTotal), combineTotals(prior, secondTotal), combineTotals(secondTotal, firstTotal, -1)],
-    changes: [firstTotal, secondTotal, combineTotals(secondTotal, firstTotal, -1)],
+    previous: compare(selected.map(() => prior)),
+    total: compare(totals.map(total => combineTotals(prior, total))),
+    changes: compare(totals),
     groups: table.groups.map(group => {
-      const next = second.filter(item => item.expansionId === group.expansion.id);
-      const nextTotal = totalInitiatives(next);
-      return { ...group, values: [group.total, nextTotal, combineTotals(nextTotal, group.total, -1)], initiatives: group.initiatives.map(item => {
-        const latter = next.find(next => next.id === item.id)!;
-        return { ...item, values: [item.months, latter.months, combineTotals(latter.months, item.months, -1)] };
-      }) };
+      const members = projections.map(items => items.filter(item => item.expansionId === group.expansion.id));
+      return { ...group, values: compare(members.map(totalInitiatives)), initiatives: group.initiatives.map(item => ({
+        ...item, values: compare(members.map(items => items.find(next => next.id === item.id)!.months)),
+      })) };
     }),
   };
 }

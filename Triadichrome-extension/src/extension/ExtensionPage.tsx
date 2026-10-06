@@ -185,7 +185,7 @@ export function ExtensionPage() {
       setHistoryError("");
       if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
       setDisplayName(saved.name);
-      return { fiscalYear: saved.fiscalYear, revisedActive: saved.revisedActive, kindSelections: saved.kindSelections, previousAmounts: saved.previousAmounts, accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
+      return { fiscalYear: saved.fiscalYear, kindSelections: saved.kindSelections, previousAmounts: saved.previousAmounts, accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
     } finally { busy.current = false; }
   };
   const changePlan = (change: PlanChange) => saveChange(async (current, destination) => writePlanChange(current, current.handle ?? await destination(), await changePlanSettings(current.bytes, change)), change.type === "previous");

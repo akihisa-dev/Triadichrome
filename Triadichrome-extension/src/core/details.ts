@@ -1,5 +1,5 @@
 import { INITIAL_KINDS } from "./kindMasterSchema";
-import { canChangeAccountRow, isLateMonth, kindIds, readPlanSettings, readRowOverrides, resolvedAmount, type AmountSource } from "./kindAmounts";
+import { canChangeAccountRow, kindIds, readPlanSettings, readRowOverrides, resolvedAmount, type AmountSource } from "./kindAmounts";
 import { type Database } from "sql.js";
 import { amountToYen, yenToAmount } from "./amounts";
 import { exportTriadicDatabase, openTriadicDatabase } from "./triadicDatabase";
@@ -38,7 +38,7 @@ export function listDetailRecords(db: Database): DetailRecord[] {
     return { sales: yenToAmount(attribute === "sales" ? yen : attribute === "cost" ? -yen : 0), profit: yenToAmount(attribute === "sales" || attribute === "profit" ? yen : attribute === "cost" || attribute === "expense" ? -yen : 0) };
   };
   const result: DetailRecord[] = primary.flatMap(record => kindIds.map(kind => {
-    const amount = resolvedAmount(sources.get(record.rowId)!, kind, record.month, settings.revisedActive);
+    const amount = resolvedAmount(sources.get(record.rowId)!, kind, record.month);
     return { ...record, id: record.id * 10 + kind, kindId: kind, kindName: INITIAL_KINDS.find(item => item.id === kind)!.kindName,
       industryId: classifications.get(record.initiativeId) ?? null, amount, ...effect(amount, record.accountType), revision: record.revision + planRevision };
   }));
@@ -70,7 +70,6 @@ export async function changeDetail(bytes: Uint8Array, change: DetailChange): Pro
       const amount = amountToYen(value || "0");
       if (current.kindId === 0) db.run("UPDATE previous_amounts SET amount_yen = ?, revision = revision + 1 WHERE id = ?", [amount, -current.id]);
       else {
-        if (current.kindId === 3 && !isLateMonth(current.month)) throw new Error("修正予算の4〜9月は編集できません。");
         if (current.kindId === 1) db.run("UPDATE initiative_amounts SET amount_yen = ?, revision = revision + 1 WHERE row_id = ? AND month = ?", [amount, current.rowId, current.month]);
         else db.run(`INSERT INTO amount_overrides (row_id, kind_id, month, amount_yen) VALUES (?, ?, ?, ?)
           ON CONFLICT (row_id, kind_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = amount_overrides.revision + 1`, [current.rowId, current.kindId, current.month, amount]);
@@ -79,7 +78,7 @@ export async function changeDetail(bytes: Uint8Array, change: DetailChange): Pro
     } else if (field === "accountId") {
       if (current.kindId === 0) throw new Error("前年の科目は前年入力画面で選択してください。");
       const source: AmountSource = { amounts: Object.fromEntries((db.exec("SELECT month, amount_yen FROM initiative_amounts WHERE row_id = ?", [current.rowId])[0]?.values ?? []).map(([month, yen]) => [Number(month), yenToAmount(Number(yen))])), overrides: readRowOverrides(db, current.rowId) };
-      if (!canChangeAccountRow(source, readPlanSettings(db).revisedActive)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更できます。");
+      if (!canChangeAccountRow(source)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更できます。");
       const selected = db.exec("SELECT attribute FROM accounts WHERE id = ?", [Number(value)])[0]?.values[0];
       if (!selected?.[0]) throw new Error("属性が設定済みの登録科目を選択してください。");
       db.run("UPDATE initiative_rows SET account_id = ?, revision = revision + 1 WHERE id = ?", [Number(value), current.rowId]);

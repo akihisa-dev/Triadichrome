@@ -150,19 +150,19 @@ function assertTriadicDatabase(database: Database): void {
     database.exec("SELECT id, row_id, month, amount_yen, revision FROM initiative_amounts LIMIT 0; SELECT * FROM initiative_detail_view LIMIT 0;");
     validateNormalizedData(database);
   }
-  const settings = database.exec("SELECT fiscal_year, revised_active FROM budgets WHERE id = 1")[0]?.values[0];
-  if (!settings || !Number.isInteger(settings[0]) || Number(settings[0]) < 1 || Number(settings[0]) > 9998 || ![0, 1].includes(Number(settings[1]))) invalidDatabase();
+  const settings = database.exec("SELECT fiscal_year FROM budgets WHERE id = 1")[0]?.values[0];
+  if (!settings || !Number.isInteger(settings[0]) || Number(settings[0]) < 1 || Number(settings[0]) > 9998) invalidDatabase();
   if (database.exec("SELECT id FROM initiatives WHERE fiscal_year != (SELECT fiscal_year FROM budgets WHERE id = 1) OR expansion_id IS NULL OR industry_id IS NULL OR department_id IS NULL").length) invalidDatabase();
   const kinds = database.exec("SELECT id, name FROM kind_types ORDER BY id")[0]?.values ?? [];
   if (kinds.length !== INITIAL_KINDS.length || kinds.some(([id, name], index) => id !== INITIAL_KINDS[index]?.id || name !== INITIAL_KINDS[index]?.kindName)) invalidDatabase();
   database.exec("SELECT row_id, kind_id, month, amount_yen, revision FROM amount_overrides LIMIT 0; SELECT account_id, industry_id, department_id, month, amount_yen, revision FROM previous_amounts LIMIT 0; SELECT screen, first_kind, second_kind FROM kind_selections LIMIT 0;");
-  if (database.exec(`SELECT row_id FROM amount_overrides WHERE kind_id NOT BETWEEN 2 AND 5 OR month NOT BETWEEN 1 AND 12
-    OR (kind_id = 3 AND month BETWEEN 4 AND 9) OR typeof(amount_yen) != 'integer' OR amount_yen NOT BETWEEN -9007199254740991 AND 9007199254740991
+  if (database.exec(`SELECT row_id FROM amount_overrides WHERE kind_id != 2 OR month NOT BETWEEN 1 AND 12
+    OR typeof(amount_yen) != 'integer' OR amount_yen NOT BETWEEN -9007199254740991 AND 9007199254740991
     OR typeof(revision) != 'integer' OR revision < 0
     UNION ALL SELECT account_id FROM previous_amounts WHERE month NOT BETWEEN 1 AND 12 OR typeof(amount_yen) != 'integer'
     OR amount_yen NOT BETWEEN -9007199254740991 AND 9007199254740991 OR typeof(revision) != 'integer' OR revision < 0`).length) invalidDatabase();
   const selections = database.exec("SELECT screen, first_kind, second_kind FROM kind_selections")[0]?.values ?? [];
-  if (selections.length !== 3 || new Set(selections.map(row => row[0])).size !== 3 || selections.some(([screen, first, second]) => !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1, 2, 3, 4, 5].includes(Number(first)) || (second !== null && (![1, 2, 3, 4, 5].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null) || (screen === "expansion-table" && second === null))) invalidDatabase();
+  if (selections.length !== 3 || new Set(selections.map(row => row[0])).size !== 3 || selections.some(([screen, first, second]) => !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1, 2].includes(Number(first)) || (second !== null && (![1, 2].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null))) invalidDatabase();
   const budgets = database.exec("SELECT id FROM budgets")[0]?.values;
   if (budgets?.length !== 1 || budgets[0]?.[0] !== 1) {
     invalidDatabase();

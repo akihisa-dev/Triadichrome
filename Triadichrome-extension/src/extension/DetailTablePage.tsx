@@ -49,8 +49,8 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     return () => window.removeEventListener("beforeunload", preventLoss);
   }, [editing]);
   useEffect(() => () => { if (clickTimer.current) clearTimeout(clickTimer.current); }, []);
-  const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row, contents.revisedActive)).map(row => row.id)));
-  const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && !(row.kindId === 3 && row.month >= 4 && row.month <= 9 && field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
+  const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row)).map(row => row.id)));
+  const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
   const begin = (row: DetailRecord, field: DetailField, columnId: string) => {
     if (editing || lock.current || contents.migrationError || !canEdit(row, field)) return;
     if (clickTimer.current) clearTimeout(clickTimer.current);

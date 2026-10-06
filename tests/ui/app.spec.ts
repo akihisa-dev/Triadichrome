@@ -53,8 +53,6 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await expect(app.getByRole("dialog")).toHaveCount(0);
   await attachImage(testInfo, "サイドバー", await preview.screenshot());
   await page.keyboard.press("Tab");
-  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
-  await page.keyboard.press("Tab");
   await expect(close).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toBeFocused();
@@ -65,7 +63,7 @@ test("ファイルを開き、サイドバーを操作して入口へ戻る", as
   await expect(trigger).toHaveAccessibleName("サイドバーを開く");
   await settleMotion(app.locator("body"));
   expect(await main.boundingBox()).toEqual(fullMain);
-  await expect(app.getByRole("navigation")).toHaveCount(1);
+  await expect(app.getByRole("navigation", { name: "メインナビゲーション", exact: true })).toHaveCount(1);
 
   await trigger.click();
   await close.click();
@@ -105,11 +103,9 @@ test("サイドバーを開いたまま施策入力とホームを往復でき�
   const initiativeEntry = navigation.getByRole("button", { name: "施策入力", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
-  await page.keyboard.press("Tab");
-  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる" })).toBeFocused();
   await page.keyboard.press("Tab");

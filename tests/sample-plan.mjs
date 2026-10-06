@@ -15,7 +15,7 @@ export async function verifySamplePlan(api) {
   const { accounts, initiatives, aggregations, expansions, industries } = await readPlanContents(bytes);
   assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
   assert.deepEqual((await readPlanContents(bytes)).departments.map(item => item.departmentName), ["部署A", "部署B"]);
-  assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["一次予算", "確定予算", "修正予算", "見通し", "実績"]);
+  assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["一次予算", "確定予算"]);
   assert.deepEqual((await readPlanContents(bytes)).periodTypes.map(item => item.periodName), ["期間差", "新規"]);
   assert.deepEqual(new Set(initiatives.map(item => item.industryId)), new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]));
   assert.deepEqual(new Set(initiatives.map(item => item.periodTypeId)), new Set([1, 2]));
@@ -57,11 +57,11 @@ export async function verifySamplePlan(api) {
   assert.equal(plan.previousAmounts.length, 9 * 2 * (4 * 12 + 4));
   assert.equal(api.previousTotals(plan)[4].sales, 20342.25);
   assert.equal(api.previousTotals(plan)[4].profit, 16922.25);
-  const combined = api.buildKindExpansionTable(plan, [2, 4], "registered");
-  assert.equal(combined.changes[0][4].sales, 125320);
-  assert.equal(combined.total[0][4].sales, 145662.25);
-  assert.equal(combined.total[0][4].profit, 95118.501);
-  assert.equal(plan.details.length, 2736);
+  const combined = api.buildKindExpansionTable(plan, [1, 2], "registered");
+  assert.equal(combined.changes[0][4].sales, 115300);
+  assert.equal(combined.total[0][4].sales, 135642.25);
+  assert.equal(combined.total[0][4].profit, 85098.501);
+  assert.equal(plan.details.length, 1656);
   assert.ok(plan.details.every(row => row.fiscalYear === 2026));
   assert.ok(plan.details.filter(row => row.kindId === 0).every(row => row.initiativeName === "前年" && row.kindName === "前年"));
   const unused = accounts.find(item => item.accountName === "削除確認用科目");

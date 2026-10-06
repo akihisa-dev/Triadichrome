@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
 import { buildKindCostTable } from "../core/planTables";
 import type { KindId } from "../core/kindAmounts";
@@ -5,9 +6,9 @@ import { initiativeMonths, type PlanContents } from "../core/initiatives";
 
 import { formatAmount, formatRate } from "../core/amounts";
 
-type Props = { contents: PlanContents; selected: KindId[]; onOpenMaster: () => void };
+type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster: () => void };
 
-export function CostTablePage({ contents, selected, onOpenMaster }: Props) {
+export function CostTablePage({ contents, selected, selection, onOpenMaster }: Props) {
   const { accounts, aggregations } = contents;
   const labels = ["前年", ...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName)];
   const rows = useMemo(() => buildKindCostTable(contents, selected), [contents, selected]);
@@ -20,6 +21,7 @@ export function CostTablePage({ contents, selected, onOpenMaster }: Props) {
   const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
   const unassigned = accounts.filter(account => !assigned.has(account.id));
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
+    {selection}
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
       <span className="field-hint">単位：千円</span>

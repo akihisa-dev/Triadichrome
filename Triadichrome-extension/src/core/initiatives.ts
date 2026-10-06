@@ -47,7 +47,7 @@ function listInitiatives(database: Database): Initiative[] {
     }));
     return { id: Number(id), name: String(name), note: String(note), fiscalYear: settings.fiscalYear, expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), rows, months: {} };
   });
-  return initiativesForKind(records, listAccounts(database), 1, settings.revisedActive);
+  return initiativesForKind(records, listAccounts(database), 1);
 }
 
 export async function readPlanContents(bytes: Uint8Array): Promise<PlanContents> {
@@ -84,9 +84,8 @@ export function validateInitiative(draft: InitiativeEntryDraft, accounts: Accoun
       if (!initiativeMonths.includes(Number(month) as InitiativeMonth)) throw new Error("対象月が正しくありません。");
       if (amount !== "" && !isValidAmount(amount)) throw new Error(`${index + 1}行目の${month}月に有効な金額を千円単位・小数点以下3桁までで入力してください。`);
     }
-    for (const [kind, amounts] of Object.entries(row.overrides ?? {})) {
-      if (![2, 3, 4, 5].includes(Number(kind))) throw new Error("種別が正しくありません。");
-      if (Number(kind) === 3 && Object.keys(amounts).some(month => Number(month) >= 4 && Number(month) <= 9)) throw new Error("修正予算の4〜9月は実績から引き継ぐため編集できません。");
+    for (const kind of Object.keys(row.overrides ?? {})) {
+      if (![2].includes(Number(kind))) throw new Error("種別が正しくありません。");
     }
   });
 }
@@ -134,9 +133,9 @@ function writeOverrides(db: Database, rowId: number, overrides: KindOverrides | 
 }
 
 /** Resolve a kind once and pass the same projected values to all tables. */
-export function initiativesForKind(initiatives: Initiative[], accounts: Account[], kind: KindId, revisedActive: boolean): Initiative[] {
+export function initiativesForKind(initiatives: Initiative[], accounts: Account[], kind: KindId): Initiative[] {
   return initiatives.map(initiative => {
-    const rows = initiative.rows.map(row => ({ ...row, amounts: Object.fromEntries(initiativeMonths.map(month => [month, resolvedAmount(row, kind, month, revisedActive)])) }));
+    const rows = initiative.rows.map(row => ({ ...row, amounts: Object.fromEntries(initiativeMonths.map(month => [month, resolvedAmount(row, kind, month)])) }));
     const months: Initiative["months"] = {};
     for (const month of initiativeMonths) {
       let salesYen = 0n, expenseYen = 0n, profitYen = 0n;
@@ -171,7 +170,7 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
     if (new Set(ids).size !== ids.length || ids.some(rowId => !original.rows.some(row => row.id === rowId))) throw new Error("勘定科目行の識別子が正しくありません。");
     for (const row of original.rows) {
       const next = draft.rows.find(item => item.id === row.id);
-      if ((!next || next.accountId !== row.accountId) && !canChangeAccountRow(row, settings.revisedActive)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更・削除できます。");
+      if ((!next || next.accountId !== row.accountId) && !canChangeAccountRow(row)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更・削除できます。");
     }
     database.run("BEGIN");
     database.run("UPDATE initiatives SET name = ?, note = ?, expansion_id = ?, department_id = ?, period_type_id = ?, industry_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null, id]);

@@ -1,6 +1,6 @@
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useEffect, useRef, useState } from "react";
-import { canChangeAccountRow, isLateMonth, resolvedAmount, type KindId } from "../core/kindAmounts";
+import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/kindAmounts";
 import { isValidAmount } from "../core/amounts";
 import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/initiatives";
 import { type Account } from "../core/accountMaster";
@@ -9,8 +9,8 @@ import { gridBounds, normalizeGridAmount, type GridCell, type GridSelection } fr
 import { StatusNotice } from "./StatusNotice";
 import "./InitiativeAmountGrid.css";
 
-export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isSaving, onDraftChange }: {
-  draft: InitiativeEntryDraft; kind: KindId; revisedActive: boolean; accounts: Account[];
+export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, onDraftChange }: {
+  draft: InitiativeEntryDraft; kind: KindId; accounts: Account[];
   isSaving: boolean; onDraftChange: (draft: InitiativeEntryDraft) => void;
 }) {
   const readOnly = useHistoryReadOnly();
@@ -30,7 +30,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
   const valueAt = (cell: GridCell, source = draft) => {
     const row = source.rows[cell.row]!;
     const month = months[cell.column]!;
-    return kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month, revisedActive);
+    return kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month);
   };
   const focus = (cell: GridCell, extend = false) => {
     setSelection(current => ({ anchor: extend && current ? current.anchor : cell, end: cell }));
@@ -71,13 +71,13 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
               return <tr key={row.clientKey ?? row.id ?? index}>
                 <th scope="row">
                   <div className="initiative-account-cell">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
+                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row)}
                     onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
                     <option value="">科目を選択</option>
                     {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
                   </select>
-                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
+                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
                   </div>
                 </th>
                 {months.map((month, column) => {
@@ -172,7 +172,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
                         delete overrides[kind]![month];
                         onDraftChange({ ...draft, rows: draft.rows.map((current, position) => position === index ? { ...current, overrides } : current) });
                       }}>引き継ぎに戻す</button>
-                      : <span>{kind === 3 && !isLateMonth(month) ? "実績から" : "引き継ぎ"}</span>}</div>}
+                      : <span>引き継ぎ</span>}</div>}
                   </td>
                 })}
               </tr>;

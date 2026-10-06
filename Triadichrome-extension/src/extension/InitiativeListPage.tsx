@@ -5,6 +5,7 @@ import { formatAmount } from "../core/amounts";
 const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
 
 type InitiativeListPageProps = {
+  selection: ReactNode;
   initiatives: Initiative[];
   fiscalYear: string;
   onOpenInitiative: (initiative: Initiative) => void;
@@ -12,11 +13,12 @@ type InitiativeListPageProps = {
   renderEditor: (initiative: Initiative, onClose: () => void) => ReactNode;
 };
 
-export function InitiativeListPage({ initiatives, fiscalYear, onOpenInitiative, navigationBlocked, renderEditor }: InitiativeListPageProps) {
+export function InitiativeListPage({ selection, initiatives, fiscalYear, onOpenInitiative, navigationBlocked, renderEditor }: InitiativeListPageProps) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = initiatives.find(item => item.id === selectedId);
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   return <main className={`initiative-list-page initiative-overview-page${selected ? " has-initiative-editor" : ""}`} aria-labelledby="initiative-list-title">
+    {selection}
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
       <span className="field-hint">単位：千円</span>

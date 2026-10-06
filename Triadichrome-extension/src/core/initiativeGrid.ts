@@ -1,14 +1,15 @@
 import { initiativeMonths, type InitiativeEntryDraft } from "./initiatives";
-import { isLateMonth, type KindId } from "./kindAmounts";
+import { isKindId, type KindId } from "./kindAmounts";
 import { gridBounds, normalizeGridAmount, type GridCell, type GridSelection } from "./previousGrid";
 
 export function canEditInitiativeCell(draft: InitiativeEntryDraft, kind: KindId, cell: GridCell): boolean {
-  return Number.isInteger(cell.row) && Number.isInteger(cell.column) && cell.row >= 0 && cell.column >= 0
+  return isKindId(kind) && Number.isInteger(cell.row) && Number.isInteger(cell.column) && cell.row >= 0 && cell.column >= 0
     && cell.column < initiativeMonths.length && draft.rows[cell.row]?.accountId != null
-    && !(kind === 3 && !isLateMonth(initiativeMonths[cell.column]!));
+;
 }
 
 function applyRectangle(draft: InitiativeEntryDraft, kind: KindId, start: GridCell, values: string[][]): InitiativeEntryDraft {
+  if (!isKindId(kind)) throw new Error("種別が正しくありません。");
   const width = values[0]!.length;
   if (values.some(row => row.length !== width)) throw new Error("貼り付ける範囲の列数を揃えてください。");
   if (![start.row, start.column].every(Number.isInteger) || start.row < 0 || start.column < 0
@@ -19,7 +20,6 @@ function applyRectangle(draft: InitiativeEntryDraft, kind: KindId, start: GridCe
   const updates = values.map((line, offset) => Object.fromEntries(line.map((text, column) => {
     const cell = { row: start.row + offset, column: start.column + column };
     if (draft.rows[cell.row]!.accountId == null) throw new Error("入力する行の勘定科目を選択してください。");
-    if (!canEditInitiativeCell(draft, kind, cell)) throw new Error("修正予算の4〜9月は実績から引き継ぐため編集できません。");
     return [initiativeMonths[cell.column]!, normalizeGridAmount(text)];
   })));
   return { ...draft, rows: draft.rows.map((row, index) => {

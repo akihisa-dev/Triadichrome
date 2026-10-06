@@ -1,5 +1,5 @@
 import type { Page, FrameLocator } from "@playwright/test";
-import { test, expect, settleMotion } from "./fixtures";
+import { test, expect, selectClassification, settleMotion } from "./fixtures";
 
 async function openSample(page: Page, app: FrameLocator) {
   await page.goto("/tests/ui/preview.html");
@@ -8,43 +8,66 @@ async function openSample(page: Page, app: FrameLocator) {
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
 }
 
-test("4表の上部にスライサーがなく、全分類と保存済み種別を表示する", async ({ page, app }) => {
+test("予算選択の列構成・重複防止・比較の符号と画面別の保存を確認する", async ({ page, app }, testInfo) => {
   await openSample(page, app);
-  const menu = app.getByRole("complementary", { name: "メニュー" });
-  for (const screen of ["施策一覧", "総原価表", "展開表", "明細"]) {
-    await menu.getByRole("button", { name: screen, exact: true }).click();
-    await expect(app.getByRole("heading", { name: screen, exact: true })).toBeVisible();
-    for (const name of ["表示する種別", "業種", "部署"]) {
-      await expect(app.getByRole("group", { name, exact: true })).toHaveCount(0);
-    }
-    await expect(app.locator(".plan-slicers")).toHaveCount(0);
-    if (screen === "施策一覧") {
-      await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(13);
-    }
-    if (screen === "総原価表" || screen === "展開表") {
-      await expect(app.getByRole("table").getByRole("columnheader").filter({ hasText: "確定予算" }).first()).toBeVisible();
-      await expect(app.getByRole("table").getByRole("columnheader").filter({ hasText: "見通し" }).first()).toBeVisible();
-    }
-    if (screen === "明細") {
-      await expect(app.getByRole("table").getByRole("columnheader", { name: /種別/ })).toBeVisible();
-    }
-  }
+  const menu = app.getByRole("navigation", { name: "メインナビゲーション" });
+  const first = app.getByRole("spinbutton", { name: "比較対象1", exact: true });
+  const second = app.getByRole("spinbutton", { name: "比較対象2", exact: true });
+  await menu.getByRole("button", { name: "総原価表", exact: true }).click();
+  const cost = app.getByRole("table", { name: "総原価表", exact: true });
+  await expect(first).toHaveAttribute("aria-valuetext", "一次予算");
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await expect(cost.getByRole("columnheader", { name: "前年", exact: true })).toHaveCount(12);
+  await expect(cost.getByRole("columnheader", { name: "確定予算", exact: true })).toHaveCount(0);
+  await selectClassification(second, "確定予算");
+  await expect(cost.getByRole("columnheader", { name: "確定予算", exact: true })).toHaveCount(12);
+  await first.press("End");
+  await expect(first).toHaveAttribute("aria-valuetext", "一次予算");
+  await selectClassification(second, "未選択");
+  await selectClassification(first, "確定予算");
+  await expect(cost.getByRole("columnheader", { name: "一次予算", exact: true })).toHaveCount(0);
+  await menu.getByRole("button", { name: "展開表", exact: true }).click();
+  const expansion = app.getByRole("table", { name: "展開表", exact: true });
+  await expect(first).toHaveAttribute("aria-valuetext", "一次予算");
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await expect(expansion.getByRole("columnheader", { name: "前年", exact: true })).toHaveCount(0);
+  await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(0);
+  await selectClassification(second, "確定予算");
+  await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(12);
+  const total = expansion.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) });
+  await expect(total.getByRole("cell").nth(4)).toHaveText("10,010");
+  await selectClassification(second, "未選択");
+  await selectClassification(first, "確定予算");
+  await selectClassification(second, "一次予算");
+  await expect(total.getByRole("cell").nth(4)).toHaveText("10,010");
+  await expect(app.getByText("比較：確定予算 − 一次予算", { exact: true })).toBeVisible();
+  await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
+  const listKind = app.getByRole("spinbutton", { name: "種別", exact: true });
+  await expect(listKind).toHaveAttribute("aria-valuetext", "確定予算");
+  await selectClassification(listKind, "一次予算");
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog").getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(13);
-  await expect(app.locator(".plan-slicers")).toHaveCount(0);
+  await expect(listKind).toHaveAttribute("aria-valuetext", "一次予算");
+  await menu.getByRole("button", { name: "総原価表", exact: true }).click();
+  await expect(first).toHaveAttribute("aria-valuetext", "確定予算");
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await menu.getByRole("button", { name: "展開表", exact: true }).click();
+  await expect(first).toHaveAttribute("aria-valuetext", "確定予算");
+  await expect(second).toHaveAttribute("aria-valuetext", "一次予算");
+  await settleMotion(app.locator("body"));
+  await page.screenshot({ path: `/private/tmp/triadichrome-budget-slots-${testInfo.project.name}.png` });
 });
 
-test("月別引き継ぎ・手修正0・解除・修正開始と取消・前年入力を操作できる", async ({ page, app }, testInfo) => {
+test("一次予算の引き継ぎ・手修正0・解除と前年入力を操作できる", async ({ page, app }) => {
   await openSample(page, app);
-  const menu = app.getByRole("complementary", { name: "メニュー" });
+  const menu = app.getByRole("navigation", { name: "メインナビゲーション" });
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
-  await app.getByRole("button", { name: "修正予算の入力準備", exact: true }).click();
+  await app.getByRole("button", { name: "確定予算の下期調整", exact: true }).click();
   await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
+  await expect(app.getByRole("tab")).toHaveCount(2);
   await april.fill("120");
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();
   await app.getByRole("tab", { name: "確定予算", exact: true }).click();
@@ -54,24 +77,31 @@ test("月別引き継ぎ・手修正0・解除・修正開始と取消・前年�
   await expect(reset).toBeEnabled();
   await reset.click();
   await expect(april).toHaveValue("120");
-  await app.getByRole("tab", { name: "修正予算", exact: true }).click();
-  await expect(april).toBeDisabled();
   await expect(app.getByRole("spinbutton", { name: "売上高 10月の金額", exact: true })).toHaveValue("150");
-  await app.getByRole("tab", { name: "見通し", exact: true }).click();
-  const october = app.getByRole("spinbutton", { name: "売上高 10月の金額", exact: true });
-  await expect(october).toHaveValue("100");
-  await app.getByRole("button", { name: "修正予算を開始", exact: true }).click();
-  await expect(october).toHaveValue("150");
-  await app.getByRole("button", { name: "確定予算を使う状態に戻す", exact: true }).click();
-  await expect(october).toHaveValue("100");
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
-  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
-  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
+  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   const previous = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   await previous.fill("1001");
-  await expect(app.getByRole("combobox", { name: "部署名", exact: true })).toBeEnabled();
+  await previous.press("Enter");
+  await expect(app.getByRole("spinbutton", { name: "部署名", exact: true })).toBeEnabled();
+  await menu.getByRole("button", { name: "総原価表", exact: true }).click();
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
+  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await expect(previous).toHaveValue("1001");
-  await settleMotion(app.locator("body"));
-  await page.screenshot({ path: `/private/tmp/triadichrome-single-year-${testInfo.project.name}.png` });
+});
+
+test("予算選択の保存失敗では選択と表を保持する", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await page.getByLabel("ファイル操作", { exact: true }).selectOption("save-failure");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "展開表", exact: true }).click();
+  const second = app.getByRole("spinbutton", { name: "比較対象2", exact: true });
+  await second.press("ArrowDown");
+  await expect(app.getByRole("alert")).toContainText("保存失敗");
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await expect(app.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(0);
+  await expect(second).toBeEnabled();
 });

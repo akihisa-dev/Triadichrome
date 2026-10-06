@@ -16,7 +16,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   let bytes = await createTriadicDatabase(fiscalYear);
   const kinds = (await readPlanContents(bytes)).kinds;
   if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
-  if (kinds.find(item => item.id === 5)?.kindName !== "実績") throw new Error("実績の種別を確認できません。");
+  if (kinds.length !== 2) throw new Error("予算の2種別を確認できません。");
   const expansions = (await readPlanContents(bytes)).expansions;
   if (expansions.length !== INITIAL_EXPANSIONS.length || expansions.some((item, index) => item.expansionName !== INITIAL_EXPANSIONS[index]!.expansionName)) throw new Error("展開マスタの初期データが一致しません。");
   const periodTypes = (await readPlanContents(bytes)).periodTypes;
@@ -48,7 +48,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [
-    { ...annual("売上高", 120000, 5000), overrides: { 2: { 4: "130000" }, 3: { 10: "170000" }, 4: { 11: "0" }, 5: { 4: "125000" } } }, annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
+    { ...annual("売上高", 120000, 5000), overrides: { 2: { 4: "130000", 10: "170000", 11: "0" } } }, annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
     annual("宣伝広告費", 8000), annual("旅費", 3000), annual("営業外収益", 125.501),
   ]);
   await add("保守サービスの新規契約", "7月開始。4〜6月は未入力、翌年3月まで継続します。", [
@@ -80,8 +80,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   await add("未確定施策の入力準備", "全月0でも科目は使用中です。未所属費用を集計へ移す操作も試せます。", [row("未所属費用", {})]);
 
   await add("確定予算の手修正", "確定予算だけを月ごとに手修正します。", [{ ...annual("売上高", 100), overrides: { 2: { 4: "120", 5: "0" } } }]);
-  await add("修正予算の入力準備", "開始前の修正予算10月だけを150に準備しています。開始すると見通しへ伝わります。", [{ ...annual("売上高", 100), overrides: { 3: { 10: "150" } } }]);
-  await add("見通しと実績の手修正", "見通し10月は110、実績4月は90。引き継ぎと手修正を比較できます。", [{ ...annual("グループ売上高", 100), overrides: { 4: { 10: "110" }, 5: { 4: "90" } } }]);
+  await add("確定予算の下期調整", "確定予算10月を150に手修正しています。一次予算との差を確認できます。", [{ ...annual("売上高", 100), overrides: { 2: { 10: "150" } } }]);
+  await add("確定予算のゼロ固定", "確定予算10月は0、4月は90。手修正0の固定と引き継ぎへの復帰を確認できます。", [{ ...annual("グループ売上高", 100), overrides: { 2: { 10: "0", 4: "90" } } }]);
   await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。2行の4〜6月を範囲選択し、複数行・複数月の貼り付け、同値入力、0への消去を確認できます。", [row("未所属費用", {}), row("売上高", {})]);
   for (const [index, industry] of industries.entries()) {
     for (const [departmentIndex, department] of departments.entries()) {

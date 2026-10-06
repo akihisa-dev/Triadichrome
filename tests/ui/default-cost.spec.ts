@@ -9,7 +9,8 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   const table = app.getByRole("table", { name: "総原価表", exact: true });
   await expect(table.getByRole("rowheader")).toHaveCount(73);
   await expect(app.getByText("単位：千円", { exact: true })).toBeVisible();
-  await expect(table.getByRole("columnheader").filter({ hasText: /見通し$/ })).toHaveCount(12);
+  await expect(table.getByRole("columnheader", { name: "一次予算", exact: true })).toHaveCount(12);
+  await selectClassification(app.getByRole("spinbutton", { name: "比較対象2", exact: true }), "確定予算");
   await expect(table.getByRole("rowheader").first()).toHaveText("売上高");
   await expect(table.getByRole("rowheader").last()).toHaveText("利益率");
   await expect(table.getByText("未設定", { exact: true })).toHaveCount(0);

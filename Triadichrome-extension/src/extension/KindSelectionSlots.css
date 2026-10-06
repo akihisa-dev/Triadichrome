@@ -1,0 +1,2 @@
+.kind-selection-slots { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; flex: 0 0 auto; }
+.kind-selection-slots .classification-field { width: 128px; }

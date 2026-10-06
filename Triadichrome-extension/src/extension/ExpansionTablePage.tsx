@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { initiativeMonths, type Initiative, type PlanContents } from "../core/initiatives";
 import { buildKindExpansionTable } from "../core/planTables";
@@ -5,7 +6,7 @@ import type { KindId } from "../core/kindAmounts";
 import { formatAmount } from "../core/amounts";
 
 type Props = {
-  contents: PlanContents; selected: KindId[];
+  contents: PlanContents; selected: KindId[]; selection: ReactNode;
   onOpenInitiative: (initiative: Initiative) => void;
 };
 function AmountCells({ values }: { values: Initiative["months"][] }) {
@@ -14,12 +15,13 @@ function AmountCells({ values }: { values: Initiative["months"][] }) {
     <td title={months[month]?.profit === null ? "属性未設定" : formatAmount(months[month]?.profit)} className={index === values.length - 1 ? "initiative-month-end" : undefined}>{months[month]?.profit === null ? "属性未設定" : formatAmount(months[month]?.profit)}</td>
   </Fragment>)}</Fragment>);
 }
-export function ExpansionTablePage({ contents, selected, onOpenInitiative }: Props) {
+export function ExpansionTablePage({ contents, selected, selection, onOpenInitiative }: Props) {
   const table = buildKindExpansionTable(contents, selected, "registered");
-  const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), "比較"];
+  const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
+    {selection}
     <div className="initiative-list-heading"><h1 id="expansion-table-title">展開表</h1><span className="field-hint">単位：千円</span>
-      <span className="field-hint">比較：{labels[1]} − {labels[0]}</span>
+      {selected.length === 2 && <span className="field-hint">比較：確定予算 − 一次予算</span>}
     </div>
     <div className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>
       <table className="initiative-list-table expansion-table" aria-label="展開表">

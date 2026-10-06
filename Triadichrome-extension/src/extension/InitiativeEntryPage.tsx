@@ -16,7 +16,6 @@ import { type InitiativeEntryDraft } from "../core/initiatives";
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
   embedded?: boolean;
-  revisedActive?: boolean;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   expansions: Expansion[];
@@ -29,7 +28,7 @@ type InitiativeEntryPageProps = {
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, embedded = false, revisedActive = false }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, embedded = false }: InitiativeEntryPageProps) {
   const readOnly = useHistoryReadOnly();
   const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
@@ -94,7 +93,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       <div className="kind-tabs" role="tablist" aria-label="入力する種別">{INITIAL_KINDS.map(item => <button key={item.id} id={`kind-tab-${item.id}`} type="button" role="tab" aria-selected={kind === item.id} aria-controls="kind-amount-panel" onClick={() => setKind(item.id)}>{item.kindName}</button>)}</div>
       <span className="field-hint">前年差・単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-amount-table-container" id="kind-amount-panel" role="tabpanel" aria-labelledby={`kind-tab-${kind}`} aria-label="月別計画金額の入力表" tabIndex={0}>
-        <InitiativeAmountGrid key={kind} draft={draft} kind={kind} revisedActive={revisedActive}
+        <InitiativeAmountGrid key={kind} draft={draft} kind={kind}
           accounts={accounts} isSaving={readOnly || isSaving} onDraftChange={onDraftChange} />
       </div>
       <div className="initiative-row-actions">

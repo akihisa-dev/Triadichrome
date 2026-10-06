@@ -8,6 +8,7 @@ export function verifyInitiativeGrid(api) {
       { clientKey: "unassigned", accountId: null, amounts: {} },
     ] };
   const before = structuredClone(draft);
+  for (const kind of [0, 3, 4, 5]) assert.throws(() => api.pasteInitiativeGrid(draft, kind, { row: 0, column: 0 }, "1"), /種別/);
   const selection = { anchor: { row: 1, column: 1 }, end: { row: 0, column: 0 } };
   const pasted = api.pasteInitiativeGrid(draft, 1, { row: 0, column: 0 }, "1,200.125\t-0.001\r\n\t0\r\n");
   assert.equal(pasted.rows[0].amounts[4], "1200.125");
@@ -22,17 +23,14 @@ export function verifyInitiativeGrid(api) {
   }
   assert.equal(filled.rows[0].overrides[2][6], "11");
   assert.equal(filled.rows[0].amounts[4], "7");
-  assert.equal(api.resolvedAmount(filled.rows[0], 4, 4, false), "0", "手修正した0は引き継ぎへ伝わる");
-  const late = api.pasteInitiativeGrid(draft, 3, { row: 0, column: 6 }, "15\t-0.001");
-  assert.equal(late.rows[0].overrides[3][10], "15");
-  assert.equal(late.rows[0].overrides[3][11], "-0.001");
-  for (const kind of [4, 5]) assert.equal(api.fillInitiativeGrid(draft, kind, selection, "3.125").rows[1].overrides[kind][5], "3.125");
+  assert.equal(api.resolvedAmount(filled.rows[0], 2, 4), "0", "手修正した0は引き継ぎへ伝わる");
+  const late = api.pasteInitiativeGrid(draft, 2, { row: 0, column: 6 }, "15\t-0.001");
+  assert.equal(late.rows[0].overrides[2][10], "15");
+  assert.equal(late.rows[0].overrides[2][11], "-0.001");
   for (const text of ["1\t2\n3\t不正", "1\t2\n3", "1.0001", "12,34", "=1+2", "1e3"]) {
     assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 0, column: 0 }, text));
   }
   assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 1, column: 0 }, "1\n2"), /勘定科目/);
-  assert.throws(() => api.pasteInitiativeGrid(draft, 3, { row: 0, column: 5 }, "1\t2"), /実績/);
-  assert.throws(() => api.fillInitiativeGrid(draft, 3, selection, "0"), /実績/);
   assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 0, column: 11 }, "1\t2"), /外/);
   assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 2, column: 0 }, "1\n2"), /外/);
   assert.throws(() => api.fillInitiativeGrid(draft, 1, { anchor: { row: -1, column: 0 }, end: { row: 0, column: 0 } }, "0"), /外/);

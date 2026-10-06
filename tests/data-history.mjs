@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 export async function verifyDataHistory(api) {
   const { createTriadicDatabase, readPlanContents, openTriadicDatabase, readDataHistory, readHistorySnapshot, trackHistoryChange,
-    recordDataHistory, restoreDataHistory, deleteDataHistory, writePlanChange, setRevisedBudgetActive, registerInitiative,
+    recordDataHistory, restoreDataHistory, deleteDataHistory, writePlanChange, saveKindSelection, registerInitiative,
     savePreviousAmounts, changeAccountMaster, changeDepartmentMaster } = api;
   const t = minutes => new Date(Date.UTC(2026, 3, 1, 0, minutes)).toISOString();
   const original = await createTriadicDatabase(2026);
@@ -10,12 +10,12 @@ export async function verifyDataHistory(api) {
   assert.deepEqual(await readDataHistory(original), { entries: [], dirtySince: null });
   assert.equal(await recordDataHistory(original, t(10), true), original, "閲覧だけでは履歴を作らない");
 
-  let bytes = await trackHistoryChange(original, await setRevisedBudgetActive(original, true), t(0));
+  let bytes = await trackHistoryChange(original, await saveKindSelection(original, "cost-table", [1, 2]), t(0));
   let history = await readDataHistory(bytes);
   assert.equal(history.entries.length, 1, "初回変更前を記録");
   assert.deepEqual(await readPlanContents(await readHistorySnapshot(bytes, history.entries[0].id)), expected);
   const draft = { name: "履歴の確認", note: "初期", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: "2026",
-    rows: [{ accountId: expected.accounts[0].id, amounts: { 4: "0.001", 3: "-2.345" }, overrides: { 2: { 4: "9" }, 4: { 10: "0" } } }] };
+    rows: [{ accountId: expected.accounts[0].id, amounts: { 4: "0.001", 3: "-2.345" }, overrides: { 2: { 4: "9", 10: "0" } } }] };
   bytes = await trackHistoryChange(bytes, await registerInitiative(bytes, draft), t(2));
   assert.equal((await readDataHistory(bytes)).dirtySince, t(0), "追加保存でも最初の5分期限を延長しない");
   assert.equal(await recordDataHistory(bytes, t(4)), bytes, "5分前に自動記録しない");
@@ -60,7 +60,7 @@ export async function verifyDataHistory(api) {
   assert.ok(cutoffEntries.some(entry => entry.recordedAt === t(5)));
   const allDeleted = await deleteDataHistory(restored, { ids: restoredHistory.entries.map(entry => entry.id) });
   assert.equal((await readDataHistory(allDeleted)).entries.length, 0);
-  const next = await recordDataHistory(await trackHistoryChange(allDeleted, await setRevisedBudgetActive(allDeleted, false), t(22)), t(23), true);
+  const next = await recordDataHistory(await trackHistoryChange(allDeleted, await saveKindSelection(allDeleted, "cost-table", [2]), t(22)), t(23), true);
   assert.ok((await readDataHistory(next)).entries[0].id > restoredHistory.entries[0].id, "削除後も識別子を再利用しない");
   await assert.rejects(deleteDataHistory(restored, { before: "invalid" }), /日時/);
   await assert.rejects(deleteDataHistory(restored, { ids: [olderId, 99999] }), /見つかりません/);

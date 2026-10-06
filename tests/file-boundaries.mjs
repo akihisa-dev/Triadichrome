@@ -32,14 +32,14 @@ export async function verifyFileBoundaries(api) {
     async write(value) { pending = value; writes++; }, async close() { stored = new Uint8Array(pending); }, async abort() {},
   }; } };
   const plan = { ...await api.readPlanContents(stored), bytes: stored, name: handle.name, handle };
-  const changed = await api.saveKindSelection(stored, "initiative-list", [5]);
+  const changed = await api.saveKindSelection(stored, "initiative-list", [1]);
   const saved = await api.writePlanChange(plan, handle, changed);
-  assert.deepEqual((await api.readPlanContents(stored)).kindSelections["initiative-list"], [5]);
+  assert.deepEqual((await api.readPlanContents(stored)).kindSelections["initiative-list"], [1]);
   await assert.rejects(api.writePlanChange(plan, handle, changed), /別の操作で更新/);
   assert.equal(writes, 1);
   const beforeFailure = stored.slice();
   const failing = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };
-  await assert.rejects(api.writePlanChange(saved, failing, await api.setRevisedBudgetActive(stored, true)), /保存失敗/);
+  await assert.rejects(api.writePlanChange(saved, failing, await api.saveKindSelection(stored, "cost-table", [1, 2])), /保存失敗/);
   assert.deepEqual(stored, beforeFailure);
   await assert.rejects(api.writePlanChange(saved, { ...handle, name: "確認.txt" }, changed), /拡張子/);
   console.log("PASS: 不正ファイル、円精度、前年参照の削除保護、保存確定失敗、競合時の非上書き");

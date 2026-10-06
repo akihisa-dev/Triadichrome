@@ -65,8 +65,6 @@ test("キーボードでレールへ入ると項目名が現れ、外へ戻る�
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   await trigger.focus();
   await page.keyboard.press("Tab");
-  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
-  await page.keyboard.press("Tab");
   await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Tab");
@@ -78,8 +76,6 @@ test("キーボードでレールへ入ると項目名が現れ、外へ戻る�
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる", exact: true })).toBeFocused();
-  await page.keyboard.press("Shift+Tab");
-  await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(app.getByRole("button", { name: "前の画面に戻る", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");

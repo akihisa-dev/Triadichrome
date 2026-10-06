@@ -1,5 +1,6 @@
 import { initiativesForKind } from "../core/initiatives";
-import { type PlanChange } from "../core/kindAmounts";
+import { KindSelectionSlots } from "./KindSelectionSlots";
+import { type KindId, type KindScreen, type PlanChange } from "../core/kindAmounts";
 import { PreviousInputPage } from "./PreviousInputPage";
 import { type KindChange } from "../core/kindMaster";
 import { KindMasterPage } from "./KindMasterPage";
@@ -121,6 +122,14 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     try { setContents(await onChangePlan(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
+  const kindSelection = (screen: KindScreen) => <KindSelectionSlots screen={screen} selected={contents.kindSelections[screen]} disabled={navigationBlocked}
+    onChange={(selected: KindId[]) => {
+      if (preview) {
+        setPreview({ ...preview, contents: { ...contents, kindSelections: { ...contents.kindSelections, [screen]: selected } } });
+        return;
+      }
+      void changePlan({ type: "selection", screen, selected }).catch(error => setNotice({ message: error instanceof Error ? error.message : "種別の選択を保存できませんでした。", error: true }));
+    }} />;
   const changeDetail = async (change: DetailChange) => {
     assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
@@ -302,7 +311,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           <span className="history-preview-label">{historyDate(preview.entry.recordedAt)} · 閲覧専用</span>
           <button className="secondary-button" type="button" disabled={navigationBlocked} onClick={() => { setPreview(null); resetScreens("data-history"); }}>現在に戻る</button>
           <button className="primary-button" type="button" disabled={navigationBlocked} onClick={() => { setRestoreError(""); setRestoreRequested(true); }}>この時点に戻す</button>
-        </div> : <button className="text-button" type="button" disabled={navigationBlocked} onClick={() => { void changePlan({ type: "revised", active: !contents.revisedActive }).catch(error => setNotice({ message: error instanceof Error ? error.message : "修正予算の状態を保存できませんでした。", error: true })); }}>{contents.revisedActive ? "確定予算を使う状態に戻す" : "修正予算を開始"}</button>}
+        </div> : null}
       </header>
       <div className="home-layout">
         <aside id="home-sidebar" className={`sidebar-panel${isSidebarOpen ? " is-open" : ""}`} aria-label="メニュー"
@@ -371,11 +380,11 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "previous-input": return <PreviousInputPage contents={contents} onSave={input => changePlan({ type: "previous", input })} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "details": return <DetailTablePage contents={contents} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
-                case "initiative-entry": return <InitiativeEntryPage revisedActive={contents.revisedActive} draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
-                case "initiative-detail": return currentInitiative && <InitiativeDetailPage key={currentInitiative.id} revisedActive={contents.revisedActive} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
-                case "initiative-list": return <InitiativeListPage initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!, contents.revisedActive)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} renderEditor={(initiative, onClose) => <InitiativeDetailPage key={initiative.id} embedded initiative={contents.initiatives.find(item => item.id === initiative.id)!} revisedActive={contents.revisedActive} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={draft => updateSelected(initiative, draft)} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={onClose} />} />;
-                case "cost-table": return <CostTablePage contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
-                case "expansion-table": return <ExpansionTablePage contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
+                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
+                case "initiative-detail": return currentInitiative && <InitiativeDetailPage key={currentInitiative.id} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
+                case "initiative-list": return <InitiativeListPage selection={kindSelection("initiative-list")} initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} renderEditor={(initiative, onClose) => <InitiativeDetailPage key={initiative.id} embedded initiative={contents.initiatives.find(item => item.id === initiative.id)!} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={draft => updateSelected(initiative, draft)} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={onClose} />} />;
+                case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
+                case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
                 case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeKinds} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;
