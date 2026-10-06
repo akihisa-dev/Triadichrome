@@ -102,6 +102,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
               const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
               return <tr key={index}>
                 <th scope="row">
+                  <div className="initiative-account-cell">
                   <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
                     onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
@@ -109,6 +110,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
                     {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
                   </select>
                   <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
+                  </div>
                 </th>
                 {months.map(month => (
                   <td key={month}>

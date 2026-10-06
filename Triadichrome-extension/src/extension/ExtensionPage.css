@@ -368,9 +368,9 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .initiative-amount-table-container {
   max-width: 100%;
-  margin-top: 32px;
+  margin-top: 16px;
   overflow: auto;
-  border-radius: 8px;
+  border-radius: 0;
   outline: 2px solid transparent;
   outline-offset: 2px;
   transition: outline-color var(--motion-feedback) var(--motion-ease);
@@ -382,14 +382,20 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .initiative-amount-table {
   width: 100%;
-  min-width: 1440px;
+  min-width: 1180px;
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
   border-spacing: 0;
   table-layout: fixed;
 }
 
 .initiative-amount-table th,
 .initiative-amount-table td {
-  padding: 8px 6px;
+  padding: 4px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  background: var(--surface);
 }
 
 .initiative-amount-table th {
@@ -399,10 +405,10 @@ button:disabled { cursor: default; opacity: 0.5; }
 }
 
 .initiative-amount-table thead th {
-  padding: 0 18px 8px;
+  padding: 8px 12px;
   color: var(--muted);
   font-size: 13px;
-  background: var(--canvas);
+  background: var(--soft);
 }
 
 .initiative-amount-table th:first-child {
@@ -410,36 +416,28 @@ button:disabled { cursor: default; opacity: 0.5; }
   z-index: 1;
   left: 0;
   width: clamp(150px, 20vw, 220px);
-  padding-left: 0;
-  padding-right: 16px;
+  padding-left: 6px;
+  padding-right: 6px;
   text-align: left;
 }
 
 .initiative-amount-table tbody th {
-  background: var(--canvas);
-}
-
-.initiative-amount-table td:last-child {
-  padding-right: 0;
-}
-
-.initiative-amount-table thead th:last-child {
-  padding-right: 12px;
+  background: var(--surface);
 }
 
 .initiative-amount-table input {
   display: block;
   width: 100%;
   min-width: 0;
-  min-height: 44px;
-  padding: 10px 12px;
+  min-height: 32px;
+  padding: 6px 8px;
   appearance: textfield;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 0;
   outline: 2px solid transparent;
   outline-offset: -2px;
   color: var(--ink);
-  background: var(--soft);
+  background: transparent;
   font: inherit;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -466,10 +464,10 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .initiative-amount-table select {
   width: 100%;
-  min-height: 44px;
-  padding: 10px 8px;
+  min-height: 32px;
+  padding: 6px 8px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
   color: var(--ink);
   background: var(--surface);
   font: inherit;
@@ -481,6 +479,10 @@ button:disabled { cursor: default; opacity: 0.5; }
 
 .initiative-amount-table select:focus-visible { outline-color: var(--focus); }
 .initiative-amount-table input:disabled { opacity: 0.45; }
+.initiative-account-cell { display: flex; align-items: center; gap: 4px; }
+.initiative-account-cell select { flex: 1; min-width: 0; }
+.initiative-account-cell .text-button { flex-shrink: 0; min-height: 32px; padding: 4px; font-size: 12px; }
+
 .initiative-row-actions { margin-top: 16px; }
 .initiative-master-guide { margin-top: 24px; color: var(--muted); font-size: 14px; line-height: 1.7; }
 

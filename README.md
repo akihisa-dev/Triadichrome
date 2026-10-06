@@ -96,6 +96,8 @@ npm run build
 TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
 `npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。続いて[確認用の.triadicファイル](#確認用のtriadicファイル)を再生成します。
 
+施策入力の月別金額は、月見出しに背景を付け、行と列を淡い罫線で区切った表として表示します。科目選択と削除を同じ行内に並べ、金額欄の余白を抑えています。
+
 ## 検証とGitフック
 
 作業範囲、安全性、依存管理、コミット・バージョン・Issue対応の判断基準は[AGENTS.md](AGENTS.md)にまとめています。通常は`npm run verify`を実行します。通常テストではマスタ入口とホームの相関図に表示される全マスタを照合し、追加漏れ・重複・余分な項目を検出します。専用ブラウザの導入は不要です。画面に影響する変更の確認は次節を参照してください。
