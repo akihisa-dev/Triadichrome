@@ -46,7 +46,7 @@ export async function verifyAutoSave(api) {
   assert.equal(updated.initiatives[0].rows[0].amounts[4], "200");
   assert.equal(updated.initiatives[0].rows[0].amounts[5], "0");
   assert.equal(Object.keys(updated.initiatives[0].rows[0].amounts).length, 12);
-  assert.deepEqual(updated.initiatives[0].months[4], { sales: 174.5, profit: 174.5 });
+  assert.deepEqual(updated.initiatives[0].months[4], { sales: 174.5, expense: 0, profit: 174.5 });
   assert.deepEqual(updated.initiatives[1], before.initiatives[1], "別の施策に影響しない");
   assert.deepEqual(await readPlanContents(bytes), before);
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2026, { ...edited, name: "別施策" }), /同じ施策名/);

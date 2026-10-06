@@ -37,11 +37,11 @@ export async function verifyInitiativeData(api, root) {
   assert.equal(record.rows[0].amounts[4], "100");
   assert.equal(record.rows[1].amounts[3], "-0.25");
   assert.equal(record.rows[1].amounts[4], "25.5");
-  assert.deepEqual(record.months[4], { sales: 95.5, profit: 85.5 });
-  assert.deepEqual(record.months[5], { sales: 0, profit: 0 });
-  assert.deepEqual(record.months[7], { sales: 0, profit: 0 }, "未入力月はゼロとして保持");
-  assert.deepEqual(record.months[6], { sales: 0, profit: 5.5 }, "負の費用は利益に正の影響");
-  assert.deepEqual(record.months[3], { sales: 1, profit: 1 });
+  assert.deepEqual(record.months[4], { sales: 95.5, expense: 20, profit: 85.5 });
+  assert.deepEqual(record.months[5], { sales: 0, expense: 0, profit: 0 });
+  assert.deepEqual(record.months[7], { sales: 0, expense: 0, profit: 0 }, "未入力月はゼロとして保持");
+  assert.deepEqual(record.months[6], { sales: 0, expense: -5.5, profit: 5.5 }, "負の費用は利益に正の影響");
+  assert.deepEqual(record.months[3], { sales: 1, expense: 0, profit: 1 });
   assert.equal((await readPlanContents(bytes)).initiatives.length, 0, "入力データの元ファイルを変更しない");
   for (const year of ["", "0", "2026.5", "9999", "NaN"]) await assert.rejects(registerInitiative(bytes, { ...draft, fiscalYear: year }), /年度/);
   for (const amount of ["Infinity", "NaN", " "]) await assert.rejects(registerInitiative(bytes, { ...draft, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: amount } }] }), /有効な金額/);
@@ -57,7 +57,7 @@ export async function verifyInitiativeData(api, root) {
   assert.deepEqual(costSum, detailSum, "各ビューは同じ明細を集計");
   database.close();
   const reclassified = await changeAccountMaster(result, { type: "update", id: initial.accounts[2].id, accountCode: "102", accountName: "expense", accountType: "profit" });
-  assert.deepEqual((await readPlanContents(reclassified.bytes)).initiatives[0].months[4], { sales: 95.5, profit: 125.5 });
+  assert.deepEqual((await readPlanContents(reclassified.bytes)).initiatives[0].months[4], { sales: 95.5, expense: 0, profit: 125.5 });
   await assert.rejects(registerInitiative(result, { ...draft, name: "別年度の施策", fiscalYear: "2027" }), /基準年度/);
 
   let stored = bytes;

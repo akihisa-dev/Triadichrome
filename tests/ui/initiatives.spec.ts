@@ -111,13 +111,13 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await expect(app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(row.getByRole("cell").nth(0)).toHaveText("826");
-  await expect(row.getByRole("cell").nth(1)).toHaveText("776");
-  await expect(row.getByRole("cell").nth(2)).toHaveText("0");
-  await expect(row.getByRole("cell").nth(4)).toHaveText("0");
-  await expect(row.getByRole("cell").nth(23)).toHaveText("300");
+  await expect(row.getByRole("cell").nth(2)).toHaveText("776");
+  await expect(row.getByRole("cell").nth(3)).toHaveText("0");
+  await expect(row.getByRole("cell").nth(6)).toHaveText("0");
+  await expect(row.getByRole("cell").nth(35)).toHaveText("300");
   await expect(row.getByRole("rowheader")).toHaveAttribute("title", "登録時の備考");
   await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
-  const region = app.getByRole("region", { name: "施策一覧の月別売上・利益" });
+  const region = app.getByRole("region", { name: "施策一覧の月別売上・費用・利益" });
   await settleMotion(app.locator("body"));
   const before = (await row.getByRole("rowheader").boundingBox())!;
   await region.evaluate(node => { node.scrollLeft = node.scrollWidth; });
@@ -144,13 +144,13 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await expect(app.getByRole("button", { name: "費用を編集", exact: true })).toBeVisible();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(row.getByRole("cell").nth(1)).toHaveText("976");
+  await expect(row.getByRole("cell").nth(2)).toHaveText("976");
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(row.getByRole("cell").nth(1)).toHaveText("976");
+  await expect(row.getByRole("cell").nth(2)).toHaveText("976");
   await expect(row.getByRole("rowheader")).toHaveAttribute("title", "登録時の備考");
 });
 

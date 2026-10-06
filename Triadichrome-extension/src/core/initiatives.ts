@@ -24,7 +24,7 @@ export type Initiative = {
   expansionId: number | null; departmentId?: number | null; periodTypeId?: number | null; industryId?: number | null;
   fiscalYear: number | null;
   rows: InitiativeRow[];
-  months: Partial<Record<InitiativeMonth, { sales: number | null; profit: number | null }>>;
+  months: Partial<Record<InitiativeMonth, { sales: number | null; expense: number; profit: number | null }>>;
 };
 export type PlanContents = PlanSettings & { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[]; kinds: Kind[]; details?: DetailRecord[] | undefined; formatVersion?: number | undefined; migrationError?: string | undefined };
 
@@ -139,16 +139,16 @@ export function initiativesForKind(initiatives: Initiative[], accounts: Account[
     const rows = initiative.rows.map(row => ({ ...row, amounts: Object.fromEntries(initiativeMonths.map(month => [month, resolvedAmount(row, kind, month, revisedActive)])) }));
     const months: Initiative["months"] = {};
     for (const month of initiativeMonths) {
-      let salesYen = 0n, profitYen = 0n;
+      let salesYen = 0n, expenseYen = 0n, profitYen = 0n;
       for (const row of rows) {
         const attribute = accounts.find(account => account.id === row.accountId)?.accountType;
         const amount = BigInt(amountToYen(row.amounts[month] || "0"));
         if (attribute === "sales") { salesYen += amount; profitYen += amount; }
         if (attribute === "cost") { salesYen -= amount; profitYen -= amount; }
-        if (attribute === "expense") profitYen -= amount;
+        if (attribute === "expense") { expenseYen += amount; profitYen -= amount; }
         if (attribute === "profit") profitYen += amount;
       }
-      months[month] = { sales: Number(yenToAmount(Number(salesYen))), profit: Number(yenToAmount(Number(profitYen))) };
+      months[month] = { sales: Number(yenToAmount(Number(salesYen))), expense: Number(yenToAmount(Number(expenseYen))), profit: Number(yenToAmount(Number(profitYen))) };
     }
     return { ...initiative, rows, months };
   });
