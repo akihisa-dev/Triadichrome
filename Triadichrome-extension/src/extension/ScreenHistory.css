@@ -1,0 +1,9 @@
+.screen-history {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+
+.screen-history .home-icon-button { width: 32px; height: 32px; }
+.screen-history .home-icon-button:disabled { opacity: 0.3; cursor: default; background: transparent; }
