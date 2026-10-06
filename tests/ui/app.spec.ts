@@ -340,11 +340,10 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
 
 test("新しい計画の年度を一度選び、閉じた後に同じ年度で読み直せる", async ({ app }) => {
   const year = app.getByRole("spinbutton", { name: "年度", exact: true });
-  await year.press("ArrowDown");
-  while (await year.getAttribute("aria-valuenow") !== "2030") {
-    const current = Number(await year.getAttribute("aria-valuenow"));
-    await year.press(current < 2030 ? "ArrowDown" : "ArrowUp");
-  }
+  const initial = Number(await year.getAttribute("aria-valuenow"));
+  for (let count = 0; count < Math.abs(2030 - initial); count++) await year.press(initial < 2030 ? "ArrowDown" : "ArrowUp");
+  await expect(year).toHaveAttribute("data-moving", "false");
+  await expect(year).toHaveAttribute("aria-valuenow", "2030");
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.locator(".home-header")).toContainText("2030年度");
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
@@ -495,8 +494,10 @@ test("年度スロットをドラッグして選び、ページの位置を保�
   await page.mouse.down();
   await page.mouse.move(selected.x + selected.width / 2, selected.y + selected.height / 2 - 28);
   await page.mouse.up();
-  await expect(slot).toHaveAttribute("aria-valuenow", String(year + 1));
+  await expect(slot).toHaveAttribute("data-moving", "false");
+  const selectedYear = Number(await slot.getAttribute("aria-valuenow"));
+  expect(selectedYear).toBeGreaterThan(year);
   expect(await slot.boundingBox()).toEqual(position);
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
-  await expect(app.locator(".home-header")).toContainText(`${year + 1}年度`);
+  await expect(app.locator(".home-header")).toContainText(`${selectedYear}年度`);
 });

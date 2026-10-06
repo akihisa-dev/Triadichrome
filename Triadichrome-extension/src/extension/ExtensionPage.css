@@ -161,21 +161,68 @@ button:disabled { cursor: default; opacity: 0.5; }
 .entry-recent-notice { margin: 1rem 0 0; font-size: 0.8125rem; color: var(--muted); line-height: 1.6; }
 .year-picker { margin-top: 0.875rem; }
 .year-slot {
-  display: grid;
-  grid-template-rows: 28px 44px 28px;
+  position: relative;
+  height: 108px;
   overflow: hidden;
   border-radius: 0.5rem;
-  background: linear-gradient(#fafafa, #f0f0f0 30%, #f0f0f0 70%, #fafafa);
+  background: #f4f4f4;
   touch-action: none;
   user-select: none;
   font-variant-numeric: tabular-nums;
   cursor: ns-resize;
+  perspective: 300px;
 }
 .year-slot[aria-disabled="true"] { opacity: 0.5; }
-.year-slot-adjacent { border: 0; padding: 0; background: transparent; color: #999; font: inherit; font-size: 0.875rem; cursor: pointer; }
-.year-slot-adjacent:hover:not(:disabled) { color: var(--ink); }
-.year-slot-selected { display: flex; align-items: center; justify-content: center; gap: 0.5rem; border-block: 1px solid #dedede; font-size: 1.75rem; font-weight: 600; letter-spacing: -0.04em; }
-.year-slot-unit { font-size: 0.75rem; font-weight: 400; letter-spacing: 0; }
+.year-slot-window {
+  position: absolute;
+  inset: 36px 0;
+  border-block: 1px solid #dedede;
+  background: #ededed;
+}
+.year-slot-reel {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mask-image: linear-gradient(transparent, black 30%, black 70%, transparent);
+}
+.year-slot-number {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  line-height: 36px;
+  text-align: center;
+  font-size: 1.75rem;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  padding-right: 1.5rem;
+  backface-visibility: hidden;
+}
+.year-slot-unit {
+  position: absolute;
+  top: 36px;
+  left: calc(50% + 2rem);
+  height: 36px;
+  line-height: 36px;
+  font-size: 0.75rem;
+  pointer-events: none;
+}
+.year-slot-selected { position: absolute; inset: 36px 0; }
+.year-slot-adjacent {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.year-slot-previous { top: 0; }
+.year-slot-next { bottom: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .year-slot-number { backface-visibility: visible; }
+}
 .year-slot-footer { display: flex; align-items: center; justify-content: space-between; gap: 0.25rem; margin-top: 0.625rem; }
 .year-period { margin: 0; color: var(--muted); font-size: 0.625rem; }
 .year-current { padding: 0; border: 0; background: transparent; color: var(--muted); font: inherit; font-size: 0.6875rem; cursor: pointer; }
