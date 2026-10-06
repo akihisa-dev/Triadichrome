@@ -1054,18 +1054,17 @@ button:disabled { cursor: default; opacity: 0.5; }
 .initiative-header-fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 32px; }
 .initiative-text-fields { flex: 1 1 340px; min-width: 0; }
 .initiative-text-fields .initiative-field { width: 100%; }
-.initiative-classification-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex: 1 1 540px; gap: 16px; margin-top: 24px; min-width: 0; }
-.classification-field { min-width: 0; display: grid; gap: 8px; }
+.initiative-classification-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex: 0 1 440px; gap: 8px; margin-top: 24px; min-width: 0; }
+.classification-field { min-width: 0; display: grid; gap: 4px; }
 .classification-field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
-.classification-slot { position: relative; height: 108px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
-.classification-slot::before { content: ""; position: absolute; inset: 36px 0; background: var(--soft); border-block: 1px solid var(--line); }
+.classification-slot { position: relative; height: 72px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
+.classification-slot::before { content: ""; position: absolute; inset: 24px 0; background: var(--soft); border-block: 1px solid var(--line); }
 .classification-slot:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
 .classification-slot[data-disabled="true"] { opacity: .5; }
 .classification-reel { position: absolute; top: 0; left: 0; width: 100%; transition: transform var(--motion-layout) var(--motion-ease); pointer-events: none; }
-.classification-reel > div { height: 36px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.classification-reel > div { height: 24px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
 .classification-reel > .is-selected { color: var(--ink); font-weight: 600; }
-.classification-slot select { position: absolute; top: 36px; left: 0; width: 100%; height: 36px; opacity: 0; cursor: pointer; }
-.classification-slot button { position: absolute; left: 0; width: 100%; height: 36px; padding: 0; border: 0; background: transparent; cursor: grab; }
+.classification-slot button { position: absolute; left: 0; width: 100%; height: 24px; padding: 0; border: 0; background: transparent; cursor: grab; }
 .classification-slot button:active { cursor: grabbing; }
 .classification-slot button:hover:not(:disabled) { background: #00000005; }
 .classification-previous { top: 0; }

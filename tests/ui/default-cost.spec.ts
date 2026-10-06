@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, expect, settleMotion } from "./fixtures";
+import { test, expect, selectClassification, settleMotion } from "./fixtures";
 
 test("新規計画に承認済みマスタを用意し、千円入力・比較列・利益率を保存後も表示する", async ({ app, page }, testInfo) => {
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
@@ -14,9 +14,9 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   await expect(table.getByRole("rowheader").last()).toHaveText("利益率");
   await expect(table.getByText("未設定", { exact: true })).toHaveCount(0);
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
-  await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
-  await app.getByRole("combobox", { name: "業種名", exact: true }).selectOption("1");
-  await app.getByRole("combobox", { name: "部署名", exact: true }).selectOption("1");
+  await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("1円精度の確認");
   const account = app.getByRole("combobox", { name: "1行目の勘定科目", exact: true });
   await account.selectOption({ label: "401 売上高" });

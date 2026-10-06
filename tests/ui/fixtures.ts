@@ -39,3 +39,13 @@ export { expect };
 export async function attachImage(testInfo: TestInfo, name: string, image: Buffer) {
   await testInfo.attach(name, { body: image, contentType: "image/png" });
 }
+
+// Choose through the same keyboard operation available to slot users.
+export async function selectClassification(slot: Locator, name: string) {
+  await slot.press("Home");
+  const limit = Number(await slot.getAttribute("aria-valuemax"));
+  for (let index = 0; index < limit && await slot.getAttribute("aria-valuetext") !== name; index++) {
+    await slot.press("ArrowDown");
+  }
+  await expect(slot).toHaveAttribute("aria-valuetext", name);
+}
