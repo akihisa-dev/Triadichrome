@@ -3,7 +3,7 @@ import type { RelationView } from "./useRelationCamera";
 
 type Offset = { x: number; y: number; vx: number; vy: number };
 type Pull = { page: string; pointerId: number; x: number; y: number; startX: number; startY: number };
-type Node = { page: string; x: number; y: number };
+type Node = { page: string; x: number; y: number; width?: number; height?: number; sub?: boolean };
 type Edge = { from: string; to: string };
 
 // Graph forces run independently of React; neither dragging nor links restore a node's original position.
@@ -42,7 +42,7 @@ export function useHomeGraphMotion(nodes: readonly Node[], edges: readonly Edge[
             const other = positions.get(page)!;
             const dx = other.x - position.x, dy = other.y - position.y;
             const distance = Math.max(1, Math.hypot(dx, dy));
-            const strength = (distance - 205) * 4;
+            const strength = (distance - 180) * 4;
             forceX += dx / distance * strength;
             forceY += dy / distance * strength;
           }
@@ -54,10 +54,11 @@ export function useHomeGraphMotion(nodes: readonly Node[], edges: readonly Edge[
             const strength = 1200000 / (distance * distance);
             forceX += dx / distance * strength;
             forceY += dy / distance * strength;
-            const overlapX = 170 - Math.abs(dx), overlapY = 74 - Math.abs(dy);
+            const collisionDy = dy + (node.sub ? 0 : 24) - (other.sub ? 0 : 24);
+            const overlapX = ((node.width ?? 200) + (other.width ?? 200)) / 2 + 12 - Math.abs(dx), overlapY = ((node.height ?? 72) + (other.height ?? 72)) / 2 + 12 - Math.abs(collisionDy);
             if (overlapX > 0 && overlapY > 0) {
-              if (overlapX < overlapY) forceX += Math.sign(dx || 1) * overlapX * 35;
-              else forceY += Math.sign(dy || 1) * overlapY * 35;
+              if (overlapX < overlapY) forceX += Math.sign(dx || 1) * overlapX * 60;
+              else forceY += Math.sign(collisionDy || 1) * overlapY * 60;
             }
           }
           value.vx = (value.vx + forceX * heat.current * dt) * Math.exp(-(reduced ? 16 : 7) * dt);
@@ -74,7 +75,9 @@ export function useHomeGraphMotion(nodes: readonly Node[], edges: readonly Edge[
         const x2 = to.x + 100 + b.x, y2 = to.y + 12 + b.y;
         const dx = x2 - x1, dy = y2 - y1, distance = Math.max(1, Math.hypot(dx, dy));
         const ux = dx / distance, uy = dy / distance;
-        paths.current.get(index)?.setAttribute("d", `M${x1 + ux * 12} ${y1 + uy * 12} L${x2 - ux * 12} ${y2 - uy * 12}`);
+        const inset = (node: Node) => node.sub ? Math.min((node.width ?? 112) / 2 / Math.max(.01, Math.abs(ux)), 16 / Math.max(.01, Math.abs(uy))) : 16;
+        const start = inset(from), end = inset(to);
+        paths.current.get(index)?.setAttribute("d", `M${x1 + ux * start} ${y1 + uy * start} L${x2 - ux * end} ${y2 - uy * end}`);
       });
       if (view.current) {
         view.current.positions = Object.fromEntries(nodes.map(node => { const value = offset(node); return [node.page, { x: node.x + 100 + value.x, y: node.y + 12 + value.y }]; }));

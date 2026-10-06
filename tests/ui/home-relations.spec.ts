@@ -4,7 +4,7 @@ test("グラフの全画面への入口と、1回クリック・キーボード�
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
   const navigation = app.getByRole("navigation", { name: "メインナビゲーション" });
-  const screenNames = (await navigation.getByRole("button").allTextContents()).map(name => name.trim()).filter(name => name !== "Home" && name !== "マスタ");
+  const screenNames = (await navigation.getByRole("button").allTextContents()).map(name => name.trim()).filter(name => name !== "Home" && name !== "マスタ" && name !== "履歴");
   await navigation.getByRole("button", { name: "マスタ", exact: true }).click();
   await expect(app.locator(".master-menu-item strong").first()).toBeVisible();
   const masterNames = await app.locator(".master-menu-item strong").allTextContents();
@@ -16,7 +16,7 @@ test("グラフの全画面への入口と、1回クリック・キーボード�
     await home.getByRole("button", { name: "全体表示", exact: true }).click();
     await expect(home.locator(".home-relation-node")).toHaveCount(destinations.length);
     expect((await home.locator(".home-relation-node").allTextContents()).sort()).toEqual([...destinations].sort());
-    await home.getByRole("button", { name, exact: true }).click({ force: true });
+    await home.getByRole("button", { name, exact: true }).locator(".home-relation-name").click();
     await expect(app.getByRole("heading", { name, exact: true })).toBeVisible();
     if (name === "施策入力") {
       await settleMotion(app.locator("body"));
@@ -37,8 +37,9 @@ test("自由なドラッグに接続線と周囲が追従し、離しても元�
   const map = home.locator(".home-relations-map");
   const camera = await map.getAttribute("style");
   const box = (await input.boundingBox())!;
-  const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-  const line = home.locator(".home-relation").filter({ hasText: "科目を選択" }).locator("path");
+  const icon = (await input.locator(".home-relation-icon").boundingBox())!;
+  const center = { x: icon.x + icon.width / 2, y: icon.y + icon.height / 2 };
+  const line = home.locator(".home-relation").filter({ hasText: "科目を選択" }).locator("path").first();
   const path = await line.getAttribute("d");
   await page.mouse.move(center.x, center.y);
   await page.mouse.down();
@@ -58,7 +59,7 @@ test("自由なドラッグに接続線と周囲が追従し、離しても元�
     return Math.abs(node.getBoundingClientRect().x - before);
   });
   expect(sample).toBeGreaterThan(.1);
-  await input.click({ force: true });
+  await input.locator(".home-relation-name").click();
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
 });
 
@@ -103,19 +104,22 @@ test("背景のドラッグ・ズーム・現在の配置への全体表示と�
   })).toBe(true);
 });
 
-test("ホバーとフォーカスで直接の関係を強調し、説明は接続線で確認する", async ({ app }) => {
+test("ホバーとフォーカスで直接の関係を強調し、説明サブノードを常時表示する", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const home = app.getByRole("main", { name: "ホーム", exact: true });
   await settleMotion(app.locator("body"));
   await expect(home.locator(".home-relation-icon svg")).toHaveCount(13);
+  await expect(home.locator(".home-relation-subnode")).toHaveCount(15);
+  await expect(home.locator(".home-relation path")).toHaveCount(30);
+  await expect(home.locator(".home-relation-subnode").filter({ hasText: /^科目を選択$/ })).toBeVisible();
   const input = home.getByRole("button", { name: "施策入力", exact: true });
   const sizes = await home.locator(".home-relation-icon svg").evaluateAll(icons => icons.map(icon => ({ entry: !!icon.closest(".is-entry"), width: Number.parseFloat(getComputedStyle(icon).width) })));
   expect(sizes.filter(icon => icon.entry)[0]!.width).toBeGreaterThan(Math.max(...sizes.filter(icon => !icon.entry).map(icon => icon.width)));
-  await input.hover({ force: true });
+  await input.locator(".home-relation-icon").hover();
   await expect(home.locator(".home-relation.is-active")).toHaveCount(10);
   await input.focus();
   await expect(home.locator(".home-relation.is-active")).toHaveCount(10);
-  await expect(home.locator(".home-relation path title")).toHaveCount(15);
+  await expect(home.locator(".home-relation > title")).toHaveCount(15);
   await expect(home.locator(".home-relation text, .home-relation rect")).toHaveCount(0);
   const blue = await home.locator(".home-relation-node, .home-relation path").evaluateAll(nodes => nodes.some(node => {
     const style = getComputedStyle(node);
@@ -173,12 +177,37 @@ test("動きを減らす設定でも項目は自由に動かせ、移動後の�
   await settleMotion(app.locator("body"));
   const input = home.getByRole("button", { name: "施策入力", exact: true });
   const box = (await input.boundingBox())!;
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  const icon = (await input.locator(".home-relation-icon").boundingBox())!;
+  await page.mouse.move(icon.x + icon.width / 2, icon.y + icon.height / 2);
   await page.mouse.down();
-  await page.mouse.move(box.x + box.width / 2 + 80, box.y + box.height / 2, { steps: 5 });
+  await page.mouse.move(icon.x + icon.width / 2 + 80, icon.y + icon.height / 2, { steps: 5 });
   expect((await input.boundingBox())!.x - box.x).toBeGreaterThan(70);
   await page.mouse.up();
   await expect(home).toBeVisible();
   await input.press("Enter");
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
+});
+
+
+test("関係サブノードを動かすと両側の線が追従し、画面を開かない", async ({ page, app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const home = app.getByRole("main", { name: "ホーム", exact: true });
+  await settleMotion(app.locator("body"));
+  const relation = home.locator(".home-relation").filter({ hasText: "科目を選択" });
+  const subnode = relation.locator(".home-relation-subnode");
+  await subnode.hover({ force: true });
+  await expect(home.locator(".home-relation.is-active")).toHaveCount(1);
+  const before = await relation.locator("path").evaluateAll(paths => paths.map(path => path.getAttribute("d")));
+  const box = (await subnode.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2 - 30, { steps: 6 });
+  await page.mouse.up();
+  await expect(home).toBeVisible();
+  await expect.poll(() => relation.locator("path").evaluateAll(paths => paths.map(path => path.getAttribute("d")))).not.toEqual(before);
+  await subnode.click();
+  await expect(home).toBeVisible();
+  await subnode.focus();
+  await subnode.press("Enter");
+  await expect(home).toBeVisible();
 });

@@ -40,6 +40,15 @@ const edges: { from: HomeDestination; to: HomeDestination; label: string }[] = [
   { from: "expansion-master", to: "expansion-table", label: "グループ分け" },
 ];
 
+// Relation descriptions are graph nodes, joined to both destinations.
+const subNodes = edges.map((edge, index) => {
+  const from = nodes.find(node => node.page === edge.from)!, to = nodes.find(node => node.page === edge.to)!;
+  return { page: `relation-${index}`, name: edge.label, x: (from.x + to.x) / 2,
+    y: (from.y + to.y) / 2, width: Math.max(112, edge.label.length * 12 + 24), height: 32, sub: true };
+});
+const graphNodes = [...nodes, ...subNodes];
+const graphEdges = edges.flatMap((edge, index) => [{ from: edge.from, to: subNodes[index]!.page }, { from: subNodes[index]!.page, to: edge.to }]);
+
 type Props = {
   onNavigate: (page: HomeDestination) => void;
   disabled: boolean;
@@ -48,9 +57,9 @@ type Props = {
 const MIN_SCALE = .05;
 const MAX_SCALE = 2.5;
 export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
-  const graph = useHomeGraphMotion(nodes, edges, view);
+  const graph = useHomeGraphMotion(graphNodes, graphEdges, view);
   const viewport = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState<HomeDestination | null>(null);
+  const [active, setActive] = useState<string | null>(null);
   const { camera, target: cameraTarget, update, smooth, cancel: cancelZoom } = useRelationCamera(view);
   const [dragging, setDragging] = useState(false);
   const points = useRef(new Map<number, { x: number; y: number }>());
@@ -59,8 +68,8 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   const fit = (animated = false) => {
     const node = viewport.current;
     if (!node) return;
-    const positions = nodes.map(item => view.current?.positions?.[item.page] ?? { x: item.x + 100, y: item.y + 12 });
-    const left = Math.min(...positions.map(point => point.x - 106)), right = Math.max(...positions.map(point => point.x + 106));
+    const positions = graphNodes.map(item => ({ ...(view.current?.positions?.[item.page] ?? { x: item.x + 100, y: item.y + 12 }), halfWidth: "width" in item ? item.width / 2 + 6 : 106 }));
+    const left = Math.min(...positions.map(point => point.x - point.halfWidth)), right = Math.max(...positions.map(point => point.x + point.halfWidth));
     const top = Math.min(...positions.map(point => point.y - 18)), bottom = Math.max(...positions.map(point => point.y + 66));
     const scale = Math.max(MIN_SCALE, Math.min(1, (node.clientWidth - 80) / (right - left), (node.clientHeight - 80) / (bottom - top)));
     (animated ? smooth : update)({ x: node.clientWidth / 2 - (left + right) / 2 * scale, y: node.clientHeight / 2 - (top + bottom) / 2 * scale, scale, fitted: true });
@@ -107,7 +116,8 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
     startGesture();
     if (!points.current.size) setDragging(false);
   };
-  const related = new Set(edges.filter(edge => edge.from === active || edge.to === active).flatMap(edge => [edge.from, edge.to]));
+  const isRelated = (edge: typeof edges[number], index: number) => edge.from === active || edge.to === active || subNodes[index]!.page === active;
+  const related = new Set(edges.flatMap((edge, index) => isRelated(edge, index) ? [edge.from, edge.to] : []));
   return <main className="home-relations" aria-label="ホーム">
     <h1>Home</h1>
     <div className="home-relations-canvas">
@@ -118,7 +128,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
         if (!points.current.size) moved.current = false;
         const point = position(event);
         if (!points.current.size && !disabled) {
-          const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>(".home-relation-node") : null;
+          const target = event.target instanceof Element ? event.target.closest<HTMLElement>(".home-relation-node, .home-relation-subnode") : null;
           if (target?.dataset.page) graph.begin(target.dataset.page, event.pointerId, point.x, point.y);
         } else if (points.current.size) { graph.release(); moved.current = true; }
         points.current.set(event.pointerId, point);
@@ -159,8 +169,18 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
         else if (event.key === "Home" || event.key === "0") { event.preventDefault(); fit(true); }
       }}>
       <svg className="home-relations-map" viewBox="0 0 1240 640" aria-label="画面とマスタの関係" style={{ transform: `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})` }}>
-        {edges.map((edge, index) => <g key={`${edge.from}-${edge.to}`} className={`home-relation${active && (edge.from === active || edge.to === active) ? " is-active" : active ? " is-muted" : ""}`}>
-          <path ref={element => { if (element) graph.paths.current.set(index, element); else graph.paths.current.delete(index); }}><title>{edge.label}</title></path>
+        {edges.map((edge, index) => <g key={`${edge.from}-${edge.to}`} className={`home-relation${active && isRelated(edge, index) ? " is-active" : active ? " is-muted" : ""}`}>
+          <title>{edge.label}</title>
+          {[0, 1].map(part => <path key={part} ref={element => { const key = index * 2 + part; if (element) graph.paths.current.set(key, element); else graph.paths.current.delete(key); }} />)}
+          <g ref={element => { const key = subNodes[index]!.page; if (element) graph.groups.current.set(key, element); else graph.groups.current.delete(key); }}>
+            <foreignObject x={subNodes[index]!.x + 100 - subNodes[index]!.width / 2} y={subNodes[index]!.y - 4} width={subNodes[index]!.width} height="32">
+              <div className="home-relation-subnode" data-page={subNodes[index]!.page} role="group" tabIndex={0}
+                aria-label={`${nodes.find(node => node.page === edge.from)!.name}と${nodes.find(node => node.page === edge.to)!.name}の関係：${edge.label}`}
+                onMouseEnter={() => setActive(subNodes[index]!.page)} onMouseLeave={() => setActive(null)} onFocus={() => setActive(subNodes[index]!.page)} onBlur={() => setActive(null)}>
+                {edge.label}
+              </div>
+            </foreignObject>
+          </g>
         </g>)}
         {nodes.map(node => <g key={node.page} ref={element => { if (element) graph.groups.current.set(node.page, element); else graph.groups.current.delete(node.page); }} className="home-relation-item"><foreignObject x={node.x - 6} y={node.y - 6} width="212" height={node.page === "initiative-entry" ? 102 : 84}>
           <button type="button" data-page={node.page} className={`home-relation-node${node.master ? " is-master" : ""}${node.page === "initiative-entry" ? " is-entry" : ""}${related.has(node.page) ? " is-related" : ""}${active === node.page ? " is-selected" : ""}`}

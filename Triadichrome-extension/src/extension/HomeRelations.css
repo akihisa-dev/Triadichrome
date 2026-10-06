@@ -27,3 +27,11 @@
 .home-relation-node.is-selected .home-relation-name { font-weight: 700; }
 .home-relation-node:disabled { opacity: .5; cursor: wait; }
 @media (prefers-reduced-motion: reduce) { .home-relation, .home-relation path { transition: none; } }
+
+.home-relation-subnode { display: grid; place-items: center; box-sizing: border-box; width: 100%; height: 32px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 16px; background: var(--canvas); color: var(--muted); font-size: 12px; line-height: 20px; white-space: nowrap; cursor: grab; }
+.home-relation.is-active .home-relation-subnode { border-color: #888; color: var(--ink); }
+.home-relation-subnode:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+
+/* Invisible button space must not intercept nearby relation descriptions. */
+.home-relation-item > foreignObject, .home-relation-node { pointer-events: none; }
+.home-relation-icon, .home-relation-name { pointer-events: auto; }
