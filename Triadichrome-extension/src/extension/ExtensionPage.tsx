@@ -23,6 +23,7 @@ import { saveInitiative, saveInitiativeUpdate } from "./initiativeFile";
 import { writeTriadicFile } from "./triadicFile";
 import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
 import { ConfirmationDialog } from "./ConfirmationDialog";
+import { FiscalYearSlot } from "./FiscalYearSlot";
 import { HomePage } from "./HomePage";
 import { FadeSwap } from "./FadeSwap";
 import { StatusNotice } from "./StatusNotice";
@@ -63,7 +64,7 @@ export function ExtensionPage() {
     void loadRecentFile().then(handle => {
       if (active && revision === recentRevision.current) setRecentFile(handle);
     }).catch(() => {
-      if (active && revision === recentRevision.current) setRecentNotice("前回のファイルの記憶を読み込めませんでした。「ファイルを開く」から選択してください。");
+      if (active && revision === recentRevision.current) setRecentNotice("前回のファイル履歴を読み込めませんでした。「ファイルを開く」から選択してください。");
     }).finally(() => { if (active) setRecentLoading(false); });
     return () => { active = false; };
   }, []);
@@ -77,9 +78,9 @@ export function ExtensionPage() {
     catch {
       if (handle) setRecentFile(handle);
       setRecentNotice(handle
-        ? "このファイルの記憶を保存できませんでした。再起動後は「ファイルを開く」から選択してください。"
-        : "ファイルの記憶を消去できませんでした。もう一度「記憶を消す」を押してください。");
-      if (!handle) throw new Error("ファイルの記憶を消去できませんでした。");
+        ? "このファイルの履歴を保存できませんでした。再起動後は「ファイルを開く」から選択してください。"
+        : "ファイル履歴を消去できませんでした。もう一度「履歴を消す」を押してください。");
+      if (!handle) throw new Error("ファイル履歴を消去できませんでした。");
     }
   };
   const run = async (operation: () => Promise<void>) => {
@@ -103,7 +104,7 @@ export function ExtensionPage() {
     if (handle) await remember(handle);
     else {
       try { await remember(null); } catch { /* Opening a file must still succeed. */ }
-      setRecentNotice("この開き方ではファイルを記憶できません。「ファイルを開く」から選択するか、保存先を指定して保存してください。");
+      setRecentNotice("この開き方では履歴を残せません。「ファイルを開く」から選択するか、保存先を指定して保存してください。");
     }
     setDisplayName(file.name);
     setFileName(file.name);
@@ -216,27 +217,39 @@ export function ExtensionPage() {
       });
     }}>
     <div className="entry-content">
-      <img className="entry-logo" src={appIcon} width="64" height="64" alt="" draggable={false} />
-      <h1 className="entry-title">Triadichrome</h1>
+      <header className="entry-brand">
+        <img className="entry-logo" src={appIcon} width="40" height="40" alt="" draggable={false} />
+        <h1 className="entry-title">Triadichrome</h1>
+      </header>
       <section className="entry-drop-zone" aria-label="ファイルを開く・新規作成">
-        <svg className="entry-drop-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5" />
-        </svg>
-        <div className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "ここで離して開く" : "ここにファイルをドロップ"}</FadeSwap></div>
-        <p className="entry-drop-description">.triadicファイルに対応</p>
-        <div className="entry-resume">
-          <button className="entry-open-button entry-resume-button" type="button" disabled={isBusy || recentLoading || !recentFile}
-            aria-describedby="recent-file-name" onClick={resume}>続きから</button>
-          <p id="recent-file-name" className="entry-recent-name" title={recentFile?.name}>
-            {recentLoading ? "前回のファイルを確認中" : recentFile?.name ?? "前回のファイルはありません"}
-          </p>
-          <button className="entry-forget-button" type="button" disabled={isBusy || recentLoading || !recentFile}
-            onClick={forget}>記憶を消す</button>
+        <div className={`entry-resume${recentFile ? " has-recent" : ""}`}>
+          <div className="entry-recent-heading">
+            <span className="entry-recent-label">前回の計画</span>
+            <button className="entry-forget-button" type="button" disabled={isBusy || recentLoading || !recentFile}
+              onClick={forget}>履歴を消す</button>
+          </div>
+          <div className="entry-recent-row">
+            <svg className="entry-file-icon" width="40" height="48" viewBox="0 0 32 40" fill="none" stroke="currentColor" strokeWidth="1.25" aria-hidden="true"><path d="M7 2h12l8 8v27H7zM19 2v9h8M12 20h10M12 25h10M12 30h6" /></svg>
+            <p id="recent-file-name" className="entry-recent-name" title={recentFile?.name}>
+              {recentLoading ? "確認中…" : recentFile?.name ?? "まだ開いていません"}
+            </p>
+            <button className="entry-open-button entry-resume-button" type="button" disabled={isBusy || recentLoading || !recentFile}
+              aria-describedby="recent-file-name" onClick={resume}>続きから<span aria-hidden="true">↗</span></button>
+          </div>
         </div>
-        <div className="initiative-field"><label htmlFor="new-fiscal-year">新規ファイルの年度</label><input id="new-fiscal-year" type="number" min="1" max="9998" step="1" disabled={isBusy} value={newFiscalYear} onChange={event => setNewFiscalYear(event.target.value)} /></div>
-        <div className="entry-actions">
-          <button className="entry-new-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く</button>
-          <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新規作成</button>
+        <div className="entry-options">
+          <div className="entry-open-section">
+            <svg className="entry-option-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11H3z" /><path d="M3 10h18" /></svg>
+            <h2 className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "離して開く" : "ファイルを開く"}</FadeSwap></h2>
+            <p className="entry-drop-description">.triadic</p>
+            <button className="entry-new-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く<span aria-hidden="true">→</span></button>
+          </div>
+          <div className="entry-create-section">
+            <svg className="entry-option-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 14h6m-3-3v6" /></svg>
+            <h2 className="entry-section-title">新しい計画</h2>
+            <FiscalYearSlot value={Number(newFiscalYear)} onChange={year => setNewFiscalYear(String(year))} disabled={isBusy} />
+            <button className="entry-new-button" type="button" disabled={isBusy} onClick={create}>新規作成<span aria-hidden="true">＋</span></button>
+          </div>
         </div>
       </section>
       {recentNotice && <p className="entry-recent-notice" role="status">{recentNotice}</p>}

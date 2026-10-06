@@ -90,7 +90,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     test("画面と案内はフェードを通り、連打した場合も最後の画面へ到達する", async ({ app }) => {
       const opening = await app.locator("body").evaluate(sampleChange, {
         observe: ".app-switch",
-        actions: [{ frame: 0, selector: ".entry-actions button:first-child" }],
+        actions: [{ frame: 0, selector: ".entry-open-section > button" }],
       });
       expect(opening.some(sample => sample.text.includes("ファイルを開く") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
       expect(opening.some(sample => sample.text.includes("前年入力") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
@@ -127,13 +127,13 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         observe: ".entry-drop-title .fade-swap",
         actions: [{ frame: 0, selector: ".entry-page", event: "dragenter" as const }],
       });
-      expect(drag.some(sample => sample.text.includes("ここにファイルをドロップ") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(drag.find(sample => sample.text.includes("ここで離して開く"))!.opacity).toBeLessThan(0.25);
+      expect(drag.some(sample => sample.text.includes("ファイルを開く") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      expect(drag.find(sample => sample.text.includes("離して開く"))!.opacity).toBeLessThan(0.25);
       const dragEnd = await app.locator("body").evaluate(sampleChange, {
         observe: ".entry-drop-title .fade-swap",
         actions: [{ frame: 0, selector: ".entry-page", event: "dragleave" as const }],
       });
-      expect(dragEnd.find(sample => sample.text.includes("ここにファイルをドロップ"))!.opacity).toBeLessThan(0.25);
+      expect(dragEnd.find(sample => sample.text.includes("ファイルを開く"))!.opacity).toBeLessThan(0.25);
     });
 
     test("エラーはフェードし、表示・消去で入口の位置が動かない", async ({ page, app }) => {
@@ -144,7 +144,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const samples = await app.locator("body").evaluate(sampleChange, {
         observe: ".status-notice-layer .fade-swap",
         anchors: ".entry-logo, .entry-title, .entry-drop-zone",
-        actions: [{ frame: 0, selector: ".entry-actions button:first-child" }],
+        actions: [{ frame: 0, selector: ".entry-open-section > button" }],
       });
       await expect(app.getByRole("alert")).toHaveText("Triadicファイルを読み込めませんでした。");
       expect(samples[0]!.positions).toHaveLength(3);

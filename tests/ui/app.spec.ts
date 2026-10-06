@@ -339,7 +339,12 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
 });
 
 test("新しい計画の年度を一度選び、閉じた後に同じ年度で読み直せる", async ({ app }) => {
-  await app.getByRole("spinbutton", { name: "新規ファイルの年度", exact: true }).fill("2030");
+  const year = app.getByRole("spinbutton", { name: "年度", exact: true });
+  await year.press("ArrowDown");
+  while (await year.getAttribute("aria-valuenow") !== "2030") {
+    const current = Number(await year.getAttribute("aria-valuenow"));
+    await year.press(current < 2030 ? "ArrowDown" : "ArrowUp");
+  }
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.locator(".home-header")).toContainText("2030年度");
   await expect(app.locator(".home-file-name")).toHaveText("Untitled.triadic");
@@ -456,4 +461,42 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
   } finally {
     await production.close();
   }
+});
+
+for (const [date, year] of [["2027-03-31T12:00:00+09:00", 2026], ["2027-04-01T12:00:00+09:00", 2027]] as const) {
+  test(`年度スロットの初期値は4月始まりの当年度: ${date}`, async ({ page, app }) => {
+    await page.clock.install({ time: new Date(date) });
+    await page.reload();
+    const slot = app.getByRole("spinbutton", { name: "年度", exact: true });
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year));
+    await slot.press("ArrowDown");
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year + 1));
+    await slot.press("ArrowUp");
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year));
+    await slot.hover();
+    await page.mouse.wheel(0, 60);
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year + 1));
+    await app.getByRole("button", { name: "当年度", exact: true }).click();
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year));
+    await app.getByRole("button", { name: "次の年度", exact: true }).click();
+    await expect(slot).toHaveAttribute("aria-valuenow", String(year + 1));
+    await app.getByRole("button", { name: "新規作成", exact: true }).click();
+    await expect(app.locator(".home-header")).toContainText(`${year + 1}年度`);
+  });
+}
+
+test("年度スロットをドラッグして選び、ページの位置を保つ", async ({ page, app }) => {
+  const slot = app.getByRole("spinbutton", { name: "年度", exact: true });
+  const year = Number(await slot.getAttribute("aria-valuenow"));
+  const selected = await app.locator(".year-slot-selected").boundingBox();
+  if (!selected) throw new Error("年度スロットが表示されていません。");
+  const position = await slot.boundingBox();
+  await page.mouse.move(selected.x + selected.width / 2, selected.y + selected.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(selected.x + selected.width / 2, selected.y + selected.height / 2 - 28);
+  await page.mouse.up();
+  await expect(slot).toHaveAttribute("aria-valuenow", String(year + 1));
+  expect(await slot.boundingBox()).toEqual(position);
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
+  await expect(app.locator(".home-header")).toContainText(`${year + 1}年度`);
 });
