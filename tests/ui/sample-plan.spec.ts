@@ -43,6 +43,7 @@ test("月別引き継ぎ・手修正0・解除・修正開始と取消・前年�
   const menu = app.getByRole("complementary", { name: "メニュー" });
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "修正予算の入力準備", exact: true }).click();
+  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   await april.fill("120");
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();

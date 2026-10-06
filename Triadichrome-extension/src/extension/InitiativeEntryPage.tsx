@@ -14,6 +14,7 @@ import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/i
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
+  embedded?: boolean;
   revisedActive?: boolean;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
@@ -27,12 +28,13 @@ type InitiativeEntryPageProps = {
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, revisedActive = false }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, embedded = false, revisedActive = false }: InitiativeEntryPageProps) {
+  const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
   return (
-    <main className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
+    <Container className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
-      <h1 id="initiative-entry-title">{editing ? "施策詳細" : "施策入力"}</h1>
+      <h1 id="initiative-entry-title">施策入力</h1>
       {editing?.status}
       <div className="initiative-header-fields">
       <div className="initiative-text-fields">
@@ -50,7 +52,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           />
         </div>
         {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
-          const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
+          const inputs = event.currentTarget.closest("main, section")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
         }}>登録</button>}
@@ -127,7 +129,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
                       value={kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month, revisedActive)}
                       onChange={event => onDraftChange({
                         ...draft,
-                        invalidNumbers: [...event.currentTarget.closest("main")!.querySelectorAll("input")].some(input => input.validity.badInput),
+                        invalidNumbers: [...event.currentTarget.closest("main, section")!.querySelectorAll("input")].some(input => input.validity.badInput),
                         rows: draft.rows.map((current, currentIndex) => currentIndex === index
                           ? kind === 1 ? { ...current, amounts: { ...current.amounts, [month]: event.target.value } } : { ...current, overrides: { ...current.overrides, [kind]: { ...current.overrides?.[kind], [month]: event.target.value } } } : current),
                       })}
@@ -150,6 +152,6 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
         <button className="secondary-button" type="button" disabled={isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
           onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { clientKey: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
-    </main>
+    </Container>
   );
 }

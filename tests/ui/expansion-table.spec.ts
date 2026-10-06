@@ -69,6 +69,7 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.456");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "展開割り当て確認", exact: true }).click();
+  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(expansion).toHaveAttribute("aria-valuetext", "料改");
   await selectClassification(expansion, "効率");
   await expect(app.getByRole("alert")).toBeVisible();

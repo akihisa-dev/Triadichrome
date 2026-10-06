@@ -26,7 +26,8 @@ test("基準年度は各画面でアプリ名の右隣に表示する", async ({
   await expect(app.getByRole("columnheader", { name: "年度", exact: true })).toBeVisible();
   await app.locator(".sidebar-navigation").getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "既存商品の販売拡大", exact: true }).click();
-  await expect(app.getByRole("heading", { name: "施策詳細", exact: true })).toBeVisible();
+  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
+  await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
   await expect(year).toHaveText(yearText!);
   await expect(app.locator("#initiative-year")).toHaveCount(0);
 });
