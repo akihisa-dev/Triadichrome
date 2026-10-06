@@ -107,7 +107,10 @@ test("ホバーとフォーカスで直接の関係を強調し、説明は接�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const home = app.getByRole("main", { name: "ホーム", exact: true });
   await settleMotion(app.locator("body"));
+  await expect(home.locator(".home-relation-icon svg")).toHaveCount(13);
   const input = home.getByRole("button", { name: "施策入力", exact: true });
+  const sizes = await home.locator(".home-relation-icon svg").evaluateAll(icons => icons.map(icon => ({ entry: !!icon.closest(".is-entry"), width: Number.parseFloat(getComputedStyle(icon).width) })));
+  expect(sizes.filter(icon => icon.entry)[0]!.width).toBeGreaterThan(Math.max(...sizes.filter(icon => !icon.entry).map(icon => icon.width)));
   await input.hover({ force: true });
   await expect(home.locator(".home-relation.is-active")).toHaveCount(10);
   await input.focus();

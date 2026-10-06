@@ -15,14 +15,15 @@
 .home-relation.is-active path { stroke: var(--ink); stroke-width: 2; }
 .home-relation.is-muted { opacity: .35; }
 .home-relation-node { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 6px; width: 200px; height: 72px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 16px; font-weight: 500; cursor: grab; }
-.home-relation-node::before { content: ""; flex: 0 0 24px; width: 24px; box-sizing: border-box; border: 1.5px solid #999; border-radius: 50%; background: var(--surface); transition: background var(--motion-feedback), border-color var(--motion-feedback); }
+.home-relation-icon { display: grid; place-items: center; flex: 0 0 32px; width: 32px; margin-top: -4px; background: var(--canvas); color: #555; transition: color var(--motion-feedback), transform var(--motion-feedback); }
+.home-relation-icon svg { width: 28px; height: 28px; pointer-events: none; }
+.home-relation-node.is-entry .home-relation-icon { flex-basis: 40px; width: 40px; margin-top: -8px; }
+.home-relation-node.is-entry .home-relation-icon svg { width: 36px; height: 36px; }
+.home-relation-node.is-master .home-relation-icon { color: #888; }
+.home-relation-node:hover .home-relation-icon, .home-relation-node:focus-visible .home-relation-icon, .home-relation-node.is-related .home-relation-icon { color: var(--ink); }
+.home-relation-node.is-selected .home-relation-icon { transform: scale(1.08); }
 .home-relation-name { padding: 2px 6px; border-radius: 6px; background: var(--canvas); line-height: 24px; }
-.home-relation-node.is-master::before { background: #ddd; }
-.home-relation-node.is-entry::before { border-width: 2px; border-color: #666; }
-.home-relation-node:hover::before, .home-relation-node:focus-visible::before { border-color: var(--ink); background: #bbb; }
 .home-relation-node:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
-.home-relation-node.is-related::before { border-color: #777; }
-.home-relation-node.is-selected::before { background: var(--ink); border-color: var(--ink); }
 .home-relation-node.is-selected .home-relation-name { font-weight: 700; }
 .home-relation-node:disabled { opacity: .5; cursor: wait; }
 @media (prefers-reduced-motion: reduce) { .home-relation, .home-relation path { transition: none; } }

@@ -1,23 +1,24 @@
 import { useLayoutEffect, useRef, useState, type RefObject, type PointerEvent } from "react";
 import "./HomeRelations.css";
+import { SidebarIcon } from "./SidebarIcon";
 import { useHomeGraphMotion } from "./useHomeGraphMotion";
 import { useRelationCamera, type RelationView } from "./useRelationCamera";
 export type { RelationView } from "./useRelationCamera";
 
 const nodes = [
-  { page: "account-master", name: "勘定科目マスタ", x: 260, y: 150, master: true },
-  { page: "aggregation-master", name: "集計マスタ", x: 520, y: 70, master: true },
-  { page: "industry-master", name: "業種マスタ", x: 180, y: 290, master: true },
-  { page: "department-master", name: "部署マスタ", x: 260, y: 430, master: true },
-  { page: "period-master", name: "期間マスタ", x: 390, y: 530, master: true },
-  { page: "expansion-master", name: "展開マスタ", x: 550, y: 560, master: true },
-  { page: "kind-master", name: "種別マスタ", x: 370, y: 60, master: true },
-  { page: "previous-input", name: "前年入力", x: 750, y: 60, master: false },
-  { page: "initiative-entry", name: "施策入力", x: 520, y: 308, master: false },
-  { page: "cost-table", name: "総原価表", x: 850, y: 220, master: false },
-  { page: "initiative-list", name: "施策一覧", x: 880, y: 360, master: false },
-  { page: "details", name: "明細", x: 760, y: 480, master: false },
-  { page: "expansion-table", name: "展開表", x: 950, y: 520, master: false },
+  { page: "account-master", name: "勘定科目マスタ", icon: "master", x: 260, y: 150, master: true },
+  { page: "aggregation-master", name: "集計マスタ", icon: "master", x: 520, y: 70, master: true },
+  { page: "industry-master", name: "業種マスタ", icon: "master", x: 180, y: 290, master: true },
+  { page: "department-master", name: "部署マスタ", icon: "master", x: 260, y: 430, master: true },
+  { page: "period-master", name: "期間マスタ", icon: "master", x: 390, y: 530, master: true },
+  { page: "expansion-master", name: "展開マスタ", icon: "master", x: 550, y: 560, master: true },
+  { page: "kind-master", name: "種別マスタ", icon: "master", x: 370, y: 60, master: true },
+  { page: "previous-input", name: "前年入力", icon: "previous", x: 750, y: 60, master: false },
+  { page: "initiative-entry", name: "施策入力", icon: "entry", x: 520, y: 308, master: false },
+  { page: "cost-table", name: "総原価表", icon: "cost", x: 850, y: 220, master: false },
+  { page: "initiative-list", name: "施策一覧", icon: "list", x: 880, y: 360, master: false },
+  { page: "details", name: "明細", icon: "details", x: 760, y: 480, master: false },
+  { page: "expansion-table", name: "展開表", icon: "expansion", x: 950, y: 520, master: false },
 ] as const;
 
 export type HomeDestination = typeof nodes[number]["page"];
@@ -174,6 +175,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
               if (x < 8 || y < 8 || x + width > box.clientWidth - 8 || y + height > box.clientHeight - 8)
                 update({ ...current, x: box.clientWidth / 2 - position.x * current.scale, y: box.clientHeight / 2 - (position.y - 12 + height / current.scale / 2) * current.scale, fitted: false });
             }} onBlur={() => setActive(null)} onClick={() => onNavigate(node.page)}>
+            <span className="home-relation-icon"><SidebarIcon name={node.icon} /></span>
             <span className="home-relation-name">{node.name}</span>
           </button>
         </foreignObject></g>)}
