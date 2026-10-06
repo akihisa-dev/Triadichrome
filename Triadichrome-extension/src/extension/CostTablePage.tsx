@@ -12,6 +12,11 @@ export function CostTablePage({ contents, selected, onOpenMaster }: Props) {
   const labels = ["前年", ...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName)];
   const rows = useMemo(() => buildKindCostTable(contents, selected), [contents, selected]);
   const salesGroupId = aggregations.find(group => group.required === "sales")?.id;
+  const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
+  const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
+    <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
+    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month]) : formatAmount(values[month])}</td>)}</Fragment>)}
+  </tr>;
   const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
   const unassigned = accounts.filter(account => !assigned.has(account.id));
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
@@ -34,11 +39,9 @@ export function CostTablePage({ contents, selected, onOpenMaster }: Props) {
             {initiativeMonths.map(month => <th key={month} colSpan={labels.length} scope="colgroup">{month}月</th>)}
           </tr>
           <tr>{initiativeMonths.map(month => <Fragment key={month}>{labels.map((_, index) => <th key={index} scope="col">{labels[index]}</th>)}</Fragment>)}</tr>
+          {rows.slice(0, salesIndex + 1).map(renderRow)}
         </thead>
-        <tbody>{rows.map(row => <tr key={`${row.kind}:${row.id}`} className={row.kind !== "account" ? `cost-subtotal${row.required ? " cost-required" : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}` : undefined}>
-          <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
-          {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month]) : formatAmount(values[month])}</td>)}</Fragment>)}
-        </tr>)}</tbody>
+        <tbody>{rows.slice(salesIndex + 1).map(renderRow)}</tbody>
       </table>
     </div>
   </main>;

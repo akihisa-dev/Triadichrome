@@ -979,8 +979,10 @@ button:disabled { cursor: default; opacity: 0.5; }
 .cost-table th, .cost-table td { height: 28px; padding: 4px 6px; white-space: nowrap; }
 .cost-table thead th { font-size: 12px; }
 .cost-table .initiative-list-name { width: 176px; white-space: normal; }
-.cost-table .cost-sales-anchor th, .cost-table .cost-sales-anchor td { position: sticky; top: 0; z-index: 2; box-shadow: 0 1px 0 var(--control-line); }
-.cost-table .cost-sales-anchor .initiative-list-name { z-index: 3; }
+.cost-table thead { position: sticky; top: 0; z-index: 2; }
+.cost-table .cost-data-row th, .cost-table .cost-data-row td { background: var(--canvas); font-weight: 400; }
+.cost-table .cost-subtotal th, .cost-table .cost-subtotal td { background: var(--soft); font-weight: 600; }
+.cost-table .cost-sales-anchor th, .cost-table .cost-sales-anchor td { box-shadow: 0 1px 0 var(--control-line); }
 
 
 .initiative-classification-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 24px; }
