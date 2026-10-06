@@ -1,4 +1,4 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { test, expect, settleMotion, selectClassification } from "./fixtures";
 
 test("前年セルの範囲入力・集計・無効な貼り付け・保存後の再表示", async ({ page, app }, testInfo) => {
   if (testInfo.project.name === "desktop") await page.setViewportSize({ width: 1920, height: 1080 });
@@ -6,8 +6,8 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
-  await app.getByLabel("業種名", { exact: true }).selectOption({ label: "直営自動車" });
-  await app.getByLabel("部署名", { exact: true }).selectOption({ label: "部署A" });
+  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
   await settleMotion(app.locator(".home-layout"));
   const cell = (name: string, month: number) => app.getByRole("textbox", { name: `${name} ${month}月の前年金額`, exact: true });
@@ -42,8 +42,8 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await expect(app.getByRole("button", { name: "総原価表", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).click();
-  await app.getByLabel("業種名", { exact: true }).selectOption({ label: "直営自動車" });
-  await app.getByLabel("部署名", { exact: true }).selectOption({ label: "部署A" });
+  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await expect(april).toHaveValue("0");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
   await settleMotion(app.locator(".home-layout"));
@@ -58,18 +58,21 @@ test("前年の初期合計・片側の分類・全件への切り替え", async
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
-  const industry = app.getByLabel("業種名", { exact: true });
-  const department = app.getByLabel("部署名", { exact: true });
+  const industry = app.getByRole("spinbutton", { name: "業種名", exact: true });
+  const department = app.getByRole("spinbutton", { name: "部署名", exact: true });
   const sales = app.locator(".previous-grid tbody tr").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
+  await expect(industry).toHaveAttribute("aria-valuetext", "全業種の合計");
+  await expect(department).toHaveAttribute("aria-valuetext", "全部署の合計");
+  await expect(app.locator(".previous-input-page select")).toHaveCount(0);
   await expect(sales).toHaveText("25,290");
   await expect(app.locator(".previous-grid input")).toHaveCount(0);
-  await industry.selectOption({ label: "直営自動車" });
+  await selectClassification(industry, "直営自動車");
   await expect(sales).toHaveText("2,010");
-  await department.selectOption({ label: "部署A" });
+  await selectClassification(department, "部署A");
   await expect(sales.locator("input")).toHaveValue("1000");
-  await industry.selectOption({ label: "全業種の合計" });
+  await selectClassification(industry, "全業種の合計");
   await expect(sales).toHaveText("12,600");
   await expect(app.locator(".previous-grid input")).toHaveCount(0);
-  await department.selectOption({ label: "全部署の合計" });
+  await selectClassification(department, "全部署の合計");
   await expect(sales).toHaveText("25,290");
 });

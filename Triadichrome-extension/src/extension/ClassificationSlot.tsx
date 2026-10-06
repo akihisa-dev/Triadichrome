@@ -1,12 +1,12 @@
 import { useEffect, useRef } from "react";
 
-export function ClassificationSlot({ id, label, value, options, onChange, disabled, required = false }: {
+export function ClassificationSlot({ id, label, value, options, onChange, disabled, required = false, emptyLabel = "未選択" }: {
   id: string; label: string; value: number | null | undefined;
   options: { id: number; name: string }[]; onChange: (value: number | null) => void;
-  disabled: boolean; required?: boolean;
+  disabled: boolean; required?: boolean; emptyLabel?: string;
 }) {
   const rowHeight = 24;
-  const items = [{ id: null, name: "未選択" }, ...options];
+  const items = [{ id: null, name: emptyLabel }, ...options];
   const index = Math.max(0, items.findIndex(item => item.id === (value ?? null)));
   const slot = useRef<HTMLDivElement>(null);
   const drag = useRef<{ y: number; index: number; moved: boolean } | null>(null);

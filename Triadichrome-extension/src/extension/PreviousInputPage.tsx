@@ -6,6 +6,7 @@ import "./PreviousInputPage.css";
 import type { PreviousInput } from "../core/kindAmounts";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
 import { AutoSaveStatus } from "./AutoSaveStatus";
+import { ClassificationSlot } from "./ClassificationSlot";
 
 type Props = AutoSaveProps & { contents: PlanContents; onSave: (input: PreviousInput) => Promise<void> };
 export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepareSave }: Props) {
@@ -21,12 +22,12 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
     <h1 id="previous-input-title">前年入力</h1>
     <div className="initiative-classification-row">
-      <div className="initiative-field"><label htmlFor="previous-industry">業種名</label><select id="previous-industry" disabled={autoSave.pending} value={industryId ?? ""} onChange={event => { controller.end(); setIndustry(event.target.value ? Number(event.target.value) : null); }}>
-        <option value="">全業種の合計</option>{contents.industries.map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
-      </select></div>
-      <div className="initiative-field"><label htmlFor="previous-department">部署名</label><select id="previous-department" disabled={autoSave.pending} value={departmentId ?? ""} onChange={event => { controller.end(); setDepartment(event.target.value ? Number(event.target.value) : null); }}>
-        <option value="">全部署の合計</option>{contents.departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
-      </select></div>
+      <ClassificationSlot id="previous-industry" label="業種名" value={industryId} emptyLabel="全業種の合計"
+        options={contents.industries.map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
+        onChange={value => { controller.end(); setIndustry(value); }} />
+      <ClassificationSlot id="previous-department" label="部署名" value={departmentId} emptyLabel="全部署の合計"
+        options={contents.departments.map(item => ({ id: item.id, name: item.departmentName }))} disabled={autoSave.pending}
+        onChange={value => { controller.end(); setDepartment(value); }} />
     </div>
     <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
