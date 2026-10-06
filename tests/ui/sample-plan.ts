@@ -81,7 +81,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   await add("確定予算の手修正", "確定予算だけを月ごとに手修正します。", [{ ...annual("売上高", 100), overrides: { 2: { 4: "120", 5: "0" } } }]);
   await add("修正予算の入力準備", "開始前の修正予算10月だけを150に準備しています。開始すると見通しへ伝わります。", [{ ...annual("売上高", 100), overrides: { 3: { 10: "150" } } }]);
   await add("見通しと実績の手修正", "見通し10月は110、実績4月は90。引き継ぎと手修正を比較できます。", [{ ...annual("グループ売上高", 100), overrides: { 4: { 10: "110" }, 5: { 4: "90" } } }]);
-  await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。", [row("未所属費用", {}), row("売上高", {})]);
+  await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。2行の4〜6月を範囲選択し、複数行・複数月の貼り付け、同値入力、0への消去を確認できます。", [row("未所属費用", {}), row("売上高", {})]);
   for (const [index, industry] of industries.entries()) {
     for (const [departmentIndex, department] of departments.entries()) {
       bytes = await savePreviousAmounts(bytes, { industryId: industry.id, departmentId: department.id, rows: [

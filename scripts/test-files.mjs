@@ -1,3 +1,4 @@
+import { verifyInitiativeGrid } from "../tests/initiative-grid.mjs";
 import { verifyPreviousGrid } from "../tests/previous-grid.mjs";
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
 import { verifyDetails } from "../tests/details.mjs";
@@ -58,6 +59,7 @@ try {
       'export * from "./tests/ui/empty-plan.ts";',
       'export * from "./Triadichrome-extension/src/core/amounts.ts";',
       'export * from "./Triadichrome-extension/src/core/previousGrid.ts";',
+      'export * from "./Triadichrome-extension/src/core/initiativeGrid.ts";',
       'export * from "./Triadichrome-extension/src/core/kindAmounts.ts";',
       'export * from "./Triadichrome-extension/src/core/planTables.ts";',
       'export * from "./Triadichrome-extension/src/extension/planFile.ts";',
@@ -74,6 +76,7 @@ try {
   const production = await import(pathToFileURL(bundle));
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
   verifyPreviousGrid(api);
+  verifyInitiativeGrid(api);
   verifyHomeMasterCoverage(api);
   await verifySingleYearPlan(api);
   await verifyDetails(api);

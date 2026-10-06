@@ -1,16 +1,16 @@
+import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
 import { ClassificationSlot } from "./ClassificationSlot";
 import { INITIAL_KINDS } from "../core/kindMasterSchema";
-import { canChangeAccountRow, isLateMonth, resolvedAmount, type KindId } from "../core/kindAmounts";
+import { type KindId } from "../core/kindAmounts";
 import { useState } from "react";
 import { type Industry } from "../core/industryMaster";
 import { type PeriodType } from "../core/periodMaster";
 import { type Department } from "../core/departmentMaster";
 import { type Expansion } from "../core/expansionMaster";
-import { isValidAmount } from "../core/amounts";
 import { type ReactNode } from "react";
 import { type Account } from "../core/accountMaster";
 
-import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/initiatives";
+import { type InitiativeEntryDraft } from "../core/initiatives";
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
@@ -92,61 +92,8 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       <div className="kind-tabs" role="tablist" aria-label="入力する種別">{INITIAL_KINDS.map(item => <button key={item.id} id={`kind-tab-${item.id}`} type="button" role="tab" aria-selected={kind === item.id} aria-controls="kind-amount-panel" onClick={() => setKind(item.id)}>{item.kindName}</button>)}</div>
       <span className="field-hint">前年差・単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-amount-table-container" id="kind-amount-panel" role="tabpanel" aria-labelledby={`kind-tab-${kind}`} aria-label="月別計画金額の入力表" tabIndex={0}>
-        <table className="initiative-amount-table" aria-label="月別計画金額">
-          <thead>
-            <tr>
-              <th scope="col">勘定科目</th>
-              {months.map(month => <th key={month} scope="col">{month}月</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {draft.rows.map((row, index) => {
-              const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
-              return <tr key={index}>
-                <th scope="row">
-                  <div className="initiative-account-cell">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
-                    onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
-                      ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
-                    <option value="">科目を選択</option>
-                    {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
-                  </select>
-                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
-                  </div>
-                </th>
-                {months.map(month => (
-                  <td key={month}>
-                    <input
-                      type="number"
-                      step="0.001"
-                      ref={input => {
-                        if (input) input.setCustomValidity(input.value === "" || isValidAmount(input.value)
-                          ? "" : "金額は千円単位・小数点以下3桁までで入力してください。");
-                      }}
-                      inputMode="decimal"
-                      aria-label={`${accountName} ${month}月の金額`}
-                      disabled={isSaving || row.accountId === null || (kind === 3 && !isLateMonth(month))}
-                      value={kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month, revisedActive)}
-                      onChange={event => onDraftChange({
-                        ...draft,
-                        invalidNumbers: [...event.currentTarget.closest("main, section")!.querySelectorAll("input")].some(input => input.validity.badInput),
-                        rows: draft.rows.map((current, currentIndex) => currentIndex === index
-                          ? kind === 1 ? { ...current, amounts: { ...current.amounts, [month]: event.target.value } } : { ...current, overrides: { ...current.overrides, [kind]: { ...current.overrides?.[kind], [month]: event.target.value } } } : current),
-                      })}
-                    />
-                    {kind !== 1 && <div className="amount-source">{row.overrides?.[kind]?.[month] !== undefined
-                      ? <button type="button" className="text-button" aria-label={`${accountName} ${month}月を引き継ぎに戻す`} disabled={isSaving} onClick={() => {
-                        const overrides = { ...row.overrides, [kind]: { ...row.overrides?.[kind] } };
-                        delete overrides[kind]![month];
-                        onDraftChange({ ...draft, rows: draft.rows.map((current, position) => position === index ? { ...current, overrides } : current) });
-                      }}>引き継ぎに戻す</button>
-                      : <span>{kind === 3 && !isLateMonth(month) ? "実績から" : "引き継ぎ"}</span>}</div>}
-                  </td>
-                ))}
-              </tr>;
-            })}
-          </tbody>
-        </table>
+        <InitiativeAmountGrid key={kind} draft={draft} kind={kind} revisedActive={revisedActive}
+          accounts={accounts} isSaving={isSaving} onDraftChange={onDraftChange} />
       </div>
       <div className="initiative-row-actions">
         <button className="secondary-button" type="button" disabled={isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
