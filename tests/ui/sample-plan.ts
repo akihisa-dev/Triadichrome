@@ -9,6 +9,7 @@ import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/a
 import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
 import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiative, type InitiativeRow } from "../../Triadichrome-extension/src/core/initiatives";
 
+// Previous amounts span every industry/department pair; varying sales verify full and partial totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase(fiscalYear);

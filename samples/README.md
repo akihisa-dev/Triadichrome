@@ -12,7 +12,7 @@
 | 修正の開始・取消 | [core/kindAmounts.ts](../Triadichrome-extension/src/core/kindAmounts.ts) | 「修正予算の入力準備」の修正10月150 | 未開始は見通し100、開始後150、取消後100。準備150は保持 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除・開始取消の画面操作を確認 |
 | 修正の前半 | [core/kindAmounts.ts](../Triadichrome-extension/src/core/kindAmounts.ts) | 同施策の実績4月を90へ変更 | 修正4月は90、4〜9月は直接編集できない | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除・開始取消の画面操作を確認 |
 | 共通科目行 | [core/kindAmounts.ts](../Triadichrome-extension/src/core/kindAmounts.ts) | 「科目変更と削除の確認」の0行を変更・削除、別タブで追加 | 全タブに反映。どこかに1円でもある行は変更・削除不可 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除・開始取消の画面操作を確認 |
-| 前年入力 | [extension/PreviousInputPage.tsx](../Triadichrome-extension/src/extension/PreviousInputPage.tsx) | 業種9件×部署2件に売上・原価・費用・利益の12か月 | 必須の組合せで編集。同じ組合せへの入力は上書き更新 | 通常テスト・sample-plan画面テスト | 保存・再読込・画面入力を確認 |
+| 前年入力 | [extension/PreviousInputPage.tsx](../Triadichrome-extension/src/extension/PreviousInputPage.tsx) | 業種9件×部署2件に売上・原価・費用・利益の12か月 | 未選択で売上高4月25,290、直営自動車の全部署2,010、全業種の部署A12,600を表示。合計は参照専用、個別の組合せで編集・上書き更新 | 通常テスト・sample-plan画面テスト | 保存・再読込・画面入力を確認 |
 | 総原価表 | [core/planTables.ts](../Triadichrome-extension/src/core/planTables.ts) | 前年と確定・見通しを表示、実績を追加選択 | 前年＋各種別の前年差。先に選んだ確定が外れる | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |
 | 施策一覧 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 実績を選び、ファイルを閉じて開き直す | 実績だけの施策増減を表示し、選択を復元 | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
 | 展開表 | [core/planTables.ts](../Triadichrome-extension/src/core/planTables.ts) | 見通し・実績の2種を選ぶ | 2種と「実績−見通し」を表示。再読込でも選択順を復元 | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |

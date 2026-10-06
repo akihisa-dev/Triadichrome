@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { previousByAccount } from "../core/planTables";
 import { buildCostTable } from "../core/costTable";
 import { formatAmount, formatRate, isValidAmount } from "../core/amounts";
 import { initiativeMonths, type PlanContents } from "../core/initiatives";
@@ -7,7 +8,7 @@ import { fillPreviousGrid, gridBounds, normalizeGridAmount, pastePreviousGrid, t
 import { StatusNotice } from "./StatusNotice";
 
 export function PreviousAmountGrid({ contents, draft, onChange }: {
-  contents: PlanContents; draft: PreviousInput; onChange: (draft: PreviousInput) => void;
+  contents: PlanContents; draft: PreviousInput | undefined; onChange: (draft: PreviousInput) => void;
 }) {
   const [selection, setSelection] = useState<GridSelection | null>(null);
   const [editing, setEditing] = useState(false);
@@ -20,9 +21,9 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
     window.addEventListener("pointerup", stop); window.addEventListener("pointercancel", stop);
     return () => { window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
   }, []);
-  const invalid = draft.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value)));
-  const previous = new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
-    isValidAmount(row.amounts[month] ?? "0") ? Number(row.amounts[month] ?? "0") : 0]))]));
+  const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
+  const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
+    isValidAmount(row.amounts[month] ?? "0") ? Number(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
   let rows;
   let calculationFailed = invalid;
   try { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous); }
@@ -38,7 +39,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
     try { onChange(operation()); setError(""); setEditing(false); }
     catch (failure) { setError(failure instanceof Error ? failure.message : "入力できませんでした。"); }
   };
-  const changeCell = (accountId: number, month: number, value: string) => onChange({ ...draft,
+  const changeCell = (accountId: number, month: number, value: string) => draft && onChange({ ...draft,
     rows: draft.rows.map(row => row.accountId === accountId ? { ...row, amounts: { ...row.amounts, [month]: value } } : row) });
   return <>
     <StatusNotice message={error} error onDismiss={() => setError("")} />
@@ -50,10 +51,10 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
           {initiativeMonths.map((month, column) => {
             const cell = { row: rowIndex, column };
             const selected = bounds && rowIndex >= bounds.top && rowIndex <= bounds.bottom && column >= bounds.left && column <= bounds.right;
-            const value = draft.rows.find(input => input.accountId === row.id)?.amounts[month] ?? "0";
-            return <td key={month} className={`${row.kind === "account" ? "previous-input-cell" : ""}${selected ? " previous-cell-selected" : ""}`}
+            const value = draft?.rows.find(input => input.accountId === row.id)?.amounts[month] ?? "0";
+            return <td key={month} className={`${row.kind === "account" && draft ? "previous-input-cell" : ""}${selected ? " previous-cell-selected" : ""}`}
               onPointerEnter={() => { if (dragging.current) setSelection(current => current ? { ...current, end: cell } : null); }}>
-              {row.kind !== "account" ? (calculationFailed ? "" : row.kind === "ratio" ? formatRate(row.previous[month]) : formatAmount(row.previous[month])) :
+              {row.kind !== "account" || !draft ? (calculationFailed ? "" : row.kind === "ratio" ? formatRate(row.previous[month]) : formatAmount(row.previous[month])) :
                 <input type="text" inputMode="decimal" data-row={rowIndex} data-column={column}
                   aria-label={`${row.name} ${month}月の前年金額`} aria-invalid={value !== undefined && value !== "" && !isValidAmount(value)} value={value}
                   onFocus={event => { original.current = value; event.currentTarget.select(); setSelection(current => current && (current.anchor.row === rowIndex && current.anchor.column === column || current.end.row === rowIndex && current.end.column === column) ? current : { anchor: cell, end: cell }); }}

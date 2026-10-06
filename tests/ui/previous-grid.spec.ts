@@ -51,3 +51,25 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await cell("本支店売上高", 4).press("Shift+Tab");
   await expect(cell("グループ売上高", 3)).toBeFocused();
 });
+
+
+test("前年の初期合計・片側の分類・全件への切り替え", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
+  const industry = app.getByLabel("業種名", { exact: true });
+  const department = app.getByLabel("部署名", { exact: true });
+  const sales = app.locator(".previous-grid tbody tr").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
+  await expect(sales).toHaveText("25,290");
+  await expect(app.locator(".previous-grid input")).toHaveCount(0);
+  await industry.selectOption({ label: "直営自動車" });
+  await expect(sales).toHaveText("2,010");
+  await department.selectOption({ label: "部署A" });
+  await expect(sales.locator("input")).toHaveValue("1000");
+  await industry.selectOption({ label: "全業種の合計" });
+  await expect(sales).toHaveText("12,600");
+  await expect(app.locator(".previous-grid input")).toHaveCount(0);
+  await department.selectOption({ label: "全部署の合計" });
+  await expect(sales).toHaveText("25,290");
+});
