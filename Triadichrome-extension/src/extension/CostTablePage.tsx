@@ -17,7 +17,6 @@ export function CostTablePage({ contents, selected, onOpenMaster }: Props) {
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
       <span className="field-hint">単位：千円</span>
-      <span>{contents.fiscalYear}年度</span>
     </div>
     {(unassigned.length > 0 || rows.some(row => !row.configured)) && <p className="page-description cost-master-guide">
       {unassigned.length > 0 ? `集計に未所属の科目が${unassigned.length}件あります。` : "計算対象が未設定の集計があります。"}

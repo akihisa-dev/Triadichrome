@@ -16,10 +16,6 @@ export function InitiativeListPage({ initiatives, fiscalYear, onOpenInitiative }
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
       <span className="field-hint">単位：千円</span>
-      <div className="initiative-field initiative-year-field">
-        <label htmlFor="initiative-list-year">年度</label>
-        <output id="initiative-list-year">{fiscalYear}年度</output>
-      </div>
     </div>
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・利益" tabIndex={0}>
       <table className="initiative-list-table" aria-label="施策一覧">

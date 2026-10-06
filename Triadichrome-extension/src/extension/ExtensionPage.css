@@ -647,6 +647,14 @@ button:disabled { cursor: default; opacity: 0.5; }
     gap var(--motion-layout) var(--motion-ease);
 }
 
+.home-identity {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
 .home-brand {
   display: inline-flex;
   flex-shrink: 0;

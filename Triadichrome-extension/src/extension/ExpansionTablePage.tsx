@@ -18,7 +18,7 @@ export function ExpansionTablePage({ contents, selected, onOpenInitiative }: Pro
   const table = buildKindExpansionTable(contents, selected, "registered");
   const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), "比較"];
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
-    <div className="initiative-list-heading"><h1 id="expansion-table-title">展開表</h1><span>{contents.fiscalYear}年度</span><span className="field-hint">単位：千円</span>
+    <div className="initiative-list-heading"><h1 id="expansion-table-title">展開表</h1><span className="field-hint">単位：千円</span>
       <span className="field-hint">比較：{labels[1]} − {labels[0]}</span>
     </div>
     <div className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>

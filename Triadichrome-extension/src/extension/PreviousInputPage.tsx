@@ -21,7 +21,6 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
     <h1 id="previous-input-title">前年入力</h1>
     <div className="initiative-classification-row">
-      <div className="initiative-field"><label>年度</label><output>{contents.fiscalYear}年度の前年</output></div>
       <div className="initiative-field"><label htmlFor="previous-industry">業種名</label><select id="previous-industry" disabled={autoSave.pending} value={industryId ?? ""} onChange={event => { controller.end(); setIndustry(event.target.value ? Number(event.target.value) : null); }}>
         <option value="">全業種の合計</option>{contents.industries.map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
       </select></div>

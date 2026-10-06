@@ -205,12 +205,14 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
             <path d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
-        <span className="home-brand">
-          <img src={appIcon} width="28" height="28" alt="" draggable={false} />
-          Triadichrome
-        </span>
+        <div className="home-identity">
+          <span className="home-brand">
+            <img src={appIcon} width="28" height="28" alt="" draggable={false} />
+            Triadichrome
+          </span>
+          <output className="home-fiscal-year" aria-label="基準年度">{contents.fiscalYear}年度</output>
+        </div>
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
-        <span>{contents.fiscalYear}年度</span>
         <button className="text-button" type="button" disabled={navigationBlocked} onClick={() => { void changePlan({ type: "revised", active: !contents.revisedActive }).catch(error => setNotice({ message: error instanceof Error ? error.message : "修正予算の状態を保存できませんでした。", error: true })); }}>{contents.revisedActive ? "確定予算を使う状態に戻す" : "修正予算を開始"}</button>
       </header>
       <div className="home-layout">

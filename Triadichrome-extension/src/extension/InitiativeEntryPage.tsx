@@ -83,11 +83,6 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           onChange={industryId => onDraftChange({ ...draft, industryId })} />
       </div>
       </div>
-      <div className="initiative-field initiative-year-field">
-        <label htmlFor="initiative-year">年度</label>
-        <output id="initiative-year">{draft.fiscalYear}</output>
-        <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
-      </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
         <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
