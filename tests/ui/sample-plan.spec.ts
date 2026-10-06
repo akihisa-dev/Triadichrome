@@ -8,29 +8,34 @@ async function openSample(page: Page, app: FrameLocator) {
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
 }
 
-test("単年度の全施策と種別を表示し、一覧・展開表の選択だけを復元する", async ({ page, app }) => {
+test("4表の上部にスライサーがなく、全分類と保存済み種別を表示する", async ({ page, app }) => {
   await openSample(page, app);
   const menu = app.getByRole("complementary", { name: "メニュー" });
-  await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(13);
-  await expect(app.getByRole("combobox", { name: "年度", exact: true })).toHaveCount(0);
-  await app.getByRole("group", { name: "表示する種別" }).getByRole("button", { name: "実績", exact: true }).click();
-  await menu.getByRole("button", { name: "展開表", exact: true }).click();
-  const kinds = app.getByRole("group", { name: "表示する種別" });
-  await kinds.getByRole("button", { name: "実績", exact: true }).click();
-  await expect(kinds.getByRole("button", { name: "確定予算", exact: true })).toHaveAttribute("aria-pressed", "false");
-  await expect(kinds.getByRole("button", { name: "見通し", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await app.getByRole("group", { name: "業種", exact: true }).getByRole("button", { name: "直営自動車", exact: true }).click();
+  for (const screen of ["施策一覧", "総原価表", "展開表", "明細"]) {
+    await menu.getByRole("button", { name: screen, exact: true }).click();
+    await expect(app.getByRole("heading", { name: screen, exact: true })).toBeVisible();
+    for (const name of ["表示する種別", "業種", "部署"]) {
+      await expect(app.getByRole("group", { name, exact: true })).toHaveCount(0);
+    }
+    await expect(app.locator(".plan-slicers")).toHaveCount(0);
+    if (screen === "施策一覧") {
+      await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(13);
+    }
+    if (screen === "総原価表" || screen === "展開表") {
+      await expect(app.getByRole("table").getByRole("columnheader").filter({ hasText: "確定予算" }).first()).toBeVisible();
+      await expect(app.getByRole("table").getByRole("columnheader").filter({ hasText: "見通し" }).first()).toBeVisible();
+    }
+    if (screen === "明細") {
+      await expect(app.getByRole("table").getByRole("columnheader", { name: /種別/ })).toBeVisible();
+    }
+  }
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog").getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
-  await menu.getByRole("button", { name: "展開表", exact: true }).click();
-  await expect(kinds.getByRole("button", { name: "見通し", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(kinds.getByRole("button", { name: "実績", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(app.getByRole("group", { name: "業種", exact: true }).getByRole("button", { name: "すべて", exact: true })).toHaveAttribute("aria-pressed", "true");
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(kinds.getByRole("button", { name: "実績", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(app.locator(".initiative-list-table tbody tr")).toHaveCount(13);
+  await expect(app.locator(".plan-slicers")).toHaveCount(0);
 });
 
 test("月別引き継ぎ・手修正0・解除・修正開始と取消・前年入力を操作できる", async ({ page, app }, testInfo) => {

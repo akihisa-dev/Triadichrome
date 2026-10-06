@@ -1,7 +1,5 @@
-import { allClassifications, filterPlan, type ClassificationFilter } from "../core/planTables";
 import { initiativesForKind } from "../core/initiatives";
-import { PlanSlicers } from "./PlanSlicers";
-import { kindIds, toggleKindSelection, type KindId, type KindScreen, type PlanChange } from "../core/kindAmounts";
+import { type PlanChange } from "../core/kindAmounts";
 import { PreviousInputPage } from "./PreviousInputPage";
 import { type KindChange } from "../core/kindMaster";
 import { KindMasterPage } from "./KindMasterPage";
@@ -67,8 +65,6 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const detailScroll = useRef({ top: 0, left: 0 });
   const [initiativeDraft, setInitiativeDraft] = useState(() => createInitiativeDraft(String(initialContents.fiscalYear)));
   const [contents, setContents] = useState(initialContents);
-  const [filters, setFilters] = useState<Record<KindScreen | "details", ClassificationFilter>>({ "initiative-list": allClassifications(), "cost-table": allClassifications(), "expansion-table": allClassifications(), details: allClassifications() });
-  const [detailKinds, setDetailKinds] = useState<number[]>([0, ...kindIds]);
 
   const { accounts, initiatives } = contents;
   const [selectedInitiative, setSelectedInitiative] = useState<Pick<Initiative, "id" | "fiscalYear"> | null>(null);
@@ -95,14 +91,6 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     try { setContents(await onChangePlan(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
-  const chooseKind = (screen: KindScreen, value: number) => {
-    const selected = screen === "initiative-list" ? [value as KindId] : toggleKindSelection(contents.kindSelections[screen], value as KindId, 2, screen === "expansion-table" ? 2 : 1);
-    if (JSON.stringify(selected) === JSON.stringify(contents.kindSelections[screen])) return;
-    void changePlan({ type: "selection", screen, selected }).catch(error => setNotice({ message: error instanceof Error ? error.message : "種別の選択を保存できませんでした。", error: true }));
-  };
-  const slicers = (screen: KindScreen | "details") => <PlanSlicers contents={contents} includePrevious={screen === "details"} selectedKinds={screen === "details" ? detailKinds : contents.kindSelections[screen]} disabled={navigationBlocked}
-    filter={filters[screen]} onFilterChange={filter => setFilters(previous => ({ ...previous, [screen]: filter }))}
-    onKindsChange={kind => screen === "details" ? setDetailKinds(previous => previous.includes(kind) ? previous.filter(value => value !== kind) : [...previous, kind]) : chooseKind(screen, kind)} />;
   const changeDetail = async (change: DetailChange) => {
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
@@ -288,13 +276,13 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
             {displayed => {
               switch (displayed) {
                 case "previous-input": return <PreviousInputPage contents={contents} onSave={input => changePlan({ type: "previous", input })} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
-                case "details": return <>{slicers("details")}<DetailTablePage contents={{ ...filterPlan(contents, filters.details), details: filterPlan(contents, filters.details).details?.filter(row => detailKinds.includes(row.kindId)) }} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} /></>;
+                case "details": return <DetailTablePage contents={contents} view={detailView} onViewChange={setDetailView} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
                 case "initiative-entry": return <InitiativeEntryPage revisedActive={contents.revisedActive} draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage revisedActive={contents.revisedActive} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
-                case "initiative-list": return <>{slicers("initiative-list")}<InitiativeListPage initiatives={initiativesForKind(filterPlan(contents, filters["initiative-list"]).initiatives, accounts, contents.kindSelections["initiative-list"][0]!, contents.revisedActive)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} /></>;
-                case "cost-table": return <>{slicers("cost-table")}<CostTablePage contents={filterPlan(contents, filters["cost-table"])} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} /></>;
-                case "expansion-table": return <>{slicers("expansion-table")}<ExpansionTablePage view={expansionView} onViewChange={setExpansionView} contents={filterPlan(contents, filters["expansion-table"])} selected={contents.kindSelections["expansion-table"]} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} /></>;
+                case "initiative-list": return <InitiativeListPage initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!, contents.revisedActive)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} />;
+                case "cost-table": return <CostTablePage contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
+                case "expansion-table": return <ExpansionTablePage view={expansionView} onViewChange={setExpansionView} contents={contents} selected={contents.kindSelections["expansion-table"]} sort={expansionSort} onSortChange={setExpansionSort} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
                 case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeKinds} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;

@@ -1052,13 +1052,8 @@ button:disabled {
 .kind-tabs button[aria-selected="true"] { border-bottom-color: var(--ink); color: var(--ink); background: var(--soft); }
 .amount-source { min-height: 1.5rem; margin-top: .25rem; font-size: .7rem; color: var(--muted); }
 .amount-source .text-button { padding: 0; font-size: inherit; }
-.plan-slicers { display: grid; gap: .4rem; margin: .5rem 0 1rem; }
-.plan-slicer { display: flex; align-items: center; flex-wrap: wrap; gap: .35rem; }
-.plan-slicer > span { min-width: 2.5rem; font-size: .8rem; color: var(--muted); }
-.plan-slicer button { padding: .3rem .65rem; border: 1px solid var(--line); border-radius: .4rem; background: var(--canvas); font-size: .8rem; transition: background-color 160ms ease, color 160ms ease; }
-.plan-slicer button[aria-pressed="true"] { background: var(--soft); border-color: var(--control-line); font-weight: 600; }
 .expansion-table { min-width: 7200px; }
-@media (prefers-reduced-motion: reduce) { .kind-tabs button, .plan-slicer button { transition-duration: 1ms; } }
+@media (prefers-reduced-motion: reduce) { .kind-tabs button { transition-duration: 1ms; } }
 @media (max-width: 600px) {
   .home-header { flex-wrap: wrap; }
   .home-header > span:not(.home-brand) { white-space: nowrap; }
