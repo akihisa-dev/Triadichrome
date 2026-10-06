@@ -105,6 +105,8 @@ Chromeのファイル選択、新規作成、ファイル参照を取得でき�
 
 Node.js 20.19以上とnpmを使用します。
 
+全面的な内部再構成には[Triadichrome専用リファクタリングスキル](.agents/skills/refactor-triadichrome/SKILL.md)を使います。毎回リポジトリ全体を調査し、現在の機能・操作・保存データを維持した全体設計を提示します。設計への承認後に移行と検証へ進み、既存の不具合は平易に報告して修正判断を仰ぎます。
+
 ```sh
 npm ci
 npm run setup:hooks
