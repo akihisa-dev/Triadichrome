@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
 import { ClassificationSlot } from "./ClassificationSlot";
 import { INITIAL_KINDS } from "../core/kindMasterSchema";
@@ -29,6 +30,7 @@ type InitiativeEntryPageProps = {
 };
 
 export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, embedded = false, revisedActive = false }: InitiativeEntryPageProps) {
+  const readOnly = useHistoryReadOnly();
   const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
   return (
@@ -45,13 +47,13 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
             id="initiative-name"
             name="initiativeName"
             type="text"
-            disabled={isSaving}
+            disabled={readOnly || isSaving}
             autoComplete="off"
             value={draft.name}
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        {!editing && <button className="primary-button" type="button" disabled={isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
+        {!editing && <button className="primary-button" type="button" disabled={readOnly || isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
           const inputs = event.currentTarget.closest("main, section")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
@@ -63,7 +65,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           id="initiative-note"
           name="initiativeNote"
           type="text"
-          disabled={isSaving}
+          disabled={readOnly || isSaving}
           autoComplete="off"
           value={draft.note}
           onChange={event => onDraftChange({ ...draft, note: event.target.value })}
@@ -71,16 +73,16 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       </div>
       <div className="initiative-classification-slots">
-        <ClassificationSlot id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={isSaving} required
+        <ClassificationSlot id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={readOnly || isSaving} required
           options={expansions.map(item => ({ id: item.id, name: item.expansionName }))}
           onChange={expansionId => onDraftChange({ ...draft, expansionId })} />
-        <ClassificationSlot id="initiative-department" label="部署名" value={draft.departmentId} disabled={isSaving} required
+        <ClassificationSlot id="initiative-department" label="部署名" value={draft.departmentId} disabled={readOnly || isSaving} required
           options={departments.map(item => ({ id: item.id, name: item.departmentName }))}
           onChange={departmentId => onDraftChange({ ...draft, departmentId })} />
-        <ClassificationSlot id="initiative-period" label="期間名" value={draft.periodTypeId} disabled={isSaving}
+        <ClassificationSlot id="initiative-period" label="期間名" value={draft.periodTypeId} disabled={readOnly || isSaving}
           options={periodTypes.map(item => ({ id: item.id, name: item.periodName }))}
           onChange={periodTypeId => onDraftChange({ ...draft, periodTypeId })} />
-        <ClassificationSlot id="initiative-industry" label="業種名" value={draft.industryId} disabled={isSaving} required
+        <ClassificationSlot id="initiative-industry" label="業種名" value={draft.industryId} disabled={readOnly || isSaving} required
           options={industries.map(item => ({ id: item.id, name: item.industryName }))}
           onChange={industryId => onDraftChange({ ...draft, industryId })} />
       </div>
@@ -93,10 +95,10 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       <span className="field-hint">前年差・単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-amount-table-container" id="kind-amount-panel" role="tabpanel" aria-labelledby={`kind-tab-${kind}`} aria-label="月別計画金額の入力表" tabIndex={0}>
         <InitiativeAmountGrid key={kind} draft={draft} kind={kind} revisedActive={revisedActive}
-          accounts={accounts} isSaving={isSaving} onDraftChange={onDraftChange} />
+          accounts={accounts} isSaving={readOnly || isSaving} onDraftChange={onDraftChange} />
       </div>
       <div className="initiative-row-actions">
-        <button className="secondary-button" type="button" disabled={isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
+        <button className="secondary-button" type="button" disabled={readOnly || isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
           onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { clientKey: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
     </Container>

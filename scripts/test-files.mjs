@@ -1,4 +1,5 @@
 import { verifyInitiativeGrid } from "../tests/initiative-grid.mjs";
+import { verifyDataHistory } from "../tests/data-history.mjs";
 import { verifyPreviousGrid } from "../tests/previous-grid.mjs";
 import { verifyInitiativeData } from "../tests/initiative-data.mjs";
 import { verifyDetails } from "../tests/details.mjs";
@@ -30,6 +31,7 @@ try {
       'export * from "./Triadichrome-extension/src/extension/MasterPage.tsx";',
       'export * from "./Triadichrome-extension/src/extension/HomeRelationsPage.tsx";',
       'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
+      'export * from "./Triadichrome-extension/src/core/dataHistory.ts";',
       'export * from "./Triadichrome-extension/src/core/details.ts";',
       'export * from "./Triadichrome-extension/src/core/tableView.ts";',
       'export * from "./Triadichrome-extension/src/extension/detailFile.ts";',
@@ -90,6 +92,7 @@ try {
   await verifyExpansionTable(api);
   await verifyAggregationData({ ...api, createTriadicDatabase: () => api.createCurrentEmptyTestPlan(2026) });
   await verifyAutoSave(api);
+  await verifyDataHistory(api);
   await verifyRecentFile(api);
   await verifySamplePlan(api);
 } finally { await rm(temporary, { recursive: true, force: true }); }

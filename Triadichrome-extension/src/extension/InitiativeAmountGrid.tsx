@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useEffect, useRef, useState } from "react";
 import { canChangeAccountRow, isLateMonth, resolvedAmount, type KindId } from "../core/kindAmounts";
 import { isValidAmount } from "../core/amounts";
@@ -12,6 +13,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
   draft: InitiativeEntryDraft; kind: KindId; revisedActive: boolean; accounts: Account[];
   isSaving: boolean; onDraftChange: (draft: InitiativeEntryDraft) => void;
 }) {
+  const readOnly = useHistoryReadOnly();
   const [selection, setSelection] = useState<GridSelection | null>(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
@@ -36,7 +38,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
     table.current?.querySelector<HTMLInputElement>(`input[data-row="${cell.row}"][data-column="${cell.column}"]`)?.focus();
   };
   const apply = (operation: () => InitiativeEntryDraft) => {
-    if (isSaving) return;
+    if (readOnly || isSaving) return;
     try {
       const next = operation();
       const invalidNumbers = [...table.current!.querySelectorAll<HTMLInputElement>("input")].some(input => {
@@ -69,13 +71,13 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
               return <tr key={row.clientKey ?? row.id ?? index}>
                 <th scope="row">
                   <div className="initiative-account-cell">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
+                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row, revisedActive)}
                     onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
                     <option value="">科目を選択</option>
                     {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
                   </select>
-                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
+                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row, revisedActive)} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
                   </div>
                 </th>
                 {months.map((month, column) => {
@@ -94,7 +96,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
                         ? "" : "金額は千円単位・小数点以下3桁までで入力してください。"); }}
                       aria-label={`${accountName} ${month}月の金額`}
                       aria-invalid={value !== "" && !isValidAmount(value)}
-                      disabled={isSaving || !canEditInitiativeCell(draft, kind, cell)} value={value}
+                      disabled={readOnly || isSaving || !canEditInitiativeCell(draft, kind, cell)} value={value}
                       onFocus={event => {
                         original.current = value; event.currentTarget.select();
                         setSelection(current => current && (current.anchor.row === index && current.anchor.column === column
@@ -165,7 +167,7 @@ export function InitiativeAmountGrid({ draft, kind, revisedActive, accounts, isS
                       }}
                     />
                     {kind !== 1 && <div className="amount-source">{row.overrides?.[kind]?.[month] !== undefined
-                      ? <button type="button" className="text-button" aria-label={`${accountName} ${month}月を引き継ぎに戻す`} disabled={isSaving} onClick={() => {
+                      ? <button type="button" className="text-button" aria-label={`${accountName} ${month}月を引き継ぎに戻す`} disabled={readOnly || isSaving} onClick={() => {
                         const overrides = { ...row.overrides, [kind]: { ...row.overrides?.[kind] } };
                         delete overrides[kind]![month];
                         onDraftChange({ ...draft, rows: draft.rows.map((current, position) => position === index ? { ...current, overrides } : current) });

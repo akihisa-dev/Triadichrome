@@ -4,6 +4,14 @@ export async function verifySamplePlan(api) {
   const { createSamplePlan, validateTriadicDatabase, readPlanContents, buildCostTable, initiativeMonths, changeAccountMaster, changeAggregationMaster, openTriadicDatabase } = api;
   const bytes = await createSamplePlan(2026);
   await validateTriadicDatabase(bytes);
+  const history = await api.readDataHistory(bytes);
+  assert.equal(history.entries.length, 3);
+  assert.equal(history.dirtySince, null);
+  const older = await readPlanContents(await api.readHistorySnapshot(bytes, history.entries[2].id));
+  assert.equal(older.initiatives[0].rows[0].amounts[4], "100000");
+  assert.equal(older.initiatives[0].note, "履歴確認用の過去の状態");
+  assert.deepEqual(older.previousAmounts, (await readPlanContents(bytes)).previousAmounts);
+
   const { accounts, initiatives, aggregations, expansions, industries } = await readPlanContents(bytes);
   assert.deepEqual(expansions.map(item => item.expansionCode), ["1", "2", "3", "4", "5", "8", "9"]);
   assert.deepEqual((await readPlanContents(bytes)).departments.map(item => item.departmentName), ["部署A", "部署B"]);

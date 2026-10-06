@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useCallback, useState } from "react";
 import { type Industry, type IndustryChange } from "../core/industryMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -14,6 +15,7 @@ type Props = AutoSaveProps & {
 
 export function IndustryMasterPage({ industries, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [code, setCode] = useState("");
+  const readOnly = useHistoryReadOnly();
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState<Industry | null>(null);
   const [notice, setNotice] = useState({ message: "", error: false });
@@ -43,15 +45,15 @@ export function IndustryMasterPage({ industries, isSaving, onChange, onBack, onP
       <div className="account-master-fields">
         <div className="initiative-field account-code-field">
           <label htmlFor="industry-code">業種コード</label>
-          <input id="industry-code" inputMode="numeric" autoComplete="off" value={code} disabled={isSaving || draft !== null} onChange={event => setCode(event.target.value)} />
+          <input id="industry-code" inputMode="numeric" autoComplete="off" value={code} disabled={readOnly || isSaving || draft !== null} onChange={event => setCode(event.target.value)} />
           <span className="field-hint">半角数字</span>
         </div>
         <div className="initiative-field">
           <label htmlFor="industry-name">業種名</label>
-          <input id="industry-name" autoComplete="off" value={name} disabled={isSaving || draft !== null} onChange={event => setName(event.target.value)} />
+          <input id="industry-name" autoComplete="off" value={name} disabled={readOnly || isSaving || draft !== null} onChange={event => setName(event.target.value)} />
         </div>
       </div>
-      <button className="primary-button" type="submit" disabled={isSaving || draft !== null || !code.trim() || !name.trim()}>登録</button>
+      <button className="primary-button" type="submit" disabled={readOnly || isSaving || draft !== null || !code.trim() || !name.trim()}>登録</button>
     </form>
     {draft && <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />}
     <StatusNotice {...notice} onDismiss={dismissNotice} />
@@ -73,9 +75,9 @@ export function IndustryMasterPage({ industries, isSaving, onChange, onBack, onP
               <td className="account-code">{editing ? <input autoFocus aria-label={`${item.industryName}の業種コード`} inputMode="numeric" value={editing.industryCode} onChange={event => controller.change({ ...editing, industryCode: event.target.value })} /> : item.industryCode}</td>
               <th scope="row" className="account-master-name">{editing ? <input aria-label={`${item.industryName}の業種名`} value={editing.industryName} onChange={event => controller.change({ ...editing, industryName: event.target.value })} /> : item.industryName}</th>
               <td><div className="form-actions">{editing
-                ? <button className="text-button" type="button" disabled={autoSave.pending} onClick={() => controller.end()}>完了</button>
-                : <><button className="text-button" type="button" aria-label={`${item.industryName}を編集`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
-                  <button className="text-button" type="button" aria-label={`${item.industryName}を削除`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
+                ? <button className="text-button" type="button" disabled={readOnly || autoSave.pending} onClick={() => controller.end()}>完了</button>
+                : <><button className="text-button" type="button" aria-label={`${item.industryName}を編集`} disabled={readOnly || isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
+                  <button className="text-button" type="button" aria-label={`${item.industryName}を削除`} disabled={readOnly || isSaving || draft !== null} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
               </div></td>
             </tr>;
           })}

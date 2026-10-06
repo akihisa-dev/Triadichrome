@@ -30,10 +30,14 @@ import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
 import { SidebarIcon } from "./SidebarIcon";
+import { DataHistoryPage, historyDate } from "./DataHistoryPage";
+import { HistoryReadOnlyContext } from "./HistoryReadOnly";
+import { ConfirmationDialog } from "./ConfirmationDialog";
+import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../core/dataHistory";
 import "./ScreenHistory.css";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-type Page = "previous-input" | "details" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
+type Page = "data-history" | "previous-input" | "details" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
 
 type Screen = {
   page: Page;
@@ -57,9 +61,16 @@ type HomePageProps = {
   onChangeDetail: (change: DetailChange) => Promise<PlanContents>;
   onPrepareSave: () => Promise<void>;
   onCloseFile: () => void;
+  dataHistory: DataHistoryStatus;
+  historyError: string;
+  historyBusy: boolean;
+  onPreviewHistory: (id: number) => Promise<PlanContents>;
+  onRestoreHistory: (id: number) => Promise<PlanContents>;
+  onDeleteHistory: (deletion: HistoryDeletion) => Promise<void>;
+  onRetryHistory: () => Promise<void>;
 };
 
-export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onChangeKinds, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile }: HomePageProps) {
+export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onChangeKinds, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile, dataHistory, historyError, historyBusy, onPreviewHistory, onRestoreHistory, onDeleteHistory, onRetryHistory }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const homeContent = useRef<HTMLDivElement>(null);
   const relationView = useRef<RelationView | null>(null);
@@ -80,7 +91,12 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const setPage = (next: Page) => navigate({ ...screen, page: next });
   const detailScroll = useRef({ top: 0, left: 0 });
   const [initiativeDraft, setInitiativeDraft] = useState(() => createInitiativeDraft(String(initialContents.fiscalYear)));
-  const [contents, setContents] = useState(initialContents);
+  const [currentContents, setContents] = useState(initialContents);
+  const [preview, setPreview] = useState<{ entry: DataHistoryEntry; contents: PlanContents } | null>(null);
+  const [restoreRequested, setRestoreRequested] = useState(false);
+  const [restoreError, setRestoreError] = useState("");
+  const contents = preview?.contents ?? currentContents;
+  const assertWritable = () => { if (preview) throw new Error("過去のデータは閲覧専用です。"); };
 
   const { accounts, initiatives } = contents;
   const openInitiative = (initiative: Initiative) => {
@@ -96,21 +112,24 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const [isSaving, setIsSaving] = useState(false);
   const saving = useRef(false);
   const [editPending, setEditPending] = useState(false);
-  const navigationBlocked = isSaving || editPending;
+  const navigationBlocked = isSaving || editPending || historyBusy;
   const usedAccountIds = new Set(initiativeDraft.rows.flatMap(row => row.accountId === null ? [] : [row.accountId]));
   const changePlan = async (change: PlanChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangePlan(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeDetail = async (change: DetailChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangeDetail(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeMaster = async (change: AccountChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     if (change.type === "delete" && usedAccountIds.has(change.id)) throw new Error("施策入力で使用している勘定科目は削除できません。");
     saving.current = true;
@@ -120,12 +139,14 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
 
   const changeKinds = async (change: KindChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangeKinds(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
   const changePeriodTypes = async (change: PeriodTypeChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     if (change.type === "delete" && initiativeDraft.periodTypeId === change.id) throw new Error("施策入力で選択している期間は削除できません。");
     saving.current = true; setIsSaving(true);
@@ -133,6 +154,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeDepartments = async (change: DepartmentChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     if (change.type === "delete" && initiativeDraft.departmentId === change.id) throw new Error("施策入力で選択している部署は削除できません。");
     saving.current = true; setIsSaving(true);
@@ -141,12 +163,14 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
   const changeIndustries = async (change: IndustryChange) => {
     if (change.type === "delete" && initiativeDraft.industryId === change.id) throw new Error("施策入力で選択している業種は削除できません。");
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true; setIsSaving(true);
     try { setContents(await onChangeIndustries(change)); }
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeExpansions = async (change: ExpansionChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     if (change.type === "delete" && initiativeDraft.expansionId === change.id) throw new Error("施策入力で選択している展開名は削除できません。");
     saving.current = true; setIsSaving(true);
@@ -154,6 +178,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     finally { saving.current = false; setIsSaving(false); }
   };
   const changeAggregations = async (change: AggregationChange) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true;
     setIsSaving(true);
@@ -162,6 +187,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
 
   const updateSelected = async (target: { id: number; fiscalYear: number | null }, draft: InitiativeEntryDraft) => {
+    assertWritable();
     if (saving.current) throw new Error("保存が終わるまでお待ちください。");
     saving.current = true;
     setIsSaving(true);
@@ -177,6 +203,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
 
   const register = async () => {
+    assertWritable();
     if (saving.current) return;
     saving.current = true;
     setIsSaving(true);
@@ -191,6 +218,27 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
       const cancelled = error instanceof DOMException && error.name === "AbortError";
       setNotice({ message: cancelled ? "保存をキャンセルしました。入力内容は残っています。" : error instanceof Error ? error.message : "施策を登録できませんでした。", error: !cancelled });
     } finally { saving.current = false; setIsSaving(false); }
+  };
+
+  const resetScreens = (next: Page) => setHistory({ entries: [{ page: next, selectedInitiative: null, detailOrigin: "initiative-list" }], index: 0 });
+  const previewEntry = async (entry: DataHistoryEntry) => {
+    if (navigationBlocked || saving.current) return;
+    saving.current = true; setIsSaving(true);
+    try {
+      const past = await onPreviewHistory(entry.id);
+      setPreview({ entry, contents: past }); resetScreens("home"); dismissNotice();
+    } finally { saving.current = false; setIsSaving(false); }
+  };
+  const restorePreview = async () => {
+    if (!preview || navigationBlocked || saving.current) return;
+    saving.current = true; setIsSaving(true); setRestoreError("");
+    try {
+      setContents(await onRestoreHistory(preview.entry.id));
+      setPreview(null); setRestoreRequested(false); resetScreens("data-history");
+      setInitiativeDraft(createInitiativeDraft(String(contents.fiscalYear)));
+      setNotice({ message: "選んだ時点に戻しました。復元前の状態も履歴に残っています。", error: false });
+    } catch (failure) { setRestoreError(failure instanceof Error ? failure.message : "復元できませんでした。"); }
+    finally { saving.current = false; setIsSaving(false); }
   };
 
   const closeSidebar = useCallback(() => {
@@ -211,7 +259,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   }, [isSidebarOpen, closeSidebar]);
 
   return (
-    <div className="home-page">
+    <HistoryReadOnlyContext value={preview !== null}><div className="home-page">
       <header className="home-header">
         <button
           ref={menuButton}
@@ -250,7 +298,11 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           })}
         </nav>
         <strong className="home-file-name" title={fileName}>{fileName}</strong>
-        <button className="text-button" type="button" disabled={navigationBlocked} onClick={() => { void changePlan({ type: "revised", active: !contents.revisedActive }).catch(error => setNotice({ message: error instanceof Error ? error.message : "修正予算の状態を保存できませんでした。", error: true })); }}>{contents.revisedActive ? "確定予算を使う状態に戻す" : "修正予算を開始"}</button>
+        {preview ? <div className="history-preview-controls" aria-label="過去のデータを閲覧中">
+          <span className="history-preview-label">{historyDate(preview.entry.recordedAt)} · 閲覧専用</span>
+          <button className="secondary-button" type="button" disabled={navigationBlocked} onClick={() => { setPreview(null); resetScreens("data-history"); }}>現在に戻る</button>
+          <button className="primary-button" type="button" disabled={navigationBlocked} onClick={() => { setRestoreError(""); setRestoreRequested(true); }}>この時点に戻す</button>
+        </div> : <button className="text-button" type="button" disabled={navigationBlocked} onClick={() => { void changePlan({ type: "revised", active: !contents.revisedActive }).catch(error => setNotice({ message: error instanceof Error ? error.message : "修正予算の状態を保存できませんでした。", error: true })); }}>{contents.revisedActive ? "確定予算を使う状態に戻す" : "修正予算を開始"}</button>}
       </header>
       <div className="home-layout">
         <aside id="home-sidebar" className={`sidebar-panel${isSidebarOpen ? " is-open" : ""}`} aria-label="メニュー"
@@ -297,6 +349,9 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               <SidebarIcon name="master" />
               <span className="sidebar-label">マスタ</span>
             </button>
+            <button className="sidebar-item" type="button" aria-label="履歴" disabled={navigationBlocked || preview !== null} aria-current={page === "data-history" ? "page" : undefined} onClick={() => setPage("data-history")}>
+              <SidebarIcon name="history" /><span className="sidebar-label">履歴</span>
+            </button>
           </nav>
           <footer className="sidebar-footer">
             <button className="sidebar-item" type="button" aria-label="ファイルを閉じる" disabled={navigationBlocked} onClick={onCloseFile}>
@@ -307,11 +362,12 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           </div>
         </aside>
         <div className="home-content" ref={homeContent}>
-          <FadeSwap value={screen} className="page-switch">
+          <FadeSwap key={preview ? `past:${preview.entry.id}` : "current"} value={screen} className="page-switch">
             {displayed => {
               const { selectedInitiative, detailOrigin } = displayed;
               const currentInitiative = initiatives.find(item => item.id === selectedInitiative?.id && item.fiscalYear === selectedInitiative?.fiscalYear);
               switch (displayed.page) {
+                case "data-history": return <DataHistoryPage entries={dataHistory.entries} busy={navigationBlocked} error={historyError} onPreview={previewEntry} onDelete={onDeleteHistory} onRetry={onRetryHistory} />;
                 case "previous-input": return <PreviousInputPage contents={contents} onSave={input => changePlan({ type: "previous", input })} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "details": return <DetailTablePage contents={contents} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
@@ -333,7 +389,9 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           </FadeSwap>
         </div>
       </div>
-      <StatusNotice {...notice} onDismiss={dismissNotice} />
-    </div>
+      <StatusNotice message={notice.message || historyError} error={notice.message ? notice.error : Boolean(historyError)} onDismiss={dismissNotice} />
+      <ConfirmationDialog open={restoreRequested} title="過去の状態に戻す" message={restoreError || (preview ? `${historyDate(preview.entry.recordedAt)}の状態にファイル全体を戻しますか？ 復元前の状態も履歴に残します。` : "")} confirmLabel={restoreError ? "保存を再試行して戻す" : "この時点に戻す"} busy={isSaving || historyBusy}
+        onCancel={() => setRestoreRequested(false)} onConfirm={() => { void (restoreError ? onPrepareSave().then(restorePreview).catch(failure => setRestoreError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")) : restorePreview()); }} />
+    </div></HistoryReadOnlyContext>
   );
 }

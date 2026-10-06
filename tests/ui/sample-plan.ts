@@ -1,3 +1,4 @@
+import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/dataHistory";
 import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/kindAmounts";
 import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/kindMasterSchema";
 import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/periodMasterSchema";
@@ -7,7 +8,7 @@ import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/expans
 import { changeAccountMaster } from "../../Triadichrome-extension/src/core/accountMaster";
 import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/aggregationMaster";
 import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
-import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiative, type InitiativeRow } from "../../Triadichrome-extension/src/core/initiatives";
+import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiative, updateInitiative, type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/initiatives";
 
 // Previous amounts span every industry/department pair; varying sales verify full and partial totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
@@ -90,11 +91,22 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       ].map(row => ({ accountId: row.accountId!, amounts: row.amounts })) });
     }
   }
-  const database = await openTriadicDatabase(bytes);
-  try {
-    // Stable fixture timestamps keep regeneration independent of the wall clock.
-    const timestamp = `${String(fiscalYear).padStart(4, "0")}-04-01T00:00:00.000Z`;
-    database.run("UPDATE budgets SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
-    return database.export();
-  } finally { database.close(); }
+  const timestamp = `${String(fiscalYear).padStart(4, "0")}-04-01T00:00:00.000Z`;
+  const stable = async (input: Uint8Array) => {
+    const database = await openTriadicDatabase(input);
+    try {
+      // Normalize both current and embedded snapshot metadata for deterministic fixtures.
+      database.run("UPDATE budgets SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
+      return database.export();
+    } finally { database.close(); }
+  };
+  bytes = await stable(bytes);
+  const initiative = (await readPlanContents(bytes)).initiatives[0]!;
+  const draft: InitiativeEntryDraft = { ...initiative, fiscalYear: String(fiscalYear) };
+  const historic = (amount: string) => ({ ...draft, note: "履歴確認用の過去の状態", rows: draft.rows.map((row, index) => index === 0 ? { ...row, amounts: { ...row.amounts, 4: amount } } : row) });
+  const initial = await stable(await updateInitiative(bytes, initiative.id, fiscalYear, historic("100000")));
+  bytes = await trackHistoryChange(initial, await stable(await updateInitiative(initial, initiative.id, fiscalYear, historic("110000"))), timestamp);
+  bytes = await recordDataHistory(bytes, timestamp.replace("00:00:00", "00:05:00"));
+  bytes = await trackHistoryChange(bytes, await stable(await updateInitiative(bytes, initiative.id, fiscalYear, draft)), timestamp.replace("00:00:00", "00:06:00"));
+  return recordDataHistory(bytes, timestamp.replace("00:00:00", "00:11:00"));
 }

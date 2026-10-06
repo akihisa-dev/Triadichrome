@@ -8,7 +8,7 @@ test("アイコンのレールはホバーで展開し、移動後もカーソ�
   await settleMotion(app.locator("body"));
   expect((await sidebar.boundingBox())!.width).toBe(64);
   await expect(entry.locator("span")).toHaveCSS("opacity", "0");
-  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(8);
+  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(9);
   const icon = (await entry.locator("svg").boundingBox())!;
 
   await entry.hover();
@@ -80,6 +80,8 @@ test("キーボードでレールへ入ると項目名が現れ、外へ戻る�
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(app.getByRole("button", { name: "修正予算を開始", exact: true })).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(app.getByRole("button", { name: "前の画面に戻る", exact: true })).toBeFocused();
   await page.keyboard.press("Shift+Tab");
   await expect(trigger).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");

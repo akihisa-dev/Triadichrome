@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useCallback, useState } from "react";
 import { type PeriodType, type PeriodTypeChange } from "../core/periodMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -13,6 +14,7 @@ type Props = AutoSaveProps & {
 };
 
 export function PeriodMasterPage({ periodTypes, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
+  const readOnly = useHistoryReadOnly();
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState<PeriodType | null>(null);
   const [notice, setNotice] = useState({ message: "", error: false });
@@ -42,10 +44,10 @@ export function PeriodMasterPage({ periodTypes, isSaving, onChange, onBack, onPe
       <div className="account-master-fields">
         <div className="initiative-field">
           <label htmlFor="period-name">期間名</label>
-          <input id="period-name" autoComplete="off" value={name} disabled={isSaving || draft !== null} onChange={event => setName(event.target.value)} />
+          <input id="period-name" autoComplete="off" value={name} disabled={readOnly || isSaving || draft !== null} onChange={event => setName(event.target.value)} />
         </div>
       </div>
-      <button className="primary-button" type="submit" disabled={isSaving || draft !== null || !name.trim()}>登録</button>
+      <button className="primary-button" type="submit" disabled={readOnly || isSaving || draft !== null || !name.trim()}>登録</button>
     </form>
     {draft && <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />}
     <StatusNotice {...notice} onDismiss={dismissNotice} />
@@ -66,9 +68,9 @@ export function PeriodMasterPage({ periodTypes, isSaving, onChange, onBack, onPe
             }}>
               <th scope="row" className="account-master-name">{editing ? <input autoFocus aria-label={`${item.periodName}の期間名`} value={editing.periodName} onChange={event => controller.change({ ...editing, periodName: event.target.value })} /> : item.periodName}</th>
               <td><div className="form-actions">{editing
-                ? <button className="text-button" type="button" disabled={autoSave.pending} onClick={() => controller.end()}>完了</button>
-                : <><button className="text-button" type="button" aria-label={`${item.periodName}を編集`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
-                  <button className="text-button" type="button" aria-label={`${item.periodName}を削除`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
+                ? <button className="text-button" type="button" disabled={readOnly || autoSave.pending} onClick={() => controller.end()}>完了</button>
+                : <><button className="text-button" type="button" aria-label={`${item.periodName}を編集`} disabled={readOnly || isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
+                  <button className="text-button" type="button" aria-label={`${item.periodName}を削除`} disabled={readOnly || isSaving || draft !== null} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
               </div></td>
             </tr>;
           })}

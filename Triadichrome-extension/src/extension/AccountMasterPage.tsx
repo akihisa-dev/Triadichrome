@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { type Account, type AccountChange } from "../core/accountMaster";
 import { accountTypes, type AccountType } from "../core/accountTypes";
@@ -15,6 +16,7 @@ type AccountMasterPageProps = AutoSaveProps & {
 };
 
 export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: AccountMasterPageProps) {
+  const readOnly = useHistoryReadOnly();
   const input = useRef<HTMLInputElement>(null);
   const focusAfterSave = useRef(false);
   const focusAfterEdit = useRef<number | null>(null);
@@ -72,7 +74,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     }
   };
   const reorder = (id: number, targetId: number, before: boolean) => {
-    if (isSaving || editing || id === targetId) return;
+    if (readOnly || isSaving || editing || id === targetId) return;
     const ids = accounts.map(account => account.id).filter(item => item !== id);
     ids.splice(ids.indexOf(targetId) + (before ? 0 : 1), 0, id);
     if (ids.every((item, index) => item === accounts[index]!.id)) return;
@@ -97,23 +99,23 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
       <div className="account-master-fields">
         <div className="initiative-field account-code-field">
           <label htmlFor="account-code">科目コード</label>
-          <input ref={input} id="account-code" name="accountCode" type="text" inputMode="numeric" autoComplete="off" aria-describedby="account-code-hint" value={accountCode} disabled={isSaving} onChange={event => setAccountCode(event.target.value)} />
+          <input ref={input} id="account-code" name="accountCode" type="text" inputMode="numeric" autoComplete="off" aria-describedby="account-code-hint" value={accountCode} disabled={readOnly || isSaving} onChange={event => setAccountCode(event.target.value)} />
           <span id="account-code-hint" className="field-hint">半角数字3桁</span>
         </div>
         <div className="initiative-field">
           <label htmlFor="account-name">科目名</label>
-          <input id="account-name" name="accountName" autoComplete="off" value={accountName} disabled={isSaving} onChange={event => setAccountName(event.target.value)} />
+          <input id="account-name" name="accountName" autoComplete="off" value={accountName} disabled={readOnly || isSaving} onChange={event => setAccountName(event.target.value)} />
         </div>
         <div className="initiative-field account-type-field">
           <label htmlFor="account-type">科目属性</label>
-          <select id="account-type" name="accountType" value={accountType} disabled={isSaving} onChange={event => setAccountType(event.target.value as AccountType | "")}>
+          <select id="account-type" name="accountType" value={accountType} disabled={readOnly || isSaving} onChange={event => setAccountType(event.target.value as AccountType | "")}>
             <option value="">属性を選択</option>
             {Object.entries(accountTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </select>
         </div>
       </div>
       <div className="form-actions">
-        <button className="primary-button" type="submit" disabled={isSaving || autoSave.pending || !accountCode.trim() || !accountName.trim() || !accountType}>登録</button>
+        <button className="primary-button" type="submit" disabled={readOnly || isSaving || autoSave.pending || !accountCode.trim() || !accountName.trim() || !accountType}>登録</button>
       </div>
     </form>
     {editing && <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />}
@@ -151,7 +153,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
               }
             }}>
               <td><button type="button" className="text-button account-drag-handle" aria-label={`${account.accountName}を並べ替え`} title="ドラッグ、または上下キーで並べ替え"
-                disabled={isSaving || editing !== null} draggable={!isSaving && editing === null}
+                disabled={readOnly || isSaving || editing !== null} draggable={!readOnly && !isSaving && editing === null}
                 onDragStart={event => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(account.id)); setDragged(account.id); }}
                 onDragEnd={() => { setDragged(null); setDropTarget(null); }}
                 onKeyDown={event => {
@@ -176,10 +178,10 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                 event.preventDefault();
                 if (!autoSave.pending) cancelEditing();
               }}>
-                <button className="text-button" type="submit" disabled={autoSave.pending}>完了</button>
+                <button className="text-button" type="submit" disabled={readOnly || autoSave.pending}>完了</button>
               </form> : <div className="form-actions">
-                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); setNotice({ message: "", error: false }); }}>編集</button>
-                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・明細・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
+                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={readOnly || isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); setNotice({ message: "", error: false }); }}>編集</button>
+                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={readOnly || isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・明細・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
               </div>}</td>
             </tr>
           </tbody>;

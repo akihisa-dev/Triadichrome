@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useLayoutEffect, useState } from "react";
 import { initiativeMonths, type PlanContents } from "../core/initiatives";
 import { filterPlan } from "../core/planTables";
@@ -10,6 +11,7 @@ import { ClassificationSlot } from "./ClassificationSlot";
 
 type Props = AutoSaveProps & { contents: PlanContents; onSave: (input: PreviousInput) => Promise<void> };
 export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepareSave }: Props) {
+  const readOnly = useHistoryReadOnly();
   const [industryId, setIndustry] = useState<number | null>(null);
   const [departmentId, setDepartment] = useState<number | null>(null);
   const autoSave = useAutoSave(onSave, onPendingChange);
@@ -33,6 +35,6 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
     <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
     <PreviousAmountGrid key={`${industryId}:${departmentId}`} contents={filterPlan(contents, {
       industries: industryId === null ? null : [industryId], departments: departmentId === null ? null : [departmentId],
-    })} draft={industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
+    })} draft={!readOnly && industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
   </main>;
 }

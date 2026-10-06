@@ -1,4 +1,5 @@
 import { validateNormalizedData } from "./migration10";
+import { validateDataHistory } from "./dataHistorySchema";
 import { INITIAL_KINDS } from "./kindMasterSchema";
 import { seedDefaultCostMaster } from "./defaultCostMaster";
 import initSqlJs, { type Database } from "sql.js";
@@ -32,6 +33,7 @@ function invalidDatabase(): never {
 }
 
 function assertTriadicDatabase(database: Database): void {
+  validateDataHistory(database);
   const version = Number(database.exec("PRAGMA user_version")[0]?.values[0]?.[0]);
   if (version !== TRIADIC_FORMAT_VERSION) throw new TriadicFileError("この保存形式には対応していません。基準年度を指定して新しいファイルを作成してください。");
   const schemaObjectNames = TRIADIC_SCHEMA_OBJECTS.map(({ name }) => `'${name}'`).join(

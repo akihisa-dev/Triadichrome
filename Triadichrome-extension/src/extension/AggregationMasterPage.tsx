@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useCallback, useRef, useState } from "react";
 import { type Account } from "../core/accountMaster";
 import { type Aggregation, type AggregationMember } from "../core/aggregations";
@@ -14,6 +15,7 @@ type Draft = { id: number; name: string; displayName: string; members: MemberDra
 
 export function AggregationMasterPage({ accounts, groups, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [name, setName] = useState("");
+  const readOnly = useHistoryReadOnly();
   const [adding, setAdding] = useState(false);
   const autoSave = useAutoSave<Draft>(draft => {
     if (draft.members.some(member => !member.target)) throw new Error("集計対象を選択してください。");
@@ -79,7 +81,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
               const owner = owners.get(target.value);
               const blocked = (owner !== undefined && owner !== group.id) || draft.members.some(other => other.key !== member.key && other.target === target.value)
                 || (target.value.startsWith("group:") && ancestors.has(Number(target.value.split(":")[1])));
-              return <option key={target.value} value={target.value} disabled={blocked}>{target.label}{owner !== undefined && owner !== group.id ? "（所属済み）" : ""}</option>;
+              return <option key={target.value} value={target.value} disabled={readOnly || blocked}>{target.label}{owner !== undefined && owner !== group.id ? "（所属済み）" : ""}</option>;
             })}
           </select>
           <button type="button" className="text-button" aria-label={`${index + 1}番目の対象を外す`} onClick={() => setEditing({ ...draft, members: draft.members.filter(item => item.key !== member.key) })}>×</button>
@@ -87,7 +89,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
         <button type="button" className="text-button" autoFocus={group.required !== null} onClick={() => setEditing({ ...draft, members: [...draft.members, { key: serial.current++, target: "", sign: 1 }] })}>＋ 対象を追加</button>
       </div>
       <div className="form-actions">
-        <button type="submit" className="text-button" disabled={autoSave.pending}>完了</button>
+        <button type="submit" className="text-button" disabled={readOnly || autoSave.pending}>完了</button>
       </div>
       <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     </form>;
@@ -96,19 +98,19 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
   return <main ref={page} onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page aggregation-page" aria-labelledby="aggregation-master-title" aria-busy={isSaving}>
     <div className="aggregation-heading"><h1 id="aggregation-master-title">集計マスタ</h1>
       <div className="form-actions"><button type="button" className="text-button graph-back" aria-label="← マスタへ戻る" title="マスタへ戻る" disabled={isSaving || autoSave.pending} onClick={onBack}>←</button>
-        <button ref={addButton} className="primary-button" type="button" disabled={isSaving || editing !== null || adding} onClick={() => setAdding(true)}>＋ 集計を追加</button></div>
+        <button ref={addButton} className="primary-button" type="button" disabled={readOnly || isSaving || editing !== null || adding} onClick={() => setAdding(true)}>＋ 集計を追加</button></div>
     </div>
     {adding && <form className="graph-add-form" onSubmit={event => { event.preventDefault(); if (!isSaving) void save({ type: "add", name }); }}>
       <div className="initiative-field"><label htmlFor="aggregation-name">集計名</label>
-        <input id="aggregation-name" autoFocus value={name} disabled={isSaving} onChange={event => setName(event.target.value)} autoComplete="off" />
+        <input id="aggregation-name" autoFocus value={name} disabled={readOnly || isSaving} onChange={event => setName(event.target.value)} autoComplete="off" />
       </div>
-      <div className="form-actions"><button type="submit" className="primary-button" disabled={isSaving || !name.trim()}>登録</button>
-        <button type="button" className="text-button" disabled={isSaving} onClick={() => { setAdding(false); addButton.current?.focus(); }}>キャンセル</button></div>
+      <div className="form-actions"><button type="submit" className="primary-button" disabled={readOnly || isSaving || !name.trim()}>登録</button>
+        <button type="button" className="text-button" disabled={readOnly || isSaving} onClick={() => { setAdding(false); addButton.current?.focus(); }}>キャンセル</button></div>
     </form>}
     <StatusNotice {...notice} onDismiss={dismiss} />
     <ConfirmationDialog open={deleting !== null} title="集計を削除" message={deleting ? `「${deleting.name}」を削除しますか？` : ""} confirmLabel="削除する" busy={isSaving}
       onCancel={() => setDeleting(null)} onConfirm={() => { if (deleting && !isSaving) void save({ type: "delete", id: deleting.id }); }} />
-    <AggregationGraph accounts={accounts} groups={groups} disabled={isSaving || adding} editingId={editing?.id ?? null}
+    <AggregationGraph accounts={accounts} groups={groups} disabled={readOnly || isSaving || adding} editingId={editing?.id ?? null}
       renderEditor={editor} onEdit={edit} onDelete={group => { dismiss(); setDeleting(group); }}
       onMove={(member, parentId, sign) => save({ type: "move", member, parentId, sign })} />
   </main>;

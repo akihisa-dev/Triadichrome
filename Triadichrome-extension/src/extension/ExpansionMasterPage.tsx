@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useCallback, useState } from "react";
 import { type Expansion, type ExpansionChange } from "../core/expansionMaster";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -15,6 +16,7 @@ type Props = AutoSaveProps & {
 
 export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, onChange, onBack, onPendingChange, onPrepareSave }: Props) {
   const [code, setCode] = useState("");
+  const readOnly = useHistoryReadOnly();
   const [name, setName] = useState("");
   const [deleting, setDeleting] = useState<Expansion | null>(null);
   const [notice, setNotice] = useState({ message: "", error: false });
@@ -44,15 +46,15 @@ export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, on
       <div className="account-master-fields">
         <div className="initiative-field account-code-field">
           <label htmlFor="expansion-code">展開コード</label>
-          <input id="expansion-code" inputMode="numeric" autoComplete="off" value={code} disabled={isSaving || draft !== null} onChange={event => setCode(event.target.value)} />
+          <input id="expansion-code" inputMode="numeric" autoComplete="off" value={code} disabled={readOnly || isSaving || draft !== null} onChange={event => setCode(event.target.value)} />
           <span className="field-hint">半角数字</span>
         </div>
         <div className="initiative-field">
           <label htmlFor="expansion-name">展開名</label>
-          <input id="expansion-name" autoComplete="off" value={name} disabled={isSaving || draft !== null} onChange={event => setName(event.target.value)} />
+          <input id="expansion-name" autoComplete="off" value={name} disabled={readOnly || isSaving || draft !== null} onChange={event => setName(event.target.value)} />
         </div>
       </div>
-      <button className="primary-button" type="submit" disabled={isSaving || draft !== null || !code.trim() || !name.trim()}>登録</button>
+      <button className="primary-button" type="submit" disabled={readOnly || isSaving || draft !== null || !code.trim() || !name.trim()}>登録</button>
     </form>
     {draft && <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />}
     <StatusNotice {...notice} onDismiss={dismissNotice} />
@@ -74,9 +76,9 @@ export function ExpansionMasterPage({ expansions, usedExpansionIds, isSaving, on
               <td className="account-code">{editing ? <input autoFocus aria-label={`${item.expansionName}の展開コード`} inputMode="numeric" value={editing.expansionCode} onChange={event => controller.change({ ...editing, expansionCode: event.target.value })} /> : item.expansionCode}</td>
               <th scope="row" className="account-master-name">{editing ? <input aria-label={`${item.expansionName}の展開名`} value={editing.expansionName} onChange={event => controller.change({ ...editing, expansionName: event.target.value })} /> : item.expansionName}</th>
               <td><div className="form-actions">{editing
-                ? <button className="text-button" type="button" disabled={autoSave.pending} onClick={() => controller.end()}>完了</button>
-                : <><button className="text-button" type="button" aria-label={`${item.expansionName}を編集`} disabled={isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
-                  <button className="text-button" type="button" aria-label={`${item.expansionName}を削除`} title={usedExpansionIds.has(item.id) ? "施策で使用中" : undefined} disabled={isSaving || draft !== null || usedExpansionIds.has(item.id)} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
+                ? <button className="text-button" type="button" disabled={readOnly || autoSave.pending} onClick={() => controller.end()}>完了</button>
+                : <><button className="text-button" type="button" aria-label={`${item.expansionName}を編集`} disabled={readOnly || isSaving || draft !== null} onClick={() => { dismissNotice(); controller.begin({ type: "update", ...item }); }}>編集</button>
+                  <button className="text-button" type="button" aria-label={`${item.expansionName}を削除`} title={usedExpansionIds.has(item.id) ? "施策で使用中" : undefined} disabled={readOnly || isSaving || draft !== null || usedExpansionIds.has(item.id)} onClick={() => { dismissNotice(); setDeleting(item); }}>削除</button></>}
               </div></td>
             </tr>;
           })}

@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { canChangeAccountRow } from "../core/kindAmounts";
 import { accountTypes, isAccountType } from "../core/accountTypes";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -11,6 +12,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   contents: PlanContents; scroll: { current: { top: number; left: number } };
   onSave: (change: DetailChange) => Promise<void>; onOpenInitiative: (initiative: Initiative) => void; onPendingChange: (pending: boolean) => void; onPrepareSave: () => Promise<void>;
 }) {
+  const readOnly = useHistoryReadOnly();
   const rows = contents.details ?? [];
   const container = useRef<HTMLDivElement>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,7 +50,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   }, [editing]);
   useEffect(() => () => { if (clickTimer.current) clearTimeout(clickTimer.current); }, []);
   const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row, contents.revisedActive)).map(row => row.id)));
-  const canEdit = (row: DetailRecord, field: DetailField | undefined) => field !== undefined && (row.kindId !== 0 || field === "amount") && !(row.kindId === 3 && row.month >= 4 && row.month <= 9 && field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
+  const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && !(row.kindId === 3 && row.month >= 4 && row.month <= 9 && field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
   const begin = (row: DetailRecord, field: DetailField, columnId: string) => {
     if (editing || lock.current || contents.migrationError || !canEdit(row, field)) return;
     if (clickTimer.current) clearTimeout(clickTimer.current);
@@ -75,7 +77,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     : editing?.field === "industryId" ? contents.industries.map(item => ({ id: item.id, name: item.industryName })) : editing?.field === "expansionId" ? contents.expansions.map(item => ({ id: item.id, name: item.expansionName })) : editing?.field === "departmentId" ? contents.departments.map(item => ({ id: item.id, name: item.departmentName })) : editing?.field === "periodTypeId" ? contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })) : null;
   return <main className="detail-page">
     <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
-    <p className="detail-help">セルをダブルクリックして編集します。施策名のクリックで施策画面を開きます。</p>
+    <p className="detail-help">{readOnly ? "施策名を押すと、その時点の施策を確認できます。" : "セルをダブルクリックして編集します。施策名のクリックで施策画面を開きます。"}</p>
     {contents.migrationError && <p role="alert">{contents.migrationError}</p>}
     <div ref={container} className="detail-scroll" onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
       <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
