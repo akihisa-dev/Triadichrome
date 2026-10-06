@@ -1,0 +1,56 @@
+import { test, expect, settleMotion } from "./fixtures";
+
+test("施策名・備考の右側のスロットで分類を選択し、登録後も保持する", async ({ page, app }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("heading", { name: "施策入力", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  const name = app.getByRole("textbox", { name: "施策名", exact: true });
+  const register = app.getByRole("button", { name: "登録", exact: true });
+  await name.fill("分類スロット確認");
+  await expect(register).toBeDisabled();
+  const expansion = app.getByRole("combobox", { name: "展開名", exact: true });
+  await expect(expansion).toHaveValue("");
+  await app.getByRole("button", { name: "展開名の次の候補", exact: true }).click();
+  await expect(expansion).toHaveValue("1");
+  await expansion.press("ArrowDown");
+  await expect(expansion).toHaveValue("2");
+  await expansion.press("Home");
+  await expect(expansion).toHaveValue("");
+  const slot = app.locator(".classification-slot").first();
+  await slot.hover();
+  await page.mouse.wheel(0, 36);
+  await expect(expansion).toHaveValue("1");
+  const rect = (await slot.boundingBox())!;
+  await page.mouse.move(rect.x + rect.width / 2, rect.y + 90);
+  await page.mouse.down();
+  await page.mouse.move(rect.x + rect.width / 2, rect.y + 54, { steps: 6 });
+  await page.mouse.up();
+  await expect(expansion).toHaveValue("2");
+  await settleMotion(slot);
+  const selected = (await slot.locator(".is-selected").boundingBox())!;
+  expect(Math.abs(selected.y + selected.height / 2 - rect.y - rect.height / 2)).toBeLessThanOrEqual(1);
+  await app.getByRole("button", { name: "部署名の次の候補", exact: true }).click();
+  await app.getByRole("button", { name: "業種名の次の候補", exact: true }).click();
+  await expect(app.getByRole("combobox", { name: "期間名", exact: true })).toHaveValue("");
+  await expect(register).toBeEnabled();
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 864 });
+    await settleMotion(app.locator("body"));
+    const text = (await app.locator(".initiative-text-fields").boundingBox())!;
+    const slots = (await app.locator(".initiative-classification-slots").boundingBox())!;
+    if (width === 1280) expect(slots.x).toBeGreaterThanOrEqual(text.x + text.width);
+    else expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
+    expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  }
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption("1");
+  await register.click();
+  await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
+  await app.getByRole("button", { name: "分類スロット確認", exact: true }).click();
+  await expect(expansion).toHaveValue("2");
+  await expect(app.getByRole("combobox", { name: "部署名", exact: true })).toHaveValue("1");
+  await expect(app.getByRole("combobox", { name: "業種名", exact: true })).toHaveValue("1");
+  await expect(app.getByRole("combobox", { name: "期間名", exact: true })).toHaveValue("");
+});

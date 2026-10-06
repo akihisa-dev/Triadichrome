@@ -1,3 +1,4 @@
+import { ClassificationSlot } from "./ClassificationSlot";
 import { INITIAL_KINDS } from "../core/kindMasterSchema";
 import { canChangeAccountRow, isLateMonth, resolvedAmount, type KindId } from "../core/kindAmounts";
 import { useState } from "react";
@@ -33,6 +34,8 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       {editing?.before}
       <h1 id="initiative-entry-title">{editing ? "施策詳細" : "施策入力"}</h1>
       {editing?.status}
+      <div className="initiative-header-fields">
+      <div className="initiative-text-fields">
       <div className="initiative-name-row">
         <div className="initiative-field">
           <label htmlFor="initiative-name">施策名</label>
@@ -64,44 +67,26 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           onChange={event => onDraftChange({ ...draft, note: event.target.value })}
         />
       </div>
-      <div className="initiative-classification-row">
+      </div>
+      <div className="initiative-classification-slots">
+        <ClassificationSlot id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={isSaving} required
+          options={expansions.map(item => ({ id: item.id, name: item.expansionName }))}
+          onChange={expansionId => onDraftChange({ ...draft, expansionId })} />
+        <ClassificationSlot id="initiative-department" label="部署名" value={draft.departmentId} disabled={isSaving} required
+          options={departments.map(item => ({ id: item.id, name: item.departmentName }))}
+          onChange={departmentId => onDraftChange({ ...draft, departmentId })} />
+        <ClassificationSlot id="initiative-period" label="期間名" value={draft.periodTypeId} disabled={isSaving}
+          options={periodTypes.map(item => ({ id: item.id, name: item.periodName }))}
+          onChange={periodTypeId => onDraftChange({ ...draft, periodTypeId })} />
+        <ClassificationSlot id="initiative-industry" label="業種名" value={draft.industryId} disabled={isSaving} required
+          options={industries.map(item => ({ id: item.id, name: item.industryName }))}
+          onChange={industryId => onDraftChange({ ...draft, industryId })} />
+      </div>
+      </div>
       <div className="initiative-field initiative-year-field">
         <label htmlFor="initiative-year">年度</label>
         <output id="initiative-year">{draft.fiscalYear}</output>
         <span id="initiative-year-hint" className="field-hint">4月〜翌3月</span>
-      </div>
-      <div className="initiative-field initiative-expansion-field">
-        <label htmlFor="initiative-expansion">展開名</label>
-        <select id="initiative-expansion" value={draft.expansionId ?? ""} disabled={isSaving} required
-          onChange={event => onDraftChange({ ...draft, expansionId: event.target.value ? Number(event.target.value) : null })}>
-          <option value="">展開名を選択</option>
-          {expansions.map(item => <option key={item.id} value={item.id}>{item.expansionName}</option>)}
-        </select>
-      </div>
-      <div className="initiative-field initiative-expansion-field">
-        <label htmlFor="initiative-department">部署名</label>
-        <select id="initiative-department" value={draft.departmentId ?? ""} disabled={isSaving} required
-          onChange={event => onDraftChange({ ...draft, departmentId: event.target.value ? Number(event.target.value) : null })}>
-          <option value="">部署名を選択</option>
-          {departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
-        </select>
-      </div>
-      <div className="initiative-field initiative-expansion-field">
-        <label htmlFor="initiative-period">期間名</label>
-        <select id="initiative-period" value={draft.periodTypeId ?? ""} disabled={isSaving}
-          onChange={event => onDraftChange({ ...draft, periodTypeId: event.target.value ? Number(event.target.value) : null })}>
-          <option value="">期間名を選択</option>
-          {periodTypes.map(item => <option key={item.id} value={item.id}>{item.periodName}</option>)}
-        </select>
-      </div>
-      <div className="initiative-field initiative-expansion-field">
-        <label htmlFor="initiative-industry">業種名</label>
-        <select id="initiative-industry" value={draft.industryId ?? ""} disabled={isSaving} required
-          onChange={event => onDraftChange({ ...draft, industryId: event.target.value ? Number(event.target.value) : null })}>
-          <option value="">業種名を選択</option>
-          {industries.map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
-        </select>
-      </div>
       </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
         <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
