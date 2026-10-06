@@ -19,11 +19,17 @@ test("ホームの相関図から全画面へ移動し、入力を保持する",
     await expect(home.locator(".home-relation-node")).toHaveCount(destinations.length);
     expect((await home.locator(".home-relation-node").allTextContents()).sort()).toEqual([...destinations].sort());
     await home.getByRole("button", { name, exact: true }).click();
+    await expect(home).toBeVisible();
+    await expect(home.getByRole("button", { name, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await home.getByRole("button", { name, exact: true }).click();
     await expect(app.getByRole("heading", { name, exact: true })).toBeVisible();
     if (name === "施策入力") await app.getByRole("textbox", { name: "施策名", exact: true }).fill("ホームからの入力保持");
     await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "Home", exact: true }).click();
   }
-  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "施策入力", exact: true }).press("Enter");
+  const entry = app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "施策入力", exact: true });
+  await entry.press("Enter");
+  await expect(entry).toHaveAttribute("aria-pressed", "true");
+  await entry.press("Enter");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("ホームからの入力保持");
 });
 
@@ -50,6 +56,8 @@ test("パン・ズームと表示位置の復元、ドラッグとクリック�
   await viewport.press("+");
   await expect(map).not.toHaveAttribute("style", panned!);
   await input.focus();
+  await input.press("Space");
+  await expect(input).toHaveAttribute("aria-pressed", "true");
   await expect(home.locator(".home-relation.is-active")).toHaveCount(10);
   const saved = await map.getAttribute("style");
   await input.press("Space");
@@ -93,4 +101,49 @@ test("タッチのピンチで拡大し、全体表示へ戻せる", async ({ pa
   await home.getByRole("button", { name: "全体表示", exact: true }).click();
   await expect(map).toHaveAttribute("style", initial!);
   await session.detach();
+});
+
+
+test("相関図のラベルと項目が重ならず、選択を切り替え・解除できる", async ({ page, app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const home = app.getByRole("main", { name: "ホーム", exact: true });
+  await settleMotion(app.locator("body"));
+  const overlaps = await home.locator(".home-relations-map").evaluate(map => {
+    const elements = [...map.querySelectorAll(".home-relation rect, .home-relation-node")];
+    const conflicts: string[] = [];
+    elements.forEach((element, index) => {
+      const a = element.getBoundingClientRect();
+      elements.slice(index + 1).forEach(other => {
+        const b = other.getBoundingClientRect();
+        if (a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top)
+          conflicts.push(`${element.parentElement?.textContent} / ${other.parentElement?.textContent}`);
+      });
+    });
+    return conflicts;
+  });
+  expect(overlaps).toEqual([]);
+  const input = home.getByRole("button", { name: "施策入力", exact: true });
+  const previous = home.getByRole("button", { name: "前年入力", exact: true });
+  await input.hover();
+  await expect(input).toHaveAttribute("aria-pressed", "false");
+  await input.click();
+  await previous.hover();
+  await expect(input).toHaveAttribute("aria-pressed", "true");
+  await previous.click();
+  await expect(input).toHaveAttribute("aria-pressed", "false");
+  await expect(previous).toHaveAttribute("aria-pressed", "true");
+  await previous.press("Escape");
+  await expect(previous).toHaveAttribute("aria-pressed", "false");
+  await input.click();
+  const mapBox = (await home.locator(".home-relations-map").boundingBox())!;
+  await page.mouse.click(mapBox.x + mapBox.width / 2, mapBox.y + mapBox.height * .95);
+  await expect(input).toHaveAttribute("aria-pressed", "false");
+  await input.click();
+  const box = (await input.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 20, { steps: 5 });
+  await page.mouse.up();
+  await expect(home).toBeVisible();
+  await expect(input).toHaveAttribute("aria-pressed", "true");
 });
