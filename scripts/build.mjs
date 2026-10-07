@@ -187,6 +187,15 @@ try {
     throw new Error("Viteのビルドに失敗しました。");
   }
 
+  // Upstream worker assets include blank lines containing tabs; normalize generated text only.
+  for (const file of await walkFiles(stagingRoot)) {
+    if (file.endsWith(".js")) {
+      const source = await fs.readFile(file, "utf8");
+      const normalized = source.replace(/^[\t ]+$/gm, "");
+      if (normalized !== source) await fs.writeFile(file, normalized, "utf8");
+    }
+  }
+
   await fs.writeFile(
     path.join(stagingRoot, "manifest.json"),
     JSON.stringify(manifest, null, 2) + "\n",
@@ -200,6 +209,7 @@ try {
       path.join(stagingRoot, "icons", fileName),
     );
   }
+  await fs.copyFile(path.join(projectRoot, "branding", "sqlite-wasm-LICENSE.txt"), path.join(stagingRoot, "assets", "sqlite-wasm-LICENSE.txt"));
   await verifyBuild(stagingRoot, manifest);
   await syncBuild(stagingRoot);
   await verifyBuild(extensionPackageRoot, manifest, false);

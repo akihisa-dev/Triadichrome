@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import type { Aggregation, RequiredAggregation } from "../domain/aggregations";
 export function listAggregations(database: Database): Aggregation[] {
   const members = database.exec("SELECT parent_id, account_id, group_id, sign FROM aggregation_members ORDER BY parent_id, position")[0]?.values ?? [];

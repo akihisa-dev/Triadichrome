@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile, access } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import initSqlJs from "sql.js";
 import ts from "typescript";
 import { projectRoot } from "./paths.mjs";
 import { withNodeBundle } from "./node-bundle.mjs";
@@ -20,8 +19,8 @@ export function describeSchema(database) {
   });
 }
 async function schemaText() {
-  return withNodeBundle("scripts/data-map-schema.ts", async ({ TRIADIC_SCHEMA_SQL, DATA_HISTORY_SQL }) => {
-    const SQL = await initSqlJs({ locateFile: name => path.join(projectRoot, "node_modules/sql.js/dist", name) });
+  return withNodeBundle("scripts/data-map-schema.ts", async ({ TRIADIC_SCHEMA_SQL, DATA_HISTORY_SQL, initializeSqlite }) => {
+    const SQL = await initializeSqlite();
     const database = new SQL.Database();
     try {
       database.run(TRIADIC_SCHEMA_SQL + DATA_HISTORY_SQL);

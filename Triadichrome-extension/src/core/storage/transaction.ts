@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { openTriadicDatabase, exportTriadicDatabase } from "./triadicDatabase";
 import { syncInitiativeStartMonths } from "./initiativeStartMonths";
 /** All changes happen on a private copy, with one validation/export and guaranteed release. */

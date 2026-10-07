@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { exportTriadicDatabase, openTriadicDatabase, openBusinessSnapshot, exportBusinessSnapshot } from "./triadicDatabase";
 import { DATA_HISTORY_SQL, isHistoryTimestamp } from "./dataHistorySchema";
 

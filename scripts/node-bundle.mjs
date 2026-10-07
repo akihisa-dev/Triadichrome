@@ -15,7 +15,7 @@ export async function withNodeBundle(entry, operation) {
       plugins: [{ name: "local-wasm", setup(api) {
         api.onResolve({ filter: /\.wasm\?url$/ }, () => ({ path: "wasm", namespace: "local-wasm" }));
         api.onLoad({ filter: /.*/, namespace: "local-wasm" }, () => ({
-          contents: `export default ${JSON.stringify(join(projectRoot, "node_modules/sql.js/dist/sql-wasm-browser.wasm"))};`, loader: "js",
+          contents: `export default ${JSON.stringify(join(projectRoot, "node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm"))};`, loader: "js",
         }));
       } }],
     });

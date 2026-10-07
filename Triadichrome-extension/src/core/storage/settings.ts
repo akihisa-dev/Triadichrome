@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { amountToYen, yenToAmount } from "../domain/amounts";
 import { editDatabase } from "./transaction";
 import { isKindId, type KindId, type KindSelections, type KindScreen, type PlanSettings, type KindOverrides, type PlanChange, type PreviousInput } from "../domain/kinds";

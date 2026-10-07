@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { startMonthRuleForName } from "../domain/initiativeStartMonth";
 import { editDatabase } from "./transaction";
 import { validatePeriodTypeChange, type PeriodType, type PeriodTypeChange } from "../domain/periodMaster";

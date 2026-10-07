@@ -1,4 +1,4 @@
-import { type Database } from "sql.js";
+import { type Database } from "./sqliteRuntime";
 import { type AccountType } from "../domain/accountTypes";
 
 /** Approved names, single codes and display order. No source-sheet classifications. */

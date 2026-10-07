@@ -134,7 +134,7 @@ Chromeのファイル選択、新規作成、ファイル参照を取得でき�
 
 ## 開発
 
-Node.js 20.19以上とnpmを使用します。
+Node.js 22.12以上とnpmを使用します。
 
 全面的な内部再構成には[Triadichrome専用リファクタリングスキル](.agents/skills/refactor-triadichrome/SKILL.md)を使います。毎回リポジトリ全体を調査し、現在の機能・操作・保存データを維持した全体設計を提示します。設計への承認後に移行と検証へ進み、既存の不具合は平易に報告して修正判断を仰ぎます。
 
@@ -146,7 +146,10 @@ npm run typecheck
 npm run build
 ```
 
-TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用します。
+TypeScript、React、Vite、SQLite公式のWebAssembly配布（`@sqlite.org/sqlite-wasm` 3.53.4-build2、SQLite 3.53.4）、Chrome Extension Manifest V3を使用します。
+
+SQLite本体は拡張機能へ同梱し、メモリ内で処理します。外部通信・追加権限は不要です。保存形式と履歴の構造は維持します。SQLite公式のnpm配布部分はApache-2.0、SQLite本体は著作権放棄、補助コードはMIT・NCSAで提供されています。配布時には同梱のライセンス表示を保持します。
+
 `npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。続いて[確認用の.triadicファイル](#確認用のtriadicファイル)を再生成します。
 
 施策入力の月別金額は、月見出しに背景を付け、行と列を淡い罫線で区切った表として表示します。科目選択と削除を同じ行内に並べ、金額欄の余白を抑えています。

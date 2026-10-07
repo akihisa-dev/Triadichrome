@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { editDatabase } from "./transaction";
 import { validateAccountChange, type Account, type AccountChange } from "../domain/accountMaster";
 import { openTriadicDatabase } from "./triadicDatabase";

@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { editDatabase } from "./transaction";
 import { validateIndustryChange, type Industry, type IndustryChange } from "../domain/industryMaster";
 export function listIndustries(database: Database): Industry[] {

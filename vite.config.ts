@@ -13,6 +13,7 @@ export default defineConfig({
   // Preserve embedded whitespace as escaped strings in distribution files.
   esbuild: { supported: { "template-literal": false } },
   plugins: [react()],
+  optimizeDeps: { exclude: ["@sqlite.org/sqlite-wasm"] },
   build: {
     outDir: buildOutputRoot,
     emptyOutDir: true,

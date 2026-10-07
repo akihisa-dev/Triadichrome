@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { editDatabase } from "./transaction";
 import { validateExpansionChange, type Expansion, type ExpansionChange } from "../domain/expansionMaster";
 export function listExpansions(database: Database): Expansion[] {

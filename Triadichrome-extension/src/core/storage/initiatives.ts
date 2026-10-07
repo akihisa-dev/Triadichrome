@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { amountToYen } from "../domain/amounts";
 import { canChangeAccountRow, kindIds, type KindOverrides } from "../domain/kinds";
 import { initiativeMonths } from "../domain/calendar";

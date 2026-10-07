@@ -2,13 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { test } from "node:test";
-import initSqlJs from "sql.js";
 import { describeSchema, screenImplementations, staleScreens } from "../scripts/data-map.mjs";
 import { withNodeBundle } from "../scripts/node-bundle.mjs";
 import { projectRoot } from "../scripts/paths.mjs";
 
 test("保存項目の追加・削除・参照先変更を説明用の表へ自動反映する", async () => {
-  const SQL = await initSqlJs({ locateFile: name => path.join(projectRoot, "node_modules/sql.js/dist", name) });
+  const SQL = await withNodeBundle("Triadichrome-extension/src/core/storage/sqliteRuntime.ts", ({ initializeSqlite }) => initializeSqlite());
   const database = new SQL.Database();
   try {
     database.run("CREATE TABLE owners (id INTEGER PRIMARY KEY); CREATE TABLE children (owner_id INTEGER REFERENCES owners(id), obsolete TEXT);");

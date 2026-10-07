@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { deriveStartYearMonth, type InitiativeStartMonths, type StartMonthRule } from "../domain/initiativeStartMonth";
 import { yenToAmount } from "../domain/amounts";
 import type { AmountSource } from "../domain/kinds";

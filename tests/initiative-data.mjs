@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import initSqlJs from "sql.js";
+import { withNodeBundle } from "../scripts/node-bundle.mjs";
 
 export async function verifyInitiativeData(api, root) {
   const { createTriadicDatabase, changeAccountMaster, readPlanContents, registerInitiative, saveInitiative, openTriadicDatabase, validateTriadicDatabase } = api;
@@ -85,7 +85,7 @@ export async function verifyInitiativeData(api, root) {
   assert.equal(draft.rows[0].amounts[4], "100");
   assert.equal((await readPlanContents(bytes)).initiatives.length, 0);
 
-  const sql = await initSqlJs();
+  const sql = await withNodeBundle("Triadichrome-extension/src/core/storage/sqliteRuntime.ts", ({ initializeSqlite }) => initializeSqlite());
   const legacy = new sql.Database();
   legacy.exec(await readFile(join(root, "tests/fixtures/triadic-v1.sql"), "utf8"));
   legacy.exec(`INSERT INTO budgets (id, created_at, updated_at) VALUES (1, 'old', 'old');

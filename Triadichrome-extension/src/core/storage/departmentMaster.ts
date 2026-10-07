@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { editDatabase } from "./transaction";
 import { validateDepartmentChange, type Department, type DepartmentChange } from "../domain/departmentMaster";
 export function listDepartments(database: Database): Department[] {

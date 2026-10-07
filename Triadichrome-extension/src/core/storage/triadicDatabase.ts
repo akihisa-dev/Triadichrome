@@ -1,5 +1,4 @@
-import initSqlJs, { type Database } from "sql.js";
-import wasmUrl from "sql.js/dist/sql-wasm-browser.wasm?url";
+import { initializeSqlite, type Database } from "./sqliteRuntime";
 import { listAggregations } from "./aggregations";
 import { validateAggregations } from "../domain/aggregations";
 import { validateDataHistory, DATA_HISTORY_SQL } from "./dataHistorySchema";
@@ -9,7 +8,7 @@ import { BUSINESS_TABLES, TRIADIC_FORMAT_ID, TRIADIC_FORMAT_VERSION, TRIADIC_SCH
 export { TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "./triadicSchema";
 const allowedSchemas = new Map<DocumentType, string>();
 const schemaObjects = (db: Database) => db.exec("SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name")[0]?.values ?? [];
-const sqlJsPromise = initSqlJs({ locateFile: () => wasmUrl }).then(sql => {
+const sqlitePromise = initializeSqlite().then(sql => {
   // Derive both exact allowlists from the authoritative DDL, including SQLite's internal objects.
   for (const type of ["plan", "snapshot"] as const) {
     const canonical = new sql.Database();
@@ -84,7 +83,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
 }
 export async function createTriadicDatabase(fiscalYear = new Date().getFullYear() - (new Date().getMonth() < 3 ? 1 : 0)): Promise<Uint8Array> {
   if (!Number.isInteger(fiscalYear) || fiscalYear < 1 || fiscalYear > 9998) throw new TriadicFileError("年度は1〜9998の整数で入力してください。");
-  const sql = await sqlJsPromise;
+  const sql = await sqlitePromise;
   const db = new sql.Database();
   try {
     db.exec(TRIADIC_SCHEMA_SQL);
@@ -98,7 +97,7 @@ export async function createTriadicDatabase(fiscalYear = new Date().getFullYear(
   } finally { db.close(); }
 }
 async function openDatabase(data: ArrayLike<number>, type: DocumentType): Promise<Database> {
-  const sql = await sqlJsPromise;
+  const sql = await sqlitePromise;
   let db: Database | undefined;
   try { db = new sql.Database(data); assertDatabase(db, type); db.exec("PRAGMA foreign_keys = ON"); return db; }
   catch (error) {

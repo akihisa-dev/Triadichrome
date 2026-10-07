@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 import { openTriadicDatabase, openBusinessSnapshot } from "./triadicDatabase";
 import { yenToAmount } from "../domain/amounts";
 import { INITIAL_KINDS, type KindOverrides } from "../domain/kinds";

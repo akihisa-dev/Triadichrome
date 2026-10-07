@@ -1,4 +1,4 @@
-import type { Database } from "sql.js";
+import type { Database } from "./sqliteRuntime";
 
 export const DATA_HISTORY_SQL = `
 CREATE TABLE data_history (
