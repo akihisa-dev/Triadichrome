@@ -24,12 +24,12 @@
     "description": "a8708a3e327ed8f80776291c0da4e87c5e8b21891931f2cc0d815df43449b7e1"
   },
   "cost-table": {
-    "implementation": "7fcad73e22d8133b566eacf5df7aa3167f655df7495593ea8728a5ad88bccf0c",
-    "description": "b028eef9679f2b211a3b1f30596ad26e038a52299f92beedfd51d957a6892a15"
+    "implementation": "116abf74c109a205912f52a998435191a4ef44015b7b688de0c3709298f0d664",
+    "description": "7377d8902c856a8837ec9e683393ccfdcb8286d78b85e2f702937e572daed70b"
   },
   "expansion-table": {
-    "implementation": "91b5830d08d2683afa31689b3d3d38108293082f7103ec79e9aa5d4a9cd84371",
-    "description": "dfc314f953de7649bb1f2c123563713cd67539608478bc0511ed7540d3eaef91"
+    "implementation": "cc022017f0ce047c48745cb438bd94bf7cf7b13e1eb2ad03554b238463924f1c",
+    "description": "521f23ee591e962d079af47d9d6c051baef5ef3b5f21192269782f2a8ed92a75"
   },
   "kind-master": {
     "implementation": "9f34c4e163d165a0e168ff3930f5a27eb4ce8b9ac865dc874a014f7ec5102f9a",

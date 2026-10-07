@@ -8,7 +8,7 @@ import type { KindId } from "../core/domain/kinds";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
 
-import { formatAmount, formatRate } from "../core/domain/amounts";
+import { formatTableAmount, formatTableRate } from "./tableNumberFormat";
 
 type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster?: () => void };
 
@@ -31,7 +31,7 @@ export function CostTablePage({ contents, selected, selection }: Props) {
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
     <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
-    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month], labels[index] === "前年差" || labels[index] === "一次予算差") : formatAmount(values[month])}</td>)}</Fragment>)}
+    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatTableRate(values[month], labels[index] === "前年差" || labels[index] === "一次予算差") : formatTableAmount(values[month])}</td>)}</Fragment>)}
   </tr>;
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">

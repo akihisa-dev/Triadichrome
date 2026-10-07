@@ -36,4 +36,18 @@ export async function verifyCostComparison(api) {
   assert.deepEqual(values(zero, "売上高", 4), [0, 0, 0, 0, 0]);
   assert.deepEqual(values(zero, "利益率", 4), [undefined, undefined, undefined, undefined, undefined], "分母0の利益率の差を0にしない");
   assert.equal(api.formatRate(1.25, true), "1.3pt");
+  for (const amount of [0, -0, 0.001, -0.499, "0", "-0.001", undefined]) {
+    assert.equal(api.formatTableAmount(amount), "", "表示上0の金額・差額は空白");
+  }
+  for (const [amount, expected] of [[0.5, "1"], [-0.5, "-1"], [1234.5, "1,235"], ["-1234.5", "-1,235"]]) {
+    assert.equal(api.formatTableAmount(amount), expected, "非0は従来の千円表示を保つ");
+  }
+  for (const amount of [0, -0.001, 0.049, undefined]) {
+    assert.equal(api.formatTableRate(amount), "");
+    assert.equal(api.formatTableRate(amount, true), "");
+  }
+  assert.equal(api.formatTableRate(-0.05, true), "-0.1pt");
+  assert.equal(api.formatTableRate(1.25), "1.3%");
+  assert.equal(api.formatAmount(0), "0", "他の画面の0表示は維持");
+  assert.deepEqual(values(zero, "売上高", 4), [0, 0, 0, 0, 0], "表示で計算値は変更しない");
 }

@@ -71,3 +71,5 @@ export const saveInitiative = (plan: OpenPlan, draft: Extract<PlanCommand, { typ
 export const saveInitiativeUpdate = (plan: OpenPlan, id: number, _year: number | null, draft: Extract<PlanCommand, { type: "initiative.update" }>["draft"]) => writePlanCommand(plan, { type: "initiative.update", id, draft }, async () => { throw new Error("保存先がありません。"); });
 
 export * from "../Triadichrome-extension/src/core/graph/homeMotion";
+
+export * from "../Triadichrome-extension/src/extension/tableNumberFormat";

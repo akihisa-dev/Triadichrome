@@ -4,7 +4,7 @@ import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative, type PlanContents } from "../core/domain/plan";
 import { buildKindExpansionTable } from "../core/tables/planTables";
 import type { KindId } from "../core/domain/kinds";
-import { formatAmount } from "../core/domain/amounts";
+import { formatTableAmount } from "./tableNumberFormat";
 
 type Props = {
   contents: PlanContents; selected: KindId[]; selection: ReactNode;
@@ -12,8 +12,8 @@ type Props = {
 };
 function AmountCells({ values }: { values: Initiative["months"][] }) {
   return initiativeMonths.map(month => <Fragment key={month}>{values.map((months, index) => <Fragment key={index}>
-    <td title={months[month]?.sales === null ? "属性未設定" : formatAmount(months[month]?.sales)}>{months[month]?.sales === null ? "属性未設定" : formatAmount(months[month]?.sales)}</td>
-    <td title={months[month]?.profit === null ? "属性未設定" : formatAmount(months[month]?.profit)} className={index === values.length - 1 ? "initiative-month-end" : undefined}>{months[month]?.profit === null ? "属性未設定" : formatAmount(months[month]?.profit)}</td>
+    <td title={months[month]?.sales === null ? "属性未設定" : formatTableAmount(months[month]?.sales)}>{months[month]?.sales === null ? "属性未設定" : formatTableAmount(months[month]?.sales)}</td>
+    <td title={months[month]?.profit === null ? "属性未設定" : formatTableAmount(months[month]?.profit)} className={index === values.length - 1 ? "initiative-month-end" : undefined}>{months[month]?.profit === null ? "属性未設定" : formatTableAmount(months[month]?.profit)}</td>
   </Fragment>)}</Fragment>);
 }
 export function ExpansionTablePage({ contents, selected, selection, onOpenInitiative }: Props) {
