@@ -208,8 +208,8 @@ export function ExtensionPage() {
         <div className="entry-options">
           <div className="entry-open-section">
             <svg className="entry-option-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M3 7V5a1 1 0 0 1 1-1h5l2 3h9a1 1 0 0 1 1 1v11H3z" /><path d="M3 10h18" /></svg>
-            <h2 className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "離して開く" : "ファイルを開く"}</FadeSwap></h2>
-            <p className="entry-drop-description">.triadic</p>
+            <h2 className="entry-drop-title" aria-live="polite"><FadeSwap value={dragging} className="motion-text">{active => active ? "ここにドロップして開く" : "ファイルを開く"}</FadeSwap></h2>
+            <p className="entry-drop-description">.triadicファイルをここにドロップ</p>
             <button className="entry-new-button" type="button" disabled={isBusy} onClick={choose}>ファイルを開く<span aria-hidden="true">→</span></button>
           </div>
           <div className="entry-create-section">

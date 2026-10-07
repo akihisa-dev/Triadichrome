@@ -9,10 +9,6 @@
     padding var(--motion-layout) var(--motion-ease);
 }
 
-.entry-page.is-drag-active {
-  background: var(--soft);
-}
-
 .entry-content {
   width: min(100%, 40rem);
 }
@@ -35,10 +31,6 @@
   background: var(--surface);
   transition: border-color var(--motion-feedback), box-shadow var(--motion-feedback);
 }
-.is-drag-active .entry-drop-zone {
-  border-color: var(--focus);
-  box-shadow: 0 0 0 4px rgb(0 0 0 / 8%);
-}
 .entry-resume { padding: 1.75rem 2rem; background: #f4f4f4; border-radius: 1rem 1rem 0 0; }
 .entry-recent-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
 .entry-recent-label { font-size: 0.75rem; color: var(--muted); }
@@ -52,6 +44,24 @@
 .entry-forget-button:disabled { visibility: hidden; }
 .entry-options { display: grid; grid-template-columns: 1fr 1fr; }
 .entry-open-section, .entry-create-section { display: flex; flex-direction: column; min-width: 0; padding: 2rem; }
+.entry-open-section {
+  position: relative;
+  border-radius: 0 0 0 1rem;
+  transition: background-color var(--motion-feedback) var(--motion-ease), color var(--motion-feedback) var(--motion-ease);
+}
+.entry-open-section::after {
+  content: "";
+  position: absolute;
+  inset: 0.75rem;
+  border: 2px dashed var(--accent);
+  border-radius: 0.625rem;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--motion-feedback) var(--motion-ease);
+}
+.is-drag-active .entry-open-section { background: #eef2ff; color: var(--accent); }
+.is-drag-active .entry-open-section::after { opacity: 1; }
+.is-drag-active .entry-drop-description { color: var(--accent); }
 .entry-create-section { border-left: 1px solid var(--line); }
 .entry-option-icon { margin-bottom: 1rem; }
 .entry-drop-title, .entry-section-title { margin: 0; font-size: 1rem; font-weight: 600; }
@@ -144,6 +154,8 @@ button:disabled { cursor: default; opacity: 0.5; }
   .entry-resume-button { width: 100%; }
   .entry-options { grid-template-columns: 1fr; }
   .entry-open-section, .entry-create-section { padding: 1.25rem; }
+  .entry-open-section { border-radius: 0; }
+  .entry-open-section::after { inset: 0.5rem; }
   .entry-create-section { border-left: 0; border-top: 1px solid var(--line); }
   .entry-open-section > .entry-new-button { margin-top: 0.5rem; }
   .entry-option-icon { display: none; }
