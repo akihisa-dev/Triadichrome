@@ -24,12 +24,12 @@
     "description": "a8708a3e327ed8f80776291c0da4e87c5e8b21891931f2cc0d815df43449b7e1"
   },
   "cost-table": {
-    "implementation": "116abf74c109a205912f52a998435191a4ef44015b7b688de0c3709298f0d664",
-    "description": "7377d8902c856a8837ec9e683393ccfdcb8286d78b85e2f702937e572daed70b"
+    "implementation": "ea6db0c98fca4cbbd82deebbbb313f05eb7e94a903de20240dfa3602aaa1f703",
+    "description": "5356e12d69acbcf72dc8d4f64bd5d6793ad06d4e4c060e68e9e3f32df637f4dc"
   },
   "expansion-table": {
-    "implementation": "cc022017f0ce047c48745cb438bd94bf7cf7b13e1eb2ad03554b238463924f1c",
-    "description": "521f23ee591e962d079af47d9d6c051baef5ef3b5f21192269782f2a8ed92a75"
+    "implementation": "b0c7f90b909bf8b5a52d79aad3e14e37865bc45b5148a223fd267e26943a74fe",
+    "description": "3d2709cac40c0942fb8e12abad693267439a5d635f18fc5fd6ef01ad204ac41a"
   },
   "kind-master": {
     "implementation": "9f34c4e163d165a0e168ff3930f5a27eb4ce8b9ac865dc874a014f7ec5102f9a",

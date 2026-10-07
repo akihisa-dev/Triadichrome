@@ -1,11 +1,10 @@
 import type { ReactNode } from "react";
 import { Fragment, useState, useLayoutEffect } from "react";
-import { buildCostComparison } from "../core/tables/costComparison";
+import { buildPeriodCostComparison, tablePeriods } from "../core/tables/periodTables";
 import { filterPlan } from "../core/tables/planTables";
 import { ChoiceChips } from "./ChoiceChips";
 import "./KindSelectionSlots.css";
 import type { KindId } from "../core/domain/kinds";
-import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
 
 import { formatTableAmount, formatTableRate } from "./tableNumberFormat";
@@ -23,7 +22,7 @@ export function CostTablePage({ contents, selected, selection }: Props) {
     if (industries.length !== industryIds.length) setIndustries(industries);
     if (departments.length !== departmentIds.length) setDepartments(departments);
   }, [available, industryIds, departmentIds]);
-  const { labels, rows } = buildCostComparison(filterPlan(contents, {
+  const { labels, rows } = buildPeriodCostComparison(filterPlan(contents, {
     industries: industries.length ? industries : null,
     departments: departments.length ? departments : null,
   }), selected);
@@ -31,7 +30,7 @@ export function CostTablePage({ contents, selected, selection }: Props) {
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
     <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
-    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatTableRate(values[month], labels[index] === "前年差" || labels[index] === "一次予算差") : formatTableAmount(values[month])}</td>)}</Fragment>)}
+    {tablePeriods.map(period => <Fragment key={period.id}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatTableRate(values[period.id], labels[index] === "前年差" || labels[index] === "一次予算差") : formatTableAmount(values[period.id])}</td>)}</Fragment>)}
   </tr>;
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
@@ -51,13 +50,13 @@ export function CostTablePage({ contents, selected, selection }: Props) {
       <table className="initiative-list-table cost-table" aria-label="総原価表">
         <colgroup>
           <col className="cost-name-column" />
-          {initiativeMonths.flatMap(month => labels.map((_, index) => <col key={`${month}:${index}`} className="cost-amount-column" />))}
+          {tablePeriods.flatMap(period => labels.map((_, index) => <col key={`${period.id}:${index}`} className="cost-amount-column" />))}
         </colgroup>
         <thead>
           <tr><th rowSpan={2} scope="col" className="initiative-list-name">科目・集計</th>
-            {initiativeMonths.map(month => <th key={month} colSpan={labels.length} scope="colgroup">{month}月</th>)}
+            {tablePeriods.map(period => <th key={period.id} colSpan={labels.length} scope="colgroup">{period.label}</th>)}
           </tr>
-          <tr>{initiativeMonths.map(month => <Fragment key={month}>{labels.map((_, index) => <th key={index} scope="col">{labels[index]}</th>)}</Fragment>)}</tr>
+          <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.map((_, index) => <th key={index} scope="col">{labels[index]}</th>)}</Fragment>)}</tr>
           {rows.slice(0, salesIndex + 1).map(renderRow)}
         </thead>
         <tbody>{rows.slice(salesIndex + 1).map(renderRow)}</tbody>

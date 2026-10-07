@@ -17,10 +17,10 @@ test("予算選択の列構成・重複防止・比較の符号と画面別の�
   const cost = app.getByRole("table", { name: "総原価表", exact: true });
   await expect(first).toHaveAttribute("aria-valuetext", "一次予算");
   await expect(second).toHaveAttribute("aria-valuetext", "未選択");
-  await expect(cost.getByRole("columnheader", { name: "前年", exact: true })).toHaveCount(12);
+  await expect(cost.getByRole("columnheader", { name: "前年", exact: true })).toHaveCount(19);
   await expect(cost.getByRole("columnheader", { name: "確定予算", exact: true })).toHaveCount(0);
   await selectClassification(second, "確定予算");
-  await expect(cost.getByRole("columnheader", { name: "確定予算", exact: true })).toHaveCount(12);
+  await expect(cost.getByRole("columnheader", { name: "確定予算", exact: true })).toHaveCount(19);
   await first.press("End");
   await expect(first).toHaveAttribute("aria-valuetext", "一次予算");
   await selectClassification(second, "未選択");
@@ -33,7 +33,7 @@ test("予算選択の列構成・重複防止・比較の符号と画面別の�
   await expect(expansion.getByRole("columnheader", { name: "前年", exact: true })).toHaveCount(0);
   await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(0);
   await selectClassification(second, "確定予算");
-  await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(12);
+  await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(19);
   const total = expansion.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) });
   await expect(total.getByRole("cell").nth(4)).toHaveText("20");
   await selectClassification(second, "未選択");

@@ -14,7 +14,7 @@ test("展開表の結合セル・固定列・全月の列境界をスクロー�
     const headers = table.querySelectorAll("thead tr:first-child th");
     const group = rect(headers[0]!); const name = rect(headers[1]!);
     const summary = rect(table.querySelector(".expansion-summary")!);
-    const amounts = [...table.querySelectorAll("tbody tr:first-child td")].slice(0, 72);
+    const amounts = [...table.querySelectorAll("tbody tr:first-child td")].slice(0, 114);
     const monthHeaders = [...headers].slice(2);
     const mismatch = monthHeaders.some((header, index) => {
       const start = rect(amounts[index * 6]!); const end = rect(amounts[index * 6 + 5]!);
@@ -34,7 +34,7 @@ test("展開表の結合セル・固定列・全月の列境界をスクロー�
     expect(Math.abs(layout.summaryWidth - layout.labelsWidth)).toBeLessThan(1);
     expect(layout.fixedNameMismatch).toBe(false);
     expect(layout.mismatch).toBe(false);
-    expect(layout.counts.every(count => count === 72)).toBe(true);
+    expect(layout.counts.every(count => count === 114)).toBe(true);
     expect(layout.bottom).toBeLessThanOrEqual(layout.viewport);
     expect(layout.outside).toBe(false);
     expect(layout.horizontal).toBe(true);
@@ -86,7 +86,7 @@ test("施策がない展開も名称とゼロの小計を同じ列で表示す�
   await expect(rows).toHaveCount(7);
   for (const row of await rows.all()) {
     await expect(row.locator("th")).toHaveCount(2);
-    await expect(row.locator("td")).toHaveCount(72);
-    expect((await row.locator("td").allTextContents()).every(value => value === "0")).toBe(true);
+    await expect(row.locator("td")).toHaveCount(114);
+    expect((await row.locator("td").allTextContents()).every(value => value === "")).toBe(true);
   }
 });

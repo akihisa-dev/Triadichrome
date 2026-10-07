@@ -73,3 +73,5 @@ export const saveInitiativeUpdate = (plan: OpenPlan, id: number, _year: number |
 export * from "../Triadichrome-extension/src/core/graph/homeMotion";
 
 export * from "../Triadichrome-extension/src/extension/tableNumberFormat";
+
+export * from "../Triadichrome-extension/src/core/tables/periodTables";

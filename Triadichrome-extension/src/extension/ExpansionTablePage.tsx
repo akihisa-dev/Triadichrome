@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Fragment } from "react";
-import { initiativeMonths } from "../core/domain/calendar";
+import { expansionPeriodAmount, tablePeriods } from "../core/tables/periodTables";
 import { type Initiative, type PlanContents } from "../core/domain/plan";
 import { buildKindExpansionTable } from "../core/tables/planTables";
 import type { KindId } from "../core/domain/kinds";
@@ -11,9 +11,12 @@ type Props = {
   onOpenInitiative: (initiative: Initiative) => void;
 };
 function AmountCells({ values }: { values: Initiative["months"][] }) {
-  return initiativeMonths.map(month => <Fragment key={month}>{values.map((months, index) => <Fragment key={index}>
-    <td title={months[month]?.sales === null ? "属性未設定" : formatTableAmount(months[month]?.sales)}>{months[month]?.sales === null ? "属性未設定" : formatTableAmount(months[month]?.sales)}</td>
-    <td title={months[month]?.profit === null ? "属性未設定" : formatTableAmount(months[month]?.profit)} className={index === values.length - 1 ? "initiative-month-end" : undefined}>{months[month]?.profit === null ? "属性未設定" : formatTableAmount(months[month]?.profit)}</td>
+  return tablePeriods.map(period => <Fragment key={period.id}>{values.map((months, index) => <Fragment key={index}>
+    {(["sales", "profit"] as const).map(metric => {
+      const amount = expansionPeriodAmount(months, period, metric);
+      const text = amount === null ? "属性未設定" : formatTableAmount(amount);
+      return <td key={metric} title={text} className={metric === "profit" && index === values.length - 1 ? "initiative-month-end" : undefined}>{text}</td>;
+    })}
   </Fragment>)}</Fragment>);
 }
 export function ExpansionTablePage({ contents, selected, selection, onOpenInitiative }: Props) {
@@ -30,15 +33,15 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
       <table className="initiative-list-table expansion-table" aria-label="展開表">
         <colgroup>
           <col className="expansion-group-col" /><col className="expansion-name-col" />
-          {initiativeMonths.flatMap(month => labels.flatMap((_, index) => ["sales", "profit"].map(metric =>
-            <col key={`${month}-${index}-${metric}`} className="expansion-amount-col" />)))}
+          {tablePeriods.flatMap(period => labels.flatMap((_, index) => ["sales", "profit"].map(metric =>
+            <col key={`${period.id}-${index}-${metric}`} className="expansion-amount-col" />)))}
         </colgroup><thead>
         <tr><th rowSpan={3} scope="col" className="expansion-group">展開名</th>
           <th rowSpan={3} scope="col" className="expansion-name">施策名</th>
-          {initiativeMonths.map(month => <th key={month} colSpan={labels.length * 2} scope="colgroup">{month}月</th>)}
+          {tablePeriods.map(period => <th key={period.id} colSpan={labels.length * 2} scope="colgroup">{period.label}</th>)}
         </tr>
-        <tr>{initiativeMonths.map(month => <Fragment key={month}>{labels.map((label, index) => <th key={index} scope="colgroup" colSpan={2}>{label}</th>)}</Fragment>)}</tr>
-        <tr>{initiativeMonths.map(month => <Fragment key={month}>{labels.flatMap((_, index) => (["sales", "profit"] as const).map(key => <th key={`${index}-${key}`} scope="col">{key === "sales" ? "売上" : "利益"}</th>))}</Fragment>)}</tr>
+        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.map((label, index) => <th key={index} scope="colgroup" colSpan={2}>{label}</th>)}</Fragment>)}</tr>
+        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.flatMap((_, index) => (["sales", "profit"] as const).map(key => <th key={`${index}-${key}`} scope="col">{key === "sales" ? "売上" : "利益"}</th>))}</Fragment>)}</tr>
       </thead><tbody>
         <tr><th colSpan={2} scope="row" className="expansion-summary">前年</th><AmountCells values={table.previous} /></tr>
         <tr className="expansion-total"><th colSpan={2} scope="row" className="expansion-summary">合計</th><AmountCells values={table.total} /></tr>
