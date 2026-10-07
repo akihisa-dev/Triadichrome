@@ -93,7 +93,7 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
   };
   const grip = (item: Item) => <button type="button" className="graph-grip" data-move-key={keyOf(item)}
     aria-label={`${labels.get(keyOf(item))}の所属を移動`} aria-pressed={selected !== null && keyOf(selected) === keyOf(item)}
-    title="ドラッグ、または選択して移動先を押す" disabled={blocked}
+    disabled={blocked}
     onClick={event => {
       if (suppressClick.current && event.detail !== 0) { suppressClick.current = false; return; }
       suppressClick.current = false;
@@ -144,7 +144,7 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
     if (event.key === "Escape" && selected) { event.preventDefault(); event.stopPropagation(); clear(); }
   }}>
     <div className="graph-map">
-    <div ref={viewport} className={`aggregation-viewport${navigation.panning ? " is-panning" : ""}`} role="region" aria-label="集計の関係図" aria-describedby="graph-navigation-help" tabIndex={0} {...navigation.handlers}>
+    <div ref={viewport} className={`aggregation-viewport${navigation.panning ? " is-panning" : ""}`} role="region" aria-label="集計の関係図" tabIndex={0} {...navigation.handlers}>
       <div className="aggregation-canvas" style={{ width: layout.width, height: layout.height, transform: `translate(${navigation.view.x}px, ${navigation.view.y}px) scale(${navigation.view.scale})` }}>
         <svg className="aggregation-connections" width={layout.width} height={layout.height} aria-hidden="true">
           <defs><marker id="aggregation-arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7" fill="currentColor" /></marker></defs>
@@ -169,7 +169,6 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
             </header>
             {editing ? renderEditor(group) : <>
               {ownedAccounts.map(account => accountRow(account, group))}
-              {group.members.length === 0 && <p className="graph-empty">科目・集計をここへ</p>}
             </>}
             {!editing && <button className="graph-delete" type="button" aria-label={`${group.name}を削除`} title="集計を削除"
               disabled={blocked || group.required !== null || group.members.length > 0 || owners.has(`group:${group.id}`)} onClick={() => onDelete(group)}>×</button>}
@@ -179,7 +178,6 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
         })}
       </div>
     </div>
-    <p id="graph-navigation-help" className="graph-accessible-help">背景をドラッグで移動、ホイール・ピンチで拡大縮小。科目・集計のハンドルをドラッグし、移動先の加算・減算に入れます。</p>
     <div className="graph-view-controls" role="group" aria-label="関係図の表示操作">
       <button type="button" aria-label="関係図を縮小" title="縮小" disabled={navigation.view.scale <= navigation.minScale} onClick={() => navigation.zoom(0.8)}>−</button>
       <button type="button" className="graph-zoom-level" aria-label="100%で表示" title="100%で表示" onClick={() => navigation.zoom(1 / navigation.view.scale)}>{Math.round(navigation.view.scale * 100)}%</button>
@@ -196,7 +194,7 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
         {unassigned.length === 0 && <p className="graph-empty">未所属の科目はありません</p>}
       </div>
     </section>
-    <div className="graph-accessible-help" role="status" aria-live="polite">{selected ? `「${labels.get(keyOf(selected))}」の移動先で、加算・減算を選択` : ""}</div>
+    <div className="graph-accessible-help" role="status" aria-live="polite">{selected ? `「${labels.get(keyOf(selected))}」を選択中` : ""}</div>
     {selected && <button className="text-button graph-cancel-move" type="button" onClick={clear}>移動をキャンセル</button>}
     {dragging && selected && createPortal(<div className="graph-drag-preview" style={{ left: point.x + 12, top: point.y + 12 }} aria-hidden="true">{labels.get(keyOf(selected))}</div>, document.body)}
   </div>;

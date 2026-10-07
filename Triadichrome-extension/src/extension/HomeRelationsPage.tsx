@@ -210,6 +210,5 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
       <button type="button" onClick={() => fit(true)}>全体表示</button>
     </div>
     </div>
-    <p className="home-relations-hint">クリックで開く · 項目をドラッグで移動 · 背景をドラッグで移動 · ホイール・ピンチで拡大縮小</p>
   </main>;
 }

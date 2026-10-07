@@ -1,7 +1,9 @@
-.home-relations { min-width: 0; padding: clamp(12px, 2vw, 24px); }
+.home-content:has(.home-relations) { overflow: hidden; }
+.page-switch:has(> .home-relations) { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.home-relations { display: flex; flex-direction: column; height: 100%; min-height: 0; min-width: 0; padding: clamp(12px, 2vw, 24px); }
 .home-relations h1 { margin: 0 0 12px; font-size: 24px; font-weight: 600; }
-.home-relations-canvas { position: relative; }
-.home-relations-viewport { position: relative; width: 100%; height: clamp(360px, calc(100dvh - 220px), 740px); overflow: clip; border-radius: 16px; outline-offset: -3px; touch-action: none; user-select: none; cursor: grab; background: radial-gradient(#ddd 1px, transparent 1px) 0 0 / 20px 20px; }
+.home-relations-canvas { position: relative; flex: 1; min-height: 0; }
+.home-relations-viewport { position: relative; width: 100%; height: 100%; overflow: clip; border-radius: 16px; outline-offset: -3px; touch-action: none; user-select: none; cursor: grab; background: radial-gradient(#ddd 1px, transparent 1px) 0 0 / 20px 20px; }
 .home-relations-viewport.is-dragging, .home-relations-viewport.is-dragging * { cursor: grabbing; }
 .home-relations-viewport:focus-visible { outline: 2px solid var(--focus); }
 .home-relations-map { position: absolute; display: block; width: 1240px; height: 640px; max-width: none; transform-origin: 0 0; overflow: visible; }
@@ -9,7 +11,6 @@
 .home-relations-controls button { min-width: 40px; min-height: 40px; border: 0; border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
 .home-relations-controls button:hover { background: #eee; }
 .home-relations-controls button:disabled { opacity: .4; cursor: default; }
-.home-relations-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .home-relation { transition: opacity var(--motion-feedback) var(--motion-ease); }
 .home-relation path { fill: none; stroke: #aaa; stroke-width: 1.5; transition: stroke var(--motion-feedback), stroke-width var(--motion-feedback); }
 .home-relation.is-active path { stroke: var(--accent); stroke-opacity: .55; stroke-width: 2; }

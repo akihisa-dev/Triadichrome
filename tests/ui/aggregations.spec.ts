@@ -52,7 +52,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   for (const label of ["100 売上科目1", "売上小計（所属済み）", "売上集計（所属済み）", "営業利益（所属済み）", "経常利益", "500 費用科目1（所属済み）"]) {
     await expect(options.getByRole("option", { name: label, exact: true })).toBeDisabled();
   }
-  await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
+  await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: join(tmpdir(), `triadichrome-aggregation-${testInfo.project.name}.png`) });
@@ -131,7 +131,7 @@ test("集計の保存失敗で入力と必須集計を保持する", async ({ ap
   await app.getByRole("combobox", { name: "1番目の集計対象", exact: true }).selectOption({ label: "売上集計" });
   await expect(app.getByRole("alert")).toContainText("テスト用の保存失敗です。");
   await expect(app.getByRole("combobox", { name: "1番目の集計対象", exact: true })).toHaveValue("group:1");
-  await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
+  await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "総原価表", exact: true }).click();
   await expect(app.getByText("営業利益未設定", { exact: true })).toBeVisible();

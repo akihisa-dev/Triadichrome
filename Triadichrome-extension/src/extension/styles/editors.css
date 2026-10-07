@@ -27,7 +27,7 @@
 
 @media (max-width: 600px) {
   .account-master-page { overflow: auto; }
-  .account-master-page > .auto-save-controls, .account-master-page > button { flex-shrink: 0; }
+  .account-master-page > button { flex-shrink: 0; }
   .account-master-page .account-master-list { flex: 1 0 240px; min-height: 240px; }
 }
 

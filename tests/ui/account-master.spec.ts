@@ -99,8 +99,9 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("textbox")).toHaveCount(2);
   await settleMotion(app.locator("body"));
   await attachImage(testInfo, "勘定科目マスタ・表内編集", await page.locator("#app-preview").screenshot());
-  await editedName.fill("取り消す変更");
-  await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
+  await editedName.fill("");
+  await expect(app.getByRole("alert")).toBeVisible();
+  await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await expect(app.getByRole("button", { name: "売上高を編集" })).toBeFocused();
   await app.getByRole("button", { name: "売上高を編集" }).click();

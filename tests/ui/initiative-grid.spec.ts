@@ -146,6 +146,6 @@ test("範囲の自動保存が失敗しても入力と未変更セルを保持�
   await app.getByRole("button", { name: "保存を再試行", exact: true }).click();
   await expect(app.getByRole("alert")).toContainText("自動保存できませんでした");
   await expect(april).toHaveValue("-0.001");
-  await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
+  await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await expect(april).toHaveValue("120"); await expect(may).toHaveValue("125");
 });

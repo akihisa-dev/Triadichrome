@@ -74,6 +74,6 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
   await expect(app.getByRole("alert")).toBeVisible();
   await expect(expansion).toHaveAttribute("aria-valuetext", "効率");
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeDisabled();
-  await app.getByRole("button", { name: "未保存の変更を戻す", exact: true }).click();
+  await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await expect(expansion).toHaveAttribute("aria-valuetext", "料改");
 });

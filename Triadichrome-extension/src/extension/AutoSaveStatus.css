@@ -1,3 +1,2 @@
-.auto-save-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 16px; min-height: 40px; }
-.auto-save-state { display: inline-block; width: 6em; color: var(--muted); font-size: 12px; }
-.auto-save-controls .text-button { font-size: 12px; }
+.auto-save-recovery { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; }
+.status-notice .auto-save-recovery .text-button { font-size: 14px; padding: 4px 8px; }

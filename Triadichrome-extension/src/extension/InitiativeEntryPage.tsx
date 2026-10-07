@@ -87,7 +87,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       </div>
       {accounts.length === 0 && <div className="initiative-master-guide">
-        <p>勘定科目をマスタに登録すると、ここで選択できます。</p>
+        <p>勘定科目がありません。</p>
         <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
       <div className="kind-tabs" role="tablist" aria-label="入力する種別">{INITIAL_KINDS.map(item => <button key={item.id} id={`kind-tab-${item.id}`} type="button" role="tab" aria-selected={kind === item.id} aria-controls="kind-amount-panel" onClick={() => setKind(item.id)}>{item.kindName}</button>)}</div>

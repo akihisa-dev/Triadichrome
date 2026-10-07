@@ -1,5 +1,18 @@
 import { test, expect, settleMotion, attachImage } from "./fixtures";
 
+test("明細の操作説明を省き、見出しの直下から表を広げる", async ({ app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  await expect(app.getByText(/セルをダブルクリックして編集|施策名を押すと/)).toHaveCount(0);
+  const spacing = await app.locator(".detail-page").evaluate(element => {
+    const heading = element.querySelector(".detail-toolbar")!.getBoundingClientRect();
+    const table = element.querySelector(".detail-scroll")!.getBoundingClientRect();
+    return table.top - heading.bottom;
+  });
+  expect(spacing).toBeLessThanOrEqual(8);
+});
+
 test("明細の直接編集・全件表示・施策への移動と帰還", async ({ page, app }, testInfo) => {
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");

@@ -9,7 +9,7 @@ for (const screen of ["施策一覧", "前年入力"] as const) {
     await app.getByRole("heading", { name: screen, exact: true }).click();
     await settleMotion(app.locator("body"));
     const metrics = await app.locator("main .initiative-list-heading").evaluate(node => {
-      const rects = Array.from(node.querySelectorAll("h1, .field-hint, [role=spinbutton], .primary-button, .auto-save-controls")).map(item => item.getBoundingClientRect());
+      const rects = Array.from(node.querySelectorAll("h1, .field-hint, [role=spinbutton], .primary-button")).map(item => item.getBoundingClientRect());
       return { centers: rects.map(rect => rect.y + rect.height / 2),
         inside: rects.every(rect => rect.left >= 0 && rect.right <= window.innerWidth),
         overflow: document.documentElement.scrollWidth > window.innerWidth };
@@ -25,7 +25,7 @@ for (const screen of ["施策一覧", "前年入力"] as const) {
       await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
       await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
       await expect(app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true })).toBeVisible();
-      await expect(app.getByRole("button", { name: "保存を再試行", exact: true })).toBeDisabled();
+      await expect(app.getByRole("button", { name: "保存を再試行", exact: true })).toHaveCount(0);
     }
   });
 }

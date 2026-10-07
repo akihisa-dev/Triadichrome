@@ -303,7 +303,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           {([-1, 1] as const).map(direction => {
             const label = direction === -1 ? "操作を取り消す" : "操作をやり直す";
             return <button key={direction} className="home-icon-button" type="button" aria-label={label}
-              title={`${label} (${direction === -1 ? "Ctrl / Command + Z" : "Ctrl / Command + Shift + Z"})`}
+              title={label}
               disabled={operationBlocked || (direction === -1 ? !canUndo : !canRedo)} onClick={() => { void travelOperation(direction); }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={direction === -1 ? "M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12" : "m15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12"} />

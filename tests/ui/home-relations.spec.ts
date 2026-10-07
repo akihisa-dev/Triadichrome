@@ -1,5 +1,28 @@
 import { test, expect, settleMotion } from "./fixtures";
 
+test("操作説明を置かず、ホームのキャンバスを画面下端まで広げる", async ({ page, app }, testInfo) => {
+  await app.getByRole("button", { name: "新規作成", exact: true }).click();
+  await settleMotion(app.locator("body"));
+  for (const height of [800, 1200]) {
+    await page.setViewportSize({ width: page.viewportSize()!.width, height });
+    await settleMotion(app.locator("body"));
+    const metrics = await app.locator(".home-relations").evaluate(element => {
+      const main = element.getBoundingClientRect();
+      const viewport = element.querySelector(".home-relations-viewport")!.getBoundingClientRect();
+      return { bottom: main.bottom - viewport.bottom, padding: parseFloat(getComputedStyle(element).paddingBottom),
+        height: viewport.height, overflow: element.scrollHeight > element.clientHeight };
+    });
+    expect(metrics.bottom).toBeCloseTo(metrics.padding, 0);
+    expect(metrics.overflow).toBe(false);
+    if (height === 1200) expect(metrics.height).toBeGreaterThan(740);
+    await expect(app.getByText(/クリックで開く · 項目をドラッグ/)).toHaveCount(0);
+    await expect(app.getByRole("button", { name: "全体表示", exact: true })).toBeVisible();
+  }
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: 800 });
+  await settleMotion(app.locator("body"));
+  await page.screenshot({ path: `/private/tmp/triadichrome-home-canvas-${testInfo.project.name}.png` });
+});
+
 test("グラフの全画面への入口と、1回クリック・キーボードの画面移動", async ({ app }) => {
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();

@@ -57,7 +57,6 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const choices = detailChoices(contents, editing?.field);
   return <main className="detail-page">
     <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
-    <p className="detail-help">{readOnly ? "施策名を押すと、その時点の施策を確認できます。" : "セルをダブルクリックして編集します。施策名のクリックで施策画面を開きます。"}</p>
     <div ref={container} className="detail-scroll" onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
       <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
       <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {

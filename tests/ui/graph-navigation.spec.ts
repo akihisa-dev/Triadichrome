@@ -111,7 +111,7 @@ test("マップが画面の残り全体を占め、編集・追加・未所属�
   await app.getByRole("button", { name: /^未所属 / }).click();
   await app.getByRole("button", { name: "売上集計を編集", exact: true }).click();
   expect((await viewport.boundingBox())!.height).toBe(bounds.height);
-  await expect(app.locator(".graph-editor").getByText("保存済み", { exact: true })).toBeVisible();
+  await expect(app.getByText("保存済み", { exact: true })).toHaveCount(0);
   await expect(app.getByRole("button", { name: "保存を再試行", exact: true })).toBeHidden();
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await app.getByRole("button", { name: "＋ 集計を追加", exact: true }).click();

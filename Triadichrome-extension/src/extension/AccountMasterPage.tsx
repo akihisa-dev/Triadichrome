@@ -141,7 +141,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                 if (!autoSave.pending) cancelEditing();
               }
             }}>
-              <td><button type="button" className="text-button account-drag-handle" aria-label={`${account.accountName}を並べ替え`} title="ドラッグ、または上下キーで並べ替え"
+              <td><button type="button" className="text-button account-drag-handle" aria-label={`${account.accountName}を並べ替え`}
                 disabled={readOnly || isSaving || editing !== null} draggable={!readOnly && !isSaving && editing === null}
                 onDragStart={event => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", String(account.id)); setDragged(account.id); }}
                 onDragEnd={() => { setDragged(null); setDropTarget(null); }}

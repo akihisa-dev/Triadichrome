@@ -76,8 +76,6 @@
 .graph-editor > input { margin-bottom: 8px; }
 .graph-editor .text-button { min-height: 32px; padding: 2px 0; font-size: 12px; }
 .graph-editor .form-actions { margin-top: 10px; gap: 18px; }
-.graph-editor .auto-save-controls { gap: 4px; min-height: 24px; }
-.graph-editor .auto-save-controls button:disabled { display: none; }
 @media (max-width: 600px) {
   .aggregation-page { padding: 8px; gap: 8px; }
   .aggregation-page h1 { font-size: 16px; }
