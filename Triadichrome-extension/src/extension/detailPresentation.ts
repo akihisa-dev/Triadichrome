@@ -13,6 +13,7 @@ export function detailColumns(contents: PlanContents): DetailColumn[] {
     { id: "expansion", label: "展開名", field: "expansionId", value: row => name(contents.expansions.map(item => ({ id: item.id, name: item.expansionName })), row.expansionId) },
     { id: "department", label: "部署名", field: "departmentId", value: row => name(contents.departments.map(item => ({ id: item.id, name: item.departmentName })), row.departmentId) },
     { id: "period", label: "期間名", field: "periodTypeId", value: row => name(contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })), row.periodTypeId) },
+    { id: "startYearMonth", label: "開始年月", value: row => row.startYearMonth ?? "" },
     { id: "accountCode", label: "科目コード", field: "accountId", value: row => row.accountCode },
     { id: "account", label: "科目名", field: "accountId", value: row => row.accountName },
     { id: "attribute", label: "科目属性", value: row => isAccountType(row.accountType) ? accountTypes[row.accountType] : null },

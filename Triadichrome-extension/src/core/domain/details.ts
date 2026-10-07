@@ -9,6 +9,7 @@ type DetailValues = {
   initiativeRevision: number; rowRevision: number; revision: number;
   kindName: string; industryId: number | null; initiativeName: string; note: string;
   fiscalYear: number; year: number; expansionId: number | null; departmentId: number | null; periodTypeId: number | null;
+  startYearMonth: string | null;
   accountId: number; accountCode: string | null; accountName: string; accountType: string | null;
   amount: string; sales: string | null; profit: string | null; initiativeOrder: number; rowOrder: number;
 };

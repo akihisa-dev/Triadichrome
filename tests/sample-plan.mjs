@@ -22,7 +22,7 @@ export async function verifySamplePlan(api) {
   assert.deepEqual(industries.map(item => item.industryName), ["直営自動車", "自動車取扱", "不動産A", "不動産B", "納品代行", "雑作業", "業務費B", "一般管理費", "営業外"]);
   assert.equal(accounts.length, 59);
   assert.equal(aggregations.length, 16);
-  assert.equal(initiatives.length, 13);
+  assert.equal(initiatives.length, 14);
   assert.ok(initiatives.every(item => item.departmentId != null && item.industryId != null), "全施策に業種・部署がある");
   assert.deepEqual(new Set(accounts.map(account => account.accountType)), new Set(["sales", "cost", "expense", "profit"]));
   assert.equal(accounts[0].accountCode, "401");
@@ -61,7 +61,9 @@ export async function verifySamplePlan(api) {
   assert.equal(combined.changes[0][4].sales, 415);
   assert.equal(combined.total[0][4].sales, 20757.25);
   assert.equal(combined.total[0][4].profit, 17290.125);
-  assert.equal(plan.details.length, 1656);
+  assert.equal(plan.details.length, 1704);
+  assert.deepEqual(plan.initiatives.find(item => item.name === "保守サービスの新規契約").startYearMonths, { 1: "2026-07", 2: "2026-08" });
+  assert.deepEqual(plan.initiatives.find(item => item.name === "期間差の開始年月確認").startYearMonths, { 1: "2025-10", 2: "2025-11" });
   assert.ok(plan.details.every(row => row.fiscalYear === 2026));
   assert.ok(plan.details.filter(row => row.kindId === 0).every(row => row.initiativeName === "前年" && row.kindName === "前年"));
   const unused = accounts.find(item => item.accountName === "削除確認用科目");

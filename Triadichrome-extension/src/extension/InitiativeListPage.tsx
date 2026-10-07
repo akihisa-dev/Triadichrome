@@ -2,12 +2,14 @@ import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, type ReactNode } from "react";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
+import type { KindId } from "../core/domain/kinds";
 
 import { formatAmount } from "../core/domain/amounts";
 const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
 
 type InitiativeListPageProps = {
   selection: ReactNode;
+  selectedKind: KindId;
   initiatives: Initiative[];
   fiscalYear: string;
   onAddInitiative: () => void;
@@ -15,7 +17,7 @@ type InitiativeListPageProps = {
   navigationBlocked: boolean;
 };
 
-export function InitiativeListPage({ selection, initiatives, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
+export function InitiativeListPage({ selection, selectedKind, initiatives, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
   const readOnly = useHistoryReadOnly();
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   return <main className="initiative-list-page initiative-overview-page" aria-labelledby="initiative-list-title">
@@ -30,6 +32,7 @@ export function InitiativeListPage({ selection, initiatives, fiscalYear, onAddIn
         <thead>
           <tr>
             <th rowSpan={2} scope="col" className="initiative-list-name">施策名</th>
+            <th rowSpan={2} scope="col">開始年月</th>
             {initiativeMonths.map(month => <th key={month} colSpan={3} scope="colgroup">{month}月</th>)}
           </tr>
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
@@ -40,6 +43,7 @@ export function InitiativeListPage({ selection, initiatives, fiscalYear, onAddIn
           <th scope="row" className="initiative-list-name" title={item.note || item.name}>
             <button className="initiative-name-button" type="button" disabled={navigationBlocked} onClick={() => onOpenInitiative(item)}>{item.name}</button>
           </th>
+          <td>{item.startYearMonths[selectedKind]}</td>
           {initiativeMonths.map(month => <Fragment key={month}>
             <td>{amountText(item.months[month]?.sales)}</td>
             <td>{amountText(item.months[month]?.expense)}</td>

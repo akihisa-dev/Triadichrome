@@ -40,7 +40,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   const row = (name: string, amounts: InitiativeRow["amounts"]): InitiativeRow => ({ accountId: accounts.get(name)!, amounts });
   const annual = (name: string, amount: number, growth = 0): InitiativeRow => row(name,
     Object.fromEntries(initiativeMonths.map((month, index) => [month, String(amount + index * growth)])));
-  const add = async (name: string, note: string, rows: InitiativeRow[]) => {
+  const add = async (name: string, note: string, rows: InitiativeRow[], periodTypeId?: number) => {
     const codes: Record<string, string> = {
       "既存商品の販売拡大": "5", "保守サービスの新規契約": "5", "季節キャンペーン": "5",
       "通信運搬費と消耗品費の削減": "1", "サブスクリプション事業の拡大": "2",
@@ -48,17 +48,17 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypeId ?? periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
     { ...annual("売上高", 120, 5), overrides: { 2: { 4: "130", 10: "170", 11: "0" } } }, annual("売上高", 30, 1), annual("本支店売上原価", 60, 2.5),
     annual("宣伝広告費", 8), annual("旅費", 3), annual("営業外収益", 0.125),
   ]);
-  await add("保守サービスの新規契約", "7月開始。4〜6月は未入力、翌年3月まで継続します。", [
-    row("グループ売上高", { 7: "80", 8: "80", 9: "100", 10: "100", 11: "120", 12: "120", 1: "140", 2: "140", 3: "160" }),
-    row("店内売上原価", { 7: "30", 8: "30", 9: "40", 10: "40", 11: "50", 12: "50", 1: "60", 2: "60", 3: "70" }),
-    row("給料手当", { 7: "20", 8: "20", 9: "20", 10: "20", 11: "20", 12: "20", 1: "20", 2: "20", 3: "20" }),
+  await add("保守サービスの新規契約", "一次予算は7月開始、確定予算は7月を全科目で0に手修正して8月開始。開始年月が種別ごとに変わることを施策一覧と明細で確認できます。", [
+    { ...row("グループ売上高", { 7: "80", 8: "80", 9: "100", 10: "100", 11: "120", 12: "120", 1: "140", 2: "140", 3: "160" }), overrides: { 2: { 7: "0" } } },
+    { ...row("店内売上原価", { 7: "30", 8: "30", 9: "40", 10: "40", 11: "50", 12: "50", 1: "60", 2: "60", 3: "70" }), overrides: { 2: { 7: "0" } } },
+    { ...row("給料手当", { 7: "20", 8: "20", 9: "20", 10: "20", 11: "20", 12: "20", 1: "20", 2: "20", 3: "20" }), overrides: { 2: { 7: "0" } } },
   ]);
   await add("季節キャンペーン", "夏季と年末の単月施策。一覧の施策名を選ぶと全画面の施策入力へ直接移動します。備考と月額を編集して自動保存し、一覧へ戻って開き直すと更新内容が保持されていることを確認できます。未入力月と入力済みのゼロを比較できます。", [
     row("売上高", { 6: "50", 7: "75", 12: "180", 1: "0" }),
@@ -87,6 +87,10 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   await add("確定予算の下期調整", "確定予算10月を150に手修正しています。一次予算との差を確認できます。", [{ ...annual("売上高", 100), overrides: { 2: { 10: "150" } } }]);
   await add("確定予算のゼロ固定", "確定予算10月は0、4月は90。手修正0の固定と引き継ぎへの復帰を確認できます。", [{ ...annual("グループ売上高", 100), overrides: { 2: { 10: "0", 4: "90" } } }]);
   await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。2行の4〜6月を範囲選択し、複数行・複数月の貼り付け、同値入力、0への消去を確認できます。", [row("未所属費用", {}), row("売上高", {})]);
+  await add("期間差の開始年月確認", "一次予算は4〜9月の増減から前年10月開始、確定予算は10月にも増減があるため前年11月開始です。6月の0も継続とみなし、正負の相殺で合計0でも開始年月を判定します。", [10, -10].map(amount => ({
+    ...row("売上高", Object.fromEntries([4, 5, 7, 8, 9].map(month => [month, String(amount)]))),
+    overrides: { 2: { 10: String(amount) } },
+  })), periodTypes.find(item => item.periodName === "期間差")!.id);
   for (const [index, industry] of industries.entries()) {
     for (const [departmentIndex, department] of departments.entries()) {
       bytes = await savePreviousAmounts(bytes, { industryId: industry.id, departmentId: department.id, rows: [

@@ -11,6 +11,7 @@ export * from "../Triadichrome-extension/src/core/domain/departmentMaster";
 export * from "../Triadichrome-extension/src/core/domain/expansionMaster";
 export * from "../Triadichrome-extension/src/core/domain/industryMaster";
 export * from "../Triadichrome-extension/src/core/domain/initiativeRules";
+export * from "../Triadichrome-extension/src/core/domain/initiativeStartMonth";
 export * from "../Triadichrome-extension/src/core/domain/kinds";
 export * from "../Triadichrome-extension/src/core/domain/periodMaster";
 export * from "../Triadichrome-extension/src/core/domain/plan";

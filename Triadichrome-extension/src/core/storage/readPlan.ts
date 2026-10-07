@@ -31,8 +31,8 @@ export function listInitiatives(db: Database, fiscalYear: number): Initiative[] 
     const overrides = row.overrides as KindOverrides;
     (overrides[2] ??= {})[Number(month)] = yenToAmount(Number(amount)); row.overrideRevisions![Number(month)] = Number(revision);
   }
-  return (db.exec("SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision FROM initiatives ORDER BY sort_order, id")[0]?.values ?? [])
-    .map(([id, name, note, expansion, department, period, industry, revision]) => ({ id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision), rows: rowsByOwner.get(Number(id)) ?? [], months: {} }));
+  return (db.exec("SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision, primary_start_year_month, confirmed_start_year_month FROM initiatives ORDER BY sort_order, id")[0]?.values ?? [])
+    .map(([id, name, note, expansion, department, period, industry, revision, primary, confirmed]) => ({ id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision), startYearMonths: { 1: primary === null ? null : String(primary), 2: confirmed === null ? null : String(confirmed) }, rows: rowsByOwner.get(Number(id)) ?? [], months: {} }));
 }
 export function readContents(db: Database): PlanContents {
   const settings = readPlanSettings(db);
