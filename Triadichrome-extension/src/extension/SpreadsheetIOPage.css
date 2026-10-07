@@ -1,0 +1,25 @@
+.spreadsheet-io-page { padding: 16px; display: grid; gap: 16px; min-width: 0; }
+.spreadsheet-io-page h1 { margin: 0; font-size: 20px; }
+.spreadsheet-io-page h2 { margin: 0; font-size: 16px; }
+.io-panel { border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 14px; min-width: 0; }
+.io-heading, .io-check { display: flex; align-items: center; gap: 8px; }
+.io-heading { flex-wrap: wrap; }
+.io-check { width: fit-content; font-weight: 500; }
+.io-check input { accent-color: var(--ink); }
+.io-table-option { display: grid; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+.io-table-conditions { padding-left: 24px; min-width: 0; }
+.io-table-conditions .kind-selection-slots { margin-bottom: 8px; }
+.io-classifications { display: flex; gap: 16px; flex-wrap: wrap; }
+.io-classifications > * { flex: 1 1 240px; min-width: 0; }
+.io-panel > button { justify-self: start; }
+.io-pair-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.io-pair-list fieldset { margin: 0; padding: 8px 12px; display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 6px; min-width: 0; }
+.io-pair-list legend { font-size: 13px; }
+.io-import-preview { display: grid; gap: 12px; }
+.io-import-preview h3 { margin: 0; font-size: 15px; }
+.io-preview-table { max-height: 320px; overflow: auto; }
+.io-preview-table table { width: 100%; border-collapse: collapse; white-space: nowrap; }
+.io-preview-table th, .io-preview-table td { padding: 6px 10px; border: 1px solid var(--line); text-align: left; }
+.io-preview-table thead { position: sticky; top: 0; background: var(--soft); }
+.io-preview-table td:nth-last-child(-n+2) { text-align: right; }
+@media (max-width: 600px) { .io-panel { padding: 12px; } .io-table-conditions { padding-left: 0; } .io-pair-list { grid-template-columns: 1fr; } }

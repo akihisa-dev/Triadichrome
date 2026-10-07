@@ -75,3 +75,4 @@ export * from "../Triadichrome-extension/src/core/graph/homeMotion";
 export * from "../Triadichrome-extension/src/extension/tableNumberFormat";
 
 export * from "../Triadichrome-extension/src/core/tables/periodTables";
+export * from "../Triadichrome-extension/src/core/spreadsheets/workbook";

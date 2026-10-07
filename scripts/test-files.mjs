@@ -1,4 +1,5 @@
 import { verifyPeriodTables } from "../tests/period-tables.mjs";
+import { verifySpreadsheetIO } from "../tests/spreadsheet-io.mjs";
 import { verifyCostComparison } from "../tests/cost-comparison.mjs";
 import { verifyHomeMotion } from "../tests/home-graph-motion.mjs";
 import { verifyPlanSession } from "../tests/plan-session.mjs";
@@ -28,6 +29,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
   await verifyCostComparison(api);
   await verifyPeriodTables(api);
+  await verifySpreadsheetIO(api);
   verifyHomeMotion(api);
   verifyPreviousGrid(api);
   verifyInitiativeGrid(api);

@@ -10,6 +10,8 @@ const buildOutputRoot = process.env.TRIADICHROME_BUILD_OUTPUT
 export default defineConfig({
   root: projectRoot,
   base: "./",
+  // Preserve embedded whitespace as escaped strings in distribution files.
+  esbuild: { supported: { "template-literal": false } },
   plugins: [react()],
   build: {
     outDir: buildOutputRoot,

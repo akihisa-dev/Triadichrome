@@ -3,6 +3,7 @@ import { useScreenHistory } from "./useScreenHistory";
 import { initiativesForKind } from "../core/tables/initiatives";
 import { KindSelectionSlots } from "./KindSelectionSlots";
 import { type KindId, type KindScreen, type PlanChange } from "../core/domain/kinds";
+import { SpreadsheetIOPage } from "./SpreadsheetIOPage";
 import { PreviousInputPage } from "./PreviousInputPage";
 import { KindMasterPage } from "./KindMasterPage";
 import { DetailTablePage } from "./DetailTablePage";
@@ -41,7 +42,7 @@ import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../co
 import "./ScreenHistory.css";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-export type Page = "data-history" | "previous-input" | "details" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
+export type Page = "spreadsheet-io" | "data-history" | "previous-input" | "details" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
 
 type Screen = {
   page: Page;
@@ -355,6 +356,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
             <button className="sidebar-item" type="button" aria-label="明細" disabled={navigationBlocked} aria-current={page === "details" || (page === "initiative-detail" && detailOrigin === "details") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("details"); }}>
               <SidebarIcon name="details" /><span className="sidebar-label">明細</span>
             </button>
+            <button className="sidebar-item" type="button" aria-label="入出力" disabled={navigationBlocked} aria-current={page === "spreadsheet-io" ? "page" : undefined} onClick={() => setPage("spreadsheet-io")}><SidebarIcon name="io" /><span className="sidebar-label">入出力</span></button>
             <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <SidebarIcon name="master" />
               <span className="sidebar-label">マスタ</span>
@@ -378,6 +380,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               const currentInitiative = initiatives.find(item => item.id === selectedInitiative?.id && item.fiscalYear === selectedInitiative?.fiscalYear);
               switch (displayed.page) {
                 case "data-history": return <DataHistoryPage entries={dataHistory.entries} busy={navigationBlocked} error={historyError} onPreview={previewEntry} onDelete={onDeleteHistory} onRetry={onRetryHistory} />;
+                case "spreadsheet-io": return <SpreadsheetIOPage contents={contents} busy={isSaving || historyBusy || operationMutation.busy} onChangePlan={changePlan} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "previous-input": return <PreviousInputPage contents={contents} onSave={input => changePlan({ type: "previous", input })} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "details": return <DetailTablePage contents={contents} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;

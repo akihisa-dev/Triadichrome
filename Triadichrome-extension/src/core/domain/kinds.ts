@@ -25,4 +25,5 @@ export function canChangeAccountRow(source: AmountSource): boolean {
 export const INITIAL_KINDS = [{ id: 1, kindName: "一次予算" }, { id: 2, kindName: "確定予算" }] as const;
 export type Kind = { id: number; kindName: string };
 export type PreviousInput = { invalidNumbers?: boolean; industryId: number; departmentId: number; rows: { accountId: number; amounts: MonthAmounts }[] };
-export type PlanChange = { type: "previous"; input: PreviousInput } | { type: "selection"; screen: KindScreen; selected: KindId[] };
+export type PreviousPatch = { industryId: number; departmentId: number; accountId: number; month: number; before: string; after: string };
+export type PlanChange = { type: "previous"; input: PreviousInput } | { type: "previous-import"; patches: PreviousPatch[] } | { type: "selection"; screen: KindScreen; selected: KindId[] };

@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "7.6.2",
+  "version": "7.7.0",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -34,6 +34,7 @@
     "mechanism-map:review": "node scripts/data-map.mjs --review-mechanisms"
   },
   "dependencies": {
+    "exceljs": "4.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "sql.js": "1.14.2"
@@ -52,5 +53,10 @@
     "pngjs": "7.0.0",
     "typescript": "5.9.3",
     "vite": "7.3.6"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
   }
 }

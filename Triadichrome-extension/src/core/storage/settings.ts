@@ -29,6 +29,21 @@ export async function saveKindSelection(bytes: Uint8Array, screen: KindScreen, s
 }
 export async function changePlanSettings(bytes: Uint8Array, change: PlanChange): Promise<Uint8Array> {
   if (change.type === "previous") return savePreviousAmounts(bytes, change.input);
+  if (change.type === "previous-import") return (await editDatabase(bytes, db => {
+    const seen = new Set<string>();
+    if (!change.patches.length) throw new Error("変更する金額がありません。");
+    for (const patch of change.patches) {
+      const key = `${patch.industryId}:${patch.departmentId}:${patch.accountId}:${patch.month}`;
+      if (seen.has(key) || !Number.isInteger(patch.month) || patch.month < 1 || patch.month > 12) throw new Error("取り込み対象が重複しているか、月が正しくありません。");
+      seen.add(key);
+      if (!db.exec("SELECT id FROM industries WHERE id = ?", [patch.industryId]).length || !db.exec("SELECT id FROM departments WHERE id = ?", [patch.departmentId]).length || !db.exec("SELECT id FROM accounts WHERE id = ?", [patch.accountId]).length) throw new Error("取り込み対象のマスタが見つかりません。");
+      const current = db.exec("SELECT amount_yen FROM previous_amounts WHERE industry_id = ? AND department_id = ? AND account_id = ? AND month = ?", [patch.industryId, patch.departmentId, patch.accountId, patch.month])[0]?.values[0]?.[0] ?? 0;
+      if (Number(current) !== amountToYen(patch.before)) throw new Error("確認後に前年金額が変更されています。ファイルを選び直してください。");
+      const amount = amountToYen(patch.after);
+      db.run(`INSERT INTO previous_amounts (account_id, industry_id, department_id, month, amount_yen) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT (account_id, industry_id, department_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = previous_amounts.revision + 1`, [patch.accountId, patch.industryId, patch.departmentId, patch.month, amount]);
+    }
+  })).bytes;
   return saveKindSelection(bytes, change.screen, change.selected);
 }
 export async function savePreviousAmounts(bytes: Uint8Array, input: PreviousInput): Promise<Uint8Array> {
