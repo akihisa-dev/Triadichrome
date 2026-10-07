@@ -12,7 +12,7 @@
 .previous-grid-container { overflow: auto; max-width: 100%; margin-top: 16px; }
 .previous-input-page .previous-grid { min-width: 1480px; }
 .previous-input-page .previous-grid thead { z-index: 4; }
-.previous-grid thead th { text-align: center; }
+.previous-grid thead tr:first-child th { text-align: center; }
 .previous-grid td { border-right: 1px solid var(--line); height: 40px; }
 .previous-grid td.previous-input-cell { padding: 0; position: relative; }
 .previous-grid input { width: 100%; min-width: 0; height: 40px; padding: 10px 12px; border: 0; border-radius: 0; outline: none; background: transparent; color: inherit; font: inherit; text-align: right; box-sizing: border-box; }

@@ -21,6 +21,8 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
   let calculationFailed = invalid;
   try { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous); }
   catch { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear); calculationFailed = true; }
+  const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
+  const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const rowIds = rows.map(row => row.kind === "account" ? row.id : null);
   const apply = (operation: () => PreviousInput) => {
     try { onChange(operation()); setError(""); setEditing(false); }
@@ -28,12 +30,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
   };
   const changeCell = (accountId: number, month: number, value: string) => draft && onChange({ ...draft,
     rows: draft.rows.map(row => row.accountId === accountId ? { ...row, amounts: { ...row.amounts, [month]: value } } : row) });
-  return <>
-    <StatusNotice message={error} error onDismiss={() => setError("")} />
-    <div className="previous-grid-container" role="region" aria-label="前年の月別金額" tabIndex={0}>
-      <table ref={table} className="initiative-list-table cost-table previous-grid" aria-label="前年入力の月別金額">
-        <thead><tr><th scope="col" className="initiative-list-name">科目・集計</th>{initiativeMonths.map(month => <th scope="col" key={month}>{month}月</th>)}</tr></thead>
-        <tbody>{rows.map((row, rowIndex) => <tr key={`${row.kind}:${row.id}`} className={row.kind !== "account" ? `cost-subtotal${row.required ? " cost-required" : ""}` : undefined}>
+  const renderRow = (row: (typeof rows)[number], rowIndex: number) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
           <th scope="row" className="initiative-list-name">{row.name}</th>
           {initiativeMonths.map((month, column) => {
             const cell = { row: rowIndex, column };
@@ -89,7 +86,16 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
                   }} />}
             </td>;
           })}
-        </tr>)}</tbody>
+        </tr>;
+  return <>
+    <StatusNotice message={error} error onDismiss={() => setError("")} />
+    <div className="previous-grid-container" role="region" aria-label="前年の月別金額" tabIndex={0}>
+      <table ref={table} className="initiative-list-table cost-table previous-grid" aria-label="前年入力の月別金額">
+        <thead>
+          <tr><th scope="col" className="initiative-list-name">科目・集計</th>{initiativeMonths.map(month => <th scope="col" key={month}>{month}月</th>)}</tr>
+          {rows.slice(0, salesIndex + 1).map(renderRow)}
+        </thead>
+        <tbody>{rows.slice(salesIndex + 1).map((row, index) => renderRow(row, salesIndex + 1 + index))}</tbody>
       </table>
     </div>
   </>;

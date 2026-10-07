@@ -1,6 +1,8 @@
 import { test, expect, settleMotion, selectClassification } from "./fixtures";
 
-test("前年の列見出しは縦横スクロール後も本文に覆われない", async ({ page, app }) => {
+test("前年は列見出しから社内控除後売上まで縦横スクロール中も固定する", async ({ page, app }, testInfo) => {
+  // Keep room for the frozen editable sales rows and the controls at narrow widths.
+  await page.setViewportSize({ width: page.viewportSize()!.width, height: testInfo.project.name === "narrow" ? 1400 : 1000 });
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -12,6 +14,11 @@ test("前年の列見出しは縦横スクロール後も本文に覆われな�
       await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
       await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
     }
+    await region.evaluate(node => { node.scrollTop = 0; });
+    const sales = region.getByRole("rowheader", { name: "社内控除後売上", exact: true });
+    const initialSales = (await sales.boundingBox())!;
+    const expense = region.getByRole("rowheader", { name: "旅費", exact: true });
+    const initialExpense = (await expense.boundingBox())!;
     for (const bottom of [false, true]) {
       await region.evaluate((node, atBottom) => {
         node.scrollTop = atBottom ? node.scrollHeight : 320;
@@ -19,7 +26,7 @@ test("前年の列見出しは縦横スクロール後も本文に覆われな�
       }, bottom);
       await expect.poll(() => region.evaluate(node => {
         const edge = node.getBoundingClientRect();
-        const headers = Array.from(node.querySelectorAll("thead th"));
+        const headers = Array.from(node.querySelectorAll("thead tr:first-child th"));
         const nameHeader = headers[0]!;
         return {
           scrolled: node.scrollTop > 0 && node.scrollLeft > 0,
@@ -34,6 +41,10 @@ test("前年の列見出しは縦横スクロール後も本文に覆われな�
           }),
         };
       })).toEqual({ scrolled: true, nameFixed: true, visible: true });
+      expect(Math.abs((await sales.boundingBox())!.y - initialSales.y)).toBeLessThan(2);
+      expect((await expense.boundingBox())!.y).toBeLessThan(initialExpense.y);
+      const lastAmount = region.locator(".cost-sales-anchor td").last();
+      expect(Math.abs((await lastAmount.boundingBox())!.y - initialSales.y)).toBeLessThan(2);
     }
   }
 });
@@ -50,7 +61,7 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await settleMotion(app.locator(".home-layout"));
   const cell = (name: string, month: number) => app.getByRole("textbox", { name: `${name} ${month}月の前年金額`, exact: true });
   const april = cell("売上高", 4);
-  await expect(app.locator(".previous-grid thead th")).toHaveText(["科目・集計", ...[4,5,6,7,8,9,10,11,12,1,2,3].map(m => `${m}月`)]);
+  await expect(app.locator(".previous-grid thead tr:first-child th")).toHaveText(["科目・集計", ...[4,5,6,7,8,9,10,11,12,1,2,3].map(m => `${m}月`)]);
   // A browser paste event exercises the same handler as Excel's tab/newline clipboard text.
   const paste = async (text: string) => april.evaluate((node, value) => {
     const clipboardData = new DataTransfer(); clipboardData.setData("text/plain", value);
@@ -61,7 +72,7 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await expect(april).toHaveValue("1200.125");
   await expect(cell("グループ売上高", 4)).toHaveValue("25");
   await expect(cell("売上高", 5)).toHaveValue("-0.001");
-  await expect(app.locator(".previous-grid tbody tr").nth(2).locator("td").first()).toHaveText("1,225");
+  await expect(app.locator(".previous-grid .cost-data-row").nth(2).locator("td").first()).toHaveText("1,225");
   await paste("7\t8\n9\t不正");
   await expect(app.getByRole("alert")).toContainText("金額");
   await expect(april).toHaveValue("1200.125");
@@ -98,7 +109,7 @@ test("前年の初期合計・片側の分類・全件への切り替え", async
   await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
   const industry = app.getByRole("spinbutton", { name: "業種名", exact: true });
   const department = app.getByRole("spinbutton", { name: "部署名", exact: true });
-  const sales = app.locator(".previous-grid tbody tr").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
+  const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
   await expect(industry).toHaveAttribute("aria-valuetext", "全業種の合計");
   await expect(department).toHaveAttribute("aria-valuetext", "全部署の合計");
   await expect(app.locator(".previous-input-page select")).toHaveCount(0);
