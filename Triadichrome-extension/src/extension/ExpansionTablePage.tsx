@@ -20,9 +20,11 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
   const table = buildKindExpansionTable(contents, selected, "registered");
   const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
-    {selection}
-    <div className="initiative-list-heading"><h1 id="expansion-table-title">展開表</h1><span className="field-hint">単位：千円</span>
-      {selected.length === 2 && <span className="field-hint">比較：確定予算 − 一次予算</span>}
+    <div className="initiative-list-heading">
+      <div className="expansion-title-group"><h1 id="expansion-table-title">展開表</h1><span className="field-hint">単位：千円</span>
+        {selected.length === 2 && <span className="field-hint">比較：確定予算 − 一次予算</span>}
+      </div>
+      {selection}
     </div>
     <div className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>
       <table className="initiative-list-table expansion-table" aria-label="展開表">

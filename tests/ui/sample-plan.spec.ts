@@ -41,6 +41,17 @@ test("予算選択の列構成・重複防止・比較の符号と画面別の�
   await selectClassification(second, "一次予算");
   await expect(total.getByRole("cell").nth(4)).toHaveText("10,010");
   await expect(app.getByText("比較：確定予算 − 一次予算", { exact: true })).toBeVisible();
+  const title = await app.getByRole("heading", { name: "展開表", exact: true }).boundingBox();
+  const slots = await app.getByRole("group", { name: "比較対象", exact: true }).boundingBox();
+  expect(title).not.toBeNull();
+  expect(slots).not.toBeNull();
+  if (testInfo.project.name === "desktop") {
+    expect(slots!.x).toBeGreaterThan(title!.x + title!.width);
+    expect(title!.y).toBeGreaterThanOrEqual(slots!.y);
+    expect(title!.y + title!.height).toBeLessThanOrEqual(slots!.y + slots!.height);
+  } else {
+    expect(slots!.y).toBeGreaterThanOrEqual(title!.y + title!.height);
+  }
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
   const listKind = app.getByRole("spinbutton", { name: "種別", exact: true });
   await expect(listKind).toHaveAttribute("aria-valuetext", "確定予算");

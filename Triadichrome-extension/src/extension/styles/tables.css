@@ -31,6 +31,8 @@
 .page-switch:has(> .expansion-table-page) { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); }
 .expansion-table-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 16px; gap: 12px; }
 .expansion-table-page .initiative-list-heading { flex-shrink: 0; }
+.expansion-title-group { display: flex; flex: 1 1 300px; flex-wrap: wrap; align-items: center; gap: 8px 24px; }
+.expansion-table-page .kind-selection-slots { margin-bottom: 0; }
 .expansion-table-page .initiative-list-container { flex: 1; min-height: 0; min-width: 0; margin: 0; overflow: auto; }
 .expansion-table {
   --expansion-group-width: 120px;
