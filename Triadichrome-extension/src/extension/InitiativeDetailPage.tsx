@@ -24,11 +24,11 @@ type Props = AutoSaveProps & {
 
 export function InitiativeDetailPage({ initiative, accounts, expansions, departments, periodTypes, industries, backLabel = "施策一覧", onUpdate, onBack, onOpenMaster, onPendingChange, onPrepareSave }: Props) {
   const autoSave = useAutoSave(onUpdate, onPendingChange);
-  const { controller, draft } = autoSave;
+  const { controller, draft, revision } = autoSave;
   useLayoutEffect(() => {
     if (!controller.getSnapshot().draft) controller.begin({ name: initiative.name, note: initiative.note, expansionId: initiative.expansionId, departmentId: initiative.departmentId ?? null, periodTypeId: initiative.periodTypeId ?? null, industryId: initiative.industryId ?? null,
       fiscalYear: initiative.fiscalYear === null ? "" : String(initiative.fiscalYear), rows: initiative.rows.length ? initiative.rows : [{ id: crypto.randomUUID(), accountId: null, amounts: {} }] });
-  }, [controller, initiative]);
+  }, [controller, initiative, revision]);
   if (!draft) return null;
   return <InitiativeEntryPage draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}
     isSaving={false} onOpenMaster={onOpenMaster} onRegister={() => {}} editing={{

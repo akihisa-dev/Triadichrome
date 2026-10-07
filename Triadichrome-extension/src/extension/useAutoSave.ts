@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AutoSave } from "../core/autoSave";
+import { useSavedOperationRevision } from "./SavedOperationRevision";
 
 export type AutoSaveProps = {
   onPendingChange: (pending: boolean) => void;
@@ -10,6 +11,14 @@ export function useAutoSave<T>(save: (draft: T) => Promise<void>, onPendingChang
   const operation = useRef(save);
   useLayoutEffect(() => { operation.current = save; });
   const [controller] = useState(() => new AutoSave<T>(draft => operation.current(draft)));
+  const revision = useSavedOperationRevision();
+  const previousRevision = useRef(revision);
+  useLayoutEffect(() => {
+    if (previousRevision.current === revision) return;
+    previousRevision.current = revision;
+    // Saved operation travel is disabled while this controller has unsaved input.
+    controller.end();
+  }, [controller, revision]);
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
   useLayoutEffect(() => { onPendingChange(state.pending); }, [onPendingChange, state.pending]);
   useEffect(() => () => { controller.cancelTimer(); onPendingChange(false); }, [controller, onPendingChange]);
@@ -19,5 +28,5 @@ export function useAutoSave<T>(save: (draft: T) => Promise<void>, onPendingChang
     window.addEventListener("beforeunload", preventLoss);
     return () => window.removeEventListener("beforeunload", preventLoss);
   }, [state.pending]);
-  return { ...state, controller };
+  return { ...state, controller, revision };
 }

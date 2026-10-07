@@ -1,5 +1,6 @@
 import { verifyHomeMotion } from "../tests/home-graph-motion.mjs";
 import { verifyPlanSession } from "../tests/plan-session.mjs";
+import { verifySavedOperations } from "../tests/saved-operations.mjs";
 import { verifyInitiativeGrid } from "../tests/initiative-grid.mjs";
 import { verifyDataHistory } from "../tests/data-history.mjs";
 import { verifyPreviousGrid } from "../tests/previous-grid.mjs";
@@ -40,6 +41,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   await verifyAutoSave(api);
   await verifyDataHistory(api);
   await verifyPlanSession(api);
+  await verifySavedOperations(api);
   await verifyRecentFile(api);
   await verifySamplePlan(api);
 });

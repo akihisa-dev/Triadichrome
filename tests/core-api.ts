@@ -20,6 +20,7 @@ export * from "../Triadichrome-extension/src/core/storage/aggregationSchema";
 export * from "../Triadichrome-extension/src/core/storage/aggregations";
 export * from "../Triadichrome-extension/src/core/storage/dataHistory";
 export * from "../Triadichrome-extension/src/core/storage/dataHistorySchema";
+export * from "../Triadichrome-extension/src/core/storage/operationSnapshot";
 export * from "../Triadichrome-extension/src/core/storage/defaultCostMaster";
 export * from "../Triadichrome-extension/src/core/storage/departmentMaster";
 export * from "../Triadichrome-extension/src/core/storage/departmentSchema";

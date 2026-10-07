@@ -35,6 +35,7 @@ import { useSidebar } from "./useSidebar";
 import { SidebarIcon } from "./SidebarIcon";
 import { DataHistoryPage, historyDate } from "./DataHistoryPage";
 import { HistoryReadOnlyContext } from "./HistoryReadOnly";
+import { SavedOperationRevisionContext } from "./SavedOperationRevision";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../core/storage/dataHistory";
 import "./ScreenHistory.css";
@@ -70,9 +71,13 @@ type HomePageProps = {
   onRestoreHistory: (id: number) => Promise<PlanContents>;
   onDeleteHistory: (deletion: HistoryDeletion) => Promise<void>;
   onRetryHistory: () => Promise<void>;
+  canUndo: boolean;
+  canRedo: boolean;
+  operationRevision: number;
+  onTravelOperation: (direction: -1 | 1) => Promise<PlanContents>;
 };
 
-export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile, dataHistory, historyError, historyBusy, onPreviewHistory, onRestoreHistory, onDeleteHistory, onRetryHistory }: HomePageProps) {
+export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile, dataHistory, historyError, historyBusy, onPreviewHistory, onRestoreHistory, onDeleteHistory, onRetryHistory, canUndo, canRedo, operationRevision, onTravelOperation }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const homeContent = useRef<HTMLDivElement>(null);
   const relationView = useRef<RelationView | null>(null);
@@ -94,6 +99,11 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const assertWritable = () => { if (preview) throw new Error("過去のデータは閲覧専用です。"); };
 
   const { accounts, initiatives } = contents;
+  useEffect(() => {
+    if (page === "initiative-detail" && !initiatives.some(item => item.id === selectedInitiative?.id)) {
+      navigate({ ...screen, page: detailOrigin, selectedInitiative: null });
+    }
+  }, [page, initiatives, selectedInitiative, navigate, screen, detailOrigin]);
   const openInitiative = (initiative: Initiative) => {
     dismissNotice();
     navigate({
@@ -108,8 +118,41 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const { busy: isSaving, running: saving } = mutation;
   const [editPending, setEditPending] = useState(false);
   const restoreMutation = useMutation();
-  const navigationBlocked = isSaving || restoreMutation.busy || editPending || historyBusy;
+  const operationMutation = useMutation(assertWritable);
+  const navigationBlocked = isSaving || restoreMutation.busy || operationMutation.busy || editPending || historyBusy;
   const [discardRequest, setDiscardRequest] = useState<{ perform: () => void } | null>(null);
+  const operationBlocked = navigationBlocked || preview !== null || restoreRequested || discardRequest !== null || hasInitiativeDraftInput(initiativeDraft);
+  const travelOperation = async (direction: -1 | 1) => {
+    if (operationBlocked || saving.current || operationMutation.running.current || document.querySelector("dialog[open]") || !(direction === -1 ? canUndo : canRedo)) return;
+    dismissNotice();
+    try {
+      const saved = await operationMutation.run(async () => {
+        await onPrepareSave();
+        return onTravelOperation(direction);
+      });
+      if (page === "initiative-detail" && !saved.initiatives.some(item => item.id === selectedInitiative?.id)) {
+        navigate({ ...screen, page: detailOrigin, selectedInitiative: null });
+      }
+      setNotice({ message: direction === -1 ? "操作を取り消しました。" : "操作をやり直しました。", error: false });
+    } catch (failure) {
+      setNotice({ message: failure instanceof Error ? failure.message : "操作を戻せませんでした。", error: true });
+    }
+  };
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey)) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.closest("input, textarea, select") || target.isContentEditable)) return;
+      const key = event.key.toLowerCase();
+      if (key !== "z" && !(key === "y" && event.ctrlKey && !event.metaKey && !event.shiftKey)) return;
+      const direction = key === "y" || event.shiftKey ? 1 : -1;
+      if (operationBlocked || document.querySelector("dialog[open]") || !(direction === -1 ? canUndo : canRedo)) return;
+      event.preventDefault();
+      void travelOperation(direction);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  });
   const requestNavigation = (next: Screen, perform = () => navigate(next)) => {
     if (navigationBlocked || saving.current || discardRequest) return;
     if (next.page === "initiative-list" && !preview && hasInitiativeDraftInput(initiativeDraft)) {
@@ -218,7 +261,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   }, [isSidebarOpen, closeSidebar]);
 
   return (
-    <HistoryReadOnlyContext value={preview !== null}><div className="home-page">
+    <HistoryReadOnlyContext value={preview !== null}><SavedOperationRevisionContext value={operationRevision}><div className="home-page">
       <header className="home-header">
         <button
           ref={menuButton}
@@ -252,6 +295,18 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={direction === -1 ? "M19 12H5m6-6-6 6 6 6" : "M5 12h14m-6-6 6 6-6 6"} />
+              </svg>
+            </button>;
+          })}
+        </nav>
+        <nav className="operation-history" aria-label="操作の取り消し・やり直し">
+          {([-1, 1] as const).map(direction => {
+            const label = direction === -1 ? "操作を取り消す" : "操作をやり直す";
+            return <button key={direction} className="home-icon-button" type="button" aria-label={label}
+              title={`${label} (${direction === -1 ? "Ctrl / Command + Z" : "Ctrl / Command + Shift + Z"})`}
+              disabled={operationBlocked || (direction === -1 ? !canUndo : !canRedo)} onClick={() => { void travelOperation(direction); }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d={direction === -1 ? "M9 5 4 10l5 5M4 10h9a6 6 0 0 1 0 12" : "m15 5 5 5-5 5m5-5h-9a6 6 0 0 0 0 12"} />
               </svg>
             </button>;
           })}
@@ -316,7 +371,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           </footer>
           </div>
         </aside>
-        <div className="home-content" ref={homeContent}>
+        <div className="home-content" ref={homeContent} inert={operationMutation.busy}>
           <FadeSwap key={preview ? `past:${preview.entry.id}` : "current"} value={screen} className="page-switch">
             {displayed => {
               const { selectedInitiative, detailOrigin } = displayed;
@@ -356,6 +411,6 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
         }} />
       <ConfirmationDialog open={restoreRequested} title="過去の状態に戻す" message={restoreError || (preview ? `${historyDate(preview.entry.recordedAt)}の状態にファイル全体を戻しますか？ 復元前の状態も履歴に残します。` : "")} confirmLabel={restoreError ? "保存を再試行して戻す" : "この時点に戻す"} busy={isSaving || restoreMutation.busy || historyBusy}
         onCancel={() => setRestoreRequested(false)} onConfirm={() => { void (restoreError ? onPrepareSave().then(restorePreview).catch(failure => setRestoreError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")) : restorePreview()); }} />
-    </div></HistoryReadOnlyContext>
+    </div></SavedOperationRevisionContext></HistoryReadOnlyContext>
   );
 }

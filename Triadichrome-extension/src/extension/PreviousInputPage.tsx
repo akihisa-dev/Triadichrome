@@ -16,12 +16,14 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
   const [industryId, setIndustry] = useState<number | null>(null);
   const [departmentId, setDepartment] = useState<number | null>(null);
   const autoSave = useAutoSave(onSave, onPendingChange);
-  const { controller, draft } = autoSave;
+  const { controller, draft, revision } = autoSave;
   useLayoutEffect(() => {
+    if (industryId !== null && !contents.industries.some(item => item.id === industryId)) { controller.end(); setIndustry(null); return; }
+    if (departmentId !== null && !contents.departments.some(item => item.id === departmentId)) { controller.end(); setDepartment(null); return; }
     if (industryId === null || departmentId === null || controller.getSnapshot().draft) return;
     controller.begin({ industryId, departmentId, rows: contents.accounts.map(account => ({ accountId: account.id,
       amounts: Object.fromEntries(initiativeMonths.map(month => [month, contents.previousAmounts.find(amount => amount.accountId === account.id && amount.industryId === industryId && amount.departmentId === departmentId && amount.month === month)?.amount ?? "0"])) })) });
-  }, [controller, contents, industryId, departmentId]);
+  }, [controller, contents, industryId, departmentId, revision]);
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
     <div className="initiative-list-heading">
       <h1 id="previous-input-title">前年入力</h1>
