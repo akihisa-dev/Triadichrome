@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
-import { buildKindCostTable } from "../core/tables/planTables";
+import { buildCostComparison } from "../core/tables/costComparison";
 import type { KindId } from "../core/domain/kinds";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
@@ -11,13 +11,12 @@ type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode;
 
 export function CostTablePage({ contents, selected, selection, onOpenMaster }: Props) {
   const { accounts, aggregations } = contents;
-  const labels = ["前年", ...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName)];
-  const rows = useMemo(() => buildKindCostTable(contents, selected), [contents, selected]);
+  const { labels, rows } = useMemo(() => buildCostComparison(contents, selected), [contents, selected]);
   const salesGroupId = aggregations.find(group => group.required === "sales")?.id;
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
     <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
-    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month]) : formatAmount(values[month])}</td>)}</Fragment>)}
+    {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month], labels[index] === "前年差" || labels[index] === "一次予算差") : formatAmount(values[month])}</td>)}</Fragment>)}
   </tr>;
   const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
   const unassigned = accounts.filter(account => !assigned.has(account.id));

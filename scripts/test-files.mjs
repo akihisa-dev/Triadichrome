@@ -1,3 +1,4 @@
+import { verifyCostComparison } from "../tests/cost-comparison.mjs";
 import { verifyHomeMotion } from "../tests/home-graph-motion.mjs";
 import { verifyPlanSession } from "../tests/plan-session.mjs";
 import { verifySavedOperations } from "../tests/saved-operations.mjs";
@@ -24,6 +25,7 @@ import { withNodeBundle } from "./node-bundle.mjs";
 import { projectRoot as root } from "./paths.mjs";
 await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
+  await verifyCostComparison(api);
   verifyHomeMotion(api);
   verifyPreviousGrid(api);
   verifyInitiativeGrid(api);

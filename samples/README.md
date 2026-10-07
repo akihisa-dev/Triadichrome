@@ -13,7 +13,7 @@
 | 手修正と解除 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「確定予算の手修正」の確定4月120・5月0 | 一次変更でも手修正は残り、「引き継ぎに戻す」で追従に戻る | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
 | 共通科目行 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「科目変更と削除の確認」の0行を変更・削除、別タブで追加 | 全タブに反映。どこかに1円でもある行は変更・削除不可 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
 | 前年入力 | [extension/PreviousInputPage.tsx](../Triadichrome-extension/src/extension/PreviousInputPage.tsx) | 業種9件×部署2件に売上・原価・費用・利益の12か月 | 未選択で売上高4月25,290、直営自動車の全部署2,010、全業種の部署A12,600を表示。合計は参照専用、個別の組合せで編集・上書き更新 | 通常テスト・sample-plan画面テスト | 保存・再読込・画面入力を確認 |
-| 総原価表 | [core/tables/planTables.ts](../Triadichrome-extension/src/core/tables/planTables.ts) | 一次予算・未選択から第2対象に確定予算を選ぶ | 基本は前年・一次の2列、選択後は前年・一次・確定の3列。予算は前年＋施策の前年差 | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |
+| 総原価表 | [core/tables/costComparison.ts](../Triadichrome-extension/src/core/tables/costComparison.ts) | 一次予算のみ・確定予算のみ・両方を選ぶ | 各月に前年差、両方なら一次予算差も表示。売上高4月の前年差は一次350・確定380、一次予算差30。5月の一次予算差は−100 | 通常テスト・Codex内のブラウザ | 3通りの表示と正負の差を画面確認。逆順選択、1円精度、集計、利益率、未設定・分母0を通常テストで確認 |
 | 施策一覧 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 一次予算を選び、ファイルを閉じて開き直す | 一次予算の施策増減を表示し、選択を復元 | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
 | 展開表 | [core/tables/planTables.ts](../Triadichrome-extension/src/core/tables/planTables.ts) | 一次・確定の2種を選ぶ | 2種と「確定−一次」を表示。2つ目を未選択にすると比較列も消える。再読込でも選択順を復元 | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |
 | 業種・部署 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 各表で全業種・全部署のデータを確認 | 各表は全分類を表示し、分類の選択操作は設けない | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
