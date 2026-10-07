@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Triadichrome",
-  "version": "6.1.3",
+  "version": "6.1.4",
   "description": "Triadichrome Chrome Extension",
   "icons": {
     "16": "icons/icon-16.png",

@@ -22,10 +22,10 @@ export function CostTablePage({ contents, selected, selection, onOpenMaster }: P
   const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
   const unassigned = accounts.filter(account => !assigned.has(account.id));
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
-    {selection}
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
       <span className="field-hint">単位：千円</span>
+      {selection}
     </div>
     {(unassigned.length > 0 || rows.some(row => !row.configured)) && <p className="page-description cost-master-guide">
       {unassigned.length > 0 ? `集計に未所属の科目が${unassigned.length}件あります。` : "計算対象が未設定の集計があります。"}
