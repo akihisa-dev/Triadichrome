@@ -110,10 +110,10 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         ],
       });
       expect(pages.some(sample => sample.text.startsWith("Home") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(pages.some(sample => sample.text.startsWith("施策入力") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
-      expect(pages.find(sample => sample.text.startsWith("施策入力"))!.opacity).toBeLessThan(0.25);
-      await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
-      await expect(app.getByRole("button", { name: "施策入力", exact: true })).toHaveAttribute("aria-current", "page");
+      expect(pages.some(sample => sample.text.includes("施策を追加") && sample.opacity > 0 && sample.opacity < 0.9)).toBe(true);
+      expect(pages.find(sample => sample.text.includes("施策を追加"))!.opacity).toBeLessThan(0.25);
+      await expect(app.getByRole("main", { name: "施策一覧", exact: true })).toBeVisible();
+      await expect(app.getByRole("button", { name: "施策一覧", exact: true })).toHaveAttribute("aria-current", "page");
 
       const closing = await app.locator("body").evaluate(sampleChange, {
         observe: ".app-switch",

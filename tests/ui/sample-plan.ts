@@ -50,7 +50,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
-  await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [
+  await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。", [
     { ...annual("売上高", 120000, 5000), overrides: { 2: { 4: "130000", 10: "170000", 11: "0" } } }, annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
     annual("宣伝広告費", 8000), annual("旅費", 3000), annual("営業外収益", 125.501),
   ]);

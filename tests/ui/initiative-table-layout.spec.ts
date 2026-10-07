@@ -1,10 +1,10 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
 test("施策の月別入力を罫線付きのコンパクトな表で表示する", async ({ page, app }) => {
   await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await settleMotion(app.locator("body"));
   const table = app.getByRole("table", { name: "月別計画金額", exact: true });

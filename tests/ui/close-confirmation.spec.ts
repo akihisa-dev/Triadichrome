@@ -1,8 +1,8 @@
-import { test, expect } from "./fixtures";
+import { openInitiativeEntry, test, expect } from "./fixtures";
 
 test("ファイル終了は確認を挟み、キャンセルとEscで入力を保持する", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   const name = app.getByRole("textbox", { name: "施策名", exact: true });
   await name.fill("登録前の入力を保持");
   const close = app.getByRole("button", { name: "ファイルを閉じる", exact: true });
@@ -24,7 +24,7 @@ test("ファイル終了は確認を挟み、キャンセルとEscで入力を�
   await dialog.getByRole("button", { name: "閉じる", exact: true }).click();
   await expect(app.getByRole("heading", { name: "Triadichrome", exact: true })).toBeVisible();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await expect(name).toHaveValue("");
 });
 

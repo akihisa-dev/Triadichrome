@@ -12,5 +12,6 @@ export function useScreenHistory<T>(initial: T, same: (left: T, right: T) => boo
     index: Math.max(0, Math.min(previous.entries.length - 1, previous.index + direction)),
   }));
   const reset = (next: T) => setHistory({ entries: [next], index: 0 });
-  return { current, navigate, travel, reset, canBack: history.index > 0, canForward: history.index < history.entries.length - 1 };
+  const destination = (direction: -1 | 1) => history.entries[Math.max(0, Math.min(history.entries.length - 1, history.index + direction))]!;
+  return { current, navigate, travel, reset, destination, canBack: history.index > 0, canForward: history.index < history.entries.length - 1 };
 }

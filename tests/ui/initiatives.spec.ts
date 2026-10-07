@@ -1,4 +1,4 @@
-import { test, expect, selectClassification, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion } from "./fixtures";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { FrameLocator } from "@playwright/test";
@@ -16,13 +16,13 @@ async function addAccount(app: FrameLocator, code: string, name: string, attribu
   await expect(app.getByRole("button", { name: `${name}を編集`, exact: true })).toBeVisible();
 }
 
-test("一覧の施策名から詳細を開き、新規入力を保持して戻れる", async ({ app, page }, testInfo) => {
+test("一覧の施策名から詳細を開き、新規入力の破棄後は空欄から追加する", async ({ app, page }, testInfo) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await openMaster(app);
   await addAccount(app, "100", "売上高", "sales");
   for (const [name, amount] of [["施策A", "100"], ["施策B", "200"]]) {
-    await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+    await openInitiativeEntry(app);
     await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -37,7 +37,7 @@ test("一覧の施策名から詳細を開き、新規入力を保持して戻�
     await app.getByRole("button", { name: "登録", exact: true }).click();
     await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   }
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -46,6 +46,7 @@ test("一覧の施策名から詳細を開き、新規入力を保持して戻�
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "100 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("300");
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "入力内容を破棄しますか？", exact: true }).getByRole("button", { name: "破棄して一覧へ戻る", exact: true }).click();
   await app.getByRole("button", { name: "施策A", exact: true }).click();
   await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
@@ -70,13 +71,13 @@ test("一覧の施策名から詳細を開き、新規入力を保持して戻�
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策B");
   await expect(app.getByRole("combobox", { name: "年度", exact: true })).toHaveCount(0);
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("200");
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("作成中の施策");
-  await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("入力を保持");
-  await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true })).toHaveValue("300");
+  await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("");
+  await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("");
+  await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toHaveValue("");
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -95,7 +96,7 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   await expect(app.getByText("表示する施策がありません。")).toBeVisible();
   await openMaster(app);
   for (const [code, name, type] of [["100", "売上高", "sales"], ["200", "売上原価", "cost"], ["500", "費用", "expense"], ["900", "利益", "profit"]] as const) await addAccount(app, code, name, type);
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -129,7 +130,7 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   await page.screenshot({ path: join(tmpdir(), `triadichrome-list-${test.info().project.name}.png`) });
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -178,7 +179,7 @@ test("施策保存の失敗で入力と保存済み一覧を保持する", async
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await openMaster(app);
   await addAccount(app, "100", "売上高", "sales");
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -192,5 +193,6 @@ test("施策保存の失敗で入力と保存済み一覧を保持する", async
   await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("備考も残す");
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true })).toHaveValue("123.5");
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("alertdialog", { name: "入力内容を破棄しますか？", exact: true }).getByRole("button", { name: "破棄して一覧へ戻る", exact: true }).click();
   await expect(app.getByText("表示する施策がありません。")).toBeVisible();
 });

@@ -1,10 +1,10 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
 test("施策名・備考の右側のスロットで分類を選択し、登録後も保持する", async ({ page, app }) => {
   await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await settleMotion(app.locator("body"));
   const name = app.getByRole("textbox", { name: "施策名", exact: true });

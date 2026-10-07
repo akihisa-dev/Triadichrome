@@ -21,7 +21,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import { InitiativeListPage } from "./InitiativeListPage";
 import { InitiativeDetailPage } from "./InitiativeDetailPage";
-import { createInitiativeDraft } from "../core/domain/initiativeRules";
+import { createInitiativeDraft, hasInitiativeDraftInput } from "../core/domain/initiativeRules";
 import { type Initiative, type InitiativeEntryDraft, type PlanContents } from "../core/domain/plan";
 import { StatusNotice } from "./StatusNotice";
 import { FadeSwap } from "./FadeSwap";
@@ -84,7 +84,6 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const screen = screens.current;
   const { page, selectedInitiative, detailOrigin } = screen;
   const navigate = screens.navigate;
-  const setPage = (next: Page) => navigate({ ...screen, page: next });
   const detailScroll = useRef({ top: 0, left: 0 });
   const [initiativeDraft, setInitiativeDraft] = useState(() => createInitiativeDraft(String(initialContents.fiscalYear)));
   const currentContents = initialContents;
@@ -110,6 +109,22 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const [editPending, setEditPending] = useState(false);
   const restoreMutation = useMutation();
   const navigationBlocked = isSaving || restoreMutation.busy || editPending || historyBusy;
+  const [discardRequest, setDiscardRequest] = useState<{ perform: () => void } | null>(null);
+  const requestNavigation = (next: Screen, perform = () => navigate(next)) => {
+    if (navigationBlocked || saving.current || discardRequest) return;
+    if (next.page === "initiative-list" && !preview && hasInitiativeDraftInput(initiativeDraft)) {
+      setDiscardRequest({ perform });
+      return;
+    }
+    perform();
+  };
+  const setPage = (next: Page) => requestNavigation({ ...screen, page: next });
+  const startInitiative = () => {
+    if (preview || navigationBlocked || saving.current) return;
+    setInitiativeDraft(createInitiativeDraft(String(contents.fiscalYear)));
+    dismissNotice();
+    setPage("initiative-entry");
+  };
   const usedAccountIds = new Set(initiativeDraft.rows.flatMap(row => row.accountId === null ? [] : [row.accountId]));
   const changePlan = (change: PlanChange) => mutation.run(async () => { await onChangePlan(change); });
   const kindSelection = (screen: KindScreen) => <KindSelectionSlots screen={screen} selected={contents.kindSelections[screen]} disabled={navigationBlocked}
@@ -157,7 +172,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     try {
       await mutation.run(async () => { await onRegisterInitiative(initiativeDraft); });
       setInitiativeDraft(createInitiativeDraft(initiativeDraft.fiscalYear));
-      setPage("initiative-list");
+      navigate({ ...screen, page: "initiative-list" });
       setNotice({ message: "施策を登録しました。", error: false });
     } catch (error) {
       const cancelled = error instanceof DOMException && error.name === "AbortError";
@@ -233,7 +248,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               onClick={() => {
                 if (navigationBlocked) return;
                 dismissNotice();
-                screens.travel(direction);
+                requestNavigation(screens.destination(direction), () => screens.travel(direction));
               }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={direction === -1 ? "M19 12H5m6-6-6 6 6 6" : "M5 12h14m-6-6 6 6-6 6"} />
@@ -270,11 +285,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
             <button className="sidebar-item" type="button" aria-label="前年入力" disabled={navigationBlocked} aria-current={page === "previous-input" ? "page" : undefined} onClick={() => setPage("previous-input")}>
               <SidebarIcon name="previous" /><span className="sidebar-label">前年入力</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="施策入力" disabled={navigationBlocked} aria-current={page === "initiative-entry" ? "page" : undefined} onClick={() => setPage("initiative-entry")}>
-              <SidebarIcon name="entry" />
-              <span className="sidebar-label">施策入力</span>
-            </button>
-            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || (page === "initiative-detail" && detailOrigin === "initiative-list") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
+            <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || page === "initiative-entry" || (page === "initiative-detail" && detailOrigin === "initiative-list") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <SidebarIcon name="list" />
               <span className="sidebar-label">施策一覧</span>
             </button>
@@ -315,9 +326,9 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "previous-input": return <PreviousInputPage contents={contents} onSave={input => changePlan({ type: "previous", input })} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "details": return <DetailTablePage contents={contents} scroll={detailScroll} onSave={changeDetail} onOpenInitiative={openInitiative} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} />;
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
-                case "initiative-entry": return <InitiativeEntryPage draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
+                case "initiative-entry": return <InitiativeEntryPage onBack={() => setPage("initiative-list")} draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage key={currentInitiative.id} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
-                case "initiative-list": return <InitiativeListPage selection={kindSelection("initiative-list")} initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} renderEditor={(initiative, onClose) => <InitiativeDetailPage key={initiative.id} embedded initiative={contents.initiatives.find(item => item.id === initiative.id)!} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={draft => updateSelected(initiative, draft)} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={onClose} />} />;
+                case "initiative-list": return <InitiativeListPage onAddInitiative={startInitiative} selection={kindSelection("initiative-list")} initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} renderEditor={(initiative, onClose) => <InitiativeDetailPage key={initiative.id} embedded initiative={contents.initiatives.find(item => item.id === initiative.id)!} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={draft => updateSelected(initiative, draft)} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onBack={onClose} />} />;
                 case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
@@ -334,6 +345,15 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
         </div>
       </div>
       <StatusNotice message={notice.message || historyError} error={notice.message ? notice.error : Boolean(historyError)} onDismiss={dismissNotice} />
+      <ConfirmationDialog open={discardRequest !== null} title="入力内容を破棄しますか？" message="登録前の入力を破棄して施策一覧へ戻ります。"
+        confirmLabel="破棄して一覧へ戻る" busy={navigationBlocked}
+        onCancel={() => setDiscardRequest(null)} onConfirm={() => {
+          if (!discardRequest || navigationBlocked) return;
+          setInitiativeDraft(createInitiativeDraft(String(currentContents.fiscalYear)));
+          dismissNotice();
+          setDiscardRequest(null);
+          discardRequest.perform();
+        }} />
       <ConfirmationDialog open={restoreRequested} title="過去の状態に戻す" message={restoreError || (preview ? `${historyDate(preview.entry.recordedAt)}の状態にファイル全体を戻しますか？ 復元前の状態も履歴に残します。` : "")} confirmLabel={restoreError ? "保存を再試行して戻す" : "この時点に戻す"} busy={isSaving || restoreMutation.busy || historyBusy}
         onCancel={() => setRestoreRequested(false)} onConfirm={() => { void (restoreError ? onPrepareSave().then(restorePreview).catch(failure => setRestoreError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")) : restorePreview()); }} />
     </div></HistoryReadOnlyContext>

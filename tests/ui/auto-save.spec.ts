@@ -1,6 +1,6 @@
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test, expect, selectClassification, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion } from "./fixtures";
 
 test("更新を自動保存して再読込でき、失敗・入力不備で入力を残せる", async ({ app, page }, testInfo) => {
   await app.locator("body").evaluate(() => {
@@ -26,7 +26,7 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("textbox", { name: "科目名", exact: true }).fill("売上高");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("sales");
   await app.getByRole("button", { name: "登録", exact: true }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");

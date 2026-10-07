@@ -1,4 +1,4 @@
-import { test as base, expect, type FrameLocator, type Locator, type TestInfo } from "@playwright/test";
+import { test as base, expect, type FrameLocator, type Page, type Locator, type TestInfo } from "@playwright/test";
 
 // Wait for actual completion, including a second fade started by transitionend.
 // Do not disable motion or assume that a fixed delay is long enough.
@@ -53,4 +53,11 @@ export async function selectClassification(slot: Locator, name: string) {
     await expect(slot).toHaveAttribute("aria-disabled", "false");
   }
   await expect(slot).toHaveAttribute("aria-valuetext", name);
+}
+
+// New registration always starts from the initiative list.
+export async function openInitiativeEntry(target: FrameLocator | Page) {
+  await target.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await target.getByRole("button", { name: "施策を追加", exact: true }).click();
+  await expect(target.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
 }

@@ -1,3 +1,4 @@
+import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, useState, type ReactNode } from "react";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
@@ -9,12 +10,14 @@ type InitiativeListPageProps = {
   selection: ReactNode;
   initiatives: Initiative[];
   fiscalYear: string;
+  onAddInitiative: () => void;
   onOpenInitiative: (initiative: Initiative) => void;
   navigationBlocked: boolean;
   renderEditor: (initiative: Initiative, onClose: () => void) => ReactNode;
 };
 
-export function InitiativeListPage({ selection, initiatives, fiscalYear, onOpenInitiative, navigationBlocked, renderEditor }: InitiativeListPageProps) {
+export function InitiativeListPage({ selection, initiatives, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked, renderEditor }: InitiativeListPageProps) {
+  const readOnly = useHistoryReadOnly();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const selected = initiatives.find(item => item.id === selectedId);
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
@@ -23,6 +26,7 @@ export function InitiativeListPage({ selection, initiatives, fiscalYear, onOpenI
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
       <span className="field-hint">単位：千円</span>
+      <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>
     <div className="initiative-list-workspace">
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>

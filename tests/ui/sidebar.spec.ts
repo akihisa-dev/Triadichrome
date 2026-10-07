@@ -4,11 +4,11 @@ test("アイコンのレールはホバーで展開し、移動後もカーソ�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
-  const entry = sidebar.getByRole("button", { name: "施策入力", exact: true });
+  const entry = sidebar.getByRole("button", { name: "施策一覧", exact: true });
   await settleMotion(app.locator("body"));
   expect((await sidebar.boundingBox())!.width).toBe(64);
   await expect(entry.locator("span")).toHaveCSS("opacity", "0");
-  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(9);
+  await expect(sidebar.getByRole("navigation").getByRole("button")).toHaveCount(8);
   const icon = (await entry.locator("svg").boundingBox())!;
 
   await entry.hover();
@@ -22,7 +22,7 @@ test("アイコンのレールはホバーで展開し、移動後もカーソ�
   expect(mainBox.x).toBeCloseTo(sideBox.x + sideBox.width);
 
   await entry.click();
-  await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
+  await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await app.locator(".home-brand").hover();
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await settleMotion(app.locator("body"));
@@ -37,7 +37,7 @@ test("ボタンで開けば維持し、Esc後は再びホバーで展開でき�
   const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   const sidebar = app.getByRole("complementary", { name: "メニュー" });
   await trigger.click();
-  await sidebar.getByRole("button", { name: "施策入力", exact: true }).click();
+  await sidebar.getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.locator(".home-brand").hover();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Escape");
@@ -71,7 +71,7 @@ test("キーボードでレールへ入ると項目名が現れ、外へ戻る�
   await expect(sidebar.getByRole("button", { name: "前年入力", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Enter");
-  await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
+  await expect(app.getByRole("main", { name: "施策一覧", exact: true })).toBeVisible();
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Shift+Tab");
@@ -89,8 +89,8 @@ test.describe("タッチ操作", () => {
     await app.getByRole("button", { name: "ファイルを開く", exact: true }).tap();
     const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
     const sidebar = app.getByRole("complementary", { name: "メニュー" });
-    await sidebar.getByRole("button", { name: "施策入力", exact: true }).tap();
-    await expect(app.getByRole("main", { name: "施策入力", exact: true })).toBeVisible();
+    await sidebar.getByRole("button", { name: "施策一覧", exact: true }).tap();
+    await expect(app.getByRole("main", { name: "施策一覧", exact: true })).toBeVisible();
     await expect(trigger).toHaveAttribute("aria-expanded", "false");
     await trigger.tap();
     await expect(trigger).toHaveAttribute("aria-expanded", "true");

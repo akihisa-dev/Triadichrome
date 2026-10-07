@@ -1,4 +1,4 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
 test("基準年度は各画面でアプリ名の右隣に表示する", async ({ page, app }) => {
   await page.goto("/tests/ui/preview.html");
@@ -8,7 +8,7 @@ test("基準年度は各画面でアプリ名の右隣に表示する", async ({
   const yearText = await year.textContent();
   expect(yearText).toMatch(/^\d+年度$/);
 
-  for (const name of ["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]) {
+  for (const name of ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]) {
     await app.locator(".sidebar-navigation").getByRole("button", { name, exact: true }).click();
     await settleMotion(app.locator(".home-page"));
     await expect(year).toHaveText(yearText!);
@@ -22,6 +22,8 @@ test("基準年度は各画面でアプリ名の右隣に表示する", async ({
     expect(bounds.yearLeft).toBeGreaterThan(bounds.brandRight);
     expect(bounds.sameLine).toBe(true);
   }
+  await openInitiativeEntry(app);
+  await expect(year).toHaveText(yearText!);
   await app.locator(".sidebar-navigation").getByRole("button", { name: "明細", exact: true }).click();
   await expect(app.getByRole("columnheader", { name: "年度", exact: true })).toBeVisible();
   await app.locator(".sidebar-navigation").getByRole("button", { name: "施策一覧", exact: true }).click();

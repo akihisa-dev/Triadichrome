@@ -1,14 +1,15 @@
-import { test, expect, settleMotion, attachImage, selectClassification } from "./fixtures";
+import { openInitiativeEntry, test, expect, settleMotion, attachImage, selectClassification } from "./fixtures";
 import { installMemoryFiles } from "./memory-files";
 import type { FrameLocator, Locator } from "@playwright/test";
 
 const blue = "rgb(0, 51, 255)";
 const ink = "rgb(32, 32, 32)";
 const soft = "rgb(242, 242, 242)";
-const routes = ["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"];
+const routes = ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"];
 
 async function navigate(app: FrameLocator, name: string) {
-  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name, exact: true }).click();
+  if (name === "施策入力") await openInitiativeEntry(app);
+  else await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name, exact: true }).click();
   await expect(app.getByRole("heading", { name, exact: true })).toBeVisible();
   await settleMotion(app.locator("body"));
 }
@@ -186,7 +187,7 @@ test("配布用ビルドでも選択アイコンと編集枠が同じ青にな�
     await production.goto("/Triadichrome-extension/index.html");
     await production.evaluate(installMemoryFiles, { bytes, scenario: "normal" as const });
     await production.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-    await production.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策入力", exact: true }).click();
+    await openInitiativeEntry(production);
     await expectEditingColor(production.getByRole("textbox", { name: "施策名", exact: true }));
     await expect(production.locator('.sidebar-item[aria-current="page"] svg')).toHaveCSS("color", blue);
     await expect(production.locator('.sidebar-item[aria-current="page"] span')).toHaveCSS("color", ink);

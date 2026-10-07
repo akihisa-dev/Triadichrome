@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 
 export function verifyInitiativeGrid(api) {
+  const blank = api.createInitiativeDraft("2026");
+  assert.equal(api.hasInitiativeDraftInput(blank), false);
+  for (const change of [
+    { name: " " }, { note: "備考だけ" }, { expansionId: 1 }, { departmentId: 1 }, { periodTypeId: 1 }, { industryId: 1 },
+    { invalidNumbers: true }, { rows: [...blank.rows, { id: "extra", accountId: null, amounts: {} }] },
+    { rows: [{ ...blank.rows[0], accountId: 1 }] },
+    { rows: [{ ...blank.rows[0], amounts: { 4: "0" } }] },
+    { rows: [{ ...blank.rows[0], overrides: { 2: { 4: "0" } } }] },
+  ]) assert.equal(api.hasInitiativeDraftInput({ ...blank, ...change }), true, "名称以外の入力と手修正0も破棄確認の対象");
+  assert.equal(api.hasInitiativeDraftInput({ ...blank, rows: [{ ...blank.rows[0], amounts: { 4: "" } }] }), false);
   const draft = { name: "範囲入力", note: "", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: "2026",
     rows: [
       { id: 1, accountId: 1, amounts: { 4: "7", 5: "8", 10: "9", 3: "10" }, overrides: { 2: { 6: "11" } } },

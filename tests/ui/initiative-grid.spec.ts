@@ -1,4 +1,4 @@
-import { test, expect, selectClassification, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion } from "./fixtures";
 import type { Locator } from "@playwright/test";
 
 async function paste(cell: Locator, text: string) {
@@ -12,7 +12,7 @@ test.beforeEach(async ({ page, app }) => {
   await page.goto("/tests/ui/preview.html?data=defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await settleMotion(app.locator("body"));
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("1");

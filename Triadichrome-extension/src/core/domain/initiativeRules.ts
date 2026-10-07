@@ -10,6 +10,15 @@ export function createInitiativeDraft(fiscalYear = String(currentFiscalYear())):
   return { name: "", note: "", expansionId: null, departmentId: null, periodTypeId: null, industryId: null, fiscalYear, rows: [{ id: crypto.randomUUID(), accountId: null, amounts: {} }] };
 }
 
+/** Registration drafts are disposable only after the user confirms entered content. */
+export function hasInitiativeDraftInput(draft: InitiativeEntryDraft): boolean {
+  return draft.name !== "" || draft.note !== "" || draft.expansionId !== null
+    || draft.departmentId != null || draft.periodTypeId != null || draft.industryId != null
+    || Boolean(draft.invalidNumbers) || draft.rows.length !== 1
+    || draft.rows.some(row => row.accountId !== null
+      || [row.amounts, ...Object.values(row.overrides ?? {})].some(amounts => Object.values(amounts).some(value => value !== "")));
+}
+
 export function validateInitiative(draft: InitiativeEntryDraft, accounts: Account[], initiatives: Initiative[], expansions: Expansion[], departments: Department[] = [], periodTypes: PeriodType[] = [], industries: Industry[] = [], allowEmptyRows = false): void {
   if (draft.invalidNumbers) throw new Error("年度・金額に有効な数値を入力してください。");
   if (!draft.name.trim()) throw new Error("施策名を入力してください。");

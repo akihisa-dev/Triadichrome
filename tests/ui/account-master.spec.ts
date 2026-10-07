@@ -1,4 +1,4 @@
-import { test, expect, selectClassification, settleMotion, attachImage } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion, attachImage } from "./fixtures";
 
 test("一つの勘定科目を複数行で選択し、金額を行ごとに保持する", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -10,7 +10,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -28,7 +28,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await april.nth(0).fill("0");
   await app.getByRole("button", { name: "Home", exact: true }).click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -78,7 +78,7 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await register.click();
   await expect(app.getByRole("alert")).toContainText("同じ科目コードが登録されています。");
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -125,7 +125,8 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await settleMotion(app.locator("body"));
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   await attachImage(testInfo, "勘定科目マスタ", await page.locator("#app-preview").screenshot());
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await app.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
+  await app.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
@@ -149,7 +150,7 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("save-failure");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");

@@ -1,4 +1,4 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
 test("戻る・進むの端点、別画面への分岐、施策入力の保持と履歴のリセット", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -8,7 +8,7 @@ test("戻る・進むの端点、別画面への分岐、施策入力の保持�
   await expect(forward).toBeDisabled();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   const menu = app.getByRole("navigation", { name: "メインナビゲーション" });
-  await menu.getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("履歴を移動しても残る入力");
   await menu.getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
@@ -31,6 +31,9 @@ test("戻る・進むの端点、別画面への分岐、施策入力の保持�
   await menu.getByRole("button", { name: "マスタ", exact: true }).click();
   await back.click();
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("履歴を移動しても残る入力");
+  await back.click();
+  await app.getByRole("alertdialog", { name: "入力内容を破棄しますか？", exact: true }).getByRole("button", { name: "破棄して一覧へ戻る", exact: true }).click();
+  await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await back.click();
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
   await expect(back).toBeDisabled();

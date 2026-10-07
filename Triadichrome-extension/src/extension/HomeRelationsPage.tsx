@@ -14,9 +14,8 @@ const nodes = [
   { page: "expansion-master", name: "展開マスタ", icon: "master", x: 550, y: 560, master: true },
   { page: "kind-master", name: "種別マスタ", icon: "master", x: 370, y: 60, master: true },
   { page: "previous-input", name: "前年入力", icon: "previous", x: 750, y: 60, master: false },
-  { page: "initiative-entry", name: "施策入力", icon: "entry", x: 520, y: 308, master: false },
+  { page: "initiative-list", name: "施策一覧", icon: "list", x: 520, y: 308, master: false },
   { page: "cost-table", name: "総原価表", icon: "cost", x: 850, y: 220, master: false },
-  { page: "initiative-list", name: "施策一覧", icon: "list", x: 880, y: 360, master: false },
   { page: "details", name: "明細", icon: "details", x: 760, y: 480, master: false },
   { page: "expansion-table", name: "展開表", icon: "expansion", x: 950, y: 520, master: false },
 ] as const;
@@ -24,19 +23,18 @@ const nodes = [
 export type HomeDestination = typeof nodes[number]["page"];
 const edges: { from: HomeDestination; to: HomeDestination; label: string }[] = [
   { from: "previous-input", to: "cost-table", label: "前年の実額" },
-  { from: "kind-master", to: "initiative-entry", label: "種別ごとに入力" },
+  { from: "kind-master", to: "initiative-list", label: "種別ごとに入力" },
   { from: "previous-input", to: "details", label: "前年の明細" },
   { from: "account-master", to: "aggregation-master", label: "集計する科目" },
   { from: "aggregation-master", to: "cost-table", label: "所属・加減算" },
-  { from: "account-master", to: "initiative-entry", label: "科目を選択" },
-  { from: "industry-master", to: "initiative-entry", label: "業種名を選択" },
-  { from: "department-master", to: "initiative-entry", label: "部署名を選択" },
-  { from: "period-master", to: "initiative-entry", label: "期間名を選択" },
-  { from: "expansion-master", to: "initiative-entry", label: "展開名を選択" },
-  { from: "initiative-entry", to: "cost-table", label: "同じ内容を科目別に確認" },
-  { from: "initiative-entry", to: "initiative-list", label: "登録した施策を確認" },
-  { from: "initiative-entry", to: "details", label: "同じ内容を月別・科目別に確認" },
-  { from: "initiative-entry", to: "expansion-table", label: "同じ内容を展開別に確認" },
+  { from: "account-master", to: "initiative-list", label: "科目を選択" },
+  { from: "industry-master", to: "initiative-list", label: "業種名を選択" },
+  { from: "department-master", to: "initiative-list", label: "部署名を選択" },
+  { from: "period-master", to: "initiative-list", label: "期間名を選択" },
+  { from: "expansion-master", to: "initiative-list", label: "展開名を選択" },
+  { from: "initiative-list", to: "cost-table", label: "同じ内容を科目別に確認" },
+  { from: "initiative-list", to: "details", label: "同じ内容を月別・科目別に確認" },
+  { from: "initiative-list", to: "expansion-table", label: "同じ内容を展開別に確認" },
   { from: "expansion-master", to: "expansion-table", label: "グループ分け" },
 ];
 
@@ -182,8 +180,8 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
             </foreignObject>
           </g>
         </g>)}
-        {nodes.map(node => <g key={node.page} ref={element => { if (element) graph.groups.current.set(node.page, element); else graph.groups.current.delete(node.page); }} className="home-relation-item"><foreignObject x={node.x - 6} y={node.y - 6} width="212" height={node.page === "initiative-entry" ? 102 : 84}>
-          <button type="button" data-page={node.page} className={`home-relation-node${node.master ? " is-master" : ""}${node.page === "initiative-entry" ? " is-entry" : ""}${related.has(node.page) ? " is-related" : ""}${active === node.page ? " is-selected" : ""}`}
+        {nodes.map(node => <g key={node.page} ref={element => { if (element) graph.groups.current.set(node.page, element); else graph.groups.current.delete(node.page); }} className="home-relation-item"><foreignObject x={node.x - 6} y={node.y - 6} width="212" height={node.page === "initiative-list" ? 102 : 84}>
+          <button type="button" data-page={node.page} className={`home-relation-node${node.master ? " is-master" : ""}${node.page === "initiative-list" ? " is-entry" : ""}${related.has(node.page) ? " is-related" : ""}${active === node.page ? " is-selected" : ""}`}
             disabled={disabled} onMouseEnter={() => setActive(node.page)} onMouseLeave={() => setActive(null)} onFocus={() => {
               setActive(node.page);
               if (points.current.size) return;
@@ -191,7 +189,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
               if (!box) return;
               const position = current.positions?.[node.page] ?? { x: node.x + 100, y: node.y + 12 };
               const x = current.x + (position.x - 100) * current.scale, y = current.y + (position.y - 12) * current.scale;
-              const width = 200 * current.scale, height = (node.page === "initiative-entry" ? 90 : 72) * current.scale;
+              const width = 200 * current.scale, height = (node.page === "initiative-list" ? 90 : 72) * current.scale;
               if (x < 8 || y < 8 || x + width > box.clientWidth - 8 || y + height > box.clientHeight - 8)
                 update({ ...current, x: box.clientWidth / 2 - position.x * current.scale, y: box.clientHeight / 2 - (position.y - 12 + height / current.scale / 2) * current.scale, fitted: false });
             }} onBlur={() => setActive(null)} onClick={() => onNavigate(node.page)}>

@@ -4,7 +4,7 @@ test("施策一覧は売上・費用・利益と固定見出しを表示し、�
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "施策一覧", exact: true }).locator(".home-relation-name").click();
   await settleMotion(app.locator("body"));
   const region = app.getByRole("region", { name: "施策一覧の月別売上・費用・利益", exact: true });
   const product = region.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "既存商品の販売拡大", exact: true }) });

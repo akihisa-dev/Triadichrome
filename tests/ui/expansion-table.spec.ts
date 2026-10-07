@@ -1,4 +1,4 @@
-import { test, expect, selectClassification, settleMotion, attachImage } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion, attachImage } from "./fixtures";
 
 test("展開名ごとの集計・並び順・編集からの移動と再読込を確認する", async ({ page, app }, testInfo) => {
   await page.goto("/tests/ui/preview.html");
@@ -57,7 +57,7 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
     } });
   });
   await app.getByRole("button", { name: "新規作成", exact: true }).click();
-  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+  await openInitiativeEntry(app);
   const expansion = app.getByRole("spinbutton", { name: "展開名", exact: true });
   await expect(expansion).toHaveAttribute("aria-valuetext", "未選択");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("展開割り当て確認");

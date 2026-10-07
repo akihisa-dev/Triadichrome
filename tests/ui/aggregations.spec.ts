@@ -1,4 +1,4 @@
-import { test, expect, selectClassification, settleMotion } from "./fixtures";
+import { openInitiativeEntry, test, expect, selectClassification, settleMotion } from "./fixtures";
 import type { FrameLocator } from "@playwright/test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -31,7 +31,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   test.setTimeout(60_000);
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await expect(app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
+  await expect(app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
   await master(app, "勘定科目マスタ");
   for (const [code, name, type] of [["100", "売上科目1", "sales"], ["200", "原価科目1", "cost"], ["500", "費用科目1", "expense"], ["900", "利益科目1", "profit"]] as const) await addAccount(app, code, name, type);
   await master(app, "集計マスタ");
@@ -58,7 +58,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await page.screenshot({ path: join(tmpdir(), `triadichrome-aggregation-${testInfo.project.name}.png`) });
   if (testInfo.project.name === "narrow") await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   for (const [name, amounts] of [["施策A", ["100", "30", "20", "10"]], ["施策B", ["25.5", "0", "-5", "0"]]] as const) {
-    await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策入力", exact: true }).click();
+    await openInitiativeEntry(app);
     await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");

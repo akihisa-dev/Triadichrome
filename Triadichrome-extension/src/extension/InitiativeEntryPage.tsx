@@ -25,16 +25,18 @@ type InitiativeEntryPageProps = {
   onOpenMaster: () => void;
   isSaving: boolean;
   onRegister: () => void;
+  onBack?: () => void;
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, editing, embedded = false }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, onBack, editing, embedded = false }: InitiativeEntryPageProps) {
   const readOnly = useHistoryReadOnly();
   const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
   return (
     <Container className={editing ? "initiative-entry-page" : "initiative-entry-page initiative-entry-compact"} aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
+      {!editing && onBack && <button className="text-button master-back" type="button" disabled={isSaving} onClick={onBack}>← 施策一覧へ戻る</button>}
       <h1 id="initiative-entry-title">施策入力</h1>
       {editing?.status}
       <div className="initiative-header-fields">
