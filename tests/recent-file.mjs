@@ -6,8 +6,8 @@ export async function verifyRecentFile({ readRecentFile }) {
   let permission = "granted";
   let answer = "granted";
   const handle = {
-    async queryPermission(options) { assert.deepEqual(options, { mode: "read" }); return permission; },
-    async requestPermission(options) { assert.deepEqual(options, { mode: "read" }); requests++; return answer; },
+    async queryPermission(options) { assert.deepEqual(options, { mode: "readwrite" }); return permission; },
+    async requestPermission(options) { assert.deepEqual(options, { mode: "readwrite" }); requests++; return answer; },
     async getFile() { reads++; return new File([`current contents ${reads}`], "plan.triadic"); },
   };
   assert.equal(await (await readRecentFile(handle)).text(), "current contents 1");
@@ -16,11 +16,11 @@ export async function verifyRecentFile({ readRecentFile }) {
   assert.equal(await (await readRecentFile(handle)).text(), "current contents 2", "以前の内容をキャッシュしない");
   assert.equal(requests, 1);
   answer = "denied";
-  await assert.rejects(readRecentFile(handle), /読み取りが許可されません/);
-  assert.equal(reads, 2, "拒否後はファイルに触れない");
-  await assert.rejects(readRecentFile({ ...handle, requestPermission: undefined }), /読み取りが許可されません/);
+  await assert.rejects(readRecentFile(handle), /読み書きが許可されません/);
+  assert.equal(reads, 2, "書き込み許可の拒否後はファイルに触れず編集を開始しない");
+  await assert.rejects(readRecentFile({ ...handle, requestPermission: undefined }), /読み書きが許可されません/);
   permission = "granted";
-  for (const [name, message] of [["NotFoundError", /前回のファイルが見つかりません/], ["NotAllowedError", /読み取りが許可されません/], ["SecurityError", /読み取りが許可されません/]]) {
+  for (const [name, message] of [["NotFoundError", /前回のファイルが見つかりません/], ["NotAllowedError", /読み書きが許可されません/], ["SecurityError", /読み書きが許可されません/]]) {
     await assert.rejects(readRecentFile({ ...handle, async getFile() { throw new DOMException("unavailable", name); } }), message);
   }
   await assert.rejects(readRecentFile({ ...handle, async getFile() { throw new DOMException("cancel", "AbortError"); } }), { name: "AbortError" });

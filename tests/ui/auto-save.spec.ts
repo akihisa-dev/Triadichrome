@@ -7,7 +7,8 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
     const target = window as Window & { showOpenFilePicker?: () => Promise<FileSystemFileHandle[]> };
     const original = target.showOpenFilePicker!;
     let writes = 0;
-    Object.defineProperty(target, "showOpenFilePicker", { value: async () => {
+    Object.defineProperty(target, "showOpenFilePicker", { value: async (options: unknown) => {
+      if (Reflect.get(options as object, "mode") !== "readwrite") throw new Error("読み書き指定が必要です");
       const handles = await original();
       const handle = handles[0]!;
       const create = handle.createWritable.bind(handle);
@@ -61,15 +62,16 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await page.screenshot({ path: join(tmpdir(), `triadichrome-auto-save-${testInfo.project.name}.png`) });
 });
 
-test("自動保存で権限を勝手に要求せず、再試行の操作から許可を得る", async ({ app }) => {
+test("開く操作で書き込み許可を得て、最初の編集から自動保存する", async ({ app }) => {
   await app.locator("body").evaluate(() => {
     const target = window as Window & { showOpenFilePicker?: () => Promise<FileSystemFileHandle[]> };
     const original = target.showOpenFilePicker!;
-    Object.defineProperty(target, "showOpenFilePicker", { value: async () => {
+    Object.defineProperty(target, "showOpenFilePicker", { value: async (options: unknown) => {
+      if (Reflect.get(options as object, "mode") !== "readwrite") throw new Error("読み書き指定が必要です");
       const handles = await original();
       let granted = false;
       Object.defineProperties(handles[0], {
-        queryPermission: { value: async () => granted ? "granted" : "prompt" },
+        queryPermission: { value: async ({ mode }: { mode: string }) => mode === "read" || granted ? "granted" : "prompt" },
         requestPermission: { value: async () => { granted = true; return "granted"; } },
       });
       return handles;
@@ -85,9 +87,23 @@ test("自動保存で権限を勝手に要求せず、再試行の操作から�
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "権限テストを編集", exact: true }).click();
   await app.getByRole("textbox", { name: "権限テストの科目コード", exact: true }).fill("101");
-  await expect(app.getByRole("alert")).toContainText("ファイルへの保存を許可");
-  await expect(app.getByRole("button", { name: "完了", exact: true })).toBeDisabled();
-  await app.getByRole("button", { name: "保存を再試行", exact: true }).click();
+  await expect(app.getByRole("button", { name: "完了", exact: true })).toBeEnabled();
+  await expect(app.getByRole("alert")).toHaveCount(0);
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await expect(app.getByRole("cell", { name: "101", exact: true })).toBeVisible();
+});
+
+
+test("書き込み許可を拒否したときは編集を開始せず、選び直して保存できる", async ({ page, app }) => {
+  await page.getByLabel("ファイル操作", { exact: true }).selectOption("permission-denied");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await expect(app.getByRole("alert")).toContainText("読み書きが許可されませんでした");
+  await expect(app.getByRole("heading", { name: "Triadichrome", exact: true })).toBeVisible();
+  await expect(app.getByRole("heading", { name: "Home", exact: true })).toHaveCount(0);
+  await page.getByLabel("ファイル操作", { exact: true }).selectOption("write-permission");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await expect(app.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await expect(app.getByRole("alert")).toHaveCount(0);
 });

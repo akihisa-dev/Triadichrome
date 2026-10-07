@@ -28,7 +28,6 @@ import { choosePlanDestination, fileTypes, type PickerWindow } from "./filePicke
 import { usePlanSession } from "./usePlanSession";
 
 export function ExtensionPage() {
-  const input = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
   const [closeError, setCloseError] = useState("");
   const [closeRequested, setCloseRequested] = useState(false);
@@ -99,17 +98,14 @@ export function ExtensionPage() {
     } finally { busy.current = false; setIsBusy(false); }
   };
   const open = async (file: File, handle?: FileSystemFileHandle) => {
+    if (!handle) throw new Error("この開き方では自動保存できません。「ファイルを開く」から選択してください。");
     if (!file.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error(".triadicファイルを選択してください。");
     const bytes = new Uint8Array(await file.arrayBuffer());
     const contents = await readPlanContents(bytes);
     await session.open({ name: file.name, bytes, ...contents, ...(handle ? { handle } : {}) });
     setCloseError("");
-    // Failed reads never replace the last successfully opened file.
-    if (handle) await remember(handle);
-    else {
-      try { await remember(null); } catch { /* Opening a file must still succeed. */ }
-      setRecentNotice("この開き方では履歴を残せません。「ファイルを開く」から選択するか、保存先を指定して保存してください。");
-    }
+    // Failed reads and denied write access never replace the last opened file.
+    await remember(handle);
     setDisplayName(file.name);
     setFileName(file.name);
   };
@@ -120,10 +116,10 @@ export function ExtensionPage() {
   const choose = () => {
     if (busy.current) return;
     const picker = (window as PickerWindow).showOpenFilePicker;
-    if (!picker) { input.current?.click(); return; }
+    if (!picker) { setError("この環境では自動保存できません。ファイルを読み書きできるChromeで開いてください。"); return; }
     void run(async () => {
-      const [handle] = await picker.call(window, { multiple: false, types: fileTypes });
-      if (handle) await open(await handle.getFile(), handle);
+      const [handle] = await picker.call(window, { multiple: false, mode: "readwrite", types: fileTypes });
+      if (handle) await open(await readRecentFile(handle), handle);
     });
   };
   const [newFiscalYear, setNewFiscalYear] = useState(String(currentFiscalYear()));
@@ -135,7 +131,7 @@ export function ExtensionPage() {
     if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
     const bytes = await createTriadicDatabase(Number(newFiscalYear));
     await writeTriadicFile(handle, bytes);
-    await open(await handle.getFile(), handle);
+    await open(await readRecentFile(handle), handle);
   });
   const prepareSave = () => session.prepareSave(chooseDestination);
   const dispatch = async (command: PlanCommand) => {
@@ -183,7 +179,7 @@ export function ExtensionPage() {
         const handle = await droppedHandle?.catch(() => null);
         if (handle?.kind === "file") {
           const fileHandle = handle as FileSystemFileHandle;
-          await open(await fileHandle.getFile(), fileHandle);
+          await open(await readRecentFile(fileHandle), fileHandle);
         } else await open(files[0]!);
       });
     }}>
@@ -224,8 +220,6 @@ export function ExtensionPage() {
         </div>
       </section>
       {recentNotice && <p className="entry-recent-notice" role="status">{recentNotice}</p>}
-      <input ref={input} className="entry-file-input" type="file" accept={TRIADIC_FILE_EXTENSION} tabIndex={-1} aria-hidden="true"
-        onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void run(() => open(file)); }} />
       <StatusNotice message={error} error onDismiss={() => setError("")} />
     </div>
   </main>}</FadeSwap>

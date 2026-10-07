@@ -1,4 +1,4 @@
-export type FileScenario = "normal" | "cancel" | "invalid" | "save-failure";
+export type FileScenario = "normal" | "cancel" | "invalid" | "save-failure" | "write-permission" | "permission-denied";
 
 export type MemoryFileOptions = {
   bytes: number[];
@@ -15,6 +15,7 @@ export function installMemoryFiles(
 ) {
   let name = options.name ?? "画面テスト.triadic";
   let contents: BlobPart = new Uint8Array(options.bytes);
+  let writable = options.scenario !== "write-permission" && options.scenario !== "permission-denied";
   const getFile = () => new target.File([contents], name);
   const checkCancellation = () => {
     if (options.scenario === "cancel") {
@@ -23,9 +24,16 @@ export function installMemoryFiles(
   };
   const createHandle = (fileName: string) => ({
     name: fileName,
+    queryPermission: async ({ mode }: { mode: string }) => mode === "read" || writable ? "granted" : "prompt",
+    requestPermission: async ({ mode }: { mode: string }) => {
+      if (mode !== "readwrite") throw new Error("読み書きの許可が必要です。");
+      writable = options.scenario !== "permission-denied";
+      return writable ? "granted" : "denied";
+    },
     getFile: async () => options.scenario === "invalid"
       ? new target.File(["not a SQLite database"], name) : getFile(),
     createWritable: async () => {
+      if (!writable) throw new target.DOMException("書き込みが許可されていません。", "NotAllowedError");
       let pending: BlobPart | undefined;
       return {
         async write(data: BlobPart) {

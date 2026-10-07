@@ -50,24 +50,24 @@ export async function rememberRecentFile(handle: FileSystemFileHandle | null): P
   await accessStore("readwrite", store => handle ? store.put(handle, LAST_FILE) : store.delete(LAST_FILE));
 }
 
-type ReadableHandle = FileSystemFileHandle & {
-  queryPermission?: (options: { mode: "read" }) => Promise<PermissionState>;
-  requestPermission?: (options: { mode: "read" }) => Promise<PermissionState>;
+type WritableHandle = FileSystemFileHandle & {
+  queryPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState>;
+  requestPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState>;
 };
 
 // Call only from the user's click: checking startup history must not request access.
-export async function readRecentFile(handle: ReadableHandle): Promise<File> {
+export async function readRecentFile(handle: WritableHandle): Promise<File> {
   try {
-    if (handle.queryPermission && await handle.queryPermission({ mode: "read" }) !== "granted") {
-      if (!handle.requestPermission || await handle.requestPermission({ mode: "read" }) !== "granted") {
-        throw new DOMException("読み取りが許可されていません。", "NotAllowedError");
+    if (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted") {
+      if (!handle.requestPermission || await handle.requestPermission({ mode: "readwrite" }) !== "granted") {
+        throw new DOMException("読み書きが許可されていません。", "NotAllowedError");
       }
     }
     return await handle.getFile();
   } catch (failure) {
     if (failure instanceof DOMException) {
       if (failure.name === "NotAllowedError" || failure.name === "SecurityError") {
-        throw new Error("ファイルの読み取りが許可されませんでした。「続きから」で許可するか、「ファイルを開く」から選び直してください。");
+        throw new Error("ファイルの読み書きが許可されませんでした。「続きから」で許可するか、「ファイルを開く」から選び直してください。");
       }
       if (failure.name === "NotFoundError") {
         throw new Error("前回のファイルが見つかりません。移動・削除されている場合は「ファイルを開く」から選び直してください。");

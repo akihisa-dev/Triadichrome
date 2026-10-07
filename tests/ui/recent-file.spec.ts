@@ -113,14 +113,15 @@ test("削除・破損・許可拒否の案内を出し、通常の選択で復�
     Object.defineProperty(FileSystemFileHandle.prototype, "requestPermission", { configurable: true, value: async () => "denied" });
   });
   await page.getByRole("button", { name: "続きから", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("読み取りが許可されませんでした");
+  await expect(page.getByRole("alert")).toContainText("読み書きが許可されませんでした");
   await expect(page.locator("#recent-file-name")).toHaveText("復帰.triadic");
+  await page.evaluate(() => Object.defineProperty(FileSystemFileHandle.prototype, "queryPermission", { configurable: true, value: async () => "granted" }));
   await filePicker(page, "別の計画.triadic");
   await page.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await expect(page.locator(".home-file-name")).toHaveText("別の計画.triadic");
 });
 
-test("ドロップからも記憶し、参照のないファイル入力では以前の履歴を消す", async ({ page }) => {
+test("ドロップからも記憶し、参照のないドロップでは編集を始めず記憶を保護する", async ({ page }) => {
   await filePicker(page);
   await page.locator(".entry-page").evaluate(async element => {
     const handle = await (await navigator.storage.getDirectory()).getFileHandle("再開テスト.triadic");
@@ -132,12 +133,17 @@ test("ドロップからも記憶し、参照のないファイル入力では�
   await expect(page.locator(".home-file-name")).toHaveText("再開テスト.triadic");
   await page.reload();
   await expect(page.locator("#recent-file-name")).toHaveText("再開テスト.triadic");
-  await page.locator('input[type="file"]').setInputFiles({ name: "参照なし.triadic", mimeType: "application/octet-stream", buffer: Buffer.from(sample) });
-  await expect(page.locator(".home-file-name")).toHaveText("参照なし.triadic");
-  await closeFile(page);
-  await expect(page.getByRole("button", { name: "続きから", exact: true })).toBeDisabled();
+  await page.locator(".entry-page").evaluate(element => {
+    const transfer = new DataTransfer();
+    transfer.items.add(new File(["unavailable"], "参照なし.triadic"));
+    Object.defineProperty(DataTransferItem.prototype, "getAsFileSystemHandle", { configurable: true, value: async () => null });
+    element.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: transfer }));
+  });
+  await expect(page.getByRole("alert")).toContainText("「ファイルを開く」から選択");
+  await expect(page.getByRole("heading", { name: "Triadichrome", exact: true })).toBeVisible();
+  await expect(page.locator("#recent-file-name")).toHaveText("再開テスト.triadic");
   await page.reload();
-  await expect(page.locator("#recent-file-name")).toHaveText("まだ開いていません");
+  await expect(page.locator("#recent-file-name")).toHaveText("再開テスト.triadic");
 });
 
 test("記憶の保存に失敗しても開けて、その画面内では再開できる", async ({ page }) => {
