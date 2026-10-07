@@ -33,7 +33,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
   const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
   return (
-    <Container className="initiative-entry-page" aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
+    <Container className={editing ? "initiative-entry-page" : "initiative-entry-page initiative-entry-compact"} aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
       <h1 id="initiative-entry-title">施策入力</h1>
       {editing?.status}

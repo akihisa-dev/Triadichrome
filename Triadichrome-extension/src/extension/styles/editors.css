@@ -35,6 +35,13 @@
 .initiative-text-fields { flex: 1 1 340px; min-width: 0; }
 .initiative-text-fields .initiative-field { width: 100%; }
 .initiative-classification-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex: 0 1 440px; gap: 8px; margin-top: 24px; min-width: 0; }
+/* 新規施策入力の上部だけを詰め、分類スロットの操作寸法は保つ。 */
+.initiative-entry-compact { padding-top: clamp(16px, 2vw, 20px); }
+.initiative-entry-compact h1 { font-size: 22px; }
+.initiative-entry-compact .initiative-field { gap: 4px; margin-top: 12px; }
+.initiative-entry-compact .initiative-field input { min-height: 36px; padding-block: 5px; }
+.initiative-entry-compact .initiative-name-row > button { min-height: 36px; padding: 5px 12px; }
+.initiative-entry-compact .initiative-classification-slots { margin-top: 12px; }
 .classification-field { min-width: 0; display: grid; gap: 4px; }
 .classification-field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
 .classification-slot { position: relative; height: 72px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
