@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef, useState, type RefObject, type PointerEvent } 
 import "./HomeRelations.css";
 import { SidebarIcon } from "./SidebarIcon";
 import { ScreenDataMap } from "./ScreenDataMap";
+import { MechanismMap } from "./MechanismMap";
 import { useHomeGraphMotion } from "./useHomeGraphMotion";
 import { useRelationCamera, type RelationView } from "./useRelationCamera";
 export type { RelationView } from "./useRelationCamera";
@@ -56,7 +57,7 @@ type Props = {
 const MIN_SCALE = .05;
 const MAX_SCALE = 2.5;
 export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
-  const [dataMode, setDataMode] = useState(false);
+  const [mode, setMode] = useState("relations");
   const graph = useHomeGraphMotion(graphNodes, graphEdges, view, () => { if (view.current?.fitted && !cameraTarget.current) fit(); });
   const viewport = useRef<HTMLDivElement>(null);
   const [highlighted, setActive] = useState<string | null>(null);
@@ -123,14 +124,16 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   return <main className="home-relations" aria-label="ホーム">
     <header className="home-relations-heading"><h1>Home</h1>
       <div className="home-relations-mode" role="group" aria-label="ホームの表示">
-        <button type="button" aria-pressed={!dataMode} onClick={() => setDataMode(false)}>関連図</button>
-        <button type="button" aria-pressed={dataMode} onClick={() => setDataMode(true)}>画面とデータ</button>
+        {[["relations", "関連図"], ["data", "画面とデータ"], ["calculation", "計算の仕組み"], ["process", "処理の流れ"]].map(([id, name]) =>
+          <button key={id} type="button" aria-pressed={mode === id} onClick={() => setMode(id!)}>{name}</button>)}
       </div>
     </header>
-    <div hidden={!dataMode} style={dataMode ? { display: "flex", flex: 1, minHeight: 0 } : undefined}>
+    <div hidden={mode !== "data"} style={mode === "data" ? { display: "flex", flex: 1, minHeight: 0 } : undefined}>
       <ScreenDataMap disabled={disabled} />
     </div>
-    <div className="home-relations-canvas" hidden={dataMode}>
+    {mode === "calculation" && <MechanismMap kind="calculation" />}
+    {mode === "process" && <MechanismMap kind="process" />}
+    <div className="home-relations-canvas" hidden={mode !== "relations"}>
     <div ref={viewport} className={`home-relations-viewport${dragging ? " is-dragging" : ""}`} role="region" aria-label="画面とマスタの相関図" tabIndex={0}
       onPointerDown={event => {
         if (event.button !== 0) return;

@@ -1,0 +1,21 @@
+.mechanism-map { flex: 1; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.mechanism-content { max-width: 1100px; margin: 0 auto; padding: 0 4px 24px; font-size: 14px; line-height: 1.7; }
+.mechanism-content h2 { font-size: 20px; margin: 0; }
+.mechanism-content h3 { font-size: 14px; margin: 0 0 6px; }
+.mechanism-content p { margin: 0; }
+.mechanism-content header { margin-bottom: 16px; }
+.mechanism-content header p { color: var(--muted); }
+.mechanism-inputs, .mechanism-outcomes section { padding: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+.mechanism-content ul { padding-left: 20px; margin: 0; }
+.mechanism-inputs ul { display: flex; flex-wrap: wrap; gap: 8px 28px; }
+.mechanism-flow { list-style: none; margin: 16px 0; padding: 0; display: grid; gap: 20px; }
+.mechanism-flow > li { display: flex; align-items: start; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 10px; position: relative; }
+.mechanism-flow > li + li::before { content: "↓"; position: absolute; top: -23px; left: 29px; color: var(--muted); }
+.mechanism-step { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 50%; background: #eee; font-weight: 600; }
+.mechanism-outcomes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.mechanism-outcomes p + h3 { margin-top: 16px; }
+.mechanism-sources { margin-top: 16px; font-size: 12px; color: var(--muted); }
+.mechanism-sources summary { cursor: pointer; }
+.mechanism-sources code { overflow-wrap: anywhere; }
+.home-relations-mode { flex-wrap: wrap; }
+@media (max-width: 700px) { .mechanism-outcomes { grid-template-columns: 1fr; } .mechanism-content { font-size: 13px; } }

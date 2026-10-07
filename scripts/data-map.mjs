@@ -102,6 +102,51 @@ export function staleScreens(review, implementations, screens) {
   return [...new Set([...Object.keys(implementations), ...Object.keys(review), ...descriptions.keys()])].filter(page =>
     !implementations[page] || !descriptions.has(page) || review[page]?.implementation !== implementations[page] || review[page]?.description !== descriptions.get(page));
 }
+export async function mechanismImplementations(topics, read = readSource) {
+  const cache = new Map();
+  const moduleFor = file => {
+    if (!cache.has(file)) cache.set(file, sourceModule(file, read));
+    return cache.get(file);
+  };
+  const result = {};
+  for (const topic of topics) {
+    if (!topic.sources.length || result[topic.id]) throw new Error(`仕組みの対象または根拠が不正です: ${topic.id}`);
+    const sources = new Map();
+    const collect = async file => {
+      if (sources.has(file) || file === extension + "mechanismModel.ts") return;
+      if (!file.startsWith("Triadichrome-extension/src/") || file.includes("..")) throw new Error(`実装参照が不正です: ${file}`);
+      const module = await moduleFor(file);
+      sources.set(file, digest(module.text));
+      for (const dependency of module.dependencies) await collect(dependency);
+    };
+    for (const source of [...topic.sources, extension + "MechanismMap.tsx", extension + "HomeRelationsPage.tsx"]) await collect(source);
+    result[topic.id] = digest(JSON.stringify([...sources].sort(([a], [b]) => a.localeCompare(b))));
+  }
+  return result;
+}
+async function checkMechanisms(args) {
+  const file = path.join(projectRoot, extension + "mechanismReview.json");
+  await withNodeBundle(extension + "mechanismModel.ts", async ({ mechanisms }) => {
+    for (const kind of ["calculation", "process"]) {
+      if (!mechanisms.some(topic => topic.kind === kind)) throw new Error(`仕組みの表示対象がありません: ${kind}`);
+    }
+    const implementations = await mechanismImplementations(mechanisms);
+    let recorded = {};
+    try { recorded = JSON.parse(await readFile(file, "utf8")); } catch (error) { if (error.code !== "ENOENT") throw error; }
+    if (args.includes("--review-mechanisms")) {
+      const selected = args.filter(arg => !arg.startsWith("--"));
+      for (const id of selected.length ? selected : Object.keys(implementations)) {
+        const topic = mechanisms.find(topic => topic.id === id);
+        if (!topic) throw new Error(`仕組みの対象がありません: ${id}`);
+        recorded[id] = { implementation: implementations[id], description: digest(JSON.stringify({ ...topic, page: topic.id })) };
+      }
+      for (const id of Object.keys(recorded)) if (!implementations[id]) delete recorded[id];
+      await writeFile(file, JSON.stringify(recorded, null, 2) + "\n");
+    }
+    const stale = staleScreens(recorded, implementations, mechanisms.map(topic => ({ ...topic, page: topic.id })));
+    if (stale.length) throw new Error(`計算・処理の開示内容を確認してください: ${stale.join(", ")}\n実装と説明を照合した後、npm run mechanism-map:review -- <対象ID> で確認済みとして記録してください。`);
+  });
+}
 async function main(args) {
   const check = args.includes("--check"), review = args.includes("--review");
   const generated = await schemaText();
@@ -110,6 +155,11 @@ async function main(args) {
   if (current !== generated) {
     if (check) throw new Error("保存構造の対応情報が古くなっています。npm run data-map:generate を実行してください。");
     await writeFile(path.join(projectRoot, schemaPath), generated);
+  }
+  if (args.includes("--review-mechanisms")) {
+    await checkMechanisms(args);
+    console.log("mechanism map ok: descriptions match reviewed implementations");
+    return;
   }
   const implementations = await screenImplementations();
   await withNodeBundle("Triadichrome-extension/src/extension/screenDataModel.ts", async ({ screenData }) => {
@@ -129,6 +179,7 @@ async function main(args) {
     const stale = staleScreens(recorded, implementations, screenData);
     if (stale.length) throw new Error(`画面とデータの対応情報を確認してください: ${stale.join(", ")}\n実装・対応項目・計算説明を照合した後、npm run data-map:review -- <画面ID> で確認済みとして記録してください。`);
   });
+  if (!review) await checkMechanisms(args);
   console.log("data map ok: schema generated from source; screen descriptions match reviewed implementations");
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

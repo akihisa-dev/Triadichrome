@@ -51,7 +51,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypeId ?? periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
-  await add("既存商品の販売拡大", "ホームの「画面とデータ」で施策一覧を選び、施策名・開始年月・科目行・月別増減・確定予算の手修正の保存先を確認できます。全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
+  await add("既存商品の販売拡大", "ホームの「計算の仕組み」で予算の引き継ぎ・科目から売上と利益・開始年月を、「処理の流れ」で自動保存・失敗・履歴を確認できます。仕組みの閲覧は実際の値を出さず、計画を変更しません。「画面とデータ」で施策一覧を選び、施策名・開始年月・科目行・月別増減・確定予算の手修正の保存先を確認できます。全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
     { ...annual("売上高", 120, 5), overrides: { 2: { 4: "130", 10: "170", 11: "0" } } }, annual("売上高", 30, 1), annual("本支店売上原価", 60, 2.5),
     annual("宣伝広告費", 8), annual("旅費", 3), annual("営業外収益", 0.125),
   ]);
