@@ -10,13 +10,14 @@ export async function writePlanChange(plan: OpenPlan, handle: FileSystemFileHand
   if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
   if (!options.historyPrepared) bytes = await trackHistoryChange(plan.bytes, bytes, options.now);
   const contents = await readPlanContents(bytes);
-  if (plan.handle) {
-    const current = new Uint8Array(await (await handle.getFile()).arrayBuffer());
-    const expected = plan.destinationBytes ?? plan.bytes;
-    if (current.length !== expected.length || current.some((value, index) => value !== expected[index])) {
-      throw new Error("ファイルが別の操作で更新されています。入力内容を控え、ファイルを開き直してから更新してください。");
+  await writeTriadicFile(handle, bytes, async () => {
+    if (plan.handle) {
+      const current = new Uint8Array(await (await handle.getFile()).arrayBuffer());
+      const expected = plan.destinationBytes ?? plan.bytes;
+      if (current.length !== expected.length || current.some((value, index) => value !== expected[index])) {
+        throw new Error("ファイルが別の操作で更新されています。入力内容を控え、ファイルを開き直してから更新してください。");
+      }
     }
-  }
-  await writeTriadicFile(handle, bytes);
+  });
   return { ...contents, bytes, name: handle.name, handle };
 }

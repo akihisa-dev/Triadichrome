@@ -59,5 +59,43 @@ export async function verifyFileBoundaries(api) {
   await assert.rejects(api.writePlanChange(saved, failing, await api.saveKindSelection(stored, "cost-table", [1, 2])), /保存失敗/);
   assert.deepEqual(stored, beforeFailure);
   await assert.rejects(api.writePlanChange(saved, { ...handle, name: "確認.txt" }, changed), /拡張子/);
+  // Two independent handles share a file and an exclusive writer lock.
+  stored = master.bytes;
+  let locked = false;
+  let releaseRead;
+  let readEntered;
+  const entered = new Promise(resolve => { readEntered = resolve; });
+  const gate = new Promise(resolve => { releaseRead = resolve; });
+  const concurrentHandle = () => ({ name: "確認.triadic",
+    async createWritable(options) {
+      assert.equal(options.mode, "exclusive");
+      if (locked) throw new DOMException("locked", "NoModificationAllowedError");
+      locked = true;
+      let pending;
+      return {
+        async write(value) { pending = value; },
+        async close() { stored = new Uint8Array(pending); locked = false; },
+        async abort() { locked = false; },
+      };
+    },
+    async getFile() {
+      assert.equal(locked, true, "最新内容は排他確保後に読む");
+      readEntered(); await gate;
+      return new File([stored], this.name);
+    },
+  });
+  const firstHandle = concurrentHandle(), secondHandle = concurrentHandle();
+  const base = { ...await api.readPlanContents(stored), bytes: stored, name: firstHandle.name, handle: firstHandle };
+  const firstWrite = api.writePlanChange(base, firstHandle, changed);
+  await entered;
+  const otherChange = await api.saveKindSelection(base.bytes, "cost-table", [1, 2]);
+  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /保存中/);
+  releaseRead();
+  const winner = await firstWrite;
+  assert.deepEqual(stored, winner.bytes);
+  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /別の操作で更新/);
+  assert.equal(locked, false, "照合失敗でも排他を解放");
+  const retried = await api.writePlanChange({ ...winner, handle: secondHandle }, secondHandle, await api.saveKindSelection(winner.bytes, "cost-table", [1, 2]));
+  assert.deepEqual(stored, retried.bytes);
   console.log("PASS: 不正ファイル、円精度、前年参照の削除保護、保存確定失敗、競合時の非上書き");
 }
