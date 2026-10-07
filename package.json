@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "6.1.2",
+  "version": "6.1.3",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {

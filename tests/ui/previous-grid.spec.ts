@@ -1,5 +1,43 @@
 import { test, expect, settleMotion, selectClassification } from "./fixtures";
 
+test("前年の列見出しは縦横スクロール後も本文に覆われない", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
+  await settleMotion(app.locator(".home-layout"));
+  const region = app.getByRole("region", { name: "前年の月別金額", exact: true });
+  for (const editable of [false, true]) {
+    if (editable) {
+      await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+      await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+    }
+    for (const bottom of [false, true]) {
+      await region.evaluate((node, atBottom) => {
+        node.scrollTop = atBottom ? node.scrollHeight : 320;
+        node.scrollLeft = atBottom ? node.scrollWidth : 180;
+      }, bottom);
+      await expect.poll(() => region.evaluate(node => {
+        const edge = node.getBoundingClientRect();
+        const headers = Array.from(node.querySelectorAll("thead th"));
+        const nameHeader = headers[0]!;
+        return {
+          scrolled: node.scrollTop > 0 && node.scrollLeft > 0,
+          nameFixed: Math.abs(nameHeader.getBoundingClientRect().left - edge.left) < 2,
+          visible: headers.filter(header => {
+            const box = header.getBoundingClientRect();
+            return (header === nameHeader || box.left >= nameHeader.getBoundingClientRect().right) && box.right <= edge.right;
+          }).every(header => {
+            const box = header.getBoundingClientRect();
+            return Math.abs(box.top - edge.top) < 2 && [2, box.height / 2, box.height - 2].every(offset =>
+              header.contains(node.ownerDocument.elementFromPoint(box.left + box.width / 2, box.top + offset)));
+          }),
+        };
+      })).toEqual({ scrolled: true, nameFixed: true, visible: true });
+    }
+  }
+});
+
 test("前年セルの範囲入力・集計・無効な貼り付け・保存後の再表示", async ({ page, app }, testInfo) => {
   if (testInfo.project.name === "desktop") await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto("/tests/ui/preview.html");
