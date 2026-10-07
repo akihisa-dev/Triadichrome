@@ -55,7 +55,7 @@ type Props = {
 const MIN_SCALE = .05;
 const MAX_SCALE = 2.5;
 export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
-  const graph = useHomeGraphMotion(graphNodes, graphEdges, view);
+  const graph = useHomeGraphMotion(graphNodes, graphEdges, view, () => { if (view.current?.fitted && !cameraTarget.current) fit(); });
   const viewport = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState<string | null>(null);
   const { camera, target: cameraTarget, update, smooth, cancel: cancelZoom } = useRelationCamera(view);
@@ -92,7 +92,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
       zoom(Math.exp(-Math.max(-100, Math.min(100, delta)) * .006), event.clientX - rect.left, event.clientY - rect.top);
     };
     node.addEventListener("wheel", wheel, { passive: false });
-    const resize = new ResizeObserver(() => { if (view.current?.fitted) fit(); });
+    const resize = new ResizeObserver(() => { if (view.current?.fitted && !cameraTarget.current) fit(); });
     resize.observe(node);
     return () => { node.removeEventListener("wheel", wheel); resize.disconnect(); };
   }, [view]);

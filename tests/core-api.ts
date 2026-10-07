@@ -66,3 +66,5 @@ export const savePeriodMaster = (plan: OpenPlan, change: Extract<PlanCommand, { 
 export const saveDetailChange = (plan: OpenPlan, change: Extract<PlanCommand, { type: "detail" }>["change"]) => writePlanCommand(plan, { type: "detail", change }, async () => { throw new Error("保存先がありません。"); });
 export const saveInitiative = (plan: OpenPlan, draft: Extract<PlanCommand, { type: "initiative.register" }>["draft"], destination: () => Promise<FileSystemFileHandle>) => writePlanCommand(plan, { type: "initiative.register", draft }, destination);
 export const saveInitiativeUpdate = (plan: OpenPlan, id: number, _year: number | null, draft: Extract<PlanCommand, { type: "initiative.update" }>["draft"]) => writePlanCommand(plan, { type: "initiative.update", id, draft }, async () => { throw new Error("保存先がありません。"); });
+
+export * from "../Triadichrome-extension/src/core/graph/homeMotion";

@@ -30,7 +30,6 @@ test("自由なドラッグに接続線と周囲が追従し、離しても元�
   await settleMotion(app.locator("body"));
   const input = home.getByRole("button", { name: "施策一覧", exact: true });
   const map = home.locator(".home-relations-map");
-  const camera = await map.getAttribute("style");
   const box = (await input.boundingBox())!;
   const icon = (await input.locator(".home-relation-icon").boundingBox())!;
   const center = { x: icon.x + icon.width / 2, y: icon.y + icon.height / 2 };
@@ -38,6 +37,7 @@ test("自由なドラッグに接続線と周囲が追従し、離しても元�
   const path = await line.getAttribute("d");
   await page.mouse.move(center.x, center.y);
   await page.mouse.down();
+  const camera = await map.getAttribute("style");
   await page.mouse.move(center.x + 90, center.y + 30, { steps: 6 });
   const dragged = (await input.boundingBox())!;
   expect(dragged.x - box.x).toBeGreaterThan(80);
@@ -129,6 +129,17 @@ test("ズームは中間倍率を通り、途中反転しても連続する", as
   await settleMotion(app.locator("body"));
   const map = home.locator(".home-relations-map");
   const scale = () => map.evaluate(node => new DOMMatrix(getComputedStyle(node).transform).a);
+  await map.evaluate(async node => {
+    let previous = "", stable = 0;
+    const start = performance.now();
+    while (stable < 4 && performance.now() - start < 12000) {
+      await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+      const current = node.getAttribute("style")!;
+      stable = current === previous ? stable + 1 : 0;
+      previous = current;
+    }
+    if (stable < 4) throw new Error("初期配置の全体表示が収束しませんでした");
+  });
   const initial = await scale();
   await home.getByRole("button", { name: "拡大", exact: true }).click();
   const frames = await map.evaluate(async node => {
@@ -141,9 +152,26 @@ test("ズームは中間倍率を通り、途中反転しても連続する", as
   });
   expect(frames.some(value => value > initial && value < initial * 1.25 - .001)).toBe(true);
   expect(new Set(frames).size).toBeGreaterThan(2);
-  const before = await scale();
+  const reversal = map.evaluate(node => new Promise<number[]>(resolve => {
+    const scale = () => new DOMMatrix(getComputedStyle(node).transform).a;
+    const button = node.closest("main")!.querySelector<HTMLButtonElement>('[aria-label="縮小"]')!;
+    button.addEventListener("click", () => {
+      const before = scale();
+      queueMicrotask(async () => {
+        const values = [before, scale()];
+        for (let i = 0; i < 8; i++) {
+          await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+          values.push(scale());
+        }
+        resolve(values);
+      });
+    }, { once: true });
+  }));
   await home.getByRole("button", { name: "縮小", exact: true }).click();
-  expect(Math.abs(await scale() - before)).toBeLessThan(initial * .08);
+  const reversed = await reversal;
+  expect(Math.abs(reversed[1]! - reversed[0]!)).toBeLessThan(.001);
+  expect(reversed.at(-1)!).toBeLessThan(reversed[0]!);
+  expect(new Set(reversed).size).toBeGreaterThan(2);
   await expect.poll(scale).toBeCloseTo(initial, 3);
 });
 

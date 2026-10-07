@@ -1,3 +1,4 @@
+import { verifyHomeMotion } from "../tests/home-graph-motion.mjs";
 import { verifyPlanSession } from "../tests/plan-session.mjs";
 import { verifyInitiativeGrid } from "../tests/initiative-grid.mjs";
 import { verifyDataHistory } from "../tests/data-history.mjs";
@@ -21,6 +22,7 @@ import { withNodeBundle } from "./node-bundle.mjs";
 import { projectRoot as root } from "./paths.mjs";
 await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
+  verifyHomeMotion(api);
   verifyPreviousGrid(api);
   verifyInitiativeGrid(api);
   verifyHomeMasterCoverage(api);
