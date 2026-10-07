@@ -1,2 +1,13 @@
 .kind-selection-slots { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; flex: 0 0 auto; }
-.kind-selection-slots .classification-field { width: 128px; }
+.kind-selection-field { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.kind-selection-field label { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.gliding-kind-slot { position: relative; display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); isolation: isolate; }
+.gliding-kind-slot:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.gliding-kind-slot[aria-disabled="true"] { opacity: .5; }
+.gliding-kind-indicator { position: absolute; top: 3px; bottom: 3px; border-radius: 5px; background: var(--soft); pointer-events: none; transition: left .4s cubic-bezier(.65,0,.35,1), width .4s cubic-bezier(.65,0,.35,1); }
+.gliding-kind-slot button { position: relative; padding: 7px 12px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); font-size: 12px; line-height: 18px; white-space: nowrap; cursor: pointer; }
+.gliding-kind-slot button[aria-pressed="true"] { color: var(--ink); font-weight: 600; }
+.gliding-kind-slot button:hover:not(:disabled) { color: var(--ink); }
+.gliding-kind-slot button:active:not(:disabled) { transform: none; }
+.gliding-kind-slot button:disabled { cursor: default; }
+@media (prefers-reduced-motion: reduce) { .gliding-kind-indicator { transition-duration: .01s; } }

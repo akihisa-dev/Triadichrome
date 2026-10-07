@@ -115,3 +115,36 @@ test("予算選択の保存失敗では選択と表を保持する", async ({ pa
   await expect(app.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(0);
   await expect(second).toBeEnabled();
 });
+
+test("横並びの候補クリックと左右キーで予算を選び、背景が選択候補に合う", async ({ page, app }) => {
+  await openSample(page, app);
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "総原価表", exact: true }).click();
+  const second = app.getByRole("spinbutton", { name: "比較対象2", exact: true });
+  await second.getByRole("button", { name: "確定予算", exact: true }).click();
+  await expect(second).toHaveAttribute("aria-valuetext", "確定予算");
+  await expect(app.getByRole("spinbutton", { name: "比較対象1", exact: true }).getByRole("button", { name: "確定予算", exact: true })).toHaveCount(0);
+  await settleMotion(second);
+  const measure = async () => second.evaluate(node => {
+    const selected = node.querySelector('[aria-pressed="true"]')!.getBoundingClientRect();
+    const indicator = node.querySelector(".gliding-kind-indicator")!.getBoundingClientRect();
+    const style = getComputedStyle(node.querySelector(".gliding-kind-indicator")!);
+    return { left: Math.abs(selected.left - indicator.left), width: Math.abs(selected.width - indicator.width),
+      duration: style.transitionDuration, overflow: document.documentElement.scrollWidth > window.innerWidth };
+  });
+  let bounds = await measure();
+  expect(bounds.left).toBeLessThanOrEqual(1);
+  expect(bounds.width).toBeLessThanOrEqual(1);
+  expect(bounds.overflow).toBe(false);
+  await second.press("ArrowLeft");
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await second.press("ArrowRight");
+  await expect(second).toHaveAttribute("aria-valuetext", "確定予算");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await second.getByRole("button", { name: "未選択", exact: true }).click();
+  await expect(second).toHaveAttribute("aria-valuetext", "未選択");
+  await settleMotion(second);
+  bounds = await measure();
+  expect(bounds.left).toBeLessThanOrEqual(1);
+  expect(bounds.width).toBeLessThanOrEqual(1);
+  expect(bounds.duration).toBe("0.01s");
+});
