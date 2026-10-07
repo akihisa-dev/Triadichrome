@@ -42,6 +42,10 @@
 .initiative-entry-compact .initiative-field input { min-height: 36px; padding-block: 5px; }
 .initiative-entry-compact .initiative-name-row > button { min-height: 36px; padding: 5px 12px; }
 .initiative-entry-compact .initiative-classification-slots { margin-top: 12px; }
+.initiative-entry-compact .initiative-text-fields { display: grid; grid-template-columns: minmax(0, 1fr) max-content minmax(0, 1fr); }
+.initiative-entry-compact .initiative-name-row { display: contents; }
+.initiative-entry-compact .initiative-text-fields .initiative-field { grid-column: 1; width: min(100%, 20rem); }
+.initiative-entry-compact .initiative-name-row > button { grid-column: 2; align-self: end; margin-left: 12px; }
 .classification-field { min-width: 0; display: grid; gap: 4px; }
 .classification-field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
 .classification-slot { position: relative; height: 72px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
