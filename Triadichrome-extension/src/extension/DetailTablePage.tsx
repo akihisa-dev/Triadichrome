@@ -15,11 +15,17 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const rows = contents.details ?? [];
   const container = useRef<HTMLDivElement>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelNavigation = () => {
+    if (clickTimer.current !== null) clearTimeout(clickTimer.current);
+    clickTimer.current = null;
+  };
   const lock = useRef(false);
   const [editing, setEditing] = useState<{ row: DetailRecord; field: DetailField; columnId: string; value: string } | null>(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const latest = useRef({ editing, contents, onOpenInitiative });
+  latest.current = { editing, contents, onOpenInitiative };
   const columns = useMemo(() => detailColumns(contents), [contents]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);
   useEffect(() => { onPendingChange(editing !== null); return () => onPendingChange(false); }, [editing, onPendingChange]);
@@ -29,12 +35,12 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     window.addEventListener("beforeunload", preventLoss);
     return () => window.removeEventListener("beforeunload", preventLoss);
   }, [editing]);
-  useEffect(() => () => { if (clickTimer.current) clearTimeout(clickTimer.current); }, []);
+  useEffect(() => () => cancelNavigation(), []);
   const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row)).map(row => row.id)));
   const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
   const begin = (row: DetailRecord, field: DetailField, columnId: string) => {
     if (editing || lock.current || !canEdit(row, field)) return;
-    if (clickTimer.current) clearTimeout(clickTimer.current);
+    cancelNavigation();
     const value = field === "name" ? row.initiativeName : field === "fiscalYear" ? String(row.fiscalYear) : field === "amount" ? row.amount : field === "note" ? row.note : String(row[field] ?? "");
     setSearch(""); setError(""); setEditing({ row, field, columnId, value });
   };
@@ -57,7 +63,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const choices = detailChoices(contents, editing?.field);
   return <main className="detail-page">
     <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
-    <div ref={container} className="detail-scroll" onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
+    <div ref={container} className="detail-scroll" onPointerDownCapture={cancelNavigation} onKeyDownCapture={cancelNavigation} onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
       <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
       <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {
         const active = editing?.row.id === row.id && editing.columnId === column.id;
@@ -73,7 +79,16 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
               : <input autoFocus aria-label={`${column.label}を編集`} value={editing.value} disabled={saving} inputMode={editing.field === "amount" ? "decimal" : editing.field === "fiscalYear" ? "numeric" : undefined} onChange={event => setEditing({ ...editing, value: event.target.value })} />}
             <div><button type="button" disabled={saving} onClick={() => void commit()}>{saving ? "保存中" : "確定"}</button><button type="button" disabled={saving} onClick={() => { setEditing(null); setError(""); }}>取消</button></div>
             {error && <><p role="alert">{error}</p><button type="button" disabled={saving} onClick={() => { void onPrepareSave().then(() => commit()).catch(failure => setError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")); }}>保存を再試行</button></>}
-          </div> : column.id === "initiativeName" ? <button type="button" className="detail-initiative-link" disabled={editing !== null || row.kindId === 0} onClick={event => { if (event.detail > 1) return; clickTimer.current = setTimeout(() => { const initiative = contents.initiatives.find(item => item.id === row.initiativeId); if (initiative) onOpenInitiative(initiative); }, 650); }}>{row.initiativeName}</button> : tableDisplayValue(column, row)}
+          </div> : column.id === "initiativeName" ? <button type="button" className="detail-initiative-link" disabled={editing !== null || row.kindId === 0} onClick={event => {
+            cancelNavigation();
+            if (event.detail > 1) return;
+            clickTimer.current = setTimeout(() => {
+              clickTimer.current = null;
+              if (latest.current.editing || lock.current || !container.current?.isConnected) return;
+              const initiative = latest.current.contents.initiatives.find(item => item.id === row.initiativeId);
+              if (initiative) latest.current.onOpenInitiative(initiative);
+            }, 650);
+          }}>{row.initiativeName}</button> : tableDisplayValue(column, row)}
         </td>;
       })}</tr>)}</tbody></table>
       {!rows.length && <p className="detail-empty">表示する明細がありません。</p>}

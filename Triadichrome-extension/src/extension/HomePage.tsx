@@ -105,6 +105,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
       { page: "home", selectedInitiative: null, detailOrigin: "initiative-list" });
   }, [initiatives, screens.prune]);
   const openInitiative = (initiative: Initiative) => {
+    if (navigationState.current.blocked || navigationState.current.page !== page || saving.current) return;
     dismissNotice();
     navigate({
       page: "initiative-detail",
@@ -120,6 +121,8 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const restoreMutation = useMutation();
   const operationMutation = useMutation(assertWritable);
   const navigationBlocked = isSaving || restoreMutation.busy || operationMutation.busy || editPending || historyBusy;
+  const navigationState = useRef({ blocked: navigationBlocked, page });
+  navigationState.current = { blocked: navigationBlocked, page };
   const [discardRequest, setDiscardRequest] = useState<{ perform: () => void } | null>(null);
   const operationBlocked = navigationBlocked || preview !== null || restoreRequested || discardRequest !== null || hasInitiativeDraftInput(initiativeDraft);
   const travelOperation = async (direction: -1 | 1) => {

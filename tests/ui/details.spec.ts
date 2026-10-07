@@ -19,7 +19,7 @@ test("明細の直接編集・全件表示・施策への移動と帰還", async
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
   const table = app.locator(".detail-table");
-  await expect(table.locator("tbody tr")).toHaveCount(1656);
+  await expect(table.locator("tbody tr")).toHaveCount(1704);
   await settleMotion(app.locator("body"));
   const first = table.locator("tbody tr").first();
   const id = await first.getAttribute("data-detail-id");
@@ -40,7 +40,7 @@ test("明細の直接編集・全件表示・施策への移動と帰還", async
   await app.getByLabel("施策名を編集", { exact: true }).press("Escape");
   await link.click();
   await app.getByRole("button", { name: "← 明細へ戻る", exact: true }).click();
-  await expect(table.locator("tbody tr")).toHaveCount(1656);
+  await expect(table.locator("tbody tr")).toHaveCount(1704);
   await expect(table.locator("tbody tr").first()).toHaveAttribute("data-detail-id", id!);
   const region = app.locator(".detail-scroll");
   expect(await region.evaluate(node => node.scrollWidth > node.clientWidth)).toBe(true);
@@ -95,4 +95,33 @@ test("明細の売上・費用・利益の列順と科目属性ごとの金額",
       await expect(cell).toHaveAttribute("tabindex", "-1");
     }
   }
+});
+
+test("明細の連続クリックと編集・取消・画面切替で古い遷移を実行しない", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
+  const first = app.getByRole("button", { name: "既存商品の販売拡大", exact: true }).first();
+  const second = app.getByRole("button", { name: "保守サービスの新規契約", exact: true }).first();
+  await first.click();
+  await page.waitForTimeout(200);
+  await second.click();
+  await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("保守サービスの新規契約");
+  await app.getByRole("button", { name: "← 明細へ戻る", exact: true }).click();
+  const cell = app.locator(".detail-table tbody tr").first().locator('[data-cell$="-amount"]');
+  for (const cancel of [false, true]) {
+    await first.click(); await page.waitForTimeout(150); await second.click();
+    await cell.dblclick();
+    const input = app.getByLabel("金額を編集", { exact: true });
+    await input.fill("123.456");
+    if (cancel) await input.press("Escape");
+    await page.waitForTimeout(800);
+    await expect(app.getByRole("heading", { name: "明細", exact: true })).toBeVisible();
+    if (!cancel) { await expect(input).toHaveValue("123.456"); await input.press("Escape"); }
+  }
+  await first.click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "Home", exact: true }).click();
+  await page.waitForTimeout(800);
+  await expect(app.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
 });
