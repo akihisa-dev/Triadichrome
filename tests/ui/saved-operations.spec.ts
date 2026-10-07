@@ -46,6 +46,8 @@ test("保存済み施策の編集・登録を取り消してやり直し、新�
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await expect(app.getByRole("button", { name: "取消確認施策", exact: true })).toHaveCount(0);
   await app.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
+  await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
+  await app.getByRole("button", { name: "次の画面に進む", exact: true }).click();
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await redo.click();
   await expect(app.getByRole("button", { name: "取消確認施策", exact: true })).toBeVisible();
@@ -146,4 +148,30 @@ test("前年の範囲入力を一操作で取り消し、分類選択と新し�
   await expect(undo).toBeEnabled();
   await undo.click();
   await expect(april).toHaveValue("1200.125");
+});
+
+for (const leaveDetail of [false, true]) test(`登録取消後の画面履歴がHomeまで戻れる（一覧へ戻す=${leaveDetail}）`, async ({ app, page }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("button", { name: "施策を追加", exact: true }).click();
+  await app.getByRole("textbox", { name: "施策名", exact: true }).fill("画面履歴確認");
+  for (const [label, name] of ([["展開名", "コスト"], ["業種名", "直営自動車"], ["部署名", "部署A"]] as const)) await selectClassification(app.getByRole("spinbutton", { name: label, exact: true }), name);
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("1");
+  await app.getByRole("button", { name: "登録", exact: true }).click();
+  await app.getByRole("button", { name: "画面履歴確認", exact: true }).click();
+  if (leaveDetail) await app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true }).click();
+  await app.getByRole("button", { name: "操作を取り消す", exact: true }).click();
+  await expect(app.getByRole("button", { name: "画面履歴確認", exact: true })).toHaveCount(0);
+  const back = app.getByRole("button", { name: "前の画面に戻る", exact: true });
+  for (let count = 0; count < 8 && await back.isEnabled(); count++) { await back.click(); await settleMotion(app.locator("body")); }
+  await expect(app.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+  await expect(back).toBeDisabled();
+  const forward = app.getByRole("button", { name: "次の画面に進む", exact: true });
+  await expect(forward).toBeEnabled();
+  await forward.click();
+  await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
+  await app.getByRole("button", { name: "操作をやり直す", exact: true }).click();
+  await expect(app.getByRole("button", { name: "画面履歴確認", exact: true })).toBeVisible();
 });

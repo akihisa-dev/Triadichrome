@@ -101,10 +101,9 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
 
   const { accounts, initiatives } = contents;
   useEffect(() => {
-    if (page === "initiative-detail" && !initiatives.some(item => item.id === selectedInitiative?.id)) {
-      navigate({ ...screen, page: detailOrigin, selectedInitiative: null });
-    }
-  }, [page, initiatives, selectedInitiative, navigate, screen, detailOrigin]);
+    screens.prune(entry => entry.page !== "initiative-detail" || initiatives.some(item => item.id === entry.selectedInitiative?.id),
+      { page: "home", selectedInitiative: null, detailOrigin: "initiative-list" });
+  }, [initiatives, screens.prune]);
   const openInitiative = (initiative: Initiative) => {
     dismissNotice();
     navigate({
@@ -127,13 +126,10 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
     if (operationBlocked || saving.current || operationMutation.running.current || document.querySelector("dialog[open]") || !(direction === -1 ? canUndo : canRedo)) return;
     dismissNotice();
     try {
-      const saved = await operationMutation.run(async () => {
+      await operationMutation.run(async () => {
         await onPrepareSave();
         return onTravelOperation(direction);
       });
-      if (page === "initiative-detail" && !saved.initiatives.some(item => item.id === selectedInitiative?.id)) {
-        navigate({ ...screen, page: detailOrigin, selectedInitiative: null });
-      }
       setNotice({ message: direction === -1 ? "操作を取り消しました。" : "操作をやり直しました。", error: false });
     } catch (failure) {
       setNotice({ message: failure instanceof Error ? failure.message : "操作を戻せませんでした。", error: true });
