@@ -94,6 +94,15 @@ export async function verifySingleYearPlan(api) {
   const zeroDraft = { ...draft, name: "全行0", rows: [{ accountId: account.id, amounts: {} }] };
   bytes = await api.registerInitiative(bytes, zeroDraft);
   const zero = (await api.readPlanContents(bytes)).initiatives.find(item => item.name === "全行0");
+  const emptySelection = { ...zeroDraft, rows: [{ ...zero.rows[0], accountId: null, amounts: Object.fromEntries(api.initiativeMonths.map(month => [month, ""])) }] };
+  const removed = await api.updateInitiative(bytes, zero.id, 2027, emptySelection);
+  assert.equal((await api.readPlanContents(removed)).initiatives.find(item => item.id === zero.id).rows.length, 0, "既存の空欄・未選択行は再読込で残らない");
+  const removedDb = await api.openTriadicDatabase(removed);
+  assert.equal(removedDb.exec("SELECT COUNT(*) FROM initiative_amounts WHERE row_id = ?", [zero.rows[0].id])[0].values[0][0], 0);
+  removedDb.close();
+  await assert.rejects(api.updateInitiative(bytes, zero.id, 2027, { ...emptySelection, rows: [{ ...emptySelection.rows[0], amounts: { 4: "0" } }] }), /勘定科目/);
+  await assert.rejects(api.updateInitiative(bytes, zero.id, 2027, { ...emptySelection, rows: [{ ...emptySelection.rows[0], overrides: { 2: { 4: "1" } } }] }), /勘定科目/);
+  await assert.rejects(api.updateInitiative(bytes, initiative.id, 2027, { ...changed, rows: [{ ...updated, accountId: null, amounts: {} , overrides: {} }] }), /全種別/);
   bytes = await api.updateInitiative(bytes, zero.id, 2027, { ...zeroDraft, rows: [] });
   assert.equal((await api.readPlanContents(bytes)).initiatives.find(item => item.id === zero.id).rows.length, 0, "最後の行も全種別0なら削除できる");
   const beforeReset = (await api.readPlanContents(bytes)).initiatives[0];

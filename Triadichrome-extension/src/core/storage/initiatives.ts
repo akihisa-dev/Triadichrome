@@ -61,7 +61,7 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
       if ((!next || next.accountId !== row.accountId) && !canChangeAccountRow(row)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更・削除できます。");
     }
     database.run("UPDATE initiatives SET name = ?, note = ?, expansion_id = ?, department_id = ?, period_type_id = ?, industry_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null, id]);
-    for (const row of original.rows) if (!draft.rows.some(item => item.id === row.id)) {
+    for (const row of original.rows) if (!draft.rows.some(item => item.id === row.id && item.accountId !== null)) {
       database.run("DELETE FROM initiative_amounts WHERE row_id = ?", [row.id!]);
       database.run("DELETE FROM initiative_rows WHERE id = ?", [row.id!]);
     }

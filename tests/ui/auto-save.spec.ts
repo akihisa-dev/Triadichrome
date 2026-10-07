@@ -117,3 +117,26 @@ test("書き込み許可を拒否したときは編集を開始せず、選び�
   await expect(app.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
   await expect(app.getByRole("alert")).toHaveCount(0);
 });
+
+test("既存の全月0行を空欄・未選択に戻すと再表示で旧科目が残らない", async ({ app, page }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("full");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
+  await app.getByRole("tab", { name: "一次予算", exact: true }).click();
+  for (const month of [4,5,6,7,8,9,10,11,12,1,2,3]) {
+    const input = app.getByRole("spinbutton", { name: `未所属費用 ${month}月の金額`, exact: true });
+    await input.press("F2");
+    await input.fill("");
+  }
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("");
+  const back = app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true });
+  await expect(back).toBeEnabled();
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await back.click();
+  await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
+  await expect(app.getByRole("combobox", { name: "1行目の勘定科目", exact: true })).toHaveValue("1");
+  await expect(app.getByRole("combobox", { name: "2行目の勘定科目", exact: true })).toHaveCount(0);
+});

@@ -31,7 +31,7 @@ export function validateInitiative(draft: InitiativeEntryDraft, accounts: Accoun
   if (initiatives.some(item => item.name === draft.name.trim())) throw new Error("同じ施策名が登録されています。別の名前を入力してください。");
   if (!allowEmptyRows && !draft.rows.some(row => row.accountId !== null)) throw new Error("勘定科目を一つ以上選択してください。");
   draft.rows.forEach((row, index) => {
-    const hasAmount = Object.values(row.amounts).some(value => value !== "");
+    const hasAmount = [row.amounts, ...Object.values(row.overrides ?? {})].some(values => Object.values(values).some(value => value !== ""));
     if (row.accountId === null && !hasAmount) return;
     const account = accounts.find(item => item.id === row.accountId);
     if (!account) throw new Error(`${index + 1}行目の勘定科目を選択してください。`);
