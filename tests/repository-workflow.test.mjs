@@ -32,7 +32,7 @@ async function repository(t) {
     await writeFile(path.join(root, file), JSON.stringify({ version }) + "\n");
   };
   await mkdir(path.join(root, "scripts"));
-  for (const name of ["paths.mjs", "check-version.mjs", "check-hooks.mjs", "setup-hooks.mjs", "version-next.mjs", "check-release.mjs"]) {
+  for (const name of ["paths.mjs", "check-samples.mjs", "check-version.mjs", "check-hooks.mjs", "setup-hooks.mjs", "version-next.mjs", "check-release.mjs"]) {
     await cp(path.join(projectRoot, "scripts", name), path.join(root, "scripts", name));
   }
   await cp(path.join(projectRoot, ".githooks"), path.join(root, ".githooks"), { recursive: true });
@@ -132,4 +132,21 @@ test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗を
     assert.equal(result.status, exitCode);
     assert.equal(await readFile(log, "utf8"), "run\nverify\n");
   }
+});
+
+
+test("サンプルは通常のstageから除外し、強制追加もコミット前に拒否する", async t => {
+  const repo = await repository(t);
+  await cp(path.join(projectRoot, ".gitignore"), path.join(repo.root, ".gitignore"));
+  await mkdir(path.join(repo.root, "samples"));
+  await writeFile(path.join(repo.root, "samples/check.triadic"), "local sample");
+  assert.equal(repo.git("check-ignore", "samples/check.triadic"), "samples/check.triadic");
+  fails(repo.run("git", ["add", "--", "samples/check.triadic"]), /ignored/);
+  succeeds(repo.script("check-samples.mjs"));
+  repo.git("add", "-f", "--", "samples/check.triadic");
+  fails(repo.script("check-samples.mjs"), /Git管理に含められません/);
+  succeeds(repo.script("setup-hooks.mjs"));
+  const head = repo.git("rev-parse", "HEAD");
+  fails(repo.run("git", ["commit", "-m", "Sample must be rejected"]), /Git管理に含められません/);
+  assert.equal(repo.git("rev-parse", "HEAD"), head);
 });

@@ -1,4 +1,5 @@
 #!/bin/sh
 set -eu
 git diff --cached --check
+node scripts/check-samples.mjs
 node scripts/check-version.mjs --staged

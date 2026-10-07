@@ -17,3 +17,6 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 Thumbs.db
+
+# ローカルのサンプル・利用者データをGitHubへ送らない
+*.triadic

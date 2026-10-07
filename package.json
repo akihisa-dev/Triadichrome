@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "7.7.0",
+  "version": "7.7.1",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -25,13 +25,14 @@
     "version:check-staged": "node scripts/check-version.mjs --staged",
     "version:next": "node scripts/version-next.mjs",
     "check:release": "node scripts/check-release.mjs",
-    "verify": "npm run check:hooks && npm run build && npm test && npm run check:version",
+    "verify": "npm run check:hooks && npm run check:samples && npm run build && npm test && npm run check:version",
     "verify:full": "npm run verify && playwright test",
     "verify:release": "npm run verify && npm run check:release",
     "data-map:generate": "node scripts/data-map.mjs",
     "data-map:check": "node scripts/data-map.mjs --check",
     "data-map:review": "node scripts/data-map.mjs --review",
-    "mechanism-map:review": "node scripts/data-map.mjs --review-mechanisms"
+    "mechanism-map:review": "node scripts/data-map.mjs --review-mechanisms",
+    "check:samples": "node scripts/check-samples.mjs"
   },
   "dependencies": {
     "exceljs": "4.4.0",
