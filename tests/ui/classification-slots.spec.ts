@@ -63,3 +63,29 @@ test("施策名・備考の右側のスロットで分類を選択し、登録�
   await expect(app.getByRole("spinbutton", { name: "業種名", exact: true })).toHaveAttribute("aria-valuetext", "直営自動車");
   await expect(app.getByRole("spinbutton", { name: "期間名", exact: true })).toHaveAttribute("aria-valuetext", "未選択");
 });
+
+test("スロットの外で離した後と取消後の移動で分類を変更しない", async ({ page, app }) => {
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await openInitiativeEntry(app);
+  const slot = app.getByRole("spinbutton", { name: "展開名", exact: true });
+  await settleMotion(app.locator("body"));
+  const rect = (await slot.boundingBox())!;
+  const x = rect.x + rect.width / 2, y = rect.y + rect.height / 2;
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(rect.x - 20, y + 3);
+  await page.mouse.up();
+  await page.mouse.move(x, y);
+  await page.mouse.move(x, y - 24);
+  await expect(slot).toHaveAttribute("aria-valuetext", "未選択");
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await slot.dispatchEvent("pointercancel", { pointerId: 1, pointerType: "mouse" });
+  await slot.dispatchEvent("pointermove", { pointerId: 1, pointerType: "mouse", clientY: y - 24 });
+  await expect(slot).toHaveAttribute("aria-valuetext", "未選択");
+  await page.mouse.up();
+  await app.getByRole("button", { name: "展開名の次の候補", exact: true }).click();
+  await expect(slot).toHaveAttribute("aria-valuetext", "コスト");
+  await slot.press("Home");
+  await expect(slot).toHaveAttribute("aria-valuetext", "未選択");
+});

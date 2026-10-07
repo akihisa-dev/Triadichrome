@@ -9,8 +9,17 @@ export function ClassificationSlot({ id, label, value, options, onChange, disabl
   const items = [...(allowEmpty ? [{ id: null, name: emptyLabel }] : []), ...options];
   const index = Math.max(0, items.findIndex(item => item.id === (value ?? null)));
   const slot = useRef<HTMLDivElement>(null);
-  const drag = useRef<{ y: number; index: number; moved: boolean } | null>(null);
+  const drag = useRef<{ y: number; index: number; moved: boolean; pointerId: number; capture: HTMLElement } | null>(null);
   const suppressClick = useRef(false);
+  const endDrag = (cancelled = false) => {
+    const active = drag.current;
+    if (!active) return;
+    suppressClick.current = cancelled || active.moved;
+    drag.current = null;
+    if (active.capture.hasPointerCapture(active.pointerId)) active.capture.releasePointerCapture(active.pointerId);
+  };
+  useEffect(() => { if (disabled) endDrag(true); }, [disabled]);
+  useEffect(() => () => endDrag(true), []);
   const select = (next: number) => {
     if (!disabled) onChange(items[Math.max(0, Math.min(items.length - 1, next))]!.id);
   };
@@ -44,25 +53,25 @@ export function ClassificationSlot({ id, label, value, options, onChange, disabl
       onPointerDown={event => {
         if (disabled || event.button !== 0) return;
         suppressClick.current = false;
-        drag.current = { y: event.clientY, index, moved: false };
+        endDrag(true);
+        const capture = event.target instanceof HTMLElement ? event.target : event.currentTarget;
+        capture.setPointerCapture(event.pointerId);
+        suppressClick.current = false;
+        drag.current = { y: event.clientY, index, moved: false, pointerId: event.pointerId, capture };
         slot.current?.focus({ preventScroll: true });
       }}
       onPointerMove={event => {
-        if (!drag.current || disabled) return;
+        if (!drag.current || drag.current.pointerId !== event.pointerId) return;
+        if (disabled || (event.pointerType === "mouse" && (event.buttons & 1) === 0)) { endDrag(true); return; }
         const distance = drag.current.y - event.clientY;
         if (Math.abs(distance) > 6) {
           drag.current.moved = true;
-          event.currentTarget.setPointerCapture(event.pointerId);
         }
         if (drag.current.moved) select(drag.current.index + Math.round(distance / rowHeight));
       }}
-      onPointerUp={event => {
-        suppressClick.current = drag.current?.moved ?? false;
-        drag.current = null;
-        if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-      }}
-      onPointerCancel={() => { drag.current = null; suppressClick.current = true; }}
-      onLostPointerCapture={() => { drag.current = null; }}
+      onPointerUp={event => { if (drag.current?.pointerId === event.pointerId) endDrag(); }}
+      onPointerCancel={event => { if (drag.current?.pointerId === event.pointerId) endDrag(true); }}
+      onLostPointerCapture={event => { if (drag.current?.pointerId === event.pointerId) endDrag(true); }}
       onClickCapture={event => {
         if (suppressClick.current) { event.preventDefault(); event.stopPropagation(); suppressClick.current = false; }
       }}>
