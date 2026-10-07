@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type RefObject, type PointerEvent } from "react";
 import "./HomeRelations.css";
 import { SidebarIcon } from "./SidebarIcon";
+import { ScreenDataMap } from "./ScreenDataMap";
 import { useHomeGraphMotion } from "./useHomeGraphMotion";
 import { useRelationCamera, type RelationView } from "./useRelationCamera";
 export type { RelationView } from "./useRelationCamera";
@@ -55,6 +56,7 @@ type Props = {
 const MIN_SCALE = .05;
 const MAX_SCALE = 2.5;
 export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
+  const [dataMode, setDataMode] = useState(false);
   const graph = useHomeGraphMotion(graphNodes, graphEdges, view, () => { if (view.current?.fitted && !cameraTarget.current) fit(); });
   const viewport = useRef<HTMLDivElement>(null);
   const [highlighted, setActive] = useState<string | null>(null);
@@ -67,7 +69,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   const moved = useRef(false);
   const fit = (animated = false) => {
     const node = viewport.current;
-    if (!node) return;
+    if (!node || !node.clientWidth || !node.clientHeight) return;
     const positions = graphNodes.map(item => ({ ...(view.current?.positions?.[item.page] ?? { x: item.x + 100, y: item.y + 12 }), halfWidth: "width" in item ? item.width / 2 + 6 : 106 }));
     const left = Math.min(...positions.map(point => point.x - point.halfWidth)), right = Math.max(...positions.map(point => point.x + point.halfWidth));
     const top = Math.min(...positions.map(point => point.y - 18)), bottom = Math.max(...positions.map(point => point.y + 66));
@@ -119,8 +121,16 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   const isRelated = (edge: typeof edges[number], index: number) => edge.from === active || edge.to === active || subNodes[index]!.page === active;
   const related = new Set(edges.flatMap((edge, index) => isRelated(edge, index) ? [edge.from, edge.to] : []));
   return <main className="home-relations" aria-label="ホーム">
-    <h1>Home</h1>
-    <div className="home-relations-canvas">
+    <header className="home-relations-heading"><h1>Home</h1>
+      <div className="home-relations-mode" role="group" aria-label="ホームの表示">
+        <button type="button" aria-pressed={!dataMode} onClick={() => setDataMode(false)}>関連図</button>
+        <button type="button" aria-pressed={dataMode} onClick={() => setDataMode(true)}>画面とデータ</button>
+      </div>
+    </header>
+    <div hidden={!dataMode} style={dataMode ? { display: "flex", flex: 1, minHeight: 0 } : undefined}>
+      <ScreenDataMap disabled={disabled} />
+    </div>
+    <div className="home-relations-canvas" hidden={dataMode}>
     <div ref={viewport} className={`home-relations-viewport${dragging ? " is-dragging" : ""}`} role="region" aria-label="画面とマスタの相関図" tabIndex={0}
       onPointerDown={event => {
         if (event.button !== 0) return;
