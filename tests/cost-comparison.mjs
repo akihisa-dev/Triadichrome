@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 export async function verifyCostComparison(api) {
   const contents = await api.readPlanContents(await api.createSamplePlan(2026));
-  const values = (table, name, month) => table.rows.find(row => row.name === name).values.map(value => value[month]);
+  const values = (table, name, month) => table.rows.find(row => row.name === name).values.map(value => table.rows.find(row => row.name === name).kind === "ratio" ? value[month] : value[month] === undefined ? undefined : value[month] / 1000);
   const filtered = api.buildCostComparison(api.filterPlan(contents, { industries: [1, 2], departments: [1] }), [1, 2]);
   assert.equal(values(filtered, "売上高", 4)[0], 2100);
   const primary = api.buildCostComparison(contents, [1]);
@@ -23,10 +23,10 @@ export async function verifyCostComparison(api) {
       const [prior, first, final, yearDifference, primaryDifference] = row.values.map(value => value[month]);
       if (prior === undefined || final === undefined) assert.equal(yearDifference, undefined);
       else if (row.kind === "ratio") assert.equal(yearDifference, final - prior);
-      else assert.equal(yearDifference, api.addAmounts(final, -prior));
+      else assert.equal(yearDifference, api.addYen(final, -prior));
       if (first === undefined || final === undefined) assert.equal(primaryDifference, undefined);
       else if (row.kind === "ratio") assert.equal(primaryDifference, final - first);
-      else assert.equal(primaryDifference, api.addAmounts(final, -first));
+      else assert.equal(primaryDifference, api.addYen(final, -first));
     }
   }
   const unconfigured = both.rows.find(row => !row.configured);

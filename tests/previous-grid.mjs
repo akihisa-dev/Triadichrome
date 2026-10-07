@@ -23,14 +23,14 @@ export function verifyPreviousGrid(api) {
     { accountId: 1, industryId: 2, departmentId: 1, month: 4, amount: "-0.001" },
   ] };
   const total = (industries, departments) => api.previousByAccount(api.filterPlan(contents, { industries, departments }));
-  assert.equal(total(null, null).get(1)[4], 0.299);
-  assert.equal(total([1], null).get(1)[4], 0.3);
-  assert.equal(total(null, [1]).get(1)[4], 0.099);
-  assert.equal(total([1], [2]).get(1)[4], 0.2);
+  assert.equal(total(null, null).get(1)[4], 299);
+  assert.equal(total([1], null).get(1)[4], 300);
+  assert.equal(total(null, [1]).get(1)[4], 99);
+  assert.equal(total([1], [2]).get(1)[4], 200);
   assert.equal(total([2], [2]).get(1)[4], 0);
-  assert.equal(total([1, 2], [1]).get(1)[4], 0.099);
-  assert.equal(total([1, 2], [1, 2]).get(1)[4], 0.299);
-  assert.equal(total([1, 2], [2]).get(1)[4], 0.2);
+  assert.equal(total([1, 2], [1]).get(1)[4], 99);
+  assert.equal(total([1, 2], [1, 2]).get(1)[4], 299);
+  assert.equal(total([1, 2], [2]).get(1)[4], 200);
   assert.equal(total(null, null).get(2)[4], 0);
   assert.equal(total(null, null).get(1)[3], 0);
 

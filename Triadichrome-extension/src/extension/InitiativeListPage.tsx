@@ -4,8 +4,8 @@ import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
 import type { KindId } from "../core/domain/kinds";
 
-import { formatAmount } from "../core/domain/amounts";
-const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
+import { formatYen } from "../core/domain/amounts";
+const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatYen(amount);
 
 type InitiativeListPageProps = {
   selection: ReactNode;

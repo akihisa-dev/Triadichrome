@@ -20,7 +20,7 @@ const expectedAccounts = [
 export async function verifyDefaultCostData(api) {
   const { createTriadicDatabase, readPlanContents, buildCostTable, registerInitiative, updateInitiative,
     changeAggregationMaster, changeAccountMaster, openTriadicDatabase, validateTriadicDatabase,
-    createEmptyTestPlan, formatAmount, formatRate, isValidAmount } = api;
+    createEmptyTestPlan, formatAmount, formatYen, formatRate, isValidAmount } = api;
   const bytes = await createTriadicDatabase(2026);
   await validateTriadicDatabase(bytes);
   const defaults = await readPlanContents(bytes);
@@ -44,13 +44,13 @@ export async function verifyDefaultCostData(api) {
   const draft = { name: "全科目の集計確認", note: "", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: "2026", rows: defaults.accounts.map(a => ({ accountId: a.id, amounts: { 4: "100", 5: "0", 3: "-0.001" } })) };
   const registered = await registerInitiative(bytes, draft);
   const contents = await readPlanContents(registered);
-  const baseline = new Map(defaults.accounts.map((a, i) => [a.id, { 4: i < 4 ? 1000 : i < 6 ? 100 : a.accountCode === "713" ? 30 : a.accountCode === "731" ? 20 : 10 }]));
+  const baseline = new Map(defaults.accounts.map((a, i) => [a.id, { 4: (i < 4 ? 1000 : i < 6 ? 100 : a.accountCode === "713" ? 30 : a.accountCode === "731" ? 20 : 10) * 1000 }]));
   const table = buildCostTable(contents.accounts, contents.aggregations, contents.initiatives, 2026, baseline);
   const subtotals = table.filter(row => row.kind !== "account");
-  assert.deepEqual(subtotals.map(row => row.budget[4]), [
+  assert.deepEqual(subtotals.map(row => row.kind === "ratio" ? row.budget[4] : row.budget[4] / 1000), [
     2200, 2200, 4400, 400, 4000, 440, 3300, 3740, 770, 880, 1650, 5390, -1390, 10, -1380, -34.5,
   ], "確認した全集計式の計算結果");
-  assert.deepEqual(subtotals.map(row => row.comparison[4]).slice(0, -1), [-200, -200, -400, -200, -200, -400, -3000, -3400, -700, -800, -1500, -4900, 4700, 0, 4700]);
+  assert.deepEqual(subtotals.map(row => row.kind === "ratio" ? row.comparison[4] : row.comparison[4] / 1000).slice(0, -1), [-200, -200, -400, -200, -200, -400, -3000, -3400, -700, -800, -1500, -4900, 4700, 0, 4700]);
   const rate = table.at(-1);
   assert.equal(rate.previous[4], 3320 / 3800 * 100);
   assert.equal(rate.comparison[4], rate.previous[4] - rate.budget[4], "対予算は前年−予算のパーセントポイント");
@@ -60,7 +60,7 @@ export async function verifyDefaultCostData(api) {
   assert.equal(rate.comparison[5], undefined);
   assert.equal(table[0].budget[5], 0);
   assert.equal(table[0].comparison[5], undefined, "前年未登録は差額も空欄");
-  assert.equal(table[0].budget[3], -0.001);
+  assert.equal(table[0].budget[3], -1);
   assert.equal(table[0].budget[6], 0);
   for (const [value, expected] of [[-0.001, "0"], [1.234, "1"], [1.5, "2"], [-1.5, "-2"], [1234.567, "1,235"], ["9007199254740.499", "9,007,199,254,740"], ["-0.499", "0"]]) {
     assert.equal(formatAmount(value), expected);
@@ -82,9 +82,9 @@ export async function verifyDefaultCostData(api) {
   ] });
   const precision = await readPlanContents(precise);
   const preciseTable = buildCostTable(precision.accounts, precision.aggregations, precision.initiatives, 2026);
-  assert.equal(preciseTable[0].budget[4], 0.3, "1円精度の加算で浮動小数点の誤差を出さない");
+  assert.equal(preciseTable[0].budget[4], 300, "1円精度の加算で浮動小数点の誤差を出さない");
   assert.equal(preciseTable[0].budget[5], 0);
-  assert.equal(formatAmount(preciseTable[0].budget[4]), "0");
+  assert.equal(formatYen(preciseTable[0].budget[4]), "0");
   const first = defaults.aggregations[0];
   const renamed = await changeAggregationMaster(bytes, { type: "update", id: first.id, name: first.name, displayName: "確認用小計", members: first.members });
   assert.equal((await readPlanContents(renamed)).aggregations[0].displayName, "確認用小計");

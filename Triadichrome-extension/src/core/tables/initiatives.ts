@@ -1,5 +1,5 @@
 import { accountEffectsYen } from "../domain/accountEffects";
-import { amountToYen, yenToAmount } from "../domain/amounts";
+import { amountToYen, checkedYen } from "../domain/amounts";
 import { resolvedAmount, type KindId } from "../domain/kinds";
 import { initiativeMonths } from "../domain/calendar";
 import type { Initiative } from "../domain/plan";
@@ -17,7 +17,7 @@ export function initiativesForKind(initiatives: Initiative[], accounts: Account[
         const effects = accountEffectsYen(amountToYen(row.amounts[month] || "0"), attribute);
         salesYen += BigInt(effects.sales); expenseYen += BigInt(effects.expense); profitYen += BigInt(effects.profit);
       }
-      months[month] = { sales: Number(yenToAmount(Number(salesYen))), expense: Number(yenToAmount(Number(expenseYen))), profit: Number(yenToAmount(Number(profitYen))) };
+      months[month] = { sales: checkedYen(salesYen), expense: checkedYen(expenseYen), profit: checkedYen(profitYen) };
     }
     return { ...initiative, rows, months };
   });

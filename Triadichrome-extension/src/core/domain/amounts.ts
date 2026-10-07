@@ -3,12 +3,21 @@ const amountPattern = /^[+-]?(?:\d+(?:\.\d{0,3})?|\.\d{1,3})$/;
 export function isValidAmount(text: string): boolean {
   try { amountToYen(text); return true; } catch { return false; }
 }
-export function addAmounts(left: number, right: number): number {
-  // Integer yen arithmetic prevents errors such as 0.1 + 0.2 = 0.30000000000000004.
-  const yen = Math.round(left * 1000) + Math.round(right * 1000);
-  if (!Number.isSafeInteger(yen)) throw new Error("金額の合計が正確に計算できる範囲を超えています。");
-  return yen / 1000;
+/** Sum integer yen without passing through floating-point thousands. */
+export function checkedYen(value: bigint): number {
+  if (value < -9007199254740991n || value > 9007199254740991n) throw new Error("金額の合計が正確に計算できる範囲を超えています。");
+  return Number(value);
 }
+export function addYen(left: number, right: number): number {
+  if (!Number.isSafeInteger(left) || !Number.isSafeInteger(right)) throw new Error("金額が正確に計算できる範囲を超えています。");
+  return checkedYen(BigInt(left) + BigInt(right));
+}
+/** Compatibility helper for numeric thousands; tables must use integer yen instead. */
+export function addAmounts(left: number, right: number): number {
+  return addYen(amountToYen(String(left)), amountToYen(String(right))) / 1000;
+}
+/** Convert only at the display boundary; round thousands using exact integer yen. */
+export const formatYen = (yen: number | undefined) => yen === undefined ? "" : formatAmount(yenToAmount(yen));
 const amountFormat = new Intl.NumberFormat("ja-JP", { maximumFractionDigits: 0 });
 const rateFormat = new Intl.NumberFormat("ja-JP", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 /** Round only for display; editable strings and stored yen keep all three decimals. */

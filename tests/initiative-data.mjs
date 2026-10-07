@@ -37,11 +37,11 @@ export async function verifyInitiativeData(api, root) {
   assert.equal(record.rows[0].amounts[4], "100");
   assert.equal(record.rows[1].amounts[3], "-0.25");
   assert.equal(record.rows[1].amounts[4], "25.5");
-  assert.deepEqual(record.months[4], { sales: 95.5, expense: 20, profit: 85.5 });
+  assert.deepEqual(record.months[4], { sales: 95500, expense: 20000, profit: 85500 });
   assert.deepEqual(record.months[5], { sales: 0, expense: 0, profit: 0 });
   assert.deepEqual(record.months[7], { sales: 0, expense: 0, profit: 0 }, "未入力月はゼロとして保持");
-  assert.deepEqual(record.months[6], { sales: 0, expense: -5.5, profit: 5.5 }, "負の費用は利益に正の影響");
-  assert.deepEqual(record.months[3], { sales: 1, expense: 0, profit: 1 });
+  assert.deepEqual(record.months[6], { sales: 0, expense: -5500, profit: 5500 }, "負の費用は利益に正の影響");
+  assert.deepEqual(record.months[3], { sales: 1000, expense: 0, profit: 1000 });
   assert.equal((await readPlanContents(bytes)).initiatives.length, 0, "入力データの元ファイルを変更しない");
   for (const year of ["", "0", "2026.5", "9999", "NaN"]) await assert.rejects(registerInitiative(bytes, { ...draft, fiscalYear: year }), /年度/);
   for (const amount of ["Infinity", "NaN", " "]) await assert.rejects(registerInitiative(bytes, { ...draft, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: amount } }] }), /有効な金額/);
@@ -53,14 +53,14 @@ export async function verifyInitiativeData(api, root) {
     [[2026,4],[2026,5],[2026,6],[2026,7],[2026,8],[2026,9],[2026,10],[2026,11],[2026,12],[2027,1],[2027,2],[2027,3]]);
   const loaded = await readPlanContents(result);
   const april = loaded.details.filter(row => row.kindId === 1 && row.month === 4);
-  const detailSum = april.reduce((totals, row) => [api.addAmounts(totals[0], Number(row.sales)), api.addAmounts(totals[1], Number(row.profit))], [0,0]);
-  assert.deepEqual(detailSum, [95.5, 85.5]);
+  const detailSum = april.reduce((totals, row) => [api.addYen(totals[0], api.amountToYen(row.sales)), api.addYen(totals[1], api.amountToYen(row.profit))], [0,0]);
+  assert.deepEqual(detailSum, [95500, 85500]);
   const cost = api.buildCostTable(loaded.accounts, loaded.aggregations, loaded.initiatives, loaded.fiscalYear);
   for (const account of loaded.accounts) assert.equal(cost.find(row => row.kind === 'account' && row.id === account.id).budget[4],
-    april.filter(row => row.accountId === account.id).reduce((sum, row) => api.addAmounts(sum, Number(row.amount)), 0), "総原価表と明細は同じ金額を集計");
+    april.filter(row => row.accountId === account.id).reduce((sum, row) => api.addYen(sum, api.amountToYen(row.amount)), 0), "総原価表と明細は同じ金額を集計");
   database.close();
   const reclassified = await changeAccountMaster(result, { type: "update", id: initial.accounts[2].id, accountCode: "102", accountName: "expense", accountType: "profit" });
-  assert.deepEqual((await readPlanContents(reclassified.bytes)).initiatives[0].months[4], { sales: 95.5, expense: 0, profit: 125.5 });
+  assert.deepEqual((await readPlanContents(reclassified.bytes)).initiatives[0].months[4], { sales: 95500, expense: 0, profit: 125500 });
   await assert.rejects(registerInitiative(result, { ...draft, name: "別年度の施策", fiscalYear: "2027" }), /基準年度/);
 
   let stored = bytes;

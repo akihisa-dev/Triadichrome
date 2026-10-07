@@ -1,9 +1,10 @@
-import { addAmounts } from "../domain/amounts";
+import { addYen, amountToYen } from "../domain/amounts";
 import { type Account } from "../domain/accountMaster";
 import { validateAggregations, type Aggregation } from "../domain/aggregations";
 import { initiativeMonths, type InitiativeMonth } from "../domain/calendar";
 import { type Initiative } from "../domain/plan";
 
+/** Monetary columns use integer yen; ratio rows use percentages. */
 type MonthlyAmounts = Partial<Record<InitiativeMonth, number>>;
 export type CostRow = {
   kind: "account" | "group" | "ratio"; id: number; name: string; required: boolean; configured: boolean;
@@ -12,7 +13,7 @@ export type CostRow = {
 
 function sum(target: MonthlyAmounts, source: MonthlyAmounts, sign = 1): void {
   for (const month of initiativeMonths) {
-    if (source[month] !== undefined) target[month] = addAmounts(target[month] ?? 0, source[month]! * sign);
+    if (source[month] !== undefined) target[month] = addYen(target[month] ?? 0, source[month]! * sign);
   }
 }
 
@@ -33,7 +34,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
       if (!row) continue;
       for (const month of initiativeMonths) {
         const amount = input.amounts[month];
-        if (amount !== undefined && amount !== "") sum(row.changes, { [month]: Number(amount) });
+        if (amount !== undefined && amount !== "") sum(row.changes, { [month]: amountToYen(amount) });
       }
     }
   }
@@ -103,7 +104,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     const previous = row.previous[month];
     const budget = row.budget[month];
     if (previous !== undefined && budget !== undefined) {
-      row.comparison[month] = row.kind === "ratio" ? previous - budget : addAmounts(previous, -budget);
+      row.comparison[month] = row.kind === "ratio" ? previous - budget : addYen(previous, -budget);
     }
   }
   return output;

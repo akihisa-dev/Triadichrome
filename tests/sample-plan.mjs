@@ -31,18 +31,18 @@ export async function verifySamplePlan(api) {
   assert.equal(product.rows[0].accountId, product.rows[1].accountId);
   assert.equal(product.rows[0].amounts[4], "120");
   assert.equal(product.rows[0].amounts[3], "175");
-  assert.equal(product.months[4].sales, 90);
-  assert.equal(product.months[4].profit, 79.125);
-  assert.equal(product.months[4].expense, 11, "売上原価と利益属性を費用に含めない");
+  assert.equal(product.months[4].sales, 90000);
+  assert.equal(product.months[4].profit, 79125);
+  assert.equal(product.months[4].expense, 11000, "売上原価と利益属性を費用に含めない");
   const zero = initiatives.find(item => item.name === "ゼロと相殺の確認");
   assert.deepEqual(zero.months[4], { sales: 0, expense: 0, profit: 0 });
   assert.deepEqual(zero.months[5], { sales: 0, expense: 0, profit: 0 });
   assert.deepEqual(zero.months[6], { sales: 0, expense: 0, profit: 0 });
-  assert.equal(initiatives.find(item => item.name === "通信運搬費と消耗品費の削減").months[4].profit, 3.75);
+  assert.equal(initiatives.find(item => item.name === "通信運搬費と消耗品費の削減").months[4].profit, 3750);
   const reduction = initiatives.find(item => item.name === "通信運搬費と消耗品費の削減");
   assert.equal(reduction.rows[1].amounts[3], "-1.251");
-  assert.equal(reduction.months[3].expense, -3.751, "費用の削減額と1円の端数を保持する");
-  assert.equal(reduction.months[3].profit, 3.751, "1円の端数を保存・再読込・計算で保持する");
+  assert.equal(reduction.months[3].expense, -3751, "費用の削減額と1円の端数を保持する");
+  assert.equal(reduction.months[3].profit, 3751, "1円の端数を保存・再読込・計算で保持する");
   for (const year of [2026]) {
     const table = buildCostTable(accounts, aggregations, initiatives, year);
     assert.ok(table.every(item => Object.keys(item.previous).length === 0), "別年度の施策を前年合計値にしない");
@@ -50,17 +50,17 @@ export async function verifySamplePlan(api) {
     const ordinary = table.find(item => item.name === "経常利益");
     for (const month of initiativeMonths) {
       const expected = initiatives.filter(item => item.fiscalYear === year).reduce((total, item) => total + (item.months[month]?.profit ?? 0), 0);
-      assert.equal(ordinary.budget[month], Math.round(expected * 1000) / 1000, "科目属性による施策別利益と集計マスタの階層計算が一致する");
+      assert.equal(ordinary.budget[month], expected, "科目属性による施策別利益と集計マスタの階層計算が一致する");
     }
   }
   const plan = await readPlanContents(bytes);
   assert.equal(plan.previousAmounts.length, 9 * 2 * (4 * 12 + 4));
-  assert.equal(api.previousTotals(plan)[4].sales, 20342.25);
-  assert.equal(api.previousTotals(plan)[4].profit, 16922.25);
+  assert.equal(api.previousTotals(plan)[4].sales, 20342250);
+  assert.equal(api.previousTotals(plan)[4].profit, 16922250);
   const combined = api.buildKindExpansionTable(plan, [1, 2], "registered");
-  assert.equal(combined.changes[0][4].sales, 415);
-  assert.equal(combined.total[0][4].sales, 20757.25);
-  assert.equal(combined.total[0][4].profit, 17290.125);
+  assert.equal(combined.changes[0][4].sales, 415000);
+  assert.equal(combined.total[0][4].sales, 20757250);
+  assert.equal(combined.total[0][4].profit, 17290125);
   assert.equal(plan.details.length, 1704);
   assert.deepEqual(plan.initiatives.find(item => item.name === "保守サービスの新規契約").startYearMonths, { 1: "2026-07", 2: "2026-08" });
   assert.deepEqual(plan.initiatives.find(item => item.name === "期間差の開始年月確認").startYearMonths, { 1: "2025-10", 2: "2025-11" });

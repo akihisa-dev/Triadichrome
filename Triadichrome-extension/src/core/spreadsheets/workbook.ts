@@ -17,6 +17,7 @@ const amountFormat = '[>=0.5]#,##0;[<=-0.5]-#,##0;""';
 const font = { name: "Yu Gothic", size: 10, color: { argb: "FF202020" } };
 const fill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF3F3F3" } };
 const border = { style: "thin" as const, color: { argb: "FFE0E0E0" } };
+const thousands = (yen: number | null | undefined) => yen == null ? yen : yen / 1000;
 const cellRef = (sheet: ExcelJS.Worksheet, row: number, col: number) => `'${sheet.name.replaceAll("'", "''")}'!${sheet.getCell(row, col).address}`;
 function formula(cell: ExcelJS.Cell, expression: string, result: number | string | undefined | null) {
   if (result === undefined) { cell.value = null; return; }
@@ -163,7 +164,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
           expression = vi === 0 ? prior : `${prior}+${sum(inputRefs(costInputRows(row.id, selected[vi - 1]!), period.months[0]!))}`;
         }
         if (row.kind === "ratio" && vi > selected.length) expression = `IF(OR(${at(r, selected.length)}="",${at(r, vi === selected.length + 1 ? 0 : 1)}=""),"",${expression})`;
-        formula(cell, expression, row.kind === "ratio" && row.configured ? value ?? "" : value);
+        formula(cell, expression, row.kind === "ratio" ? row.configured ? value ?? "" : value : thousands(value));
         if (row.kind === "ratio") cell.numFmt = vi > selected.length ? '[>=0.05]0.0"pt";[<=-0.05]-0.0"pt";""' : '[>=0.05]0.0"%";[<=-0.05]-0.0"%";""';
       }));
     });
@@ -190,7 +191,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
       ws.getCell(r, 1).value = item.name; ws.getCell(r, 2).value = item.startYearMonths[kind];
       initiativeMonths.forEach((m, mi) => (["sales", "expense", "profit"] as const).forEach((metric, i) => {
         const cell = ws.getCell(r, 3 + mi * 3 + i);
-        formula(cell, effectFormula(item.id, kind, m, metric), item.months[m]?.[metric]); cell.numFmt = '#,##0;-#,##0;0';
+        formula(cell, effectFormula(item.id, kind, m, metric), thousands(item.months[m]?.[metric])); cell.numFmt = '#,##0;-#,##0;0';
       }));
     });
     finish(ws, 4);
@@ -218,7 +219,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
         if (ki === selected.length) expr = `${ws.getCell(r, 3 + pi * width + selected.indexOf(2) * 2 + mi).address}-${ws.getCell(r, 3 + pi * width + selected.indexOf(1) * 2 + mi).address}`;
         else if (p.months.length > 1) expr = sum(p.months.map(m => ws.getCell(r, 3 + tablePeriods.findIndex(t => t.id === String(m)) * width + ki * 2 + mi).address));
         else expr = monthly(ki, metric, p.months[0]!, col);
-        formula(ws.getCell(r, col), expr, expansionPeriodAmount(value, p, metric));
+        formula(ws.getCell(r, col), expr, thousands(expansionPeriodAmount(value, p, metric)));
       })));
     };
     for (const group of table.groups) {

@@ -15,7 +15,7 @@ export async function verifyPeriodTables(api) {
       } else if (!row.configured) {
         assert.ok(row.values.every(value => value[period.id] === undefined));
       } else if (row.kind !== "ratio") {
-        row.values.forEach((value, column) => assert.equal(value[period.id], period.months.reduce((sum, month) => api.addAmounts(sum, monthly.rows[index].values[column][month] ?? 0), 0)));
+        row.values.forEach((value, column) => assert.equal(value[period.id], period.months.reduce((sum, month) => api.addYen(sum, monthly.rows[index].values[column][month] ?? 0), 0)));
       } else {
         for (let column = 0; column <= selected.length; column++) {
           const denominator = sales.values[column][period.id];
@@ -29,23 +29,23 @@ export async function verifyPeriodTables(api) {
     const expansion = api.buildKindExpansionTable(contents, selected, "registered");
     const item = expansion.groups.flatMap(group => group.initiatives).find(item => item.name === "確定予算の下期調整");
     for (const [column, kind] of selected.entries()) {
-      assert.equal(api.expansionPeriodAmount(item.values[column], periods.find(period => period.id === "quarter-3"), "sales"), kind === 1 ? 300 : 350);
-      assert.equal(api.expansionPeriodAmount(item.values[column], periods.find(period => period.id === "annual"), "sales"), kind === 1 ? 1200 : 1250);
+      assert.equal(api.expansionPeriodAmount(item.values[column], periods.find(period => period.id === "quarter-3"), "sales"), kind === 1 ? 300000 : 350000);
+      assert.equal(api.expansionPeriodAmount(item.values[column], periods.find(period => period.id === "annual"), "sales"), kind === 1 ? 1200000 : 1250000);
     }
-    if (selected.length === 2) assert.equal(api.expansionPeriodAmount(item.values[2], periods.find(period => period.id === "annual"), "sales"), 50);
+    if (selected.length === 2) assert.equal(api.expansionPeriodAmount(item.values[2], periods.find(period => period.id === "annual"), "sales"), 50000);
   }
   const annual = periods.find(period => period.id === "annual");
   const upper = periods.find(period => period.id === "half-1");
   const quarter = periods.find(period => period.id === "quarter-1");
-  assert.equal(api.expansionPeriodAmount({ 4: { sales: 0.1, profit: -0.1 }, 5: { sales: 0.2, profit: -0.2 } }, annual, "sales"), 0.3);
-  assert.equal(api.expansionPeriodAmount({ 4: { sales: 0.1, profit: -0.1 }, 5: { sales: 0.2, profit: -0.2 } }, annual, "profit"), -0.3);
+  assert.equal(api.expansionPeriodAmount({ 4: { sales: 100, profit: -100 }, 5: { sales: 200, profit: -200 } }, annual, "sales"), 300);
+  assert.equal(api.expansionPeriodAmount({ 4: { sales: 100, profit: -100 }, 5: { sales: 200, profit: -200 } }, annual, "profit"), -300);
   assert.equal(api.expansionPeriodAmount({ 10: { sales: null, profit: null } }, upper, "sales"), 0);
   assert.equal(api.expansionPeriodAmount({ 10: { sales: null, profit: null } }, annual, "sales"), null);
   const zero = api.buildPeriodCostComparison(await api.readPlanContents(await api.createTriadicDatabase(2026)), [1, 2]);
   assert.ok(zero.rows.find(row => row.kind === "ratio").values.every(value => value.annual === undefined));
   const filtered = api.filterPlan(contents, { industries: [1], departments: [1] });
   const table = api.buildPeriodCostComparison(filtered, [1, 2]);
-  assert.equal(table.rows.find(row => row.name === "売上高").values[0][upper.id], 6000);
+  assert.equal(table.rows.find(row => row.name === "売上高").values[0][upper.id], 6000000);
   // Different month weights: the period rate is neither a sum nor an average of monthly rates.
   const synthetic = { ...filtered, initiatives: [], previousAmounts: [], accounts: contents.accounts.filter(account => ["売上高", "給料手当"].includes(account.accountName)) };
   const salesId = synthetic.accounts.find(account => account.accountName === "売上高").id;

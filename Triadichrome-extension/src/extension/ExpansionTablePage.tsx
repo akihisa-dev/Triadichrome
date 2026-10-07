@@ -5,7 +5,7 @@ import { expansionPeriodAmount, tablePeriods } from "../core/tables/periodTables
 import { type Initiative, type PlanContents } from "../core/domain/plan";
 import { buildKindExpansionTable } from "../core/tables/planTables";
 import type { KindId } from "../core/domain/kinds";
-import { formatTableAmount } from "./tableNumberFormat";
+import { formatTableYen } from "./tableNumberFormat";
 
 type Props = {
   contents: PlanContents; selected: KindId[]; selection: ReactNode;
@@ -15,7 +15,7 @@ function AmountCells({ values }: { values: Initiative["months"][] }) {
   return tablePeriods.map(period => <Fragment key={period.id}>{values.map((months, index) => <Fragment key={index}>
     {(["sales", "profit"] as const).map(metric => {
       const amount = expansionPeriodAmount(months, period, metric);
-      const text = amount === null ? "属性未設定" : formatTableAmount(amount);
+      const text = amount === null ? "属性未設定" : formatTableYen(amount);
       return <td key={metric} title={text} className={periodCellClass(period, metric === "sales" && index === 0, metric === "profit" && index === values.length - 1)}>{text}</td>;
     })}
   </Fragment>)}</Fragment>);

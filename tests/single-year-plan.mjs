@@ -52,26 +52,26 @@ export async function verifySingleYearPlan(api) {
   contents = await api.readPlanContents(bytes);
   assert.deepEqual(contents.kindSelections["initiative-list"], [1]);
   const cost = api.buildKindCostTable(contents, [1, 2]).find(row => row.kind === "account" && row.id === account.id);
-  assert.deepEqual(cost.values.map(values => values[4]), [1001, 1121, 1121], "前年＋各種別の前年差");
-  assert.deepEqual(cost.values.map(values => values[10]), [0, 120, 150]);
+  assert.deepEqual(cost.values.map(values => values[4]), [1001000, 1121000, 1121000], "前年＋各種別の前年差");
+  assert.deepEqual(cost.values.map(values => values[10]), [0, 120000, 150000]);
   assert.equal(api.buildKindCostTable(contents, [1])[0].values.length, 2);
   const expansion = api.buildKindExpansionTable(contents, [1, 2], "registered");
-  assert.deepEqual(expansion.total.map(months => months[10].sales), [120, 150, 30]);
+  assert.deepEqual(expansion.total.map(months => months[10].sales), [120000, 150000, 30000]);
   const reversed = api.buildKindExpansionTable(contents, [2, 1], "registered");
-  assert.deepEqual(reversed.total.map(months => months[10].sales), [150, 120, 30], "比較は選択順に関係なく確定−一次");
-  assert.deepEqual(reversed.groups[0].initiatives[0].values.map(months => months[10].sales), [150, 120, 30]);
+  assert.deepEqual(reversed.total.map(months => months[10].sales), [150000, 120000, 30000], "比較は選択順に関係なく確定−一次");
+  assert.deepEqual(reversed.groups[0].initiatives[0].values.map(months => months[10].sales), [150000, 120000, 30000]);
   const single = api.buildKindExpansionTable(contents, [1], "registered");
   assert.equal(single.total.length, 1);
   assert.equal(single.previous.length, 1);
   assert.equal(single.changes.length, 1);
   assert.equal(single.groups[0].values.length, 1);
   assert.equal(single.groups[0].initiatives[0].values.length, 1);
-  assert.deepEqual(expansion.total.map(months => months[4].sales), [1121, 1121, 0]);
+  assert.deepEqual(expansion.total.map(months => months[4].sales), [1121000, 1121000, 0]);
   bytes = await api.savePreviousAmounts(bytes, { industryId: contents.industries[1].id, departmentId: contents.departments[1].id, rows: [{ accountId: account.id, amounts: { 4: "20" } }] });
   contents = await api.readPlanContents(bytes);
   const filtered = api.filterPlan(contents, { industries: [draft.industryId], departments: [draft.departmentId] });
-  assert.equal(api.previousTotals(contents)[4].sales, 1021);
-  assert.equal(api.previousTotals(filtered)[4].sales, 1001);
+  assert.equal(api.previousTotals(contents)[4].sales, 1021000);
+  assert.equal(api.previousTotals(filtered)[4].sales, 1001000);
   assert.equal(api.filterPlan(contents, { industries: [draft.industryId], departments: [contents.departments[1].id] }).initiatives.length, 0, "業種と部署の両方に一致した施策だけ");
   assert.equal(api.filterPlan(contents, { industries: [draft.industryId, contents.industries[1].id], departments: null }).previousAmounts.length, 2, "同じ分類内はどれかに一致");
   const prior = contents.details.find(detail => detail.kindId === 0 && detail.industryId === draft.industryId);
@@ -87,7 +87,7 @@ export async function verifySingleYearPlan(api) {
   const latestPrior = contents.details.find(detail => detail.id === prior.id);
   bytes = await api.changeDetail(bytes, { target: latestPrior, field: "amount", value: "1002" });
   contents = await api.readPlanContents(bytes);
-  assert.equal(api.previousTotals(contents)[4].sales, 1022);
+  assert.equal(api.previousTotals(contents)[4].sales, 1022000);
   for (const [change, id] of [[api.changeAccountMaster, account.id], [api.changeIndustryMaster, draft.industryId], [api.changeDepartmentMaster, draft.departmentId]]) {
     await assert.rejects(change(bytes, { type: "delete", id }), /使用|前年/);
   }

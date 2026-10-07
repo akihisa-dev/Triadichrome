@@ -30,15 +30,18 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "総原価表", exact: true }).click();
   const sales = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) });
-  await expect(sales.getByRole("cell").nth(0)).toHaveText("0");
+  await expect(sales.getByRole("cell").nth(0)).toHaveText("");
   await expect(sales.getByRole("cell").nth(1)).toHaveText("1");
   await expect(sales.getByRole("cell").nth(2)).toHaveText("1");
   const ratio = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "利益率", exact: true }) });
   await expect(ratio.getByRole("cell").nth(1)).toHaveText("100.0%");
   await expect(ratio.getByRole("cell").nth(2)).toHaveText("100.0%");
+  // Check the usable table area with the narrow-screen navigation drawer closed.
+  await app.getByRole("banner").getByRole("button", { name: "サイドバーを閉じる", exact: true }).click();
   await settleMotion(app.locator("body"));
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   await page.screenshot({ path: join(tmpdir(), `triadichrome-default-cost-${testInfo.project.name}.png`) });
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();

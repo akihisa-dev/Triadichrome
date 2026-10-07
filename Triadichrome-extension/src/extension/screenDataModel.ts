@@ -40,7 +40,7 @@ const classifications = [use("expansions", "展開名", "id", "name"), use("indu
   use("departments", "部署名", "id", "name"), use("period_types", "期間名と開始年月の規則", "id", "name", "start_month_rule")];
 const selection = use("kind_selections", "この画面の種別選択を復元", "screen", "first_kind", "second_kind");
 const resolved = "確定予算の増減は、手修正がある月だけ amount_overrides を使い、それ以外は initiative_amounts を引き継ぎます。手修正の0も有効です。";
-const rounded = "金額は円の整数で保存し、画面では千円に換算して整数へ丸めます。編集欄では小数点以下3桁まで表示します。";
+const rounded = "金額は保存と集計の途中も円の整数で保持し、画面では千円に換算して整数へ丸めます。編集欄では小数点以下3桁まで表示します。";
 const blankZero = "丸めた表示が0になる金額・差額は空白にします。総原価表の利益率・利益率の差も同様です。保存値と計算には元の値を使います。";
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [

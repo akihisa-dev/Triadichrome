@@ -1,4 +1,4 @@
-import { addAmounts } from "../domain/amounts";
+import { addYen } from "../domain/amounts";
 import { initiativeMonths } from "../domain/calendar";
 import type { KindId } from "../domain/kinds";
 import type { PlanContents } from "../domain/plan";
@@ -12,7 +12,7 @@ export function buildCostComparison(contents: PlanContents, selected: KindId[]) 
   return { labels, rows: rows.map(row => {
     const difference = (left: typeof row.previous, right: typeof row.previous) => Object.fromEntries(
       initiativeMonths.flatMap(month => left[month] === undefined || right[month] === undefined ? [] :
-        [[month, row.kind === "ratio" ? left[month]! - right[month]! : addAmounts(left[month]!, -right[month]!)]]));
+        [[month, row.kind === "ratio" ? left[month]! - right[month]! : addYen(left[month]!, -right[month]!)]]));
     const latest = row.values[row.values.length - 1]!;
     return { ...row, values: [...row.values, difference(latest, row.previous),
       ...(kinds.length === 2 ? [difference(latest, row.values[1]!)] : [])] };

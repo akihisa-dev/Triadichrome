@@ -22,8 +22,8 @@ export async function verifyExpansionTable(api) {
   assert.deepEqual(build("asc").groups[0].initiatives.map(item => item.name), ["施策A", "施策B"]);
   assert.deepEqual(build("desc").groups[0].initiatives.map(item => item.name), ["施策B", "施策A"]);
   assert.deepEqual(contents.initiatives.slice(0, 2).map(item => item.name), ["施策B", "施策A"], "表示順の変更で登録順を変えない");
-  assert.deepEqual(build("registered").groups[0].total[4], { sales: 100, profit: 100 });
-  assert.deepEqual(build("registered").total[4], { sales: 200.001, profit: 200.001 });
+  assert.deepEqual(build("registered").groups[0].total[4], { sales: 100000, profit: 100000 });
+  assert.deepEqual(build("registered").total[4], { sales: 200001, profit: 200001 });
   assert.deepEqual(build("registered").groups[2].total[4], { sales: 0, profit: 0 });
   assert.deepEqual(build("registered").groups[0].initiatives[1].months[5], { sales: 0, expense: 0, profit: 0 });
   assert.deepEqual(build("registered").groups[0].initiatives[0].months[5], { sales: 0, expense: 0, profit: 0 });
@@ -44,10 +44,10 @@ export async function verifyExpansionTable(api) {
   malformed.exec("PRAGMA foreign_keys = OFF; UPDATE initiatives SET expansion_id = 999;");
   const invalid = malformed.export(); malformed.close();
   await assert.rejects(validateTriadicDatabase(invalid));
-  const fractions = [0.1, 0.2, 0.3].map(amount => ({ months: { 4: { sales: amount, profit: amount } } }));
+  const fractions = [100, 200, 300].map(amount => ({ months: { 4: { sales: amount, profit: amount } } }));
   const fractionalTable = buildExpansionTable({ ...contents, initiatives: fractions.map((item, id) => ({ ...item, id, fiscalYear: 2026, expansionId: 1 })) }, 2026, "registered");
-  assert.equal(fractionalTable.total[4].profit, 0.6, "表示で丸めず1円精度で合算する");
-  const overflow = { ...contents.initiatives[0], months: { 4: { sales: 9007199254740, profit: 9007199254740 } } };
+  assert.equal(fractionalTable.total[4].profit, 600, "表示で丸めず1円精度で合算する");
+  const overflow = { ...contents.initiatives[0], months: { 4: { sales: 9007199254740991, profit: 9007199254740991 } } };
   assert.throws(() => buildExpansionTable({ ...contents, initiatives: [overflow, { ...overflow, months: { 4: { sales: 1, profit: 1 } } }] }, 2026, "registered"), /範囲/);
   console.log("PASS: expansion assignment, grouped totals, sorting, year isolation, reassignment and deletion protection");
 }

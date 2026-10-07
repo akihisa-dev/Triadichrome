@@ -2,7 +2,7 @@ import { useGridInteraction } from "./useGridInteraction";
 import { useState } from "react";
 import { previousByAccount } from "../core/tables/planTables";
 import { buildCostTable } from "../core/tables/costTable";
-import { formatAmount, formatRate, isValidAmount } from "../core/domain/amounts";
+import { formatYen, formatRate, isValidAmount, amountToYen, yenToAmount } from "../core/domain/amounts";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
 import type { PreviousInput } from "../core/domain/kinds";
@@ -16,7 +16,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
   const [error, setError] = useState("");
   const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
   const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
-    isValidAmount(row.amounts[month] ?? "0") ? Number(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
+    isValidAmount(row.amounts[month] ?? "0") ? amountToYen(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
   let rows;
   let calculationFailed = invalid;
   try { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous); }
@@ -38,7 +38,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
             const value = draft?.rows.find(input => input.accountId === row.id)?.amounts[month] ?? "0";
             return <td key={month} className={`${row.kind === "account" && draft ? "previous-input-cell" : ""}${selected ? " previous-cell-selected" : ""}`}
               onPointerEnter={() => { if (dragging.current) setSelection(current => current ? { ...current, end: cell } : null); }}>
-              {row.kind !== "account" || !draft ? (calculationFailed ? "" : row.kind === "ratio" ? formatRate(row.previous[month]) : formatAmount(row.previous[month])) :
+              {row.kind !== "account" || !draft ? (calculationFailed ? "" : row.kind === "ratio" ? formatRate(row.previous[month]) : formatYen(row.previous[month])) :
                 <input type="text" inputMode="decimal" data-row={rowIndex} data-column={column}
                   aria-label={`${row.name} ${month}月の前年金額`} aria-invalid={value !== undefined && value !== "" && !isValidAmount(value)} value={value}
                   onFocus={event => { original.current = value; event.currentTarget.select(); setSelection(current => current && (current.anchor.row === rowIndex && current.anchor.column === column || current.end.row === rowIndex && current.end.column === column) ? current : { anchor: cell, end: cell }); }}
@@ -53,7 +53,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
                     if (editing || !bounds) return;
                     event.preventDefault();
                     event.clipboardData.setData("text/plain", rows.slice(bounds.top, bounds.bottom + 1).map(item => initiativeMonths.slice(bounds.left, bounds.right + 1).map(m =>
-                      item.kind === "account" ? draft.rows.find(input => input.accountId === item.id)?.amounts[m] || "0" : calculationFailed ? "" : item.kind === "ratio" ? formatRate(item.previous[m]) : String(item.previous[m] ?? "")
+                      item.kind === "account" ? draft.rows.find(input => input.accountId === item.id)?.amounts[m] || "0" : calculationFailed ? "" : item.kind === "ratio" ? formatRate(item.previous[m]) : item.previous[m] === undefined ? "" : yenToAmount(item.previous[m]!)
                     ).join("\t")).join("\n"));
                   }}
                   onPaste={event => {

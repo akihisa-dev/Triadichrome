@@ -10,7 +10,7 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "前年", exact: true }) }).getByRole("cell").first()).toHaveText("20,342");
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) }).getByRole("cell").first()).toHaveText("20,757");
   await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "展開計", exact: true }) }).getByRole("cell").first()).toHaveText("415");
-  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "撤退計", exact: true }) }).getByRole("cell").first()).toHaveText("0");
+  await expect(table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "撤退計", exact: true }) }).getByRole("cell").first()).toHaveText("");
   const registeredOrder = await table.getByRole("button").allTextContents();
   await expect(table.locator("thead button")).toHaveCount(0);
   await expect(app.getByRole("button", { name: "クリア", exact: true })).toHaveCount(0);
