@@ -1,11 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
-export function GlidingKindSlot({ id, label, value, options, onChange, disabled, allowEmpty = true }: {
-  id: string; label: string; value: number | undefined;
+export function GlidingKindSlot({ id, label, value, options, onChange, disabled, allowEmpty = true, emptyLabel = "未選択" }: {
+  id: string; label: string; value: number | null | undefined;
   options: { id: number; name: string }[]; onChange: (value: number | null) => void;
-  disabled: boolean; allowEmpty?: boolean;
+  disabled: boolean; allowEmpty?: boolean; emptyLabel?: string;
 }) {
-  const items = [...(allowEmpty ? [{ id: null, name: "未選択" }] : []), ...options];
+  const items = [...(allowEmpty ? [{ id: null, name: emptyLabel }] : []), ...options];
   const index = Math.max(0, items.findIndex(item => item.id === (value ?? null)));
   const container = useRef<HTMLDivElement>(null);
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
@@ -21,6 +21,16 @@ export function GlidingKindSlot({ id, label, value, options, onChange, disabled,
         ? previous : { left: button.offsetLeft, width: button.offsetWidth });
     };
     measure();
+    const button = buttons.current[index];
+    const viewport = container.current;
+    if (button && viewport) {
+      const left = button.offsetLeft;
+      const right = left + button.offsetWidth;
+      const target = left < viewport.scrollLeft ? left
+        : right > viewport.scrollLeft + viewport.clientWidth ? right - viewport.clientWidth : viewport.scrollLeft;
+      if (target !== viewport.scrollLeft) viewport.scrollTo({ left: target,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "instant" : "smooth" });
+    }
     const observer = new ResizeObserver(measure);
     buttons.current.forEach(button => { if (button) observer.observe(button); });
     return () => observer.disconnect();

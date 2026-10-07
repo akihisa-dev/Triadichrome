@@ -5,10 +5,11 @@ import { type PlanContents } from "../core/domain/plan";
 import { filterPlan } from "../core/tables/planTables";
 import { PreviousAmountGrid } from "./PreviousAmountGrid";
 import "./PreviousInputPage.css";
+import "./KindSelectionSlots.css";
 import type { PreviousInput } from "../core/domain/kinds";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
 import { AutoSaveStatus } from "./AutoSaveStatus";
-import { ClassificationSlot } from "./ClassificationSlot";
+import { GlidingKindSlot } from "./GlidingKindSlot";
 
 type Props = AutoSaveProps & { contents: PlanContents; onSave: (input: PreviousInput) => Promise<void> };
 export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepareSave }: Props) {
@@ -29,10 +30,10 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
       <h1 id="previous-input-title">前年入力</h1>
       <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-classification-row">
-        <ClassificationSlot id="previous-industry" label="業種名" value={industryId} emptyLabel="全業種の合計"
+        <GlidingKindSlot id="previous-industry" label="業種名" value={industryId} emptyLabel="全業種の合計"
           options={contents.industries.map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
           onChange={value => { controller.end(); setIndustry(value); }} />
-        <ClassificationSlot id="previous-department" label="部署名" value={departmentId} emptyLabel="全部署の合計"
+        <GlidingKindSlot id="previous-department" label="部署名" value={departmentId} emptyLabel="全部署の合計"
           options={contents.departments.map(item => ({ id: item.id, name: item.departmentName }))} disabled={autoSave.pending}
           onChange={value => { controller.end(); setDepartment(value); }} />
       </div>

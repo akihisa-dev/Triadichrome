@@ -125,3 +125,26 @@ test("前年の初期合計・片側の分類・全件への切り替え", async
   await selectClassification(department, "全部署の合計");
   await expect(sales).toHaveText("25,290");
 });
+
+
+test("前年入力の横並び分類で末尾の候補を選び、合計と入力の切り替えを保持する", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "前年入力", exact: true }).click();
+  await app.getByRole("heading", { name: "前年入力", exact: true }).click();
+  const industry = app.getByRole("spinbutton", { name: "業種名", exact: true });
+  const department = app.getByRole("spinbutton", { name: "部署名", exact: true });
+  await industry.press("End");
+  await expect(industry).not.toHaveAttribute("aria-valuetext", "全業種の合計");
+  await expect.poll(() => industry.evaluate(node => {
+    const selected = node.querySelector('[aria-pressed="true"]')!.getBoundingClientRect();
+    const viewport = node.getBoundingClientRect();
+    return selected.left >= viewport.left && selected.right <= viewport.right;
+  })).toBe(true);
+  await department.getByRole("button", { name: "部署A", exact: true }).click();
+  await expect(app.locator(".previous-grid input").first()).toBeVisible();
+  await industry.getByRole("button", { name: "全業種の合計", exact: true }).click();
+  await expect(industry).toHaveAttribute("aria-valuetext", "全業種の合計");
+  await expect(app.locator(".previous-grid input")).toHaveCount(0);
+  await expect.poll(() => app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+});
