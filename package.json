@@ -1,19 +1,19 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "7.3.0",
+  "version": "7.3.1",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "vite",
-    "dev:ui": "vite --host 127.0.0.1 --port 4173 --strictPort",
+    "dev": "npm run data-map:generate && vite",
+    "dev:ui": "npm run data-map:generate && vite --host 127.0.0.1 --port 4173 --strictPort",
     "build": "npm run typecheck && node scripts/build.mjs && npm run samples:generate",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit --pretty false",
-    "test": "node scripts/test-files.mjs && node --test tests/repository-workflow.test.mjs tests/screen-data-model.test.mjs && npm run samples:check",
+    "typecheck": "npm run data-map:generate && tsc --noEmit --pretty false",
+    "test": "npm run data-map:check && node scripts/test-files.mjs && node --test tests/repository-workflow.test.mjs tests/screen-data-model.test.mjs tests/data-map-generation.test.mjs && npm run samples:check",
     "samples:generate": "node scripts/generate-sample-plan.mjs",
     "samples:check": "node scripts/generate-sample-plan.mjs --check",
     "test:ui": "npm run build && playwright test",
@@ -27,7 +27,10 @@
     "check:release": "node scripts/check-release.mjs",
     "verify": "npm run check:hooks && npm run build && npm test && npm run check:version",
     "verify:full": "npm run verify && playwright test",
-    "verify:release": "npm run verify && npm run check:release"
+    "verify:release": "npm run verify && npm run check:release",
+    "data-map:generate": "node scripts/data-map.mjs",
+    "data-map:check": "node scripts/data-map.mjs --check",
+    "data-map:review": "node scripts/data-map.mjs --review"
   },
   "dependencies": {
     "react": "19.3.0",

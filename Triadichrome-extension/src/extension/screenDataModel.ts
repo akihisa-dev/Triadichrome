@@ -1,41 +1,32 @@
-// This catalog describes the saved schema, not a second copy of plan data.
-export type DataColumn = { name: string; label: string; reference?: string };
-export type DataTable = { name: string; label: string; columns: DataColumn[] };
-const table = (name: string, label: string, fields: [string, string, string?][]): DataTable => ({ name, label,
-  columns: fields.map(([name, label, reference]) => ({ name, label, ...(reference ? { reference } : {}) })) });
-const id: [string, string] = ["id", "識別子"];
-const revision: [string, string] = ["revision", "更新番号"];
-const order: [string, string] = ["sort_order", "並び順"];
-const month: [string, string] = ["month", "月"];
-const amount: [string, string] = ["amount_yen", "金額（円）"];
-const account: [string, string, string] = ["account_id", "勘定科目", "accounts.id"];
-const industry: [string, string, string] = ["industry_id", "業種", "industries.id"];
-const department: [string, string, string] = ["department_id", "部署", "departments.id"];
-const row: [string, string, string] = ["row_id", "施策の科目行", "initiative_rows.id"];
-export const dataTables: DataTable[] = [
-  table("plan", "計画", [id, ["fiscal_year", "基準年度"], ["created_at", "作成日時"], ["updated_at", "更新日時"]]),
-  table("initiatives", "施策", [id, ["name", "施策名"], ["note", "備考"], ["expansion_id", "展開", "expansions.id"], industry, department,
-    ["period_type_id", "期間", "period_types.id"], ["primary_start_year_month", "一次予算の開始年月"], ["confirmed_start_year_month", "確定予算の開始年月"], order, revision]),
-  table("initiative_rows", "施策の科目行", [["id", "科目行の識別子"], ["initiative_id", "施策", "initiatives.id"], account, order, revision]),
-  table("initiative_amounts", "一次予算の月別増減", [row, month, amount, revision]),
-  table("amount_overrides", "確定予算の手修正", [row, month, amount, revision]),
-  table("previous_amounts", "前年の実額", [id, account, industry, department, month, amount, revision]),
-  table("accounts", "勘定科目", [id, ["code", "科目コード"], ["attribute", "科目属性"], ["name", "科目名"], order]),
-  table("aggregation_groups", "集計", [id, ["display_name", "表示名"], ["name", "集計名"], ["required_key", "必須集計の役割"], order]),
-  table("aggregation_members", "集計の所属・加減算", [["parent_id", "所属先の集計", "aggregation_groups.id"], account,
-    ["group_id", "子集計", "aggregation_groups.id"], ["sign", "加算・減算"], ["position", "所属内の並び順"]]),
-  table("expansions", "展開", [id, ["code", "展開コード"], ["name", "展開名"]]),
-  table("industries", "業種", [id, ["code", "業種コード"], ["name", "業種名"]]),
-  table("departments", "部署", [id, ["name", "部署名"]]),
-  table("period_types", "期間", [id, ["name", "期間名"], ["start_month_rule", "開始年月の算出規則"]]),
-  table("kind_selections", "画面ごとの種別選択", [["screen", "画面"], ["first_kind", "比較対象1・表示種別"], ["second_kind", "比較対象2"]]),
-  table("data_history", "時点履歴", [id, ["recorded_at", "記録日時"], ["snapshot", "計画全体の保存内容"]]),
-  table("data_history_state", "履歴の記録状態", [id, ["version", "履歴管理の版"], ["next_id", "次の履歴識別子"], ["dirty_since", "未記録の変更の開始日時"], ["saved_at", "最新の保存日時"]]),
-  table("triadic_metadata", "ファイル形式", [["key", "情報名"], ["value", "値"]]),
-];
-export type TableUse = { table: string; purpose: string; fields: string[] };
-export type ScreenData = { page: string; name: string; tables: TableUse[]; calculated: string[] };
-const use = (table: string, purpose: string, ...fields: string[]): TableUse => ({ table, purpose, fields });
+import { dataMapSchema } from "../core/storage/dataMapSchema.generated";
+import { describeDataTables, type DataColumn, type DataTable } from "../core/storage/dataMapDescription";
+import type { Page } from "./HomePage";
+export type { DataColumn, DataTable };
+type TableName = typeof dataMapSchema[number]["name"];
+type ColumnName<T extends TableName> = Extract<typeof dataMapSchema[number], { name: T }>["columns"][number]["name"];
+const tableLabels: Partial<Record<TableName, string>> = {
+  plan: "計画", initiatives: "施策", initiative_rows: "施策の科目行", initiative_amounts: "一次予算の月別増減",
+  amount_overrides: "確定予算の手修正", previous_amounts: "前年の実額", accounts: "勘定科目", aggregation_groups: "集計",
+  aggregation_members: "集計の所属・加減算", expansions: "展開", industries: "業種", departments: "部署", period_types: "期間",
+  kind_selections: "画面ごとの種別選択", data_history: "時点履歴", data_history_state: "履歴の記録状態", triadic_metadata: "ファイル形式",
+};
+// Labels explain meaning; table names, columns and references come from the saved schema.
+const columnLabels: Record<string, string> = {
+  id: "識別子", name: "名称", code: "コード", revision: "更新番号", sort_order: "並び順", month: "月", amount_yen: "金額（円）",
+  fiscal_year: "基準年度", created_at: "作成日時", updated_at: "更新日時", note: "備考", expansion_id: "展開", industry_id: "業種",
+  department_id: "部署", period_type_id: "期間", primary_start_year_month: "一次予算の開始年月", confirmed_start_year_month: "確定予算の開始年月",
+  initiative_id: "施策", account_id: "勘定科目", row_id: "施策の科目行", attribute: "科目属性", display_name: "表示名", required_key: "必須集計の役割",
+  parent_id: "所属先の集計", group_id: "子集計", sign: "加算・減算", position: "所属内の並び順", start_month_rule: "開始年月の算出規則",
+  screen: "画面", first_kind: "比較対象1・表示種別", second_kind: "比較対象2", recorded_at: "記録日時", snapshot: "計画全体の保存内容",
+  version: "履歴管理の版", next_id: "次の履歴識別子", dirty_since: "未記録の変更の開始日時", saved_at: "最新の保存日時", key: "情報名", value: "値",
+  "initiatives.name": "施策名", "initiative_rows.id": "科目行の識別子", "accounts.name": "科目名", "accounts.code": "科目コード",
+  "aggregation_groups.name": "集計名", "expansions.code": "展開コード", "expansions.name": "展開名", "industries.code": "業種コード",
+  "industries.name": "業種名", "departments.name": "部署名", "period_types.name": "期間名",
+};
+export const dataTables = describeDataTables(dataMapSchema, tableLabels, columnLabels);
+export type TableUse = { table: TableName; purpose: string; fields: string[] };
+export type ScreenData = { page: Exclude<Page, "home" | "master">; name: string; tables: TableUse[]; calculated: string[] };
+const use = <T extends TableName>(table: T, purpose: string, ...fields: ColumnName<T>[]): TableUse => ({ table, purpose, fields });
 const plan = use("plan", "共通ヘッダーの基準年度・対象月", "fiscal_year");
 const initiative = use("initiatives", "施策名・備考・分類・種別ごとの開始年月", "name", "note", "expansion_id", "industry_id", "department_id", "period_type_id", "primary_start_year_month", "confirmed_start_year_month", "sort_order");
 const rows = use("initiative_rows", "施策と科目の対応・科目行の並び", "id", "initiative_id", "account_id", "sort_order");
@@ -61,16 +52,16 @@ export const screenData: ScreenData[] = [
   { page: "previous-input", name: "前年入力", tables: [plan, previous, accounts, classifications[1]!, classifications[2]!],
     calculated: ["選択した業種・部署に対応する科目別の月額を表示し、前年の実額を更新します。", rounded] },
   { page: "cost-table", name: "総原価表", tables: [plan, previous, use("initiatives", "施策ごとの科目行をまとめる", "id"), rows, primary, overrides, accounts, groups, members, selection],
-    calculated: [resolved, "科目ごとに施策の増減を合計し、前年の実額に加えて予算を求めます。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。", rounded] },
+    calculated: [resolved, "科目ごとに施策の増減を合計し、前年の実額に加えて予算を求めます。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。前年差は表示する予算−前年（両方なら確定予算−前年）、一次予算差は確定予算−一次予算です。利益率の差はポイントで表示し、差の値は保存しません。", rounded] },
   { page: "expansion-table", name: "展開表", tables: [plan, use("initiatives", "施策名・展開への所属・並び順", "id", "name", "expansion_id", "sort_order"), rows, primary, overrides, previous, accounts, classifications[0]!, selection],
     calculated: [resolved, "施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。展開表専用の保存テーブルはありません。", rounded] },
   { page: "details", name: "明細", tables: [...initiativeTables, previous],
     calculated: [resolved, "施策・科目行・月・種別を組み合わせて明細行を作ります。前年行は previous_amounts から作ります。明細専用の保存テーブルはありません。", rounded] },
   { page: "account-master", name: "勘定科目マスタ", tables: [plan, accounts], calculated: [] },
   { page: "aggregation-master", name: "集計マスタ", tables: [plan, groups, members, accounts], calculated: ["科目または子集計を所属先に結び、加算・減算と並び順を保存します。"] },
-  ...classifications.map((item, index) => ({ page: ["expansion-master", "industry-master", "department-master", "period-master"][index]!,
+  ...classifications.map((item, index) => ({ page: (["expansion-master", "industry-master", "department-master", "period-master"] as const)[index]!,
     name: ["展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ"][index]!,
-    tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataTables.find(table => table.name === item.table)!.columns.map(column => column.name))], calculated: [] })),
+    tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataMapSchema.find(table => table.name === item.table)!.columns.map(column => column.name))], calculated: [] })),
   { page: "kind-master", name: "種別マスタ", tables: [plan], calculated: ["前年・一次予算・確定予算はアプリの固定定義です。種別マスタの保存テーブルはありません。前年実額は previous_amounts、一次予算は initiative_amounts、確定予算の手修正は amount_overrides に保存します。"] },
   { page: "data-history", name: "履歴", tables: [plan, use("data_history", "記録日時と計画全体の保存内容", "id", "recorded_at", "snapshot"),
     use("data_history_state", "記録の識別子と未記録の変更を管理", "next_id", "dirty_since", "saved_at", "version")],

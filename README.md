@@ -154,6 +154,20 @@ TypeScript、React、Vite、sql.js、Chrome Extension Manifest V3を使用しま
 
 新しくcloneした環境では`npm run setup:hooks`を実行します。`pre-commit`はstage済み差分の空白エラーとversionを、`pre-push`は`npm run verify`でbuild・通常テスト・versionなどを確認します。画面自動テストはpush時に起動しません。通常の検証もフック未設定なら停止します。設定時に既存の別フックが検出された場合は、その設定内容を確認してください。
 
+## 画面とデータの対応情報の更新
+
+対応図のテーブル名・項目・参照先は、保存形式の正本から空のメモリ内データベースを作り、自動生成します。生成先は`Triadichrome-extension/src/core/storage/dataMapSchema.generated.ts`です。日本語の名称と画面ごとの対応・計算説明は`Triadichrome-extension/src/extension/screenDataModel.ts`で管理します。新しい項目は、日本語名の登録前でも保存名で表示します。利用者のファイルは読み書きしません。
+
+`dev`・`dev:ui`・型検査・buildでは生成を行い、通常テストでは生成結果の一致を確認します。画面の切り替え実装、画面部品と静的に参照するTypeScriptの処理、計算・読込処理、対応説明が確認済みの状態から変わった場合は、該当する画面IDを示して停止します。CSSだけの変更は対象外です。ホームとマスタ入口は、画面本文に業務データを表示しないため確認対象から除きます。
+
+画面・保存項目・計算規則の変更時は、対応項目と計算説明を実装に照合して更新してください。照合後に`npm run data-map:review -- <画面ID>`で確認済みとして記録し、`npm run verify`を通します。複数画面はIDを空白で並べ、全画面の照合後だけIDを省略できます。確認記録は`screenDataReview.json`へ保存し、関連する変更・生成結果と同じコミットに含めます。説明の意味まで自動判定する仕組みではありません。
+
+| コマンド | 処理内容 |
+|---|---|
+| `npm run data-map:generate` | 保存構造を自動生成し、画面との対応が確認済みか検査 |
+| `npm run data-map:check` | 生成ファイルと確認記録の一致を読み取りだけで検査 |
+| `npm run data-map:review -- initiative-list` | 照合した施策一覧の実装と対応説明を確認済みとして記録 |
+
 ## 確認用の.triadicファイル
 
 [全機能確認用.triadic](samples/全機能確認用.triadic)をアプリの「ファイルを開く」から選ぶと、登録済みのテストデータを操作できます。金額は千円単位で、120は120,000円、0.001は1円を表します。内容は下記の画面確認用データと共通で、生成元は[tests/ui/sample-plan.ts](tests/ui/sample-plan.ts)です。
