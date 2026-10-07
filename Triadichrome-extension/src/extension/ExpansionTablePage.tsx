@@ -1,3 +1,4 @@
+import { periodCellClass } from "./periodCellStyle";
 import type { ReactNode } from "react";
 import { Fragment } from "react";
 import { expansionPeriodAmount, tablePeriods } from "../core/tables/periodTables";
@@ -15,7 +16,7 @@ function AmountCells({ values }: { values: Initiative["months"][] }) {
     {(["sales", "profit"] as const).map(metric => {
       const amount = expansionPeriodAmount(months, period, metric);
       const text = amount === null ? "属性未設定" : formatTableAmount(amount);
-      return <td key={metric} title={text} className={metric === "profit" && index === values.length - 1 ? "initiative-month-end" : undefined}>{text}</td>;
+      return <td key={metric} title={text} className={periodCellClass(period, metric === "sales" && index === 0, metric === "profit" && index === values.length - 1)}>{text}</td>;
     })}
   </Fragment>)}</Fragment>);
 }
@@ -38,10 +39,10 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
         </colgroup><thead>
         <tr><th rowSpan={3} scope="col" className="expansion-group">展開名</th>
           <th rowSpan={3} scope="col" className="expansion-name">施策名</th>
-          {tablePeriods.map(period => <th key={period.id} colSpan={labels.length * 2} scope="colgroup">{period.label}</th>)}
+          {tablePeriods.map(period => <th key={period.id} colSpan={labels.length * 2} scope="colgroup" className={periodCellClass(period, true)}>{period.label}</th>)}
         </tr>
-        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.map((label, index) => <th key={index} scope="colgroup" colSpan={2}>{label}</th>)}</Fragment>)}</tr>
-        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.flatMap((_, index) => (["sales", "profit"] as const).map(key => <th key={`${index}-${key}`} scope="col">{key === "sales" ? "売上" : "利益"}</th>))}</Fragment>)}</tr>
+        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.map((label, index) => <th key={index} scope="colgroup" colSpan={2} className={periodCellClass(period, index === 0)}>{label}</th>)}</Fragment>)}</tr>
+        <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.flatMap((_, index) => (["sales", "profit"] as const).map(key => <th key={`${index}-${key}`} scope="col" className={periodCellClass(period, key === "sales" && index === 0)}>{key === "sales" ? "売上" : "利益"}</th>))}</Fragment>)}</tr>
       </thead><tbody>
         <tr><th colSpan={2} scope="row" className="expansion-summary">前年</th><AmountCells values={table.previous} /></tr>
         <tr className="expansion-total"><th colSpan={2} scope="row" className="expansion-summary">合計</th><AmountCells values={table.total} /></tr>

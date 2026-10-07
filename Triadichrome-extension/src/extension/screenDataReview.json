@@ -24,11 +24,11 @@
     "description": "a8708a3e327ed8f80776291c0da4e87c5e8b21891931f2cc0d815df43449b7e1"
   },
   "cost-table": {
-    "implementation": "ea6db0c98fca4cbbd82deebbbb313f05eb7e94a903de20240dfa3602aaa1f703",
+    "implementation": "a969a65cce183e6669900ee3d4737fb111db173fda4031b768d717fb17f658e4",
     "description": "5356e12d69acbcf72dc8d4f64bd5d6793ad06d4e4c060e68e9e3f32df637f4dc"
   },
   "expansion-table": {
-    "implementation": "b0c7f90b909bf8b5a52d79aad3e14e37865bc45b5148a223fd267e26943a74fe",
+    "implementation": "d6e0cf951f76fceb98af08c19dee5a9b1f77b6468e800e1a623920f333980c09",
     "description": "3d2709cac40c0942fb8e12abad693267439a5d635f18fc5fd6ef01ad204ac41a"
   },
   "kind-master": {

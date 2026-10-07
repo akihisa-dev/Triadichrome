@@ -1,0 +1,6 @@
+/* Opaque cell backgrounds keep period bands visible in frozen headers and subtotal rows. */
+.initiative-list-table:is(.cost-table, .expansion-table) :is(th, td).period-quarter { background: #ebebeb; }
+.initiative-list-table:is(.cost-table, .expansion-table) :is(th, td).period-half { background: #dedede; font-weight: 600; }
+.initiative-list-table:is(.cost-table, .expansion-table) :is(th, td).period-annual { background: #c9c9c9; font-weight: 700; }
+.initiative-list-table:is(.cost-table, .expansion-table) :is(th, td).period-start { border-left: 2px solid var(--control-line); }
+.initiative-list-table:is(.cost-table, .expansion-table) :is(th, td).period-annual.period-start { border-left-color: var(--ink); }

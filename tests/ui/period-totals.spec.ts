@@ -10,6 +10,24 @@ test("総原価表と展開表の期間計を比較対象の切替後も確認�
     await menu.getByRole("button", { name, exact: true }).click();
     const table = app.getByRole("table", { name, exact: true });
     for (const label of labels) await expect(table.getByRole("columnheader", { name: label, exact: true })).toHaveCount(1);
+    // Verify the visible distinction throughout headers, ordinary rows and subtotal rows.
+    const bands = await table.evaluate(node => {
+      const style = (element: Element) => {
+        const css = getComputedStyle(element);
+        return { background: css.backgroundColor, weight: Number(css.fontWeight), border: css.borderLeftWidth };
+      };
+      return ["quarter", "half", "annual"].map(kind => {
+        const cells = [...node.querySelectorAll(`.period-${kind}`)];
+        return { kind, header: style(node.querySelector(`thead th.period-${kind}`)!),
+          amount: style(node.querySelector(`td.period-${kind}`)!),
+          uniform: new Set(cells.map(cell => style(cell).background)).size === 1,
+          boundaries: [...node.querySelectorAll(`.period-${kind}.period-start`)].every(cell => style(cell).border === "2px") };
+      });
+    });
+    expect(bands.every(band => band.uniform && band.boundaries)).toBe(true);
+    expect(new Set(bands.map(band => band.amount.background)).size).toBe(3);
+    expect(bands[1]!.amount.weight).toBeGreaterThanOrEqual(600);
+    expect(bands[2]!.amount.weight).toBeGreaterThan(bands[1]!.amount.weight);
     const region = table.locator("..");
     await region.evaluate(node => { node.scrollLeft = node.scrollWidth; });
     await expect(table.getByRole("columnheader", { name: "年間計", exact: true })).toBeVisible();
