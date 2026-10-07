@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { type Account } from "../core/accountMaster";
-import { type Aggregation, type AggregationMember } from "../core/aggregations";
-import { aggregationNodeWidth, layoutAggregationGraph } from "../core/aggregationGraph";
+import { type Account } from "../core/domain/accountMaster";
+import { type Aggregation, type AggregationMember } from "../core/domain/aggregations";
+import { aggregationNodeWidth, layoutAggregationGraph, aggregationGraphItems, aggregationForbidden, aggregationGraphEdges } from "../core/tables/aggregationGraph";
 import { useGraphViewport } from "./useGraphViewport";
 
 type Item = Pick<AggregationMember, "kind" | "id">;
@@ -31,36 +31,12 @@ export function AggregationGraph({ accounts, groups, disabled, editingId, render
   const scrollFrame = useRef<number | null>(null);
   const suppressClick = useRef(false);
   const blocked = disabled || editingId !== null;
-  const owners = useMemo(() => new Map(groups.flatMap(group => group.members.map(member => [keyOf(member), group.id] as const))), [groups]);
-  const unassigned = accounts.filter(account => !owners.has(`account:${account.id}`));
-  const labels = useMemo(() => new Map<string, string>([
-    ...accounts.map(account => [`account:${account.id}`, `${account.accountCode ?? "未設定"} ${account.accountName}`] as const),
-    ...groups.map(group => [`group:${group.id}`, group.name] as const),
-  ]), [accounts, groups]);
-  const forbidden = useMemo(() => {
-    const ids = new Set<number>();
-    if (selected?.kind === "group") {
-      const byId = new Map(groups.map(group => [group.id, group]));
-      const queue = [selected.id];
-      for (let index = 0; index < queue.length; index++) {
-        const id = queue[index]!;
-        if (ids.has(id)) continue;
-        ids.add(id);
-        queue.push(...(byId.get(id)?.members.filter(member => member.kind === "group").map(member => member.id) ?? []));
-      }
-    }
-    return ids;
-  }, [groups, selected]);
+  const { owners, unassigned, labels } = useMemo(() => aggregationGraphItems(accounts, groups), [accounts, groups]);
+  const forbidden = useMemo(() => aggregationForbidden(groups, selected), [groups, selected]);
   const layout = useMemo(() => layoutAggregationGraph(groups, heights, availableWidth), [groups, heights, availableWidth]);
   const navigation = useGraphViewport(viewport, layout.width, layout.height);
   const positions = new Map(layout.nodes.map(node => [node.id, node]));
-  const edges = groups.flatMap(parent => parent.members.filter(member => member.kind === "group").map(member => {
-    const child = positions.get(member.id)!;
-    const result = positions.get(parent.id)!;
-    const x = child.x + aggregationNodeWidth / 2;
-    const parentX = result.x + aggregationNodeWidth / 2;
-    return { member, parent, x, y: child.y - 24, path: `M ${x} ${child.y} V ${child.y - 52} H ${parentX} V ${result.y + result.height + 2}` };
-  }));
+  const edges = useMemo(() => aggregationGraphEdges(groups, layout.nodes), [groups, layout.nodes]);
   useLayoutEffect(() => {
     const measure = () => {
       setAvailableWidth(viewport.current?.clientWidth ?? 640);

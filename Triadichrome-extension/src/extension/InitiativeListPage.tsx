@@ -1,7 +1,8 @@
 import { Fragment, useState, type ReactNode } from "react";
-import { initiativeMonths, type Initiative } from "../core/initiatives";
+import { initiativeMonths } from "../core/domain/calendar";
+import { type Initiative } from "../core/domain/plan";
 
-import { formatAmount } from "../core/amounts";
+import { formatAmount } from "../core/domain/amounts";
 const amountText = (amount: number | null | undefined) => amount === undefined ? "" : amount === null ? "属性未設定" : formatAmount(amount);
 
 type InitiativeListPageProps = {

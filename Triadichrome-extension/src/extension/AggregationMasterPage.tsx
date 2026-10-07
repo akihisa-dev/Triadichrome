@@ -1,8 +1,9 @@
+import { useMasterOperation } from "./useMasterOperation";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useCallback, useRef, useState } from "react";
-import { type Account } from "../core/accountMaster";
-import { type Aggregation, type AggregationMember } from "../core/aggregations";
-import { type AggregationChange } from "../core/aggregationMaster";
+import { useRef, useState } from "react";
+import { type Account } from "../core/domain/accountMaster";
+import { type Aggregation, type AggregationMember } from "../core/domain/aggregations";
+import { type AggregationChange } from "../core/domain/aggregationMaster";
 import { StatusNotice } from "./StatusNotice";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { AggregationGraph } from "./AggregationGraph";
@@ -27,8 +28,6 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
   const { draft: editing, controller } = autoSave;
   const setEditing = (draft: Draft) => controller.change(draft);
   const [deleting, setDeleting] = useState<Aggregation | null>(null);
-  const [notice, setNotice] = useState({ message: "", error: false });
-  const dismiss = useCallback(() => setNotice({ message: "", error: false }), []);
   const serial = useRef(0);
   const page = useRef<HTMLElement>(null);
   const addButton = useRef<HTMLButtonElement>(null);
@@ -41,21 +40,16 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
   let ancestor = editing?.id;
   while (ancestor !== undefined) { ancestors.add(ancestor); ancestor = owners.get(`group:${ancestor}`); }
   const focusGroup = (id: number) => requestAnimationFrame(() => page.current?.querySelector<HTMLButtonElement>(`[data-move-key="group:${id}"]`)?.focus({ preventScroll: true }));
-  const save = async (change: AggregationChange) => {
-    dismiss();
-    try {
-      await onChange(change);
+  const { notice, dismiss, save } = useMasterOperation<AggregationChange>({
+    onChange,
+    onSuccess: change => {
       if (change.type === "add") { setName(""); setAdding(false); requestAnimationFrame(() => addButton.current?.focus({ preventScroll: true })); }
       setDeleting(null);
-      setNotice({ message: change.type === "delete" ? "集計を削除しました。" : change.type === "move" ? "所属・加減算を保存しました。" : "集計を保存しました。", error: false });
-      return true;
-    } catch (failure) {
-      setDeleting(null);
-      const cancelled = failure instanceof DOMException && failure.name === "AbortError";
-      setNotice({ message: cancelled ? change.type === "move" ? "保存をキャンセルしました。元の所属を保っています。" : "保存をキャンセルしました。入力内容は残っています。" : failure instanceof Error ? failure.message : "保存できませんでした。", error: !cancelled });
-      return false;
-    }
-  };
+    },
+    onFailure: () => setDeleting(null),
+    successMessage: change => change.type === "delete" ? "集計を削除しました。" : change.type === "move" ? "所属・加減算を保存しました。" : "集計を保存しました。",
+    cancelledMessage: change => change.type === "move" ? "保存をキャンセルしました。元の所属を保っています。" : "保存をキャンセルしました。入力内容は残っています。",
+  });
   const edit = (group: Aggregation) => { dismiss(); controller.begin({ id: group.id, name: group.name, displayName: group.displayName ?? group.name, members: group.members.map(member => ({ key: serial.current++, target: `${member.kind}:${member.id}`, sign: member.sign })) }); };
   const cancel = () => { if (editing) focusGroup(editing.id); controller.end(); dismiss(); };
   const updateMember = (key: number, change: Partial<MemberDraft>) => editing && setEditing({ ...editing, members: editing.members.map(member => member.key === key ? { ...member, ...change } : member) });

@@ -1,16 +1,13 @@
-import { TRIADIC_FILE_EXTENSION } from "../core/triadicDatabase";
-import { readPlanContents, type PlanContents } from "../core/initiatives";
+import { TRIADIC_FILE_EXTENSION } from "../core/storage/triadicSchema";
+import { readPlanContents } from "../core/storage/readPlan";
+import { type PlanContents } from "../core/domain/plan";
 import { writeTriadicFile } from "./triadicFile";
-import { trackHistoryChange } from "../core/dataHistory";
+import { trackHistoryChange } from "../core/storage/dataHistory";
 
 export type OpenPlan = PlanContents & { name: string; bytes: Uint8Array; handle?: FileSystemFileHandle; destinationBytes?: Uint8Array };
 
 export async function writePlanChange(plan: OpenPlan, handle: FileSystemFileHandle, bytes: Uint8Array, options: { historyPrepared?: boolean; now?: string } = {}): Promise<OpenPlan> {
   if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
-  if ((plan.formatVersion ?? 10) < 10 && plan.handle && !plan.destinationBytes
-    && (handle === plan.handle || (handle.isSameEntry && await handle.isSameEntry(plan.handle)))) {
-    throw new Error("旧形式の元ファイルを残すため、別名の保存先を選択してください。");
-  }
   if (!options.historyPrepared) bytes = await trackHistoryChange(plan.bytes, bytes, options.now);
   const contents = await readPlanContents(bytes);
   if (plan.handle) {

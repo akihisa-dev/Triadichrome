@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { Fragment } from "react";
-import { initiativeMonths, type Initiative, type PlanContents } from "../core/initiatives";
-import { buildKindExpansionTable } from "../core/planTables";
-import type { KindId } from "../core/kindAmounts";
-import { formatAmount } from "../core/amounts";
+import { initiativeMonths } from "../core/domain/calendar";
+import { type Initiative, type PlanContents } from "../core/domain/plan";
+import { buildKindExpansionTable } from "../core/tables/planTables";
+import type { KindId } from "../core/domain/kinds";
+import { formatAmount } from "../core/domain/amounts";
 
 type Props = {
   contents: PlanContents; selected: KindId[]; selection: ReactNode;

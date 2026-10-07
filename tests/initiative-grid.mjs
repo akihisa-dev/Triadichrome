@@ -5,7 +5,7 @@ export function verifyInitiativeGrid(api) {
     rows: [
       { id: 1, accountId: 1, amounts: { 4: "7", 5: "8", 10: "9", 3: "10" }, overrides: { 2: { 6: "11" } } },
       { id: 2, accountId: 1, amounts: { 4: "12", 5: "13" } },
-      { clientKey: "unassigned", accountId: null, amounts: {} },
+      { id: "unassigned", accountId: null, amounts: {} },
     ] };
   const before = structuredClone(draft);
   for (const kind of [0, 3, 4, 5]) assert.throws(() => api.pasteInitiativeGrid(draft, kind, { row: 0, column: 0 }, "1"), /種別/);

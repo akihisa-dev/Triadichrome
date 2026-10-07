@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { currentFiscalYear } from "../core/initiatives";
+import { currentFiscalYear } from "../core/domain/calendar";
 
 const ROW_HEIGHT = 36;
 const clamp = (year: number) => Math.max(1, Math.min(9998, year));

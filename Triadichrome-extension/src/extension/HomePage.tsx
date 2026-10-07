@@ -1,32 +1,34 @@
-import { initiativesForKind } from "../core/initiatives";
+import { useMutation } from "./useMutation";
+import { useScreenHistory } from "./useScreenHistory";
+import { initiativesForKind } from "../core/tables/initiatives";
 import { KindSelectionSlots } from "./KindSelectionSlots";
-import { type KindId, type KindScreen, type PlanChange } from "../core/kindAmounts";
+import { type KindId, type KindScreen, type PlanChange } from "../core/domain/kinds";
 import { PreviousInputPage } from "./PreviousInputPage";
-import { type KindChange } from "../core/kindMaster";
 import { KindMasterPage } from "./KindMasterPage";
 import { DetailTablePage } from "./DetailTablePage";
-import { type DetailChange } from "../core/details";
+import { type DetailChange } from "../core/domain/details";
 import { HomeRelationsPage, type RelationView } from "./HomeRelationsPage";
-import { type PeriodTypeChange } from "../core/periodMaster";
+import { type PeriodTypeChange } from "../core/domain/periodMaster";
 import { PeriodMasterPage } from "./PeriodMasterPage";
-import { type DepartmentChange } from "../core/departmentMaster";
+import { type DepartmentChange } from "../core/domain/departmentMaster";
 import { DepartmentMasterPage } from "./DepartmentMasterPage";
 import { ExpansionTablePage } from "./ExpansionTablePage";
-import { type IndustryChange } from "../core/industryMaster";
+import { type IndustryChange } from "../core/domain/industryMaster";
 import { IndustryMasterPage } from "./IndustryMasterPage";
-import { type ExpansionChange } from "../core/expansionMaster";
+import { type ExpansionChange } from "../core/domain/expansionMaster";
 import { ExpansionMasterPage } from "./ExpansionMasterPage";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import { InitiativeListPage } from "./InitiativeListPage";
 import { InitiativeDetailPage } from "./InitiativeDetailPage";
-import { createInitiativeDraft, type Initiative, type InitiativeEntryDraft, type PlanContents } from "../core/initiatives";
+import { createInitiativeDraft } from "../core/domain/initiativeRules";
+import { type Initiative, type InitiativeEntryDraft, type PlanContents } from "../core/domain/plan";
 import { StatusNotice } from "./StatusNotice";
 import { FadeSwap } from "./FadeSwap";
 import { MasterPage } from "./MasterPage";
 import { AccountMasterPage } from "./AccountMasterPage";
-import { type AccountChange } from "../core/accountMaster";
-import { type AggregationChange } from "../core/aggregationMaster";
+import { type AccountChange } from "../core/domain/accountMaster";
+import { type AggregationChange } from "../core/domain/aggregationMaster";
 import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
@@ -34,7 +36,7 @@ import { SidebarIcon } from "./SidebarIcon";
 import { DataHistoryPage, historyDate } from "./DataHistoryPage";
 import { HistoryReadOnlyContext } from "./HistoryReadOnly";
 import { ConfirmationDialog } from "./ConfirmationDialog";
-import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../core/dataHistory";
+import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../core/storage/dataHistory";
 import "./ScreenHistory.css";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
@@ -51,7 +53,6 @@ type HomePageProps = {
   fileName: string;
   initialContents: PlanContents;
   onChangeMaster: (change: AccountChange) => Promise<PlanContents>;
-  onChangeKinds: (change: KindChange) => Promise<PlanContents>;
   onChangePeriodTypes: (change: PeriodTypeChange) => Promise<PlanContents>;
   onChangeDepartments: (change: DepartmentChange) => Promise<PlanContents>;
   onChangeIndustries: (change: IndustryChange) => Promise<PlanContents>;
@@ -71,28 +72,22 @@ type HomePageProps = {
   onRetryHistory: () => Promise<void>;
 };
 
-export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onChangeKinds, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile, dataHistory, historyError, historyBusy, onPreviewHistory, onRestoreHistory, onDeleteHistory, onRetryHistory }: HomePageProps) {
+export function HomePage({ onChangePlan, fileName, initialContents, onChangeMaster, onChangeAggregations, onChangeExpansions, onChangeIndustries, onChangeDepartments, onChangePeriodTypes, onRegisterInitiative, onUpdateInitiative, onPrepareSave, onChangeDetail, onCloseFile, dataHistory, historyError, historyBusy, onPreviewHistory, onRestoreHistory, onDeleteHistory, onRetryHistory }: HomePageProps) {
   const menuButton = useRef<HTMLButtonElement>(null);
   const homeContent = useRef<HTMLDivElement>(null);
   const relationView = useRef<RelationView | null>(null);
   const sidebar = useSidebar();
   const isSidebarOpen = sidebar.expanded;
   const collapseSidebar = sidebar.collapse;
-  const [history, setHistory] = useState<{ entries: Screen[]; index: number }>({
-    entries: [{ page: "home", selectedInitiative: null, detailOrigin: "initiative-list" }], index: 0,
-  });
-  const screen = history.entries[history.index]!;
+  const screens = useScreenHistory<Screen>({ page: "home", selectedInitiative: null, detailOrigin: "initiative-list" },
+    (left, right) => left.page === right.page && left.selectedInitiative?.id === right.selectedInitiative?.id && left.detailOrigin === right.detailOrigin);
+  const screen = screens.current;
   const { page, selectedInitiative, detailOrigin } = screen;
-  const navigate = (next: Screen) => setHistory(previous => {
-    const current = previous.entries[previous.index]!;
-    if (current.page === next.page && current.selectedInitiative?.id === next.selectedInitiative?.id && current.detailOrigin === next.detailOrigin) return previous;
-    const entries = [...previous.entries.slice(0, previous.index + 1), next];
-    return { entries, index: entries.length - 1 };
-  });
+  const navigate = screens.navigate;
   const setPage = (next: Page) => navigate({ ...screen, page: next });
   const detailScroll = useRef({ top: 0, left: 0 });
   const [initiativeDraft, setInitiativeDraft] = useState(() => createInitiativeDraft(String(initialContents.fiscalYear)));
-  const [currentContents, setContents] = useState(initialContents);
+  const currentContents = initialContents;
   const [preview, setPreview] = useState<{ entry: DataHistoryEntry; contents: PlanContents } | null>(null);
   const [restoreRequested, setRestoreRequested] = useState(false);
   const [restoreError, setRestoreError] = useState("");
@@ -110,18 +105,13 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
   const [notice, setNotice] = useState({ message: "", error: false });
   const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
-  const [isSaving, setIsSaving] = useState(false);
-  const saving = useRef(false);
+  const mutation = useMutation(assertWritable);
+  const { busy: isSaving, running: saving } = mutation;
   const [editPending, setEditPending] = useState(false);
-  const navigationBlocked = isSaving || editPending || historyBusy;
+  const restoreMutation = useMutation();
+  const navigationBlocked = isSaving || restoreMutation.busy || editPending || historyBusy;
   const usedAccountIds = new Set(initiativeDraft.rows.flatMap(row => row.accountId === null ? [] : [row.accountId]));
-  const changePlan = async (change: PlanChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangePlan(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
+  const changePlan = (change: PlanChange) => mutation.run(async () => { await onChangePlan(change); });
   const kindSelection = (screen: KindScreen) => <KindSelectionSlots screen={screen} selected={contents.kindSelections[screen]} disabled={navigationBlocked}
     onChange={(selected: KindId[]) => {
       if (preview) {
@@ -130,81 +120,31 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
       }
       void changePlan({ type: "selection", screen, selected }).catch(error => setNotice({ message: error instanceof Error ? error.message : "種別の選択を保存できませんでした。", error: true }));
     }} />;
-  const changeDetail = async (change: DetailChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangeDetail(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changeMaster = async (change: AccountChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+  const changeDetail = (change: DetailChange) => mutation.run(async () => { await onChangeDetail(change); });
+  const changeMaster = (change: AccountChange) => mutation.run(async () => {
     if (change.type === "delete" && usedAccountIds.has(change.id)) throw new Error("施策入力で使用している勘定科目は削除できません。");
-    saving.current = true;
-    setIsSaving(true);
-    try { setContents(await onChangeMaster(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-
-  const changeKinds = async (change: KindChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangeKinds(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changePeriodTypes = async (change: PeriodTypeChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+    await onChangeMaster(change);
+  });
+  const changePeriodTypes = (change: PeriodTypeChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.periodTypeId === change.id) throw new Error("施策入力で選択している期間は削除できません。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangePeriodTypes(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changeDepartments = async (change: DepartmentChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+    await onChangePeriodTypes(change);
+  });
+  const changeDepartments = (change: DepartmentChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.departmentId === change.id) throw new Error("施策入力で選択している部署は削除できません。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangeDepartments(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changeIndustries = async (change: IndustryChange) => {
+    await onChangeDepartments(change);
+  });
+  const changeIndustries = (change: IndustryChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.industryId === change.id) throw new Error("施策入力で選択している業種は削除できません。");
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangeIndustries(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changeExpansions = async (change: ExpansionChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
+    await onChangeIndustries(change);
+  });
+  const changeExpansions = (change: ExpansionChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.expansionId === change.id) throw new Error("施策入力で選択している展開名は削除できません。");
-    saving.current = true; setIsSaving(true);
-    try { setContents(await onChangeExpansions(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-  const changeAggregations = async (change: AggregationChange) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true;
-    setIsSaving(true);
-    try { setContents(await onChangeAggregations(change)); }
-    finally { saving.current = false; setIsSaving(false); }
-  };
-
-  const updateSelected = async (target: { id: number; fiscalYear: number | null }, draft: InitiativeEntryDraft) => {
-    assertWritable();
-    if (saving.current) throw new Error("保存が終わるまでお待ちください。");
-    saving.current = true;
-    setIsSaving(true);
-    try {
-      const saved = await onUpdateInitiative(target.id, target.fiscalYear, draft);
-      setContents(saved);
-    } finally { saving.current = false; setIsSaving(false); }
-  };
+    await onChangeExpansions(change);
+  });
+  const changeAggregations = (change: AggregationChange) => mutation.run(async () => { await onChangeAggregations(change); });
+  const updateSelected = (target: { id: number; fiscalYear: number | null }, draft: InitiativeEntryDraft) => mutation.run(async () => {
+    await onUpdateInitiative(target.id, target.fiscalYear, draft);
+  });
 
   const update = async (draft: InitiativeEntryDraft) => {
     if (!selectedInitiative) throw new Error("施策を選択してください。");
@@ -212,42 +152,37 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   };
 
   const register = async () => {
-    assertWritable();
     if (saving.current) return;
-    saving.current = true;
-    setIsSaving(true);
     dismissNotice();
     try {
-      const saved = await onRegisterInitiative(initiativeDraft);
-      setContents(saved);
+      await mutation.run(async () => { await onRegisterInitiative(initiativeDraft); });
       setInitiativeDraft(createInitiativeDraft(initiativeDraft.fiscalYear));
       setPage("initiative-list");
       setNotice({ message: "施策を登録しました。", error: false });
     } catch (error) {
       const cancelled = error instanceof DOMException && error.name === "AbortError";
       setNotice({ message: cancelled ? "保存をキャンセルしました。入力内容は残っています。" : error instanceof Error ? error.message : "施策を登録できませんでした。", error: !cancelled });
-    } finally { saving.current = false; setIsSaving(false); }
+    }
   };
 
-  const resetScreens = (next: Page) => setHistory({ entries: [{ page: next, selectedInitiative: null, detailOrigin: "initiative-list" }], index: 0 });
+  const resetScreens = (next: Page) => screens.reset({ page: next, selectedInitiative: null, detailOrigin: "initiative-list" });
   const previewEntry = async (entry: DataHistoryEntry) => {
     if (navigationBlocked || saving.current) return;
-    saving.current = true; setIsSaving(true);
-    try {
+    await mutation.run(async () => {
       const past = await onPreviewHistory(entry.id);
       setPreview({ entry, contents: past }); resetScreens("home"); dismissNotice();
-    } finally { saving.current = false; setIsSaving(false); }
+    });
   };
   const restorePreview = async () => {
     if (!preview || navigationBlocked || saving.current) return;
-    saving.current = true; setIsSaving(true); setRestoreError("");
+    setRestoreError("");
     try {
-      setContents(await onRestoreHistory(preview.entry.id));
+      // Restoring is the sole write allowed while viewing a past state.
+      await restoreMutation.run(async () => { await onRestoreHistory(preview.entry.id); });
       setPreview(null); setRestoreRequested(false); resetScreens("data-history");
       setInitiativeDraft(createInitiativeDraft(String(contents.fiscalYear)));
       setNotice({ message: "選んだ時点に戻しました。復元前の状態も履歴に残っています。", error: false });
     } catch (failure) { setRestoreError(failure instanceof Error ? failure.message : "復元できませんでした。"); }
-    finally { saving.current = false; setIsSaving(false); }
   };
 
   const closeSidebar = useCallback(() => {
@@ -294,11 +229,11 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           {([-1, 1] as const).map(direction => {
             const label = direction === -1 ? "前の画面に戻る" : "次の画面に進む";
             return <button key={direction} className="home-icon-button" type="button" aria-label={label} title={label}
-              disabled={navigationBlocked || (direction === -1 ? history.index === 0 : history.index === history.entries.length - 1)}
+              disabled={navigationBlocked || (direction === -1 ? !screens.canBack : !screens.canForward)}
               onClick={() => {
                 if (navigationBlocked) return;
                 dismissNotice();
-                setHistory(previous => ({ ...previous, index: Math.max(0, Math.min(previous.entries.length - 1, previous.index + direction)) }));
+                screens.travel(direction);
               }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d={direction === -1 ? "M19 12H5m6-6-6 6 6 6" : "M5 12h14m-6-6 6 6-6 6"} />
@@ -386,7 +321,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
-                case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeKinds} onBack={() => setPage("master")} />;
+                case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;
                 case "department-master": return <DepartmentMasterPage departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;
                 case "industry-master": return <IndustryMasterPage industries={contents.industries} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeIndustries} onBack={() => setPage("master")} />;
@@ -399,7 +334,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
         </div>
       </div>
       <StatusNotice message={notice.message || historyError} error={notice.message ? notice.error : Boolean(historyError)} onDismiss={dismissNotice} />
-      <ConfirmationDialog open={restoreRequested} title="過去の状態に戻す" message={restoreError || (preview ? `${historyDate(preview.entry.recordedAt)}の状態にファイル全体を戻しますか？ 復元前の状態も履歴に残します。` : "")} confirmLabel={restoreError ? "保存を再試行して戻す" : "この時点に戻す"} busy={isSaving || historyBusy}
+      <ConfirmationDialog open={restoreRequested} title="過去の状態に戻す" message={restoreError || (preview ? `${historyDate(preview.entry.recordedAt)}の状態にファイル全体を戻しますか？ 復元前の状態も履歴に残します。` : "")} confirmLabel={restoreError ? "保存を再試行して戻す" : "この時点に戻す"} busy={isSaving || restoreMutation.busy || historyBusy}
         onCancel={() => setRestoreRequested(false)} onConfirm={() => { void (restoreError ? onPrepareSave().then(restorePreview).catch(failure => setRestoreError(failure instanceof Error ? failure.message : "保存先を選択できませんでした。")) : restorePreview()); }} />
     </div></HistoryReadOnlyContext>
   );

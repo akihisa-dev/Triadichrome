@@ -31,7 +31,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   test.setTimeout(60_000);
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await expect(app.getByRole("navigation").getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]);
+  await expect(app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button")).toHaveText(["Home", "前年入力", "施策入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
   await master(app, "勘定科目マスタ");
   for (const [code, name, type] of [["100", "売上科目1", "sales"], ["200", "原価科目1", "cost"], ["500", "費用科目1", "expense"], ["900", "利益科目1", "profit"]] as const) await addAccount(app, code, name, type);
   await master(app, "集計マスタ");

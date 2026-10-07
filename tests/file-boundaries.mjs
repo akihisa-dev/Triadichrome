@@ -3,8 +3,25 @@ import assert from "node:assert/strict";
 export async function verifyFileBoundaries(api) {
   const bytes = await api.createCurrentEmptyTestPlan(2026);
   await assert.rejects(api.validateTriadicDatabase(new Uint8Array([1, 2, 3])));
+  for (const format of [14, 16]) {
+    const old = await api.openTriadicDatabase(bytes);
+    old.run(`PRAGMA user_version = ${format}`);
+    const unsupported = old.export(); old.close();
+    await assert.rejects(api.validateTriadicDatabase(unsupported), /保存形式には対応/);
+  }
+  for (const table of ["data_history", "data_history_state"]) {
+    const missing = await api.openTriadicDatabase(bytes); missing.run(`DROP TABLE ${table}`);
+    const invalid = missing.export(); missing.close(); await assert.rejects(api.validateTriadicDatabase(invalid));
+  }
+  const schema = await api.openTriadicDatabase(bytes);
+  try {
+    assert.equal(schema.exec("PRAGMA user_version")[0].values[0][0], 15);
+    for (const table of ["budgets", "periods", "kind_types", "details"]) assert.equal(schema.exec("SELECT name FROM sqlite_master WHERE name = ?", [table]).length, 0);
+    assert.equal(schema.exec("PRAGMA table_info(initiatives)")[0].values.some(row => row[1] === "fiscal_year" || row[1] === "budget_id"), false);
+    assert.equal(schema.exec("PRAGMA table_info(amount_overrides)")[0].values.some(row => row[1] === "kind_id"), false);
+  } finally { schema.close(); }
   const db = await api.openTriadicDatabase(bytes);
-  db.run("DELETE FROM budgets");
+  db.run("DELETE FROM plan");
   const invalid = db.export(); db.close();
   await assert.rejects(api.validateTriadicDatabase(invalid));
   for (const stage of ["write", "close"]) {

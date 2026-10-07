@@ -1,10 +1,11 @@
-import { test, expect, settleMotion } from "./fixtures";
+import { test, expect, settleMotion, selectClassification } from "./fixtures";
 
 test("展開表の結合セル・固定列・全月の列境界をスクロール後も保つ", async ({ page, app }) => {
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "展開表", exact: true }).click();
+  await selectClassification(app.getByRole("spinbutton", { name: "比較対象2", exact: true }), "確定予算");
   await settleMotion(app.locator("body"));
   const region = app.getByRole("region", { name: "展開表の月別種別・比較", exact: true });
   const inspect = () => region.evaluate(node => {
@@ -79,6 +80,7 @@ test("施策がない展開も名称とゼロの小計を同じ列で表示す�
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "展開表", exact: true }).click();
+  await selectClassification(app.getByRole("spinbutton", { name: "比較対象2", exact: true }), "確定予算");
   await settleMotion(app.locator("body"));
   const rows = app.locator(".expansion-table .expansion-subtotal");
   await expect(rows).toHaveCount(7);

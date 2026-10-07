@@ -1,17 +1,17 @@
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
 import { ClassificationSlot } from "./ClassificationSlot";
-import { INITIAL_KINDS } from "../core/kindMasterSchema";
-import { type KindId } from "../core/kindAmounts";
+import { INITIAL_KINDS } from "../core/domain/kinds";
+import { type KindId } from "../core/domain/kinds";
 import { useState } from "react";
-import { type Industry } from "../core/industryMaster";
-import { type PeriodType } from "../core/periodMaster";
-import { type Department } from "../core/departmentMaster";
-import { type Expansion } from "../core/expansionMaster";
+import { type Industry } from "../core/domain/industryMaster";
+import { type PeriodType } from "../core/domain/periodMaster";
+import { type Department } from "../core/domain/departmentMaster";
+import { type Expansion } from "../core/domain/expansionMaster";
 import { type ReactNode } from "react";
-import { type Account } from "../core/accountMaster";
+import { type Account } from "../core/domain/accountMaster";
 
-import { type InitiativeEntryDraft } from "../core/initiatives";
+import { type InitiativeEntryDraft } from "../core/domain/plan";
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
@@ -98,7 +98,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       </div>
       <div className="initiative-row-actions">
         <button className="secondary-button" type="button" disabled={readOnly || isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
-          onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { clientKey: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
+          onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { id: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
     </Container>
   );

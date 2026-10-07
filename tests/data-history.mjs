@@ -13,7 +13,7 @@ export async function verifyDataHistory(api) {
   let bytes = await trackHistoryChange(original, await saveKindSelection(original, "cost-table", [1, 2]), t(0));
   let history = await readDataHistory(bytes);
   assert.equal(history.entries.length, 1, "初回変更前を記録");
-  assert.deepEqual(await readPlanContents(await readHistorySnapshot(bytes, history.entries[0].id)), expected);
+  assert.deepEqual(await api.readSnapshotContents(await readHistorySnapshot(bytes, history.entries[0].id)), expected);
   const draft = { name: "履歴の確認", note: "初期", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: "2026",
     rows: [{ accountId: expected.accounts[0].id, amounts: { 4: "0.001", 3: "-2.345" }, overrides: { 2: { 4: "9", 10: "0" } } }] };
   bytes = await trackHistoryChange(bytes, await registerInitiative(bytes, draft), t(2));
@@ -39,7 +39,9 @@ export async function verifyDataHistory(api) {
   assert.equal(history.entries.length, 3, "終了・閲覧前には5分未満でも記録");
   for (const entry of history.entries) {
     const snapshot = await readHistorySnapshot(bytes, entry.id);
-    assert.deepEqual((await readDataHistory(snapshot)).entries, [], "履歴を入れ子にしない");
+    await assert.rejects(openTriadicDatabase(snapshot), /形式|読み込/, "履歴内の計画を通常ファイルとして開かない");
+    const snapshotDb = await api.openBusinessSnapshot(snapshot);
+    assert.equal(snapshotDb.exec("SELECT name FROM sqlite_master WHERE name LIKE 'data_history%'").length, 0, "履歴を入れ子にしない"); snapshotDb.close();
     assert.ok(snapshot.length < bytes.length, "過去の履歴全体を各記録に複製しない");
   }
   const olderId = history.entries[1].id;
@@ -79,7 +81,7 @@ export async function verifyDataHistory(api) {
   nested.run("UPDATE data_history SET snapshot = ? WHERE id = ?", [restored, olderId]);
   const nestedBytes = nested.export(); nested.close();
   await assert.rejects(readHistorySnapshot(nestedBytes, olderId), /中に履歴/);
-  const otherYear = await createTriadicDatabase(2025);
+  const otherYear = await api.createBusinessSnapshot(await createTriadicDatabase(2025));
   const mismatch = await openTriadicDatabase(restored);
   mismatch.run("UPDATE data_history SET snapshot = ? WHERE id = ?", [otherYear, olderId]);
   const mismatchBytes = mismatch.export(); mismatch.close();

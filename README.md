@@ -25,6 +25,8 @@
 
 総原価表は各月の「前年」と、ファイルの表示設定に保存された1〜2種別を表示します。種別の金額は前年実額＋その種別の施策増減合計です。前年未入力と施策未入力は0として扱います。科目名・集計名を左端に固定し、月の列を横スクロールできます。総原価表は行高・列幅・余白を抑え、表の領域だけを縦横にスクロールします。横スクロールバーは画面内の表の下端に表示します。縦スクロールでは月・種別の見出しから売上集計（初期表示名「社内控除後売上」）の行までをまとめて固定し、その下の費用行をスクロールします。
 
+表の表示領域が固定見出し全体より低い場合、最下端までスクロールすると固定見出しの上部が隠れる制限があります。画面テストでは狭い幅の操作を確認し、固定位置の検査は見出しが収まる高さで行います。
+
 明細の計算列は「売上」「費用」「利益」の順で表示します。費用列は明細だけに設け、費用属性の金額（削減額は負数）を表示し、他の属性は0とします。計算列は直接編集できません。
 
 新規ファイルには[合意済みのデフォルト科目・集計](REQUIREMENTS.md#新規ファイルのデフォルト科目集計)の57科目と15集計を登録済みで用意します。既存ファイルのマスタを追加・上書きしません。総原価表の小計・合計は同じ表示名で複数行に並び、経常利益の直後に利益率を表示します。金額の入力・内部値は千円単位で小数点以下3桁（1円）まで保持し、保存と加減算は1円単位の整数で扱います。表・グラフ・内訳では整数の千円に四捨五入し（負数も絶対値で四捨五入、負のゼロは0）、編集時は元の精度を保持します。利益率は小数点以下1桁で四捨五入し、ゼロでの除算は空欄です。
@@ -78,7 +80,7 @@ Chromeのファイル選択、新規作成、ファイル参照を取得でき�
 
 サイドバーの「マスタ」の下にある「履歴」から、記録日時を選んで過去の状態を閲覧できます。各画面は閲覧専用になり、ヘッダーの「現在に戻る」で現在の計画へ戻ります。「この時点に戻す」を確認すると、施策・全種別の金額・前年・マスタ・集計・保存済み設定をまとめて復元します。復元前の状態と新しい履歴も残るので、選び直して復元を取り消せます。
 
-履歴は同じ`.triadic`内に保存します。最初の未記録の変更の保存成功から5分後に記録し、追加の保存で期限を延ばしません。正常にファイルを閉じるときと過去閲覧に入るときも未記録分を残します。登録前・保存失敗中の入力は履歴に含みません。履歴のない保存形式14のファイルは引き続き開け、最初の変更前の状態を保存時に記録します。閲覧だけでは書き換えません。
+履歴は同じ`.triadic`内に保存します。最初の未記録の変更の保存成功から5分後に記録し、追加の保存で期限を延ばしません。正常にファイルを閉じるときと過去閲覧に入るときも未記録分を残します。登録前・保存失敗中の入力は履歴に含みません。保存形式15の新規ファイルは履歴管理状態を備え、最初の変更前の状態を初回保存時に記録します。閲覧だけでは書き換えません。
 
 自動削除や保持期限はありません。履歴一覧のチェックで複数件を選んで削除するか、端末時刻の日時を指定して、それより前を一括削除できます。確認後の削除は取り消せず、現在の計画は変わりません。全体の状態を記録するため容量は増えます。削除後はファイル内の不要領域を詰めます。
 
@@ -94,9 +96,9 @@ Chromeのファイル選択、新規作成、ファイル参照を取得でき�
 
 施策・勘定科目・年月と計画金額を同じデータとして持ち、明細・総原価表・展開表はそのデータを異なる視点で表します。集計結果を別の正本として重複保存しません。現在はファイルの新規作成、形式検証を伴う読込、勘定科目マスタ・集計マスタ・展開マスタ・業種マスタ・部署マスタ・期間マスタ・固定種別マスタの閲覧、施策・前年入力の保存を実装しています。
 
-保存形式は14です。保存形式13を含む既存ファイルとの互換性は廃止し、新規ファイルから使用します。対応しない旧形式や未知の形式は読み込み時に拒否し、移行や上書きは行いません。新しい形式のファイルは旧アプリで開けません。
+保存形式は15です。保存形式14以前の既存ファイルとの互換性は廃止し、新規ファイルから使用します。対応しない旧形式や未知の形式は読み込み時に拒否し、移行や上書きは行いません。新しい形式のファイルは旧アプリで開けません。
 
-`budgets`に基準年度、`kind_types`に固定2種別を持ちます。共通属性は`initiatives`、共通科目行は`initiative_rows`へ保存します。一次予算は`initiative_amounts`へ12か月の円の整数を保存し、確定予算は`amount_overrides`へ手修正した月だけ保存します。引き継ぎ値は共通の解決処理から求め、別の保存値へ複製しません。前年実額は`previous_amounts`へ科目・業種・部署・月ごとに保存します。種別選択は`kind_selections`に画面別の順序として保存します。詳細は[明細と保存構造](DATA_MODEL.md)と[実装設計](docs/single-year-plan-design.md)を参照してください。外部送信はありません。
+`plan`に基準年度を持ち、一次予算・確定予算の2種別は業務定義で固定します。種別表や施策ごとの年度は保存しません。共通属性は`initiatives`、共通科目行は`initiative_rows`へ保存し、追加時から同じ文字列識別子を使います。一次予算は`initiative_amounts`へ12か月の円の整数を保存し、確定予算は`amount_overrides`へ手修正した月だけ保存します。引き継ぎ値は共通の解決処理から求め、別の保存値へ複製しません。前年実額は`previous_amounts`へ科目・業種・部署・月ごとに保存します。種別選択は`kind_selections`に画面別の順序として保存します。詳細は[明細と保存構造](DATA_MODEL.md)と[実装設計](docs/single-year-plan-design.md)を参照してください。外部送信はありません。
 
 マスタの識別子を名称から分離し、名称・コード変更でも対応を維持します。科目と子集計の参照に一意制約を設け、読込・保存時に必須集計・参照・重複・循環を検証します。実ファイルへ書く前にコピー上の処理と形式検証を完了し、外部の更新があれば書き込みを止めます。
 
@@ -194,41 +196,20 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 
 ## 構成
 
-- `Triadichrome-extension/src/extension/ExtensionPage.tsx`：ファイル操作と入口画面
-- `Triadichrome-extension/src/extension/HomePage.tsx`：共通ヘッダー・開閉式サイドバーと画面切り替え
-- `Triadichrome-extension/src/extension/HomeRelationsPage.tsx`：ホームの相関図と画面への入口
-- `Triadichrome-extension/src/extension/InitiativeEntryPage.tsx`：施策入力画面
-- `Triadichrome-extension/src/extension/InitiativeListPage.tsx`：種別別の施策一覧画面
-- `Triadichrome-extension/src/extension/InitiativeDetailPage.tsx`：登録済み施策の詳細画面
-- `Triadichrome-extension/src/extension/MasterPage.tsx`：各種マスタの共通入口
-- `Triadichrome-extension/src/extension/AccountMasterPage.tsx`：勘定科目マスタ画面
-- `Triadichrome-extension/src/extension/AggregationMasterPage.tsx`：集計マスタ画面
-- `Triadichrome-extension/src/extension/KindMasterPage.tsx`：種別マスタ画面
-- `Triadichrome-extension/src/extension/PeriodMasterPage.tsx`：期間マスタ画面
-- `Triadichrome-extension/src/extension/DepartmentMasterPage.tsx`：部署マスタ画面
-- `Triadichrome-extension/src/extension/IndustryMasterPage.tsx`：業種マスタ画面
-- `Triadichrome-extension/src/extension/CostTablePage.tsx`：総原価表画面
-- `Triadichrome-extension/src/core/aggregations.ts`：集計の定義・重複と循環の検証
-- `Triadichrome-extension/src/core/aggregationMaster.ts`：集計マスタの更新
-- `Triadichrome-extension/src/core/aggregationSchema.ts`：集計マスタの保存形式
-- `Triadichrome-extension/src/core/costTable.ts`：前年と施策の増減から総原価表の集計・利益率を計算（種別別表示は`planTables.ts`）
-- `Triadichrome-extension/src/core/defaultCostMaster.ts`：新規ファイル専用の科目・集計デフォルト
-- `Triadichrome-extension/src/core/amounts.ts`：千円単位・1円精度の入力検証と計算・表示
-- `Triadichrome-extension/src/extension/aggregationMasterFile.ts`：集計マスタの保存
-- `Triadichrome-extension/src/core/accountMaster.ts`：勘定科目の検証・更新
-- `Triadichrome-extension/src/core/initiatives.ts`：施策の検証・登録と計画データの読込
-- `Triadichrome-extension/src/core/triadicMigration.ts`：現行保存構造の検証（旧形式は移行しない）
-- `Triadichrome-extension/src/extension/accountMasterFile.ts`：マスタの保存
-- `Triadichrome-extension/src/extension/initiativeFile.ts`：施策の保存
-- `Triadichrome-extension/src/extension/planFile.ts`：共通の保存処理と外部変更の確認
-- `Triadichrome-extension/src/extension/FadeSwap.tsx`：画面・文言のフェード切り替え
-- `Triadichrome-extension/src/extension/StatusNotice.tsx`：本文の位置を変えない固定通知
-- `Triadichrome-extension/src/extension/ConfirmationDialog.tsx`：画面中央の確認ダイアログ
-- `Triadichrome-extension/src/extension/ExtensionPage.css`：入口とホーム画面のスタイル
-- `Triadichrome-extension/src/extension/main.tsx`：Reactの起動
-- `Triadichrome-extension/src/extension/background.ts`：拡張機能アイコンから入口を開く処理
-- `Triadichrome-extension/manifest.template.json`：Manifestの正本
-- `scripts/build.mjs`：ビルドと生成物の同期
-- `dist/`：ビルド用の一時領域。コミット対象外
+- `Triadichrome-extension/src/core/domain/`：金額・年度・種別・分類・施策・明細の型と規則。SQLやChrome APIへ依存しません。
+- `Triadichrome-extension/src/core/tables/`：総原価表・展開表・明細・集計図の表示用計算と入力表の一括操作。
+- `Triadichrome-extension/src/core/storage/`：SQLiteの直接生成・検証・読込・更新・履歴。`transaction.ts`がコピー上の更新と接続解放を担当します。
+- `Triadichrome-extension/src/core/autoSave.ts`：入力待ち、日本語変換、保存中の追加入力、再試行。
+- `Triadichrome-extension/src/extension/PlanSession.ts`：保存済み計画の正本と保存・許可準備・履歴・終了の直列実行。ファイル確定の成功後だけ画面へ公開します。
+- `Triadichrome-extension/src/extension/planCommands.ts`：型で区別した更新命令と各業務処理の接続。`planFile.ts`が外部変更を確認し、`triadicFile.ts`が実ファイルへの確定を行います。
+- `Triadichrome-extension/src/extension/ExtensionPage.tsx`：ファイル操作の入口。`filePicker.ts`が保存先選択、`usePlanSession.ts`が保存済み状態の購読と5分の記録期限を担当します。
+- `Triadichrome-extension/src/extension/HomePage.tsx`：共通ヘッダー・サイドバー・登録前の入力・過去閲覧。`useScreenHistory.ts`が画面移動の履歴を保持します。
+- `Triadichrome-extension/src/extension/*Page.tsx`：施策・前年・三表・マスタ・履歴の画面。名称マスタは`NamedMasterPage.tsx`、手動保存の通知は`useMasterOperation.ts`、月別入力の選択・フォーカスは`useGridInteraction.ts`を共有します。
+- `Triadichrome-extension/src/extension/ExtensionPage.css`：`styles/`の基本設定・入口・フォーム・ナビゲーション・マスタ・集計図・表・編集部品を元の適用順で読み込みます。
+- `Triadichrome-extension/src/extension/main.tsx`と`background.ts`：Reactの起動と拡張機能アイコンの入口。
+- `Triadichrome-extension/manifest.template.json`：Manifestの正本。
+- `scripts/build.mjs`：配布物の生成と同期。`node-bundle.mjs`は通常テストと確認用データ生成で使う一時bundle・Wasm解決を共有します。
+- `tests/core-api.ts`と`tests/sample-api.ts`：通常テストと確認用データ生成の明示的な入口。
+- `dist/`：ビルドと検証の一時領域。コミット対象外。
 
 開発・検証・コミットのルールは[AGENTS.md](AGENTS.md)を参照してください。

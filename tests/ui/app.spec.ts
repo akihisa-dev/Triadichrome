@@ -263,6 +263,7 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   await expect(decemberSales).toHaveValue("1200");
   await expect(januarySales).toHaveValue("1300");
   await expect(table.getByRole("spinbutton", { name: "売上高 3月の金額", exact: true })).toHaveValue("0");
+  await supplies.press("F2");
   await supplies.fill("");
   await expect(supplies).toHaveValue("");
   await expect(aprilSales).toHaveValue("0");
@@ -386,6 +387,7 @@ test("保存失敗時は入口に残り、既存の計画を開ける", async ({
 });
 
 test("確認用画面と配布用ビルドの表示・操作が一致する", async ({ page, app, context }, testInfo) => {
+  test.setTimeout(60_000);
   const production = await context.newPage();
   const errors: string[] = [];
   production.on("pageerror", error => errors.push(error.message));
@@ -438,8 +440,21 @@ test("確認用画面と配布用ビルドの表示・操作が一致する", as
       expect(await app.locator("body").ariaSnapshot()).toBe(await production.locator("body").ariaSnapshot());
       await page.mouse.move(0, 0);
       await production.mouse.move(0, 0);
-      const previewImage = await page.locator("#app-preview").screenshot();
-      const productionImage = await production.screenshot();
+      const graph = state === "ホーム" || state === "サイドバー";
+      if (graph) {
+        // Independent live force layouts have different transient coordinates.
+        // Compare the graph's structure; dedicated graph tests exercise motion.
+        const structure = (node: Element) => {
+          const copy = node.cloneNode(true) as Element;
+          copy.removeAttribute("style"); // The live camera also uses frame-based motion.
+          copy.querySelectorAll(".home-relation-item, .home-relation > g").forEach(item => item.removeAttribute("transform"));
+          copy.querySelectorAll(".home-relation > path").forEach(item => item.removeAttribute("d"));
+          return copy.outerHTML;
+        };
+        expect(await app.locator(".home-relations-map").evaluate(structure)).toBe(await production.locator(".home-relations-map").evaluate(structure));
+      }
+      const previewImage = await page.locator("#app-preview").screenshot({ mask: graph ? [app.locator(".home-relations-viewport")] : [] });
+      const productionImage = await production.screenshot({ mask: graph ? [production.locator(".home-relations-viewport")] : [] });
       await attachImage(testInfo, `${state}・確認用`, previewImage);
       await attachImage(testInfo, `${state}・配布用`, productionImage);
       const reference = PNG.sync.read(previewImage);

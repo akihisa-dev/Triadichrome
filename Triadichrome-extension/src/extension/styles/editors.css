@@ -1,0 +1,75 @@
+.account-master-list .kind-master-table,
+.account-master-list .period-master-table,
+.account-master-list .department-master-table { min-width: 300px; }
+.account-master-list .kind-master-table thead th:first-child,
+.account-master-list .period-master-table thead th:first-child,
+.account-master-list .department-master-table thead th:first-child { width: auto; }
+.account-master-list .kind-master-table thead th:last-child,
+.account-master-list .period-master-table thead th:last-child,
+.account-master-list .department-master-table thead th:last-child { width: 152px; }
+
+.kind-tabs { display: flex; gap: .35rem; margin: 1.25rem 0 .75rem; border-bottom: 1px solid var(--line); }
+.kind-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: .4rem .4rem 0 0; background: transparent; padding: .6rem .9rem; color: var(--muted); transition: background-color 160ms ease, color 160ms ease; }
+.kind-tabs button[aria-selected="true"] { border-bottom-color: var(--ink); color: var(--ink); background: var(--soft); }
+.amount-source { min-height: 1.5rem; margin-top: .25rem; font-size: .7rem; color: var(--muted); }
+.amount-source .text-button { padding: 0; font-size: inherit; }
+@media (prefers-reduced-motion: reduce) { .kind-tabs button { transition-duration: 1ms; } }
+@media (max-width: 600px) {
+  .home-header { flex-wrap: wrap; }
+  .home-header > span:not(.home-brand) { white-space: nowrap; }
+  .kind-tabs { flex-wrap: wrap; }
+  .kind-tabs button { white-space: nowrap; flex-shrink: 0; }
+  .initiative-amount-table th:first-child { position: static; }
+}
+
+.account-master-list { scroll-padding-top: 40px; }
+.account-master-list tbody button, .account-master-list tbody input { scroll-margin-top: 40px; }
+
+@media (max-width: 600px) {
+  .account-master-page { overflow: auto; }
+  .account-master-page > .auto-save-controls, .account-master-page > button { flex-shrink: 0; }
+  .account-master-page .account-master-list { flex: 1 0 240px; min-height: 240px; }
+}
+
+.initiative-header-fields { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0 32px; }
+.initiative-text-fields { flex: 1 1 340px; min-width: 0; }
+.initiative-text-fields .initiative-field { width: 100%; }
+.initiative-classification-slots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); flex: 0 1 440px; gap: 8px; margin-top: 24px; min-width: 0; }
+.classification-field { min-width: 0; display: grid; gap: 4px; }
+.classification-field label { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.classification-slot { position: relative; height: 72px; overflow: clip; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); touch-action: pan-x; user-select: none; }
+.classification-slot::before { content: ""; position: absolute; inset: 24px 0; background: var(--soft); border-block: 1px solid var(--line); }
+.classification-slot:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.classification-slot[data-disabled="true"] { opacity: .5; }
+.classification-reel { position: absolute; top: 0; left: 0; width: 100%; transition: transform var(--motion-layout) var(--motion-ease); pointer-events: none; }
+.classification-reel > div { height: 24px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--muted); }
+.classification-reel > .is-selected { color: var(--ink); font-weight: 600; }
+.classification-slot button { position: absolute; left: 0; width: 100%; height: 24px; padding: 0; border: 0; background: transparent; cursor: grab; }
+.classification-slot button:active { cursor: grabbing; }
+.classification-slot button:hover:not(:disabled) { background: #00000005; }
+.classification-previous { top: 0; }
+.classification-next { bottom: 0; }
+@media (max-width: 600px) {
+  .initiative-classification-slots { flex-basis: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 編集位置だけにアクセントを使い、操作ボタンと図のフォーカスは分ける。 */
+input:focus, textarea:focus { caret-color: var(--accent); }
+.graph-editor input:focus, .graph-editor select:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.year-slot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.initiative-list-workspace { display: flex; flex: 1; min-height: 0; min-width: 0; gap: 24px; }
+.initiative-side-editor { flex: 0 0 min(600px, 48%); min-width: 0; overflow: auto; border-left: 1px solid var(--line); padding-left: 24px; }
+.initiative-side-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 20px; }
+.initiative-side-editor .initiative-entry-page { padding: 0; }
+.initiative-side-editor .initiative-classification-slots { flex-basis: 100%; }
+.initiative-side-editor .kind-tabs { overflow-x: auto; }
+.initiative-name-button[aria-expanded="true"] { color: var(--accent); font-weight: 600; }
+@media (max-width: 760px) {
+  .has-initiative-editor .initiative-list-workspace { position: relative; }
+  .initiative-side-editor { position: absolute; inset: 0; background: var(--surface); padding: 16px; border: 1px solid var(--line); z-index: 3; }
+}

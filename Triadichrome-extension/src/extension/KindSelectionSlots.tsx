@@ -1,5 +1,5 @@
-import type { KindId, KindScreen } from "../core/kindAmounts";
-import { INITIAL_KINDS } from "../core/kindMasterSchema";
+import type { KindId, KindScreen } from "../core/domain/kinds";
+import { INITIAL_KINDS } from "../core/domain/kinds";
 import { ClassificationSlot } from "./ClassificationSlot";
 import "./KindSelectionSlots.css";
 

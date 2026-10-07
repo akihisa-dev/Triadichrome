@@ -53,7 +53,7 @@ export async function verifyAutoSave(api) {
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2026, { ...edited, invalidNumbers: true }), /有効な数値/);
   const zeroed = await updateInitiative(updatedBytes, original.id, 2026, { ...edited, rows: [{ ...edited.rows[0], amounts: {} }, edited.rows[1]] });
   assert.equal((await readPlanContents(zeroed)).initiatives[0].rows[0].amounts[4], "0");
-  const extended = { ...edited, rows: [...edited.rows, { clientKey: "追加行の識別子", accountId: 1, amounts: {} }] };
+  const extended = { ...edited, rows: [...edited.rows, { id: "追加行の識別子", accountId: 1, amounts: {} }] };
   const extendedBytes = await updateInitiative(updatedBytes, original.id, 2026, extended);
   extended.rows[2].amounts[4] = "10";
   const again = await updateInitiative(extendedBytes, original.id, 2026, extended);

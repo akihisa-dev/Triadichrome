@@ -20,17 +20,18 @@
 
 ## 現行構造で追う入口
 
-- `extension/ExtensionPage.tsx`：入口、選択・ドロップ・新規作成、前回ファイル、計画参照、保存、履歴期限、終了。
-- `extension/HomePage.tsx`：画面移動履歴、登録前の下書き、保存済み内容、過去閲覧、編集による移動禁止、マスタと施策の更新。
-- `core/initiatives.ts`：計画全体の読込、施策の型・検証・登録・更新、種別別の金額と属性別の計算。
-- `core/kindAmounts.ts`、`core/planTables.ts`、`core/details.ts`：種別解決、前年の合算、三表の計算、明細の識別と編集。
-- `core/triadicSchema.ts`、関連Schema、`triadicDatabase.ts`、`triadicMigration.ts`、`migration10.ts`：現行形式の生成・検証と名前の歴史。
-- `core/autoSave.ts`、`extension/useAutoSave.ts`、`planFile.ts`、各`*File.ts`、`triadicFile.ts`：入力待機から実ファイル確定まで。
-- `core/dataHistory.ts`、`dataHistorySchema.ts`、`extension/DataHistoryPage.tsx`：時点記録、閲覧、復元、削除。
-- 各`*MasterPage.tsx`とcoreの対応マスタ：似た操作と固有の入力・削除制約。
-- 施策と前年の`*AmountGrid.tsx`、対応するcoreのGrid：選択、編集、貼り付け、セル移動の共通部分と相違。
-- `HomeRelationsPage.tsx`、`AggregationGraph.tsx`と関連hooks：表示だけの移動と、保存対象の所属変更の違い。
-- `ExtensionPage.css`と個別CSS：共通設定、画面固有の寸法、親要素を変える指定、重ねた指定の適用順。
+- `extension/ExtensionPage.tsx`と`filePicker.ts`：入口、選択・ドロップ・新規作成、前回ファイル。
+- `extension/PlanSession.ts`、`planCommands.ts`、`usePlanSession.ts`：保存済み計画、更新命令、保存と履歴の順序、記録期限、終了。
+- `extension/HomePage.tsx`と`useScreenHistory.ts`：画面移動履歴、登録前の下書き、過去閲覧、編集による移動禁止。
+- `core/domain/`：施策と分類の型・検証、年度・金額・種別の規則、明細の編集対象。
+- `core/tables/`：種別別投影、前年の合算、三表と明細、集計図の計算、入力表の一括操作。
+- `core/storage/triadicSchema.ts`、関連Schema、`triadicDatabase.ts`、`transaction.ts`、`readPlan.ts`：現行形式の直接生成・検証・コピー上の更新・一括読込。
+- `core/autoSave.ts`、`extension/useAutoSave.ts`、`planFile.ts`、`triadicFile.ts`：入力待機から実ファイル確定まで。
+- `core/storage/dataHistory.ts`、`dataHistorySchema.ts`、`extension/DataHistoryPage.tsx`：時点記録、閲覧、復元、削除と業務snapshotの境界。
+- 各`*MasterPage.tsx`、`NamedMasterPage.tsx`、`useMasterOperation.ts`とcoreの対応マスタ：共通操作と固有の入力・削除制約。
+- 施策と前年の`*AmountGrid.tsx`、`useGridInteraction.ts`、対応するcoreのGrid：選択・フォーカスと、金額更新・貼り付け・セル移動の相違。
+- `HomeRelationsPage.tsx`、`AggregationGraph.tsx`と関連hooks：表示だけの移動と保存対象の所属変更の違い。
+- `ExtensionPage.css`、`styles/`と個別CSS：共通設定、画面固有の寸法、親要素を変える指定、読み込みと上書きの順。
 
 パスを移したらこの入口一覧と正本文書の参照も更新する。存在を確認せず、一覧を現在の実装済み範囲の証明にしない。
 

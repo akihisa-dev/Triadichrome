@@ -1,26 +1,19 @@
-import { useEffect, useRef, useState } from "react";
-import { previousByAccount } from "../core/planTables";
-import { buildCostTable } from "../core/costTable";
-import { formatAmount, formatRate, isValidAmount } from "../core/amounts";
-import { initiativeMonths, type PlanContents } from "../core/initiatives";
-import type { PreviousInput } from "../core/kindAmounts";
-import { fillPreviousGrid, gridBounds, normalizeGridAmount, pastePreviousGrid, type GridCell, type GridSelection } from "../core/previousGrid";
+import { useGridInteraction } from "./useGridInteraction";
+import { useState } from "react";
+import { previousByAccount } from "../core/tables/planTables";
+import { buildCostTable } from "../core/tables/costTable";
+import { formatAmount, formatRate, isValidAmount } from "../core/domain/amounts";
+import { initiativeMonths } from "../core/domain/calendar";
+import { type PlanContents } from "../core/domain/plan";
+import type { PreviousInput } from "../core/domain/kinds";
+import { fillPreviousGrid, normalizeGridAmount, pastePreviousGrid } from "../core/tables/previousGrid";
 import { StatusNotice } from "./StatusNotice";
 
 export function PreviousAmountGrid({ contents, draft, onChange }: {
   contents: PlanContents; draft: PreviousInput | undefined; onChange: (draft: PreviousInput) => void;
 }) {
-  const [selection, setSelection] = useState<GridSelection | null>(null);
-  const [editing, setEditing] = useState(false);
+  const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
-  const dragging = useRef(false);
-  const table = useRef<HTMLTableElement>(null);
-  const original = useRef("");
-  useEffect(() => {
-    const stop = () => { dragging.current = false; };
-    window.addEventListener("pointerup", stop); window.addEventListener("pointercancel", stop);
-    return () => { window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
-  }, []);
   const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
   const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
     isValidAmount(row.amounts[month] ?? "0") ? Number(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
@@ -29,12 +22,6 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
   try { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous); }
   catch { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear); calculationFailed = true; }
   const rowIds = rows.map(row => row.kind === "account" ? row.id : null);
-  const bounds = selection ? gridBounds(selection) : null;
-  const focus = (cell: GridCell, extend = false) => {
-    setSelection(current => ({ anchor: extend && current ? current.anchor : cell, end: cell }));
-    setEditing(false);
-    table.current?.querySelector<HTMLInputElement>(`input[data-row="${cell.row}"][data-column="${cell.column}"]`)?.focus();
-  };
   const apply = (operation: () => PreviousInput) => {
     try { onChange(operation()); setError(""); setEditing(false); }
     catch (failure) { setError(failure instanceof Error ? failure.message : "入力できませんでした。"); }

@@ -1,3 +1,4 @@
+import { verifyPlanSession } from "../tests/plan-session.mjs";
 import { verifyInitiativeGrid } from "../tests/initiative-grid.mjs";
 import { verifyDataHistory } from "../tests/data-history.mjs";
 import { verifyPreviousGrid } from "../tests/previous-grid.mjs";
@@ -16,66 +17,9 @@ import { verifyAutoSave } from "../tests/auto-save.mjs";
 import { verifyAggregationData } from "../tests/aggregation-data.mjs";
 import { verifySamplePlan } from "../tests/sample-plan.mjs";
 import { verifySingleYearPlan } from "../tests/single-year-plan.mjs";
-import { mkdir, mkdtemp, rm } from "node:fs/promises";
-import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
-import { build } from "esbuild";
-
-const root = resolve(import.meta.dirname, "..");
-await mkdir(join(root, "dist"), { recursive: true });
-const temporary = await mkdtemp(join(root, "dist", ".file-tests-"));
-try {
-  const bundle = join(temporary, "tests.mjs");
-  await build({
-    stdin: { contents: [
-      'export * from "./Triadichrome-extension/src/extension/MasterPage.tsx";',
-      'export * from "./Triadichrome-extension/src/extension/HomeRelationsPage.tsx";',
-      'export * from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
-      'export * from "./Triadichrome-extension/src/core/dataHistory.ts";',
-      'export * from "./Triadichrome-extension/src/core/details.ts";',
-      'export * from "./Triadichrome-extension/src/core/tableView.ts";',
-      'export * from "./Triadichrome-extension/src/extension/detailFile.ts";',
-      'export * from "./Triadichrome-extension/src/core/accountMaster.ts";',
-      'export * from "./Triadichrome-extension/src/core/expansionMaster.ts";',
-      'export * from "./Triadichrome-extension/src/core/kindMaster.ts";',
-      'export * from "./Triadichrome-extension/src/extension/kindMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/core/periodMaster.ts";',
-      'export * from "./Triadichrome-extension/src/extension/periodMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/core/departmentMaster.ts";',
-      'export * from "./Triadichrome-extension/src/extension/departmentMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/core/industryMaster.ts";',
-      'export * from "./Triadichrome-extension/src/extension/industryMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/extension/expansionMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/core/initiatives.ts";',
-      'export * from "./Triadichrome-extension/src/core/expansionTable.ts";',
-      'export * from "./Triadichrome-extension/src/core/autoSave.ts";',
-      'export * from "./Triadichrome-extension/src/core/aggregationMaster.ts";',
-      'export * from "./Triadichrome-extension/src/core/aggregationGraph.ts";',
-      'export * from "./Triadichrome-extension/src/core/costTable.ts";',
-      'export * from "./Triadichrome-extension/src/extension/aggregationMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/extension/initiativeFile.ts";',
-      'export * from "./Triadichrome-extension/src/extension/accountMasterFile.ts";',
-      'export * from "./Triadichrome-extension/src/extension/triadicFile.ts";',
-      'export * from "./Triadichrome-extension/src/extension/recentFile.ts";',
-      'export * from "./tests/ui/sample-plan.ts";',
-      'export * from "./tests/ui/empty-plan.ts";',
-      'export * from "./Triadichrome-extension/src/core/amounts.ts";',
-      'export * from "./Triadichrome-extension/src/core/previousGrid.ts";',
-      'export * from "./Triadichrome-extension/src/core/initiativeGrid.ts";',
-      'export * from "./Triadichrome-extension/src/core/kindAmounts.ts";',
-      'export * from "./Triadichrome-extension/src/core/planTables.ts";',
-      'export * from "./Triadichrome-extension/src/extension/planFile.ts";',
-    ].join("\n"), resolveDir: root },
-    loader: { ".css": "empty" },
-    outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
-    plugins: [{ name: "local-wasm", setup(api) {
-      api.onResolve({ filter: /\.wasm\?url$/ }, () => ({ path: "wasm", namespace: "local-wasm" }));
-      api.onLoad({ filter: /.*/, namespace: "local-wasm" }, () => ({
-        contents: `export default ${JSON.stringify(join(root, "node_modules/sql.js/dist/sql-wasm-browser.wasm"))};`, loader: "js",
-      }));
-    } }],
-  });
-  const production = await import(pathToFileURL(bundle));
+import { withNodeBundle } from "./node-bundle.mjs";
+import { projectRoot as root } from "./paths.mjs";
+await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
   verifyPreviousGrid(api);
   verifyInitiativeGrid(api);
@@ -93,6 +37,7 @@ try {
   await verifyAggregationData({ ...api, createTriadicDatabase: () => api.createCurrentEmptyTestPlan(2026) });
   await verifyAutoSave(api);
   await verifyDataHistory(api);
+  await verifyPlanSession(api);
   await verifyRecentFile(api);
   await verifySamplePlan(api);
-} finally { await rm(temporary, { recursive: true, force: true }); }
+});

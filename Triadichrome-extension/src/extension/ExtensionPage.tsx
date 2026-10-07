@@ -1,26 +1,19 @@
-import { changePlanSettings, type PlanChange } from "../core/kindAmounts";
-import { type KindChange } from "../core/kindMaster";
-import { saveKindMaster } from "./kindMasterFile";
-import { type DetailChange } from "../core/details";
-import { saveDetailChange } from "./detailFile";
-import { type PeriodTypeChange } from "../core/periodMaster";
-import { savePeriodMaster } from "./periodMasterFile";
-import { type DepartmentChange } from "../core/departmentMaster";
-import { saveDepartmentMaster } from "./departmentMasterFile";
-import { type IndustryChange } from "../core/industryMaster";
-import { saveIndustryMaster } from "./industryMasterFile";
-import { type ExpansionChange } from "../core/expansionMaster";
-import { saveExpansionMaster } from "./expansionMasterFile";
-import { deleteDataHistory, emptyDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, HISTORY_INTERVAL_MS, type HistoryDeletion } from "../core/dataHistory";
-import { useEffect, useRef, useState, type DragEvent } from "react";
-import { createTriadicDatabase, TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "../core/triadicDatabase";
-import { type AccountChange } from "../core/accountMaster";
-import { saveAccountMaster } from "./accountMasterFile";
-import { saveAggregationMaster } from "./aggregationMasterFile";
-import { type AggregationChange } from "../core/aggregationMaster";
-import { writePlanChange, type OpenPlan } from "./planFile";
-import { currentFiscalYear, readPlanContents, type InitiativeEntryDraft } from "../core/initiatives";
-import { saveInitiative, saveInitiativeUpdate } from "./initiativeFile";
+import type { PlanChange } from "../core/domain/kinds";
+import type { PlanCommand } from "./planCommands";
+import { type DetailChange } from "../core/domain/details";
+import { type PeriodTypeChange } from "../core/domain/periodMaster";
+import { type DepartmentChange } from "../core/domain/departmentMaster";
+import { type IndustryChange } from "../core/domain/industryMaster";
+import { type ExpansionChange } from "../core/domain/expansionMaster";
+import { type HistoryDeletion } from "../core/storage/dataHistory";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
+import { createTriadicDatabase } from "../core/storage/triadicDatabase";
+import { TRIADIC_FILE_EXTENSION } from "../core/storage/triadicSchema";
+import { type AccountChange } from "../core/domain/accountMaster";
+import { type AggregationChange } from "../core/domain/aggregationMaster";
+import { currentFiscalYear } from "../core/domain/calendar";
+import { readPlanContents } from "../core/storage/readPlan";
+import { type InitiativeEntryDraft } from "../core/domain/plan";
 import { writeTriadicFile } from "./triadicFile";
 import { loadRecentFile, readRecentFile, rememberRecentFile } from "./recentFile";
 import { ConfirmationDialog } from "./ConfirmationDialog";
@@ -31,21 +24,23 @@ import { StatusNotice } from "./StatusNotice";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 import "./ExtensionPage.css";
 
-type PickerWindow = Window & {
-  showOpenFilePicker?: (options: { multiple: boolean; types: typeof fileTypes }) => Promise<FileSystemFileHandle[]>;
-  showSaveFilePicker?: (options: { suggestedName: string; types: typeof fileTypes }) => Promise<FileSystemFileHandle>;
-};
-const fileTypes = [{ description: "Triadichrome計画", accept: { [TRIADIC_MIME_TYPE]: [TRIADIC_FILE_EXTENSION] } }];
+import { choosePlanDestination, fileTypes, type PickerWindow } from "./filePicker";
+import { usePlanSession } from "./usePlanSession";
 
 export function ExtensionPage() {
   const input = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
-  const plan = useRef<OpenPlan | null>(null);
-  const historyWrite = useRef<Promise<void> | null>(null);
-  const [dataHistory, setDataHistory] = useState(emptyDataHistory);
-  const [historyError, setHistoryError] = useState("");
   const [closeError, setCloseError] = useState("");
   const [closeRequested, setCloseRequested] = useState(false);
+  const suggestedName = useRef("Untitled.triadic");
+  const chooseDestination = useCallback(() => choosePlanDestination(suggestedName.current), []);
+  const { session, snapshot } = usePlanSession(chooseDestination, closeRequested);
+  const { history: dataHistory, historyError } = snapshot;
+  if (snapshot.name) suggestedName.current = snapshot.name;
+  // Keep the outgoing screen's published contents for the fade, without retaining an open document.
+  const displayedContents = useRef(snapshot.contents);
+  if (snapshot.contents) displayedContents.current = snapshot.contents;
+
   useEffect(() => {
     const confirmExit = (event: BeforeUnloadEvent) => {
       event.preventDefault();
@@ -88,6 +83,9 @@ export function ExtensionPage() {
       if (!handle) throw new Error("ファイル履歴を消去できませんでした。");
     }
   };
+  useEffect(() => {
+    if (snapshot.name) setDisplayName(snapshot.name);
+  }, [snapshot.name]);
   const run = async (operation: () => Promise<void>) => {
     if (busy.current) return;
     busy.current = true;
@@ -104,9 +102,8 @@ export function ExtensionPage() {
     if (!file.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error(".triadicファイルを選択してください。");
     const bytes = new Uint8Array(await file.arrayBuffer());
     const contents = await readPlanContents(bytes);
-    plan.current = { name: file.name, bytes, ...contents, ...(handle ? { handle } : {}) };
-    setDataHistory(await readDataHistory(bytes));
-    setHistoryError(""); setCloseError("");
+    await session.open({ name: file.name, bytes, ...contents, ...(handle ? { handle } : {}) });
+    setCloseError("");
     // Failed reads never replace the last successfully opened file.
     if (handle) await remember(handle);
     else {
@@ -140,101 +137,26 @@ export function ExtensionPage() {
     await writeTriadicFile(handle, bytes);
     await open(await handle.getFile(), handle);
   });
-  const chooseDestination = () => {
-    const picker = (window as PickerWindow).showSaveFilePicker;
-    if (!picker) throw new Error("この環境では保存できません。ファイルを保存できるChromeで開いてください。");
-    return picker.call(window, { suggestedName: (plan.current!.formatVersion ?? 10) < 10 ? plan.current!.name.replace(/\.triadic$/i, "-v10.triadic") : plan.current!.name, types: fileTypes });
+  const prepareSave = () => session.prepareSave(chooseDestination);
+  const dispatch = async (command: PlanCommand) => {
+    const contents = await session.dispatch(command, chooseDestination);
+    const handle = session.getHandle();
+    if (handle && handle !== recentFile) await remember(handle);
+    return contents;
   };
-  const prepareSave = async () => {
-    if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
-    busy.current = true;
-    try {
-      const current = plan.current;
-      const migrating = (current.formatVersion ?? 10) < 10 && !current.destinationBytes;
-      const handle = migrating ? await chooseDestination() : current.handle ?? await chooseDestination();
-      if (migrating && current.handle && (handle === current.handle || (handle.isSameEntry && await handle.isSameEntry(current.handle)))) throw new Error("元ファイルを残すため、別名の保存先を選択してください。");
-      if (!handle.name.toLowerCase().endsWith(TRIADIC_FILE_EXTENSION)) throw new Error("拡張子は.triadicにしてください。");
-      const permission = handle as FileSystemFileHandle & { requestPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> };
-      if (permission.requestPermission && await permission.requestPermission({ mode: "readwrite" }) !== "granted") throw new Error("ファイルへの保存を許可してください。");
-      // Preserve the source database and check the separately selected destination for conflicts.
-      plan.current = { ...current, handle, ...(migrating || !current.handle ? { destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) } : {}) };
-    } finally { busy.current = false; }
-  };
-  const saveChange = async (operation: (current: OpenPlan, chooseDestination: () => Promise<FileSystemFileHandle>) => Promise<OpenPlan>, automatic = false) => {
-    // An automatic checkpoint may overlap new typing; queue the data save behind it.
-    if (historyWrite.current) await historyWrite.current;
-    if (!plan.current || busy.current) throw new Error("ファイルの処理が終わるまでお待ちください。");
-    busy.current = true;
-    try {
-      if (plan.current.migrationError) throw new Error(plan.current.migrationError);
-      if ((plan.current.formatVersion ?? 10) < 10 && !plan.current.destinationBytes) {
-        if (automatic) throw new Error("旧形式の元ファイルを残します。「保存を再試行」から別名の保存先を選択してください。");
-        const current = plan.current;
-        const handle = await chooseDestination();
-        if (current.handle && (handle === current.handle || (handle.isSameEntry && await handle.isSameEntry(current.handle)))) throw new Error("元ファイルを残すため、別名の保存先を選択してください。");
-        plan.current = { ...current, handle, destinationBytes: new Uint8Array(await (await handle.getFile()).arrayBuffer()) };
-      }
-      if (automatic) {
-        const handle = plan.current.handle as (FileSystemFileHandle & { queryPermission?: (options: { mode: "readwrite" }) => Promise<PermissionState> }) | undefined;
-        if (!handle) throw new Error("「保存を再試行」から保存先を選択してください。");
-        if (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted") throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
-      }
-      const saved = await operation(plan.current, chooseDestination);
-      plan.current = saved;
-      setDataHistory(await readDataHistory(saved.bytes));
-      setHistoryError("");
-      if (saved.handle && saved.handle !== recentFile) await remember(saved.handle);
-      setDisplayName(saved.name);
-      return { fiscalYear: saved.fiscalYear, kindSelections: saved.kindSelections, previousAmounts: saved.previousAmounts, accounts: saved.accounts, initiatives: saved.initiatives, aggregations: saved.aggregations, expansions: saved.expansions, industries: saved.industries, departments: saved.departments, periodTypes: saved.periodTypes, kinds: saved.kinds, details: saved.details, formatVersion: saved.formatVersion, migrationError: saved.migrationError };
-    } finally { busy.current = false; }
-  };
-  const changePlan = (change: PlanChange) => saveChange(async (current, destination) => writePlanChange(current, current.handle ?? await destination(), await changePlanSettings(current.bytes, change)), change.type === "previous");
-  const changeDetail = (change: DetailChange) => saveChange(current => saveDetailChange(current, change), true);
-  const changeMaster = (change: AccountChange) => saveChange((current, chooseDestination) => saveAccountMaster(current, change, chooseDestination), change.type === "update");
-  const changeKinds = (change: KindChange) => saveChange((current, chooseDestination) => saveKindMaster(current, change, chooseDestination), change.type === "update");
-  const changePeriodTypes = (change: PeriodTypeChange) => saveChange((current, chooseDestination) => savePeriodMaster(current, change, chooseDestination), change.type === "update");
-  const changeDepartments = (change: DepartmentChange) => saveChange((current, chooseDestination) => saveDepartmentMaster(current, change, chooseDestination), change.type === "update");
-  const changeIndustries = (change: IndustryChange) => saveChange((current, chooseDestination) => saveIndustryMaster(current, change, chooseDestination), change.type === "update");
-  const changeExpansions = (change: ExpansionChange) => saveChange((current, chooseDestination) => saveExpansionMaster(current, change, chooseDestination), change.type === "update");
-  const changeAggregations = (change: AggregationChange) => saveChange((current, chooseDestination) => saveAggregationMaster(current, change, chooseDestination), change.type === "update");
-  const register = (draft: InitiativeEntryDraft) => saveChange((current, chooseDestination) => saveInitiative(current, draft, chooseDestination));
-  const update = (id: number, year: number | null, draft: InitiativeEntryDraft) => saveChange(current => saveInitiativeUpdate(current, id, year, draft), true);
-  const saveHistory = async (operation: (bytes: Uint8Array) => Promise<Uint8Array>) => {
-    setIsBusy(true);
-    const task = saveChange(async current => {
-      const bytes = await operation(current.bytes);
-      if (bytes === current.bytes) return current;
-      return writePlanChange(current, current.handle!, bytes, { historyPrepared: true });
-    }, true);
-    const completion = task.then(() => {}, () => {});
-    historyWrite.current = completion;
-    try { return await task; }
-    finally { if (historyWrite.current === completion) historyWrite.current = null; setIsBusy(false); }
-  };
-  const checkpoint = (force: boolean) => saveHistory(bytes => recordDataHistory(bytes, new Date().toISOString(), force));
-  const historyRecorder = useRef<() => Promise<void>>(async () => {});
-  historyRecorder.current = async () => { await checkpoint(false); };
-  useEffect(() => {
-    if (!fileName || !dataHistory.dirtySince || historyError) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    const record = () => {
-      if (cancelled) return;
-      if (busy.current || closeRequested) { timer = setTimeout(record, 250); return; }
-      void historyRecorder.current().catch(failure => {
-        if (!cancelled) setHistoryError(failure instanceof Error ? failure.message : "履歴を記録できませんでした。");
-      });
-    };
-    timer = setTimeout(record, Math.max(0, Date.parse(dataHistory.dirtySince) + HISTORY_INTERVAL_MS - Date.now()));
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [fileName, dataHistory, historyError, closeRequested]);
-  const previewHistory = async (id: number) => {
-    // Browsing never replaces the authoritative current plan.
-    if (dataHistory.dirtySince) await checkpoint(true);
-    return readPlanContents(await readHistorySnapshot(plan.current!.bytes, id));
-  };
-  const restoreHistory = (id: number) => saveHistory(bytes => restoreDataHistory(bytes, id));
-  const deleteHistory = async (deletion: HistoryDeletion) => { await saveHistory(bytes => deleteDataHistory(bytes, deletion)); };
+  const changePlan = (change: PlanChange) => dispatch({ type: "settings", change });
+  const changeDetail = (change: DetailChange) => dispatch({ type: "detail", change });
+  const changeMaster = (change: AccountChange) => dispatch({ type: "account", change });
+  const changePeriodTypes = (change: PeriodTypeChange) => dispatch({ type: "period", change });
+  const changeDepartments = (change: DepartmentChange) => dispatch({ type: "department", change });
+  const changeIndustries = (change: IndustryChange) => dispatch({ type: "industry", change });
+  const changeExpansions = (change: ExpansionChange) => dispatch({ type: "expansion", change });
+  const changeAggregations = (change: AggregationChange) => dispatch({ type: "aggregation", change });
+  const register = (draft: InitiativeEntryDraft) => dispatch({ type: "initiative.register", draft });
+  const update = (id: number, _year: number | null, draft: InitiativeEntryDraft) => dispatch({ type: "initiative.update", id, draft });
+  const previewHistory = (id: number) => session.preview(id, chooseDestination);
+  const restoreHistory = (id: number) => session.restore(id, chooseDestination);
+  const deleteHistory = (deletion: HistoryDeletion) => session.deleteHistory(deletion, chooseDestination);
   const drag = (event: DragEvent<HTMLElement>) => {
     if (!Array.from(event.dataTransfer.types).includes("Files")) return;
     event.preventDefault();
@@ -242,9 +164,9 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={plan.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onChangeKinds={changeKinds} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
-      dataHistory={dataHistory} historyError={historyError} historyBusy={isBusy} onPreviewHistory={previewHistory} onRestoreHistory={restoreHistory} onDeleteHistory={deleteHistory}
-      onRetryHistory={async () => { await prepareSave(); await checkpoint(true); }}
+    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={displayedContents.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+      dataHistory={dataHistory} historyError={historyError} historyBusy={isBusy || snapshot.busy} onPreviewHistory={previewHistory} onRestoreHistory={restoreHistory} onDeleteHistory={deleteHistory}
+      onRetryHistory={async () => { await prepareSave(); await session.checkpoint(true, chooseDestination); }}
       onCloseFile={() => { if (!busy.current) { setCloseError(""); setCloseRequested(true); } }} />
     : <main className={`entry-page${dragging ? " is-drag-active" : ""}`} onDragEnter={drag} onDragOver={drag}
     onDragLeave={(event) => { if (!(event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget))) setDragging(false); }}
@@ -307,13 +229,14 @@ export function ExtensionPage() {
       <StatusNotice message={error} error onDismiss={() => setError("")} />
     </div>
   </main>}</FadeSwap>
-    <ConfirmationDialog open={closeRequested} title="ファイルを閉じる" message={closeError || `「${displayName}」を閉じますか？ 登録前の入力は失われます。`} confirmLabel={closeError ? "保存を再試行して閉じる" : "閉じる"} busy={isBusy}
+    <ConfirmationDialog open={closeRequested} title="ファイルを閉じる" message={closeError || `「${displayName}」を閉じますか？ 登録前の入力は失われます。`} confirmLabel={closeError ? "保存を再試行して閉じる" : "閉じる"} busy={isBusy || snapshot.busy}
       onCancel={() => setCloseRequested(false)} onConfirm={() => {
         if (busy.current) return;
         void (async () => {
           try {
-            if (dataHistory.dirtySince) { if (closeError) await prepareSave(); await checkpoint(true); }
-            setCloseRequested(false); setFileName(null); setError(""); setDragging(false); plan.current = null;
+            if (closeError) await prepareSave();
+            await session.close(chooseDestination);
+            setCloseRequested(false); setFileName(null); setError(""); setDragging(false);
           } catch (failure) { setCloseError(failure instanceof Error ? failure.message : "履歴を記録できませんでした。ファイルは開いたままです。"); }
         })();
       }} />

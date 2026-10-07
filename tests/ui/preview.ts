@@ -1,5 +1,5 @@
 import { createEmptyTestPlan, createCurrentEmptyTestPlan } from "./empty-plan";
-import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
+import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
 import { installMemoryFiles, type FileScenario } from "./memory-files";
 import { createSamplePlan } from "./sample-plan";
 

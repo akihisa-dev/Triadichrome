@@ -1,7 +1,8 @@
+import { useMasterOperation } from "./useMasterOperation";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { type Account, type AccountChange } from "../core/accountMaster";
-import { accountTypes, type AccountType } from "../core/accountTypes";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { type Account, type AccountChange } from "../core/domain/accountMaster";
+import { accountTypes, type AccountType } from "../core/domain/accountTypes";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import { StatusNotice } from "./StatusNotice";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -28,7 +29,6 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
   const setEditing = (draft: NonNullable<typeof editing>) => controller.change(draft);
   const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [notice, setNotice] = useState({ message: "", error: false });
   const [dragged, setDragged] = useState<number | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: number; before: boolean } | null>(null);
   const rowElements = useRef(new Map<number, HTMLTableSectionElement>());
@@ -47,32 +47,21 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     }
     previousPositions.current = null;
   }, [accounts]);
-  const dismissNotice = useCallback(() => setNotice({ message: "", error: false }), []);
   useEffect(() => {
     if (!isSaving && focusAfterSave.current) {
       focusAfterSave.current = false;
       input.current?.focus({ preventScroll: true });
     }
   }, [isSaving]);
-  const save = async (change: AccountChange) => {
-    setNotice({ message: "", error: false });
-    try {
-      await onChange(change);
-      if (change.type === "add") {
-        setAccountCode("");
-        setAccountName("");
-        setAccountType("");
-        focusAfterSave.current = true;
-      }
+  const { notice, dismiss: dismissNotice, save } = useMasterOperation<AccountChange>({
+    onChange,
+    onSuccess: change => {
+      if (change.type === "add") { setAccountCode(""); setAccountName(""); setAccountType(""); focusAfterSave.current = true; }
       setDeleteDialogOpen(false);
-      setNotice({ message: change.type === "delete" ? "勘定科目を削除しました。" : change.type === "reorder" ? "科目の並び順を保存しました。" : "勘定科目を保存しました。", error: false });
-    } catch (failure) {
-      previousPositions.current = null;
-      setDeleteDialogOpen(false);
-      const cancelled = failure instanceof DOMException && failure.name === "AbortError";
-      setNotice({ message: cancelled ? "保存をキャンセルしました。入力内容は残っています。" : failure instanceof Error ? failure.message : "保存できませんでした。", error: !cancelled });
-    }
-  };
+    },
+    onFailure: () => { previousPositions.current = null; setDeleteDialogOpen(false); },
+    successMessage: change => change.type === "delete" ? "勘定科目を削除しました。" : change.type === "reorder" ? "科目の並び順を保存しました。" : "勘定科目を保存しました。",
+  });
   const reorder = (id: number, targetId: number, before: boolean) => {
     if (readOnly || isSaving || editing || id === targetId) return;
     const ids = accounts.map(account => account.id).filter(item => item !== id);
@@ -84,7 +73,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
   const cancelEditing = () => {
     focusAfterEdit.current = editing?.id ?? null;
     controller.end();
-    setNotice({ message: "", error: false });
+    dismissNotice();
   };
 
   return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page account-master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
@@ -180,7 +169,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
               }}>
                 <button className="text-button" type="submit" disabled={readOnly || autoSave.pending}>完了</button>
               </form> : <div className="form-actions">
-                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={readOnly || isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); setNotice({ message: "", error: false }); }}>編集</button>
+                <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={readOnly || isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); dismissNotice(); }}>編集</button>
                 <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={readOnly || isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・明細・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
               </div>}</td>
             </tr>

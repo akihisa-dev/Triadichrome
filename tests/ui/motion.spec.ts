@@ -84,7 +84,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
       await settleMotion(app.locator("body"));
       expect(await app.locator(".sidebar-panel").evaluate(node => node.getBoundingClientRect().width)).toBe(64);
-      await expect(app.getByRole("navigation")).toHaveCount(1);
+      await expect(app.getByRole("complementary", { name: "メニュー" }).getByRole("navigation")).toHaveCount(1);
     });
 
     test("画面と案内はフェードを通り、連打した場合も最後の画面へ到達する", async ({ app }) => {

@@ -1,14 +1,17 @@
-import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/dataHistory";
-import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/kindAmounts";
-import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/kindMasterSchema";
-import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/periodMasterSchema";
-import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/departmentSchema";
-import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/industrySchema";
-import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/expansionSchema";
-import { changeAccountMaster } from "../../Triadichrome-extension/src/core/accountMaster";
-import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/aggregationMaster";
-import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
-import { currentFiscalYear, initiativeMonths, readPlanContents, registerInitiative, updateInitiative, type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/initiatives";
+import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/storage/dataHistory";
+import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
+import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/domain/kinds";
+import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/storage/periodMasterSchema";
+import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/storage/departmentSchema";
+import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/storage/industrySchema";
+import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/storage/expansionSchema";
+import { changeAccountMaster } from "../../Triadichrome-extension/src/core/storage/accountMaster";
+import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/storage/aggregationMaster";
+import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
+import { currentFiscalYear, initiativeMonths } from "../../Triadichrome-extension/src/core/domain/calendar";
+import { readPlanContents } from "../../Triadichrome-extension/src/core/storage/readPlan";
+import { registerInitiative, updateInitiative } from "../../Triadichrome-extension/src/core/storage/initiatives";
+import { type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/domain/plan";
 
 // Previous amounts span every industry/department pair; varying sales verify full and partial totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
@@ -44,7 +47,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows });
+    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。", [
@@ -96,7 +99,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     const database = await openTriadicDatabase(input);
     try {
       // Normalize both current and embedded snapshot metadata for deterministic fixtures.
-      database.run("UPDATE budgets SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
+      database.run("UPDATE plan SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
+      database.run("UPDATE data_history_state SET saved_at = ?", [timestamp]);
       return database.export();
     } finally { database.close(); }
   };

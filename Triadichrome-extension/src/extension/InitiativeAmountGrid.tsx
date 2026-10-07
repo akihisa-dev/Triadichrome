@@ -1,11 +1,13 @@
+import { useGridInteraction } from "./useGridInteraction";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useEffect, useRef, useState } from "react";
-import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/kindAmounts";
-import { isValidAmount } from "../core/amounts";
-import { initiativeMonths as months, type InitiativeEntryDraft } from "../core/initiatives";
-import { type Account } from "../core/accountMaster";
-import { canEditInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid } from "../core/initiativeGrid";
-import { gridBounds, normalizeGridAmount, type GridCell, type GridSelection } from "../core/previousGrid";
+import { useEffect, useState } from "react";
+import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/domain/kinds";
+import { isValidAmount } from "../core/domain/amounts";
+import { initiativeMonths as months } from "../core/domain/calendar";
+import { type InitiativeEntryDraft } from "../core/domain/plan";
+import { type Account } from "../core/domain/accountMaster";
+import { canEditInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid } from "../core/tables/initiativeGrid";
+import { normalizeGridAmount, type GridCell } from "../core/tables/previousGrid";
 import { StatusNotice } from "./StatusNotice";
 import "./InitiativeAmountGrid.css";
 
@@ -14,28 +16,13 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, onDraftC
   isSaving: boolean; onDraftChange: (draft: InitiativeEntryDraft) => void;
 }) {
   const readOnly = useHistoryReadOnly();
-  const [selection, setSelection] = useState<GridSelection | null>(null);
-  const [editing, setEditing] = useState(false);
+  const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
-  const table = useRef<HTMLTableElement>(null);
-  const dragging = useRef(false);
-  const original = useRef("");
-  const bounds = selection ? gridBounds(selection) : null;
   useEffect(() => { setSelection(null); setEditing(false); }, [draft.rows.length]);
-  useEffect(() => {
-    const stop = () => { dragging.current = false; };
-    window.addEventListener("pointerup", stop); window.addEventListener("pointercancel", stop);
-    return () => { window.removeEventListener("pointerup", stop); window.removeEventListener("pointercancel", stop); };
-  }, []);
   const valueAt = (cell: GridCell, source = draft) => {
     const row = source.rows[cell.row]!;
     const month = months[cell.column]!;
     return kind === 1 ? row.amounts[month] ?? "0" : row.overrides?.[kind]?.[month] ?? resolvedAmount(row, kind, month);
-  };
-  const focus = (cell: GridCell, extend = false) => {
-    setSelection(current => ({ anchor: extend && current ? current.anchor : cell, end: cell }));
-    setEditing(false);
-    table.current?.querySelector<HTMLInputElement>(`input[data-row="${cell.row}"][data-column="${cell.column}"]`)?.focus();
   };
   const apply = (operation: () => InitiativeEntryDraft) => {
     if (readOnly || isSaving) return;
@@ -68,7 +55,7 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, onDraftC
           <tbody>
             {draft.rows.map((row, index) => {
               const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
-              return <tr key={row.clientKey ?? row.id ?? index}>
+              return <tr key={row.id ?? index}>
                 <th scope="row">
                   <div className="initiative-account-cell">
                   <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row)}

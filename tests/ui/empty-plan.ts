@@ -1,4 +1,4 @@
-import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/triadicDatabase";
+import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
 
 /** Unsupported-format fixture is read-only: no migration or file rewrite. */
 export async function createEmptyTestPlan(): Promise<Uint8Array> {

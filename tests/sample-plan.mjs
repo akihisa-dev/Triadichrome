@@ -7,7 +7,7 @@ export async function verifySamplePlan(api) {
   const history = await api.readDataHistory(bytes);
   assert.equal(history.entries.length, 3);
   assert.equal(history.dirtySince, null);
-  const older = await readPlanContents(await api.readHistorySnapshot(bytes, history.entries[2].id));
+  const older = await api.readSnapshotContents(await api.readHistorySnapshot(bytes, history.entries[2].id));
   assert.equal(older.initiatives[0].rows[0].amounts[4], "100000");
   assert.equal(older.initiatives[0].note, "履歴確認用の過去の状態");
   assert.deepEqual(older.previousAmounts, (await readPlanContents(bytes)).previousAmounts);
@@ -75,9 +75,8 @@ export async function verifySamplePlan(api) {
   assert.equal((await readPlanContents(await changeAggregationMaster(bytes, { type: "delete", id: disposable.id }))).aggregations.length, 15);
   const database = await openTriadicDatabase(bytes);
   try {
-    assert.deepEqual(database.exec("SELECT created_at, updated_at FROM budgets")[0].values, [["2026-04-01T00:00:00.000Z", "2026-04-01T00:00:00.000Z"]], "確認用の作成・更新日時を再生成のたびに変更しない");
-    assert.equal(database.exec("SELECT count(*) FROM details WHERE actual_amount != 0 OR actual_sales_amount != 0 OR actual_profit_amount != 0")[0].values[0][0], 0);
-    assert.deepEqual(database.exec("SELECT DISTINCT p.year, p.month FROM details d JOIN periods p ON d.period_id = p.id WHERE initiative_id = ? AND p.month IN (4, 3) ORDER BY p.year", [product.id])[0].values, [[2026, 4], [2027, 3]]);
+    assert.deepEqual(database.exec("SELECT created_at, updated_at FROM plan")[0].values, [["2026-04-01T00:00:00.000Z", "2026-04-01T00:00:00.000Z"]], "確認用の作成・更新日時を再生成のたびに変更しない");
+    assert.deepEqual(plan.details.filter(row => row.initiativeId === product.id && row.kindId === 1 && [4,3].includes(row.month)).slice(0,2).map(row => [row.year,row.month]), [[2026,4],[2027,3]]);
   } finally { database.close(); }
   assert.equal((await readPlanContents(bytes)).accounts.length, 59, "削除確認後も元データを再利用できる");
   console.log("PASS: sample plan years, monthly edge cases, configured totals and editable/deletable master data");

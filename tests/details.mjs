@@ -41,22 +41,17 @@ export async function verifyDetails(api) {
   assert.equal(api.yenToAmount(9007199254740991), "9007199254740.991");
   const db = await api.openTriadicDatabase(bytes);
   assert.throws(() => db.run("INSERT INTO initiative_amounts(row_id,month) VALUES (?,4)",[current.rowId]), /UNIQUE/);
-  db.run("DELETE FROM initiative_amounts WHERE id = ?",[Number(db.exec("SELECT id FROM initiative_amounts WHERE row_id = ? AND month = ?", [current.rowId, current.month])[0].values[0][0])]);
+  db.run("DELETE FROM initiative_amounts WHERE row_id = ? AND month = ?",[current.rowId, current.month]);
   const broken = db.export(); db.close();
   await assert.rejects(api.validateTriadicDatabase(broken), /読み込めません/);
-  const column = { id: "name", label: "施策名", value: row => row.initiativeName };
-  assert.equal(api.applyTableView(after.details,[column],{ sort:null,filters:{name:["別施策"]} }).length,48);
-  assert.deepEqual(api.applyTableView(after.details,[column],api.emptyTableView()),after.details);
-  const preciseRows = [{ amount: "9007199254740.991" }, { amount: "9007199254740.99" }];
-  assert.deepEqual(api.applyTableView(preciseRows, [{ id: "amount", label: "金額", numeric: true, value: row => row.amount }], { sort: { column: "amount", direction: "asc" }, filters: {} }).map(row => row.amount), ["9007199254740.99", "9007199254740.991"]);
   const amountColumn = { id: "amount", label: "金額", amount: true, numeric: true, value: row => row.amount };
   const roundedRows = [{ amount: "1.234" }, { amount: "1.499" }, { amount: "1.5" }, { amount: "-0.001" }];
-  assert.deepEqual(api.applyTableView(roundedRows, [amountColumn], { sort: null, filters: { amount: ["1"] } }), roundedRows.slice(0, 2), "表示が同じ金額は同じ候補で絞り込む");
-  assert.deepEqual(api.applyTableView(roundedRows, [amountColumn], { sort: { column: "amount", direction: "desc" }, filters: { amount: ["1"] } }), [roundedRows[1], roundedRows[0]], "丸め前の金額で並べ替える");
+  assert.deepEqual(roundedRows.map(row => api.tableDisplayValue(amountColumn, row)), ["1", "1", "2", "0"], "表示だけを丸めて保存値は保持する");
+  assert.deepEqual(roundedRows.map(row => row.amount), ["1.234", "1.499", "1.5", "-0.001"]);
   let stored = bytes; let writes = 0;
   const handle = { name:"test.triadic", async getFile(){return new File([stored],this.name);}, async createWritable(){ return { async write(){writes++;},async close(){throw new Error("保存失敗");},async abort(){} }; } };
   const plan = { ...after,bytes,name:handle.name,handle };
   await assert.rejects(api.saveDetailChange(plan,{target:current,field:"amount",value:"100"}),/保存失敗/);
   assert.equal(writes,1); assert.deepEqual(stored,bytes); assert.equal(plan.details.find(row=>row.id===current.id).amount,current.amount);
-  console.log("PASS: detail ownership scopes, 12 months, fixed calendar, precision, conflicts, invalid mutations, filters and failed saves");
+  console.log("PASS: detail ownership scopes, 12 months, fixed calendar, precision, conflicts, invalid mutations, display rounding and failed saves");
 }

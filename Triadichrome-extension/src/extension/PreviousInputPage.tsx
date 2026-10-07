@@ -1,10 +1,11 @@
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useLayoutEffect, useState } from "react";
-import { initiativeMonths, type PlanContents } from "../core/initiatives";
-import { filterPlan } from "../core/planTables";
+import { initiativeMonths } from "../core/domain/calendar";
+import { type PlanContents } from "../core/domain/plan";
+import { filterPlan } from "../core/tables/planTables";
 import { PreviousAmountGrid } from "./PreviousAmountGrid";
 import "./PreviousInputPage.css";
-import type { PreviousInput } from "../core/kindAmounts";
+import type { PreviousInput } from "../core/domain/kinds";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
 import { AutoSaveStatus } from "./AutoSaveStatus";
 import { ClassificationSlot } from "./ClassificationSlot";

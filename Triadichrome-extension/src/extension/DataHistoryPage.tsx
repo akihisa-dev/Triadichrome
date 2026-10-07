@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { DataHistoryEntry, HistoryDeletion } from "../core/dataHistory";
+import type { DataHistoryEntry, HistoryDeletion } from "../core/storage/dataHistory";
 import { ConfirmationDialog } from "./ConfirmationDialog";
 import "./DataHistoryPage.css";
 

@@ -1,7 +1,6 @@
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { pathToFileURL } from "node:url";
-import { build } from "esbuild";
+import { withNodeBundle } from "./node-bundle.mjs";
 import { projectRoot } from "./paths.mjs";
 
 const args = process.argv.slice(2);
@@ -11,25 +10,7 @@ if (args.length > 1 || (args.length === 1 && args[0] !== "--check")) {
 const check = args[0] === "--check";
 const relativeOutput = "samples/全機能確認用.triadic";
 const output = join(projectRoot, relativeOutput);
-const dist = join(projectRoot, "dist");
-await mkdir(dist, { recursive: true });
-const temporary = await mkdtemp(join(dist, ".sample-plan-"));
-try {
-  const bundle = join(temporary, "sample-plan.mjs");
-  await build({
-    stdin: {
-      contents: 'export { createSamplePlan } from "./tests/ui/sample-plan.ts";\nexport { openTriadicDatabase } from "./Triadichrome-extension/src/core/triadicDatabase.ts";',
-      resolveDir: projectRoot,
-    },
-    outfile: bundle, bundle: true, format: "esm", platform: "node", packages: "external",
-    plugins: [{ name: "local-wasm", setup(api) {
-      api.onResolve({ filter: /\.wasm\?url$/ }, () => ({ path: "wasm", namespace: "local-wasm" }));
-      api.onLoad({ filter: /.*/, namespace: "local-wasm" }, () => ({
-        contents: `export default ${JSON.stringify(join(projectRoot, "node_modules/sql.js/dist/sql-wasm-browser.wasm"))};`, loader: "js",
-      }));
-    } }],
-  });
-  const { createSamplePlan, openTriadicDatabase } = await import(pathToFileURL(bundle));
+await withNodeBundle("tests/sample-api.ts", async ({ createSamplePlan, openTriadicDatabase }, temporary) => {
   // Compare the full schema and every stored value, not SQLite's internal write counters.
   const contents = async bytes => {
     const database = await openTriadicDatabase(bytes);
@@ -60,6 +41,4 @@ try {
     await rename(pending, output);
     console.log(`sample generated: ${relativeOutput}`);
   }
-} finally {
-  await rm(temporary, { recursive: true, force: true });
-}
+});

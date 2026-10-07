@@ -1,0 +1,22 @@
+import type { InitiativeMonth } from "./calendar";
+import type { KindOverrides, PlanSettings, Kind } from "./kinds";
+import type { Account } from "./accountMaster";
+import type { Aggregation } from "./aggregations";
+import type { Expansion } from "./expansionMaster";
+import type { Industry } from "./industryMaster";
+import type { Department } from "./departmentMaster";
+import type { PeriodType } from "./periodMaster";
+import type { DetailRecord } from "./details";
+export type InitiativeRow = { id?: string; accountId: number | null; revision?: number; amountRevisions?: Partial<Record<number, number>>; overrideRevisions?: Partial<Record<number, number>>; amounts: Partial<Record<InitiativeMonth, string>>; overrides?: KindOverrides };
+export type InitiativeEntryDraft = { name: string; note: string; expansionId: number | null; departmentId?: number | null; periodTypeId?: number | null; industryId?: number | null; fiscalYear: string; rows: InitiativeRow[]; invalidNumbers?: boolean };
+export type Initiative = {
+  id: number;
+  name: string;
+  note: string;
+  expansionId: number | null; departmentId?: number | null; periodTypeId?: number | null; industryId?: number | null;
+  fiscalYear: number | null;
+  rows: InitiativeRow[];
+  revision: number;
+  months: Partial<Record<InitiativeMonth, { sales: number | null; expense: number; profit: number | null }>>;
+};
+export type PlanContents = PlanSettings & { accounts: Account[]; initiatives: Initiative[]; aggregations: Aggregation[]; expansions: Expansion[]; industries: Industry[]; departments: Department[]; periodTypes: PeriodType[]; kinds: Kind[]; details?: DetailRecord[] | undefined;  };

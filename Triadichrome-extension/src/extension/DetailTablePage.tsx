@@ -1,13 +1,12 @@
+import { detailColumns, detailChoices } from "./detailPresentation";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { canChangeAccountRow } from "../core/kindAmounts";
-import { accountTypes, isAccountType } from "../core/accountTypes";
+import { canChangeAccountRow } from "../core/domain/kinds";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { type DetailChange, type DetailField, type DetailRecord } from "../core/details";
-import { type Initiative, type PlanContents } from "../core/initiatives";
-import { type TableColumn, tableDisplayValue } from "../core/tableView";
+import { type DetailChange, type DetailField, type DetailRecord } from "../core/domain/details";
+import { type Initiative, type PlanContents } from "../core/domain/plan";
+import { tableDisplayValue } from "../core/tables/tableView";
 import "./DetailTablePage.css";
 
-type Column = TableColumn<DetailRecord> & { field?: DetailField };
 export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, onPendingChange, onPrepareSave }: {
   contents: PlanContents; scroll: { current: { top: number; left: number } };
   onSave: (change: DetailChange) => Promise<void>; onOpenInitiative: (initiative: Initiative) => void; onPendingChange: (pending: boolean) => void; onPrepareSave: () => Promise<void>;
@@ -21,25 +20,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
-  const name = (list: { id: number; name: string }[], id: number | null) => list.find(item => item.id === id)?.name ?? null;
-  const columns: Column[] = useMemo(() => [
-    { id: "fiscalYear", label: "年度", numeric: true, value: row => row.fiscalYear },
-    { id: "kind", label: "種別", value: row => row.kindName },
-    { id: "industry", label: "業種名", field: "industryId", value: row => name(contents.industries.map(item => ({ id: item.id, name: item.industryName })), row.industryId) },
-    { id: "initiativeName", label: "施策名", field: "name", value: row => row.initiativeName },
-    { id: "expansion", label: "展開名", field: "expansionId", value: row => name(contents.expansions.map(item => ({ id: item.id, name: item.expansionName })), row.expansionId) },
-    { id: "department", label: "部署名", field: "departmentId", value: row => name(contents.departments.map(item => ({ id: item.id, name: item.departmentName })), row.departmentId) },
-    { id: "period", label: "期間名", field: "periodTypeId", value: row => name(contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })), row.periodTypeId) },
-    { id: "accountCode", label: "科目コード", field: "accountId", value: row => row.accountCode },
-    { id: "account", label: "科目名", field: "accountId", value: row => row.accountName },
-    { id: "attribute", label: "科目属性", value: row => isAccountType(row.accountType) ? accountTypes[row.accountType] : null },
-    { id: "month", label: "年月", value: row => `${row.year}-${String(row.month).padStart(2, "0")}` },
-    { id: "amount", label: "金額", field: "amount", numeric: true, amount: true, value: row => row.amount },
-    { id: "sales", label: "売上", numeric: true, amount: true, value: row => row.sales },
-    { id: "expense", label: "費用", numeric: true, amount: true, value: row => row.accountType === "expense" ? row.amount : "0" },
-    { id: "profit", label: "利益", numeric: true, amount: true, value: row => row.profit },
-    { id: "note", label: "施策備考", field: "note", value: row => row.note },
-  ], [contents.expansions, contents.departments, contents.periodTypes, contents.industries]);
+  const columns = useMemo(() => detailColumns(contents), [contents]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);
   useEffect(() => { onPendingChange(editing !== null); return () => onPendingChange(false); }, [editing, onPendingChange]);
   useEffect(() => {
@@ -52,7 +33,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row)).map(row => row.id)));
   const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
   const begin = (row: DetailRecord, field: DetailField, columnId: string) => {
-    if (editing || lock.current || contents.migrationError || !canEdit(row, field)) return;
+    if (editing || lock.current || !canEdit(row, field)) return;
     if (clickTimer.current) clearTimeout(clickTimer.current);
     const value = field === "name" ? row.initiativeName : field === "fiscalYear" ? String(row.fiscalYear) : field === "amount" ? row.amount : field === "note" ? row.note : String(row[field] ?? "");
     setSearch(""); setError(""); setEditing({ row, field, columnId, value });
@@ -73,12 +54,10 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     } catch (failure) { setError(failure instanceof Error ? failure.message : "保存できませんでした。入力内容は残っています。"); }
     finally { lock.current = false; setSaving(false); }
   };
-  const choices = editing?.field === "accountId" ? contents.accounts.filter(item => item.accountType).map(item => ({ id: item.id, name: `${item.accountCode ?? "未設定"} ${item.accountName}` }))
-    : editing?.field === "industryId" ? contents.industries.map(item => ({ id: item.id, name: item.industryName })) : editing?.field === "expansionId" ? contents.expansions.map(item => ({ id: item.id, name: item.expansionName })) : editing?.field === "departmentId" ? contents.departments.map(item => ({ id: item.id, name: item.departmentName })) : editing?.field === "periodTypeId" ? contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })) : null;
+  const choices = detailChoices(contents, editing?.field);
   return <main className="detail-page">
     <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
     <p className="detail-help">{readOnly ? "施策名を押すと、その時点の施策を確認できます。" : "セルをダブルクリックして編集します。施策名のクリックで施策画面を開きます。"}</p>
-    {contents.migrationError && <p role="alert">{contents.migrationError}</p>}
     <div ref={container} className="detail-scroll" onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
       <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
       <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {

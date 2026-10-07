@@ -1,10 +1,11 @@
 import type { ReactNode } from "react";
 import { Fragment, useMemo } from "react";
-import { buildKindCostTable } from "../core/planTables";
-import type { KindId } from "../core/kindAmounts";
-import { initiativeMonths, type PlanContents } from "../core/initiatives";
+import { buildKindCostTable } from "../core/tables/planTables";
+import type { KindId } from "../core/domain/kinds";
+import { initiativeMonths } from "../core/domain/calendar";
+import { type PlanContents } from "../core/domain/plan";
 
-import { formatAmount, formatRate } from "../core/amounts";
+import { formatAmount, formatRate } from "../core/domain/amounts";
 
 type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster: () => void };
 

@@ -1,4 +1,4 @@
-import { test, expect, settleMotion, attachImage } from "./fixtures";
+import { test, expect, settleMotion, attachImage, selectClassification } from "./fixtures";
 import { installMemoryFiles } from "./memory-files";
 import type { FrameLocator, Locator } from "@playwright/test";
 
@@ -98,8 +98,8 @@ test("前年金額は編集位置だけ青く、範囲選択の背景と罫線�
   const industry = app.getByLabel("業種名", { exact: true });
   await industry.focus();
   await expect(industry).toHaveCSS("outline-color", blue);
-  await industry.selectOption({ label: "直営自動車" });
-  await app.getByLabel("部署名", { exact: true }).selectOption({ label: "部署A" });
+  await selectClassification(industry, "直営自動車");
+  await selectClassification(app.getByLabel("部署名", { exact: true }), "部署A");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
   await settleMotion(app.locator("body"));
   const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });

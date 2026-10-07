@@ -1,10 +1,10 @@
-import { type Industry } from "../core/industryMaster";
-import { type PeriodType } from "../core/periodMaster";
-import { type Department } from "../core/departmentMaster";
-import { type Expansion } from "../core/expansionMaster";
+import { type Industry } from "../core/domain/industryMaster";
+import { type PeriodType } from "../core/domain/periodMaster";
+import { type Department } from "../core/domain/departmentMaster";
+import { type Expansion } from "../core/domain/expansionMaster";
 import { useLayoutEffect } from "react";
-import { type Account } from "../core/accountMaster";
-import { type Initiative, type InitiativeEntryDraft } from "../core/initiatives";
+import { type Account } from "../core/domain/accountMaster";
+import { type Initiative, type InitiativeEntryDraft } from "../core/domain/plan";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import { AutoSaveStatus } from "./AutoSaveStatus";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
@@ -28,7 +28,7 @@ export function InitiativeDetailPage({ initiative, accounts, expansions, departm
   const { controller, draft } = autoSave;
   useLayoutEffect(() => {
     if (!controller.getSnapshot().draft) controller.begin({ name: initiative.name, note: initiative.note, expansionId: initiative.expansionId, departmentId: initiative.departmentId ?? null, periodTypeId: initiative.periodTypeId ?? null, industryId: initiative.industryId ?? null,
-      fiscalYear: initiative.fiscalYear === null ? "" : String(initiative.fiscalYear), rows: initiative.rows.length ? initiative.rows : [{ accountId: null, amounts: {} }] });
+      fiscalYear: initiative.fiscalYear === null ? "" : String(initiative.fiscalYear), rows: initiative.rows.length ? initiative.rows : [{ id: crypto.randomUUID(), accountId: null, amounts: {} }] });
   }, [controller, initiative]);
   if (!draft) return null;
   return <InitiativeEntryPage embedded={embedded} draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}

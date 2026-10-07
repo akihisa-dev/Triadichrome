@@ -1,7 +1,6 @@
-import { type Kind, type KindChange } from "../core/kindMaster";
-import type { AutoSaveProps } from "./useAutoSave";
+import { type Kind } from "../core/domain/kinds";
 
-type Props = AutoSaveProps & { kinds: Kind[]; isSaving: boolean; onChange: (change: KindChange) => Promise<void>; onBack: () => void };
+type Props = { kinds: Kind[]; isSaving: boolean; onBack: () => void };
 export function KindMasterPage({ kinds, onBack, isSaving }: Props) {
   return <main className="master-page" aria-labelledby="kind-master-title">
     <button className="text-button master-back" type="button" disabled={isSaving} onClick={onBack}>← マスタへ戻る</button>
