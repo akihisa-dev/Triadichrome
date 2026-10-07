@@ -1,35 +1,52 @@
 import type { ReactNode } from "react";
-import { Fragment, useMemo } from "react";
+import { Fragment, useState, useLayoutEffect } from "react";
 import { buildCostComparison } from "../core/tables/costComparison";
+import { filterPlan } from "../core/tables/planTables";
+import { ChoiceChips } from "./ChoiceChips";
+import "./KindSelectionSlots.css";
 import type { KindId } from "../core/domain/kinds";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
 
 import { formatAmount, formatRate } from "../core/domain/amounts";
 
-type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster: () => void };
+type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster?: () => void };
 
-export function CostTablePage({ contents, selected, selection, onOpenMaster }: Props) {
-  const { accounts, aggregations } = contents;
-  const { labels, rows } = useMemo(() => buildCostComparison(contents, selected), [contents, selected]);
+export function CostTablePage({ contents, selected, selection }: Props) {
+  const { aggregations } = contents;
+  const [industryIds, setIndustries] = useState<number[]>([]);
+  const [departmentIds, setDepartments] = useState<number[]>([]);
+  const available = contents;
+  const industries = industryIds.filter(id => available.industries.some(item => item.id === id));
+  const departments = departmentIds.filter(id => available.departments.some(item => item.id === id));
+  useLayoutEffect(() => {
+    if (industries.length !== industryIds.length) setIndustries(industries);
+    if (departments.length !== departmentIds.length) setDepartments(departments);
+  }, [available, industryIds, departmentIds]);
+  const { labels, rows } = buildCostComparison(filterPlan(contents, {
+    industries: industries.length ? industries : null,
+    departments: departments.length ? departments : null,
+  }), selected);
   const salesGroupId = aggregations.find(group => group.required === "sales")?.id;
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
     <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
     {initiativeMonths.map(month => <Fragment key={month}>{row.values.map((values, index) => <td key={index} className={index === labels.length - 1 ? "initiative-month-end" : undefined}>{row.kind === "ratio" ? formatRate(values[month], labels[index] === "前年差" || labels[index] === "一次予算差") : formatAmount(values[month])}</td>)}</Fragment>)}
   </tr>;
-  const assigned = new Set(aggregations.flatMap(group => group.members.filter(member => member.kind === "account").map(member => member.id)));
-  const unassigned = accounts.filter(account => !assigned.has(account.id));
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
       <span className="field-hint">単位：千円</span>
       {selection}
     </div>
-    {(unassigned.length > 0 || rows.some(row => !row.configured)) && <p className="page-description cost-master-guide">
-      {unassigned.length > 0 ? `集計に未所属の科目が${unassigned.length}件あります。` : "計算対象が未設定の集計があります。"}
-      <button type="button" className="text-button" onClick={onOpenMaster}>集計マスタを開く</button>
-    </p>}
+    <div className="cost-classification-row">
+      <ChoiceChips id="cost-industry" label="業種名" value={industries} emptyLabel="全業種の合計"
+        options={available.industries.map(item => ({ id: item.id, name: item.industryName }))}
+        disabled={false} onChange={setIndustries} />
+      <ChoiceChips id="cost-department" label="部署名" value={departments} emptyLabel="全部署の合計"
+        options={available.departments.map(item => ({ id: item.id, name: item.departmentName }))}
+        disabled={false} onChange={setDepartments} />
+    </div>
     <div className="initiative-list-container cost-table-container" role="region" aria-label="総原価表の月別前年・種別別金額" tabIndex={0}>
       <table className="initiative-list-table cost-table" aria-label="総原価表">
         <colgroup>

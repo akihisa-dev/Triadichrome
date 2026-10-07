@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 export async function verifyCostComparison(api) {
   const contents = await api.readPlanContents(await api.createSamplePlan(2026));
   const values = (table, name, month) => table.rows.find(row => row.name === name).values.map(value => value[month]);
+  const filtered = api.buildCostComparison(api.filterPlan(contents, { industries: [1, 2], departments: [1] }), [1, 2]);
+  assert.equal(values(filtered, "売上高", 4)[0], 2100);
   const primary = api.buildCostComparison(contents, [1]);
   assert.deepEqual(primary.labels, ["前年", "一次予算", "前年差"]);
   assert.deepEqual(values(primary, "売上高", 4), [25290, 25640, 350]);

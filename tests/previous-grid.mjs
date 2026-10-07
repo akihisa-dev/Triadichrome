@@ -28,6 +28,9 @@ export function verifyPreviousGrid(api) {
   assert.equal(total(null, [1]).get(1)[4], 0.099);
   assert.equal(total([1], [2]).get(1)[4], 0.2);
   assert.equal(total([2], [2]).get(1)[4], 0);
+  assert.equal(total([1, 2], [1]).get(1)[4], 0.099);
+  assert.equal(total([1, 2], [1, 2]).get(1)[4], 0.299);
+  assert.equal(total([1, 2], [2]).get(1)[4], 0.2);
   assert.equal(total(null, null).get(2)[4], 0);
   assert.equal(total(null, null).get(1)[3], 0);
 

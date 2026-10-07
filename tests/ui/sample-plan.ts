@@ -14,7 +14,7 @@ import { registerInitiative, updateInitiative } from "../../Triadichrome-extensi
 import { type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/domain/plan";
 
 // All amount literals are in thousands of yen; 0.001 represents one yen.
-// Previous amounts span every industry/department pair; varying sales verify full and partial totals.
+// Previous amounts span every industry/department pair; varying sales verify full, partial and multi-chip totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase(fiscalYear);
@@ -68,7 +68,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   await add("通信運搬費と消耗品費の削減", "費用の負数は削減額です。施策一覧の4月は売上0・費用-4・利益4と表示されます。明細の売上・費用・利益は、通信運搬費で0・-3・3と表示されます。入力の小数と整数千円の表示を比較できます。3月は1円の端数を保持します。", [
     annual("通信運搬費", -2.5), row("消耗品費", { ...annual("消耗品費", -1.25).amounts, 3: "-1.251" }),
   ]);
-  await add("サブスクリプション事業の拡大", "毎月の増加と先行費用を含む計画です。", [
+  await add("サブスクリプション事業の拡大", "毎月の増加と先行費用を含む計画です。前年入力・総原価表では業種と部署のチップを複数選び、組み合わせの合計を参照できます。一つずつに絞ると入力へ戻ります。", [
     annual("本支店売上高", 40, 10), annual("店内売上原価", 15, 2),
     annual("給料手当", 30), annual("賃借料", 10),
   ]);

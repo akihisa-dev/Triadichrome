@@ -1,0 +1,8 @@
+.choice-chips { display: flex; align-items: center; gap: 2px; min-width: 0; width: 100%; padding: 2px; scrollbar-width: none; }
+.choice-chips .chip { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; padding: 7px clamp(0px, .4vw, 6px); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--muted); font-size: 12px; line-height: 18px; white-space: nowrap; transition: background-color .2s, color .2s, border-color .2s; }
+.choice-chips .chip.on { background: var(--soft); color: var(--ink); border-color: var(--ink); }
+.choice-chips .chip:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.choice-chips .chip:disabled { cursor: default; }
+@media (prefers-reduced-motion: reduce) { .choice-chips .chip { transition-duration: .01s; } }
+
+.choice-chips::-webkit-scrollbar { display: none; }

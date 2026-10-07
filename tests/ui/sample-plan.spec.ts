@@ -89,16 +89,16 @@ test("一次予算の引き継ぎ・手修正0・解除と前年入力を操作�
   await expect(april).toHaveValue("120");
   await expect(app.getByRole("spinbutton", { name: "売上高 10月の金額", exact: true })).toHaveValue("150");
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
   const previous = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   await previous.fill("1001");
   await previous.press("Enter");
-  await expect(app.getByRole("spinbutton", { name: "部署名", exact: true })).toBeEnabled();
+  await expect(app.getByRole("group", { name: "部署名", exact: true })).toBeEnabled();
   await menu.getByRole("button", { name: "総原価表", exact: true }).click();
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
   await expect(previous).toHaveValue("1001");
 });
 

@@ -118,8 +118,8 @@ test("前年の範囲入力を一操作で取り消し、分類選択と新し�
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "前年入力", exact: true }).click();
-  const industry = app.getByRole("spinbutton", { name: "業種名", exact: true });
-  const department = app.getByRole("spinbutton", { name: "部署名", exact: true });
+  const industry = app.getByRole("group", { name: "業種名", exact: true });
+  const department = app.getByRole("group", { name: "部署名", exact: true });
   await selectClassification(industry, "直営自動車");
   await selectClassification(department, "部署A");
   await page.mouse.move(page.viewportSize()!.width - 10, 100);
@@ -137,8 +137,8 @@ test("前年の範囲入力を一操作で取り消し、分類選択と新し�
   await undo.click();
   await expect(april).toHaveValue("1000");
   await expect(may).toHaveValue("1000");
-  await expect(industry).toHaveAttribute("aria-valuetext", "直営自動車");
-  await expect(department).toHaveAttribute("aria-valuetext", "部署A");
+  await expect(industry.getByRole("button", { name: "直営自動車", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(department.getByRole("button", { name: "部署A", exact: true })).toHaveAttribute("aria-pressed", "true");
   await redo.click();
   await expect(april).toHaveValue("1200.125");
   await expect(may).toHaveValue("-0.001");

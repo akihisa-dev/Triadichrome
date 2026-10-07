@@ -43,6 +43,13 @@ export async function attachImage(testInfo: TestInfo, name: string, image: Buffe
 // Choose through the same keyboard operation available to slot users.
 export async function selectClassification(slot: Locator, name: string) {
   await expect(slot).toHaveAttribute("aria-disabled", "false");
+  if (await slot.getAttribute("role") === "group") {
+    await slot.getByRole("button").first().click();
+    const button = slot.getByRole("button", { name, exact: true });
+    if (await button.getAttribute("aria-pressed") !== "true") await button.click();
+    await expect(button).toHaveAttribute("aria-pressed", "true");
+    return;
+  }
   await slot.press("Home");
   await expect(slot).toHaveAttribute("aria-valuenow", "0");
   await expect(slot).toHaveAttribute("aria-disabled", "false");

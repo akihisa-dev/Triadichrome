@@ -31,8 +31,8 @@ test("マスタの直下の日時履歴から全画面を閲覧でき、編集�
   await app.locator('.detail-table td[data-cell$="-amount"]').first().dblclick();
   await expect(app.locator(".detail-editor")).toHaveCount(0);
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
   await expect(app.locator(".previous-grid input")).toHaveCount(0);
   for (const title of ["総原価表", "展開表"]) {
     await menu.getByRole("button", { name: title, exact: true }).click();
