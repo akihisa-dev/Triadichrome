@@ -12,7 +12,7 @@
 .home-relations-hint { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 .home-relation { transition: opacity var(--motion-feedback) var(--motion-ease); }
 .home-relation path { fill: none; stroke: #aaa; stroke-width: 1.5; transition: stroke var(--motion-feedback), stroke-width var(--motion-feedback); }
-.home-relation.is-active path { stroke: var(--ink); stroke-width: 2; }
+.home-relation.is-active path { stroke: var(--accent); stroke-opacity: .55; stroke-width: 2; }
 .home-relation.is-muted { opacity: .35; }
 .home-relation-node { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 8px; margin: 6px; width: 200px; height: 72px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 16px; font-weight: 500; cursor: grab; }
 .home-relation-icon { display: grid; place-items: center; flex: 0 0 32px; width: 32px; margin-top: -4px; background: var(--canvas); color: #555; transition: color var(--motion-feedback), transform var(--motion-feedback); }
@@ -21,7 +21,7 @@
 .home-relation-node.is-entry .home-relation-icon svg { width: 36px; height: 36px; }
 .home-relation-node.is-master .home-relation-icon { color: #888; }
 .home-relation-node:hover .home-relation-icon, .home-relation-node:focus-visible .home-relation-icon, .home-relation-node.is-related .home-relation-icon { color: var(--ink); }
-.home-relation-node.is-selected .home-relation-icon { transform: scale(1.08); }
+.home-relation-node.is-selected:not(:disabled) .home-relation-icon { color: var(--accent); transform: scale(1.08); }
 .home-relation-name { padding: 2px 6px; border-radius: 6px; background: var(--canvas); line-height: 24px; }
 .home-relation-node:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .home-relation-node.is-selected .home-relation-name { font-weight: 700; }

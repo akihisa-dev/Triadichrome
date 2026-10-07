@@ -57,7 +57,9 @@ const MAX_SCALE = 2.5;
 export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
   const graph = useHomeGraphMotion(graphNodes, graphEdges, view, () => { if (view.current?.fitted && !cameraTarget.current) fit(); });
   const viewport = useRef<HTMLDivElement>(null);
-  const [active, setActive] = useState<string | null>(null);
+  const [highlighted, setActive] = useState<string | null>(null);
+  const [grabbed, setGrabbed] = useState<string | null>(null);
+  const active = grabbed ?? highlighted;
   const { camera, target: cameraTarget, update, smooth, cancel: cancelZoom } = useRelationCamera(view);
   const [dragging, setDragging] = useState(false);
   const points = useRef(new Map<number, { x: number; y: number }>());
@@ -108,7 +110,7 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
     gesture.current = { camera: view.current ?? camera, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, distance: values.length > 1 ? Math.hypot(a.x - b.x, a.y - b.y) : 0 };
   };
   const endPointer = (event: PointerEvent<HTMLDivElement>) => {
-    if (graph.pull.current?.pointerId === event.pointerId) graph.release();
+    if (graph.pull.current?.pointerId === event.pointerId) { graph.release(); setGrabbed(null); }
     points.current.delete(event.pointerId);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
     startGesture();
@@ -127,8 +129,11 @@ export function HomeRelationsPage({ onNavigate, disabled, view }: Props) {
         const point = position(event);
         if (!points.current.size && !disabled) {
           const target = event.target instanceof Element ? event.target.closest<HTMLElement>(".home-relation-node, .home-relation-subnode") : null;
-          if (target?.dataset.page) graph.begin(target.dataset.page, event.pointerId, point.x, point.y);
-        } else if (points.current.size) { graph.release(); moved.current = true; }
+          if (target?.dataset.page) {
+            graph.begin(target.dataset.page, event.pointerId, point.x, point.y);
+            setGrabbed(target.dataset.page);
+          }
+        } else if (points.current.size) { graph.release(); setGrabbed(null); moved.current = true; }
         points.current.set(event.pointerId, point);
         startGesture();
       }}

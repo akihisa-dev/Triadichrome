@@ -29,18 +29,18 @@ test.beforeEach(async ({ page, app }) => {
   await expect(app.getByRole("main", { name: "ホーム", exact: true })).toBeVisible();
 });
 
-test("全画面で選択中のアイコンだけが青くなり、文字・背景・装飾棒は変わらない", async ({ app }) => {
+test("全画面で選択中のサイドバーアイコンが青くなり、文字・背景・装飾棒は変わらない", async ({ app }) => {
   const navigation = app.getByRole("navigation", { name: "メインナビゲーション" });
   for (const current of routes) {
     await navigate(app, current);
     await expect(navigation.locator('[aria-current="page"]')).toHaveCount(1);
     const leakedColor = await app.locator("main").evaluate(main => {
       const properties = ["color", "backgroundColor", "borderColor", "stroke"] as const;
-      return [...main.querySelectorAll("h1, table th, table td, .kind-tabs button, .home-relation-node, .home-relation path")]
+      return [...main.querySelectorAll("h1, table th, table td, .kind-tabs button, .home-relation-name, .home-relation-subnode")]
         .filter(node => properties.some(property => getComputedStyle(node)[property].includes("rgb(0, 51, 255)")))
         .map(node => node.tagName);
     });
-    expect(leakedColor, "表・見出し・種別タブ・相関図に青を広げない").toEqual([]);
+    expect(leakedColor, "表・見出し・種別タブ・相関図の名称と説明に青を広げない").toEqual([]);
     for (const name of routes) {
       const item = navigation.getByRole("button", { name, exact: true });
       await expect(item.locator("svg")).toHaveCSS("color", name === current ? blue : ink);

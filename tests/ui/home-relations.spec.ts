@@ -116,11 +116,8 @@ test("ホバーとフォーカスで直接の関係を強調し、説明サブ�
   await expect(home.locator(".home-relation.is-active")).toHaveCount(9);
   await expect(home.locator(".home-relation > title")).toHaveCount(14);
   await expect(home.locator(".home-relation text, .home-relation rect")).toHaveCount(0);
-  const blue = await home.locator(".home-relation-node, .home-relation path").evaluateAll(nodes => nodes.some(node => {
-    const style = getComputedStyle(node);
-    return [style.color, style.stroke, style.backgroundColor].includes("rgb(0, 51, 255)");
-  }));
-  expect(blue).toBe(false);
+  await expect(input.locator(".home-relation-icon")).toHaveCSS("color", "rgb(0, 51, 255)");
+  await expect(home.locator(".home-relation.is-active path").first()).toHaveCSS("stroke-opacity", "0.55");
 });
 
 test("ズームは中間倍率を通り、途中反転しても連続する", async ({ app }) => {
