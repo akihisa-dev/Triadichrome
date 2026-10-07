@@ -8,11 +8,11 @@ test("施策一覧は売上・費用・利益と固定見出しを表示し、�
   await settleMotion(app.locator("body"));
   const region = app.getByRole("region", { name: "施策一覧の月別売上・費用・利益", exact: true });
   const product = region.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "既存商品の販売拡大", exact: true }) });
-  await expect(product.getByRole("cell").nth(0)).toHaveText("100,000");
-  await expect(product.getByRole("cell").nth(1)).toHaveText("11,000");
-  await expect(product.getByRole("cell").nth(2)).toHaveText("89,126");
+  await expect(product.getByRole("cell").nth(0)).toHaveText("100");
+  await expect(product.getByRole("cell").nth(1)).toHaveText("11");
+  await expect(product.getByRole("cell").nth(2)).toHaveText("89");
   const reduction = region.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "通信運搬費と消耗品費の削減", exact: true }) });
-  await expect(reduction.getByRole("cell").nth(1)).toHaveText("-3,751");
+  await expect(reduction.getByRole("cell").nth(1)).toHaveText("-4");
   const subsidy = region.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "助成金の受入れ", exact: true }) });
   await expect(subsidy.getByRole("cell").nth(16)).toHaveText("0");
   const metrics = await region.evaluate(node => ({ bottom: node.getBoundingClientRect().bottom, viewport: window.innerHeight,

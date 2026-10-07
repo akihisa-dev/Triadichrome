@@ -13,6 +13,7 @@ import { readPlanContents } from "../../Triadichrome-extension/src/core/storage/
 import { registerInitiative, updateInitiative } from "../../Triadichrome-extension/src/core/storage/initiatives";
 import { type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/domain/plan";
 
+// All amount literals are in thousands of yen; 0.001 represents one yen.
 // Previous amounts span every industry/department pair; varying sales verify full and partial totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
 export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
@@ -51,34 +52,34 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   };
 
   await add("既存商品の販売拡大", "全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。", [
-    { ...annual("売上高", 120000, 5000), overrides: { 2: { 4: "130000", 10: "170000", 11: "0" } } }, annual("売上高", 30000, 1000), annual("本支店売上原価", 60000, 2500),
-    annual("宣伝広告費", 8000), annual("旅費", 3000), annual("営業外収益", 125.501),
+    { ...annual("売上高", 120, 5), overrides: { 2: { 4: "130", 10: "170", 11: "0" } } }, annual("売上高", 30, 1), annual("本支店売上原価", 60, 2.5),
+    annual("宣伝広告費", 8), annual("旅費", 3), annual("営業外収益", 0.125),
   ]);
   await add("保守サービスの新規契約", "7月開始。4〜6月は未入力、翌年3月まで継続します。", [
-    row("グループ売上高", { 7: "80000", 8: "80000", 9: "100000", 10: "100000", 11: "120000", 12: "120000", 1: "140000", 2: "140000", 3: "160000" }),
-    row("店内売上原価", { 7: "30000", 8: "30000", 9: "40000", 10: "40000", 11: "50000", 12: "50000", 1: "60000", 2: "60000", 3: "70000" }),
-    row("給料手当", { 7: "20000", 8: "20000", 9: "20000", 10: "20000", 11: "20000", 12: "20000", 1: "20000", 2: "20000", 3: "20000" }),
+    row("グループ売上高", { 7: "80", 8: "80", 9: "100", 10: "100", 11: "120", 12: "120", 1: "140", 2: "140", 3: "160" }),
+    row("店内売上原価", { 7: "30", 8: "30", 9: "40", 10: "40", 11: "50", 12: "50", 1: "60", 2: "60", 3: "70" }),
+    row("給料手当", { 7: "20", 8: "20", 9: "20", 10: "20", 11: "20", 12: "20", 1: "20", 2: "20", 3: "20" }),
   ]);
   await add("季節キャンペーン", "夏季と年末の単月施策。一覧の施策名を選び、右パネルで備考と月額を編集して保存を確認し、「施策入力を開く」で同じ内容が全画面へ引き継がれることを確認できます。未入力月と入力済みのゼロを比較できます。", [
-    row("売上高", { 6: "50000", 7: "75000", 12: "180000", 1: "0" }),
-    row("本支店売上原価", { 6: "20000", 7: "30000", 12: "72000", 1: "0" }),
-    row("宣伝広告費", { 5: "15000", 6: "25000", 11: "40000" }),
+    row("売上高", { 6: "50", 7: "75", 12: "180", 1: "0" }),
+    row("本支店売上原価", { 6: "20", 7: "30", 12: "72", 1: "0" }),
+    row("宣伝広告費", { 5: "15", 6: "25", 11: "40" }),
   ]);
-  await add("通信運搬費と消耗品費の削減", "費用の負数は削減額です。施策一覧の4月は売上0・費用-3,751・利益3,751と表示されます。明細の売上・費用・利益は、通信運搬費で0・-2,501・2,501と表示されます。入力の小数と整数千円の表示を比較できます。3月は1円の端数を保持します。", [
-    annual("通信運搬費", -2500.5), row("消耗品費", { ...annual("消耗品費", -1250.25).amounts, 3: "-1250.251" }),
+  await add("通信運搬費と消耗品費の削減", "費用の負数は削減額です。施策一覧の4月は売上0・費用-4・利益4と表示されます。明細の売上・費用・利益は、通信運搬費で0・-3・3と表示されます。入力の小数と整数千円の表示を比較できます。3月は1円の端数を保持します。", [
+    annual("通信運搬費", -2.5), row("消耗品費", { ...annual("消耗品費", -1.25).amounts, 3: "-1.251" }),
   ]);
   await add("サブスクリプション事業の拡大", "毎月の増加と先行費用を含む計画です。", [
-    annual("本支店売上高", 40000, 10000), annual("店内売上原価", 15000, 2000),
-    annual("給料手当", 30000), annual("賃借料", 10000),
+    annual("本支店売上高", 40, 10), annual("店内売上原価", 15, 2),
+    annual("給料手当", 30), annual("賃借料", 10),
   ]);
   await add("設備更新と償却費の見直し", "10月から新しい設備の償却を開始し、旧設備分を減額します。", [
-    row("固定資産減価償却費", { 10: "18000", 11: "18000", 12: "18000", 1: "18000", 2: "18000", 3: "18000" }),
-    row("固定資産減価償却費", { 10: "-5000", 11: "-5000", 12: "-5000", 1: "-5000", 2: "-5000", 3: "-5000" }),
-    row("消耗品費", { 9: "25000" }),
+    row("固定資産減価償却費", { 10: "18", 11: "18", 12: "18", 1: "18", 2: "18", 3: "18" }),
+    row("固定資産減価償却費", { 10: "-5", 11: "-5", 12: "-5", 1: "-5", 2: "-5", 3: "-5" }),
+    row("消耗品費", { 9: "25" }),
   ]);
-  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。業種・部署の分類と利益への加算を確認できます。", [row("営業外収益", { 9: "100000", 3: "50000" })]);
+  await add("助成金の受入れ", "利益属性の科目。9月と翌3月だけ計上します。業種・部署の分類と利益への加算を確認できます。", [row("営業外収益", { 9: "100", 3: "50" })]);
   await add("ゼロと相殺の確認", "4月は明示的なゼロ、5月は同じ科目の正負が相殺、6月以降の空欄は0として保存されます。", [
-    row("売上高", { 4: "0", 5: "12000.5" }), row("売上高", { 5: "-12000.5" }),
+    row("売上高", { 4: "0", 5: "12.5" }), row("売上高", { 5: "-12.5" }),
   ]);
   await add("未確定施策の入力準備", "全月0でも科目は使用中です。未所属費用を集計へ移す操作も試せます。", [row("未所属費用", {})]);
 
@@ -108,8 +109,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   const initiative = (await readPlanContents(bytes)).initiatives[0]!;
   const draft: InitiativeEntryDraft = { ...initiative, fiscalYear: String(fiscalYear) };
   const historic = (amount: string) => ({ ...draft, note: "履歴確認用の過去の状態", rows: draft.rows.map((row, index) => index === 0 ? { ...row, amounts: { ...row.amounts, 4: amount } } : row) });
-  const initial = await stable(await updateInitiative(bytes, initiative.id, fiscalYear, historic("100000")));
-  bytes = await trackHistoryChange(initial, await stable(await updateInitiative(initial, initiative.id, fiscalYear, historic("110000"))), timestamp);
+  const initial = await stable(await updateInitiative(bytes, initiative.id, fiscalYear, historic("100")));
+  bytes = await trackHistoryChange(initial, await stable(await updateInitiative(initial, initiative.id, fiscalYear, historic("110"))), timestamp);
   bytes = await recordDataHistory(bytes, timestamp.replace("00:00:00", "00:05:00"));
   bytes = await trackHistoryChange(bytes, await stable(await updateInitiative(bytes, initiative.id, fiscalYear, draft)), timestamp.replace("00:00:00", "00:06:00"));
   return recordDataHistory(bytes, timestamp.replace("00:00:00", "00:11:00"));

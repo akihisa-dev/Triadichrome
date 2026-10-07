@@ -35,11 +35,11 @@ test("予算選択の列構成・重複防止・比較の符号と画面別の�
   await selectClassification(second, "確定予算");
   await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(12);
   const total = expansion.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "合計", exact: true }) });
-  await expect(total.getByRole("cell").nth(4)).toHaveText("10,010");
+  await expect(total.getByRole("cell").nth(4)).toHaveText("20");
   await selectClassification(second, "未選択");
   await selectClassification(first, "確定予算");
   await selectClassification(second, "一次予算");
-  await expect(total.getByRole("cell").nth(4)).toHaveText("10,010");
+  await expect(total.getByRole("cell").nth(4)).toHaveText("20");
   await expect(app.getByText("比較：確定予算 − 一次予算", { exact: true })).toBeVisible();
   const title = await app.getByRole("heading", { name: "展開表", exact: true }).boundingBox();
   const slots = await app.getByRole("group", { name: "比較対象", exact: true }).boundingBox();
