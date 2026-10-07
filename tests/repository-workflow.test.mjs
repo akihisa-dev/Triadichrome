@@ -135,6 +135,21 @@ test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗を
 });
 
 
+test("全機能確認用サンプルは通常のstageとコミットを許可する", async t => {
+  const repo = await repository(t);
+  await cp(path.join(projectRoot, ".gitignore"), path.join(repo.root, ".gitignore"));
+  await mkdir(path.join(repo.root, "samples"));
+  const sample = "samples/全機能確認用.triadic";
+  await writeFile(path.join(repo.root, sample), "generated sample");
+  repo.git("add", "--", sample);
+  succeeds(repo.script("check-samples.mjs"));
+  succeeds(repo.script("setup-hooks.mjs"));
+  for (const file of versionFiles) await repo.setVersion(file, "1.2.1");
+  repo.git("add", "--", ...versionFiles);
+  repo.git("commit", "--quiet", "-m", "Include generated sample");
+  assert.equal(repo.git("show", `HEAD:${sample}`), "generated sample");
+});
+
 test("計画ファイルは大小文字とGit設定に依存せず除外し強制追加も拒否する", async t => {
   for (const ignoreCase of ["false", "true"]) for (const extension of ["triadic", "TRIADIC", "Triadic", "tRiAdIc"]) {
     const repo = await repository(t);
