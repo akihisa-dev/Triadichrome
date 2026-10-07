@@ -7,9 +7,9 @@
 .cost-table-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 12px 16px; gap: 8px; }
 .cost-table-page .initiative-list-heading { flex-shrink: 0; gap: 8px 16px; }
 .cost-table-page h1 { font-size: 20px; }
-.cost-table-page .kind-selection-slots { flex: 0 1 auto; min-width: 0; margin-bottom: 0; }
-.cost-table-page .kind-selection-slots .classification-field { width: auto; grid-template-columns: max-content 128px; align-items: center; gap: 8px; }
-.cost-table-page .kind-selection-slots .classification-field label { font-size: 12px; }
+:is(.cost-table-page, .initiative-overview-page) .kind-selection-slots { flex: 0 1 auto; min-width: 0; margin-bottom: 0; }
+:is(.cost-table-page, .initiative-overview-page) .kind-selection-slots .classification-field { width: auto; grid-template-columns: max-content 128px; align-items: center; gap: 8px; }
+:is(.cost-table-page, .initiative-overview-page) .kind-selection-slots .classification-field label { font-size: 12px; }
 .cost-table-page .cost-master-guide { flex-shrink: 0; margin: 0; font-size: 12px; line-height: 1.5; }
 .cost-table-page .cost-master-guide .text-button { min-height: 24px; padding: 2px 6px; font-size: inherit; }
 .cost-table-page .cost-table-container { flex: 1; min-height: 0; min-width: 0; margin: 0; overflow: scroll; scrollbar-gutter: stable; }

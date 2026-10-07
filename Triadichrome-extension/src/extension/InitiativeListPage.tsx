@@ -22,10 +22,10 @@ export function InitiativeListPage({ selection, initiatives, fiscalYear, onAddIn
   const selected = initiatives.find(item => item.id === selectedId);
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   return <main className={`initiative-list-page initiative-overview-page${selected ? " has-initiative-editor" : ""}`} aria-labelledby="initiative-list-title">
-    {selection}
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
       <span className="field-hint">単位：千円</span>
+      {selection}
       <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>
     <div className="initiative-list-workspace">

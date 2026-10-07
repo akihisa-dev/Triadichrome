@@ -23,17 +23,19 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
       amounts: Object.fromEntries(initiativeMonths.map(month => [month, contents.previousAmounts.find(amount => amount.accountId === account.id && amount.industryId === industryId && amount.departmentId === departmentId && amount.month === month)?.amount ?? "0"])) })) });
   }, [controller, contents, industryId, departmentId]);
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
-    <h1 id="previous-input-title">前年入力</h1>
-    <div className="initiative-classification-row">
-      <ClassificationSlot id="previous-industry" label="業種名" value={industryId} emptyLabel="全業種の合計"
-        options={contents.industries.map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
-        onChange={value => { controller.end(); setIndustry(value); }} />
-      <ClassificationSlot id="previous-department" label="部署名" value={departmentId} emptyLabel="全部署の合計"
-        options={contents.departments.map(item => ({ id: item.id, name: item.departmentName }))} disabled={autoSave.pending}
-        onChange={value => { controller.end(); setDepartment(value); }} />
+    <div className="initiative-list-heading">
+      <h1 id="previous-input-title">前年入力</h1>
+      <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
+      <div className="initiative-classification-row">
+        <ClassificationSlot id="previous-industry" label="業種名" value={industryId} emptyLabel="全業種の合計"
+          options={contents.industries.map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
+          onChange={value => { controller.end(); setIndustry(value); }} />
+        <ClassificationSlot id="previous-department" label="部署名" value={departmentId} emptyLabel="全部署の合計"
+          options={contents.departments.map(item => ({ id: item.id, name: item.departmentName }))} disabled={autoSave.pending}
+          onChange={value => { controller.end(); setDepartment(value); }} />
+      </div>
+      <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     </div>
-    <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
-    <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
     <PreviousAmountGrid key={`${industryId}:${departmentId}`} contents={filterPlan(contents, {
       industries: industryId === null ? null : [industryId], departments: departmentId === null ? null : [departmentId],
     })} draft={!readOnly && industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />

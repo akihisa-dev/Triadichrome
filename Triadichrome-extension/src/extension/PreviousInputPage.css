@@ -1,5 +1,14 @@
-.previous-input-page { max-width: none; min-width: 0; }
-.previous-input-page .initiative-classification-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 264px; gap: 8px; }
+.home-content:has(.previous-input-page) { overflow: hidden; }
+.page-switch:has(> .previous-input-page) { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.previous-input-page { display: flex; flex-direction: column; height: 100%; max-width: none; min-width: 0; min-height: 0; gap: 8px; }
+.previous-input-page .initiative-list-heading { flex-shrink: 0; gap: 8px 16px; }
+.previous-input-page h1 { font-size: 20px; }
+.previous-input-page .initiative-classification-row { flex: 0 1 auto; min-width: 0; gap: 8px; }
+.previous-input-page .classification-field { grid-template-columns: max-content 128px; align-items: center; gap: 8px; }
+.previous-input-page .classification-field label { font-size: 12px; }
+.previous-input-page .auto-save-controls { min-height: 24px; gap: 4px 8px; }
+.previous-input-page .auto-save-controls .text-button { min-height: 24px; padding: 2px 6px; }
+.previous-input-page .previous-grid-container { flex: 1; min-height: 0; max-height: none; margin-top: 0; }
 .previous-grid-container { overflow: auto; max-width: 100%; margin-top: 16px; }
 .previous-input-page .previous-grid { min-width: 1480px; }
 .previous-input-page .previous-grid thead { z-index: 4; }
