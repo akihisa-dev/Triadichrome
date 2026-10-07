@@ -19,4 +19,4 @@ yarn-error.log*
 Thumbs.db
 
 # ローカルのサンプル・利用者データをGitHubへ送らない
-*.triadic
+*.[tT][rR][iI][aA][dD][iI][cC]

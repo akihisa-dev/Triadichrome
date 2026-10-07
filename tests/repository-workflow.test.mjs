@@ -135,18 +135,23 @@ test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗を
 });
 
 
-test("サンプルは通常のstageから除外し、強制追加もコミット前に拒否する", async t => {
-  const repo = await repository(t);
-  await cp(path.join(projectRoot, ".gitignore"), path.join(repo.root, ".gitignore"));
-  await mkdir(path.join(repo.root, "samples"));
-  await writeFile(path.join(repo.root, "samples/check.triadic"), "local sample");
-  assert.equal(repo.git("check-ignore", "samples/check.triadic"), "samples/check.triadic");
-  fails(repo.run("git", ["add", "--", "samples/check.triadic"]), /ignored/);
-  succeeds(repo.script("check-samples.mjs"));
-  repo.git("add", "-f", "--", "samples/check.triadic");
-  fails(repo.script("check-samples.mjs"), /Git管理に含められません/);
-  succeeds(repo.script("setup-hooks.mjs"));
-  const head = repo.git("rev-parse", "HEAD");
-  fails(repo.run("git", ["commit", "-m", "Sample must be rejected"]), /Git管理に含められません/);
-  assert.equal(repo.git("rev-parse", "HEAD"), head);
+test("計画ファイルは大小文字とGit設定に依存せず除外し強制追加も拒否する", async t => {
+  for (const ignoreCase of ["false", "true"]) for (const extension of ["triadic", "TRIADIC", "Triadic", "tRiAdIc"]) {
+    const repo = await repository(t);
+    repo.git("config", "core.ignorecase", ignoreCase);
+    await writeFile(path.join(repo.root, ".gitignore"), await readFile(path.join(projectRoot, ".gitignore"), "utf8"));
+    await mkdir(path.join(repo.root, "samples"));
+    const file = `samples/check.${extension}`;
+    await writeFile(path.join(repo.root, file), "local sample");
+    assert.equal(repo.git("check-ignore", "--", file), file);
+    fails(repo.run("git", ["add", "--", file]), /ignored/);
+    succeeds(repo.script("check-samples.mjs"));
+    repo.git("add", "-f", "--", file);
+    fails(repo.script("check-samples.mjs"), /Git管理に含められません/);
+    succeeds(repo.script("setup-hooks.mjs"));
+    const head = repo.git("rev-parse", "HEAD");
+    fails(repo.run("git", ["commit", "-m", "Sample must be rejected"]), /Git管理に含められません/);
+    assert.equal(repo.git("rev-parse", "HEAD"), head);
+    assert.equal(await readFile(path.join(repo.root, file), "utf8"), "local sample", "拒否後も元ファイルを保持する");
+  }
 });
