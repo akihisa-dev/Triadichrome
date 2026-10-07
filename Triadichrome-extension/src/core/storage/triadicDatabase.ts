@@ -7,7 +7,20 @@ import { seedDefaultCostMaster } from "./defaultCostMaster";
 import { validateInitiativeStartMonths } from "./initiativeStartMonths";
 import { BUSINESS_TABLES, TRIADIC_FORMAT_ID, TRIADIC_FORMAT_VERSION, TRIADIC_SCHEMA_SQL } from "./triadicSchema";
 export { TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "./triadicSchema";
-const sqlJsPromise = initSqlJs({ locateFile: () => wasmUrl });
+const allowedSchemas = new Map<DocumentType, string>();
+const schemaObjects = (db: Database) => db.exec("SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name")[0]?.values ?? [];
+const sqlJsPromise = initSqlJs({ locateFile: () => wasmUrl }).then(sql => {
+  // Derive both exact allowlists from the authoritative DDL, including SQLite's internal objects.
+  for (const type of ["plan", "snapshot"] as const) {
+    const canonical = new sql.Database();
+    try {
+      canonical.exec(TRIADIC_SCHEMA_SQL);
+      if (type === "plan") canonical.exec(DATA_HISTORY_SQL);
+      allowedSchemas.set(type, JSON.stringify(schemaObjects(canonical)));
+    } finally { canonical.close(); }
+  }
+  return sql;
+});
 export class TriadicFileError extends Error {
   constructor(message: string) { super(message); this.name = "TriadicFileError"; }
 }
@@ -16,6 +29,16 @@ type DocumentType = "plan" | "snapshot";
 function assertDatabase(db: Database, documentType: DocumentType): void {
   if (db.exec("PRAGMA user_version")[0]?.values[0]?.[0] !== TRIADIC_FORMAT_VERSION) {
     throw new TriadicFileError("この保存形式には対応していません。基準年度を指定して新しいファイルを作成してください。");
+  }
+  // Inspect the schema before querying any business object. Never execute supplied definitions.
+  db.exec("PRAGMA trusted_schema = OFF");
+  const objects = schemaObjects(db);
+  if (documentType === "snapshot" && objects.some(([type, name]) => type === "table" && (name === "data_history" || name === "data_history_state"))) {
+    throw new Error("履歴の中に履歴を含めることはできません。");
+  }
+  if (JSON.stringify(objects) !== allowedSchemas.get(documentType)
+    || db.exec("SELECT name FROM temp.sqlite_master").length) {
+    throw new TriadicFileError("このファイルの形式には許可されていない保存構造が含まれています。元のファイルは変更していません。");
   }
   const metadata = new Map((db.exec("SELECT key, value FROM triadic_metadata")[0]?.values ?? []).map(([key, value]) => [String(key), String(value)]));
   if (metadata.get("format_id") !== TRIADIC_FORMAT_ID || metadata.get("format_version") !== String(TRIADIC_FORMAT_VERSION)
