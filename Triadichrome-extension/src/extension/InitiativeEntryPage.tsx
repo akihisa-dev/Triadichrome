@@ -15,7 +15,6 @@ import { type InitiativeEntryDraft } from "../core/domain/plan";
 
 type InitiativeEntryPageProps = {
   draft: InitiativeEntryDraft;
-  embedded?: boolean;
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   expansions: Expansion[];
@@ -29,12 +28,11 @@ type InitiativeEntryPageProps = {
   editing?: { pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, onBack, editing, embedded = false }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, onBack, editing }: InitiativeEntryPageProps) {
   const readOnly = useHistoryReadOnly();
-  const Container = embedded ? "section" : "main";
   const [kind, setKind] = useState<KindId>(1);
   return (
-    <Container className={editing ? "initiative-entry-page" : "initiative-entry-page initiative-entry-compact"} aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
+    <main className={editing ? "initiative-entry-page" : "initiative-entry-page initiative-entry-compact"} aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
       {editing?.before}
       {!editing && onBack && <button className="text-button master-back" type="button" disabled={isSaving} onClick={onBack}>← 施策一覧へ戻る</button>}
       <h1 id="initiative-entry-title">施策入力</h1>
@@ -55,7 +53,7 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           />
         </div>
         {!editing && <button className="primary-button" type="button" disabled={readOnly || isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
-          const inputs = event.currentTarget.closest("main, section")!.querySelectorAll("input");
+          const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
           for (const input of inputs) if (!input.reportValidity()) return;
           onRegister();
         }}>登録</button>}
@@ -102,6 +100,6 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
         <button className="secondary-button" type="button" disabled={readOnly || isSaving || accounts.length === 0 || draft.rows.some(row => row.accountId === null)}
           onClick={() => onDraftChange({ ...draft, rows: [...draft.rows, { id: crypto.randomUUID(), accountId: null, amounts: {} }] })}>＋ 勘定科目を追加</button>
       </div>
-    </Container>
+    </main>
   );
 }

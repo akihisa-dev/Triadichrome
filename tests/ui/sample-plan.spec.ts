@@ -76,7 +76,6 @@ test("一次予算の引き継ぎ・手修正0・解除と前年入力を操作�
   const menu = app.getByRole("navigation", { name: "メインナビゲーション" });
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "確定予算の下期調整", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   await expect(app.getByRole("tab")).toHaveCount(2);
   await april.fill("120");

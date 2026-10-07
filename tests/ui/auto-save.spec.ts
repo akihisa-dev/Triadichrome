@@ -35,7 +35,6 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("100");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "保存する施策", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   const amount = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   await amount.fill("125.5");
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();
@@ -57,7 +56,6 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await expect(app.getByRole("row").filter({ has: app.getByRole("button", { name: "保存する施策", exact: true }) }).getByRole("cell").first()).toHaveText("126");
   await app.getByRole("button", { name: "保存する施策", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("失敗しても残す備考");
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: join(tmpdir(), `triadichrome-auto-save-${testInfo.project.name}.png`) });

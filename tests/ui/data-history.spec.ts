@@ -26,7 +26,6 @@ test("マスタの直下の日時履歴から全画面を閲覧でき、編集�
   await expect(firstAmount).toBeDisabled();
   await app.getByRole("tab", { name: "確定予算", exact: true }).click();
   await expect(firstAmount).toHaveValue("130");
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();
   await menu.getByRole("button", { name: "明細", exact: true }).click();
   await app.locator('.detail-table td[data-cell$="-amount"]').first().dblclick();

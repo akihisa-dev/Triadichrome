@@ -57,7 +57,6 @@ test("別々の施策詳細と戻り先を復元し、保存失敗中には移�
   const forward = app.getByRole("button", { name: "次の画面に進む", exact: true });
   await menu.getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "既存商品の販売拡大", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("既存商品の販売拡大");
   await menu.getByRole("button", { name: "展開表", exact: true }).click();
   await app.getByRole("button", { name: "保守サービスの新規契約", exact: true }).click();

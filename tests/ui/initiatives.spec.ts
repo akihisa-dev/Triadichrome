@@ -48,7 +48,6 @@ test("一覧の施策名から詳細を開き、新規入力の破棄後は空�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("alertdialog", { name: "入力内容を破棄しますか？", exact: true }).getByRole("button", { name: "破棄して一覧へ戻る", exact: true }).click();
   await app.getByRole("button", { name: "施策A", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();
   await expect(app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true })).toHaveAttribute("aria-current", "page");
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策A");
@@ -67,7 +66,6 @@ test("一覧の施策名から詳細を開き、新規入力の破棄後は空�
   await app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true }).click();
   await expect(app.getByRole("combobox", { name: "年度", exact: true })).toHaveCount(0);
   await app.getByRole("button", { name: "施策B", exact: true }).press("Enter");
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策B");
   await expect(app.getByRole("combobox", { name: "年度", exact: true })).toHaveCount(0);
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("200");
@@ -84,7 +82,6 @@ test("一覧の施策名から詳細を開き、新規入力の破棄後は空�
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "施策A", exact: true }).click();
-  await app.getByRole("button", { name: "施策入力を開く", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "施策名", exact: true })).toHaveValue("施策A");
   await expect(app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).first()).toHaveValue("100");
 });

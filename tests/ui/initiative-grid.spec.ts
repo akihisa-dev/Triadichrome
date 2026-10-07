@@ -113,8 +113,6 @@ test("ドラッグで矩形を選択して保存し、開き直しても維持�
   await paste(cell(0, 4), "-0.001");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "範囲入力の保存確認", exact: true }).click();
-  const full = app.getByRole("button", { name: "施策入力を開く", exact: true });
-  if (await full.isVisible()) await full.click();
   for (const row of [0, 1]) for (const month of [4, 5]) await expect(cell(row, month)).toHaveValue("-0.001");
   await cell(0, 4).click(); await cell(0, 4).press("Shift+ArrowRight");
   await paste(cell(0, 5), "12.345");
@@ -124,7 +122,6 @@ test("ドラッグで矩形を選択して保存し、開き直しても維持�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "範囲入力の保存確認", exact: true }).click();
-  if (await full.isVisible()) await full.click();
   await expect(cell(0, 4)).toHaveValue("12.345");
   await expect(cell(0, 5)).toHaveValue("12.345");
   await expect(cell(1, 4)).toHaveValue("-0.001");

@@ -11,7 +11,6 @@ import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
 
 type Props = AutoSaveProps & {
   initiative: Initiative;
-  embedded?: boolean;
   accounts: Account[];
   expansions: Expansion[];
   departments: Department[];
@@ -23,7 +22,7 @@ type Props = AutoSaveProps & {
   onOpenMaster: () => void;
 };
 
-export function InitiativeDetailPage({ initiative, accounts, expansions, departments, periodTypes, industries, backLabel = "施策一覧", onUpdate, onBack, onOpenMaster, onPendingChange, onPrepareSave, embedded = false }: Props) {
+export function InitiativeDetailPage({ initiative, accounts, expansions, departments, periodTypes, industries, backLabel = "施策一覧", onUpdate, onBack, onOpenMaster, onPendingChange, onPrepareSave }: Props) {
   const autoSave = useAutoSave(onUpdate, onPendingChange);
   const { controller, draft } = autoSave;
   useLayoutEffect(() => {
@@ -31,10 +30,10 @@ export function InitiativeDetailPage({ initiative, accounts, expansions, departm
       fiscalYear: initiative.fiscalYear === null ? "" : String(initiative.fiscalYear), rows: initiative.rows.length ? initiative.rows : [{ id: crypto.randomUUID(), accountId: null, amounts: {} }] });
   }, [controller, initiative]);
   if (!draft) return null;
-  return <InitiativeEntryPage embedded={embedded} draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}
+  return <InitiativeEntryPage draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}
     isSaving={false} onOpenMaster={onOpenMaster} onRegister={() => {}} editing={{
       pending: autoSave.pending, onCompositionStart: () => controller.pause(), onCompositionEnd: () => controller.resume(),
-      before: embedded ? null : <button className="text-button master-back" type="button" disabled={autoSave.pending} onClick={onBack}>← {backLabel}へ戻る</button>,
+      before: <button className="text-button master-back" type="button" disabled={autoSave.pending} onClick={onBack}>← {backLabel}へ戻る</button>,
       status: <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />,
     }} />;
 }
