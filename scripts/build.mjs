@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import JSZip from "jszip";
 import {
   buildStagingParent,
   extensionPackageRoot,
@@ -166,7 +167,7 @@ await fs.mkdir(buildStagingParent, { recursive: true });
 const stagingRoot = await fs.mkdtemp(
   path.join(buildStagingParent, ".triadichrome-build-"),
 );
-let synced = false;
+
 
 try {
   const packageJson = await readJson(packageJsonPath);
@@ -213,15 +214,20 @@ try {
   await verifyBuild(stagingRoot, manifest);
   await syncBuild(stagingRoot);
   await verifyBuild(extensionPackageRoot, manifest, false);
-  synced = true;
-
-  const legacyOutputRoot = path.join(buildStagingParent, "extension");
-  try {
-    await fs.rm(legacyOutputRoot, { recursive: true, force: true });
-  } catch (error) {
-    console.warn("旧生成物の後片付けに失敗しました:", error.message);
+  const zip = new JSZip();
+  for (const file of (await walkFiles(stagingRoot)).sort()) {
+    const relativePath = path.relative(stagingRoot, file).split(path.sep).join("/");
+    zip.file(relativePath, await fs.readFile(file), { date: new Date("1980-01-01T00:00:00Z") });
   }
-  console.log("build ok: Triadichrome-extension");
+  const zipBytes = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
+  const archivePath = path.join(buildStagingParent, `Triadichrome-${packageJson.version}.zip`);
+  // ZIP作成が成功してから、検証済みの配布フォルダとZIPを更新する。
+  const outputRoot = path.join(buildStagingParent, "extension");
+  await fs.rm(outputRoot, { recursive: true, force: true });
+  await fs.cp(stagingRoot, outputRoot, { recursive: true });
+  await verifyBuild(outputRoot, manifest);
+  await fs.writeFile(archivePath, zipBytes);
+  console.log(`build ok: dist/extension, ${path.relative(projectRoot, archivePath)}`);
 } catch (error) {
   process.exitCode = process.exitCode || 1;
   console.error("build failed:", error instanceof Error ? error.message : error);

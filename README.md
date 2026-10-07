@@ -150,7 +150,7 @@ TypeScript、React、Vite、SQLite公式のWebAssembly配布（`@sqlite.org/sqli
 
 SQLite本体は拡張機能へ同梱し、メモリ内で処理します。外部通信・追加権限は不要です。保存形式と履歴の構造は維持します。SQLite公式のnpm配布部分はApache-2.0、SQLite本体は著作権放棄、補助コードはMIT・NCSAで提供されています。配布時には同梱のライセンス表示を保持します。
 
-`npm run build`は型チェック後に一時領域でビルドし、Manifest・独立ページ・assets・icons・service workerを`Triadichrome-extension/`へ同期します。続いて[確認用の.triadicファイル](#確認用のtriadicファイル)を再生成します。
+`npm run build`は型チェック後に一時領域でビルド・検証し、Chrome読み込み用の`dist/extension/`と配布用の`dist/Triadichrome-<version>.zip`を生成します。ZIPの直下にManifestを置き、ソース・確認用データ・一時ファイルは含めません。Git管理されるManifest・独立ページ・assets・icons・service workerは、引き続き`Triadichrome-extension/`へ同期します。ZIP生成にはJSZip（MITライセンスを選択）を開発用依存として使用します。続いて[確認用の.triadicファイル](#確認用のtriadicファイル)を再生成します。
 
 施策入力の月別金額は、月見出しに背景を付け、行と列を淡い罫線で区切った表として表示します。科目選択と削除を同じ行内に並べ、金額欄の余白を抑えています。
 
@@ -231,10 +231,10 @@ npm run test:ui:report
 
 1. `npm run build`を実行します。
 2. Chromeの拡張機能管理画面でデベロッパーモードを有効にします。
-3. 「パッケージ化されていない拡張機能を読み込む」で`Triadichrome-extension/`を選択します。
+3. 「パッケージ化されていない拡張機能を読み込む」で`dist/extension/`を選択します。
 4. 拡張機能のアイコンを押すと、ファイルを開く入口画面が開きます。
 
-変更後は再ビルドし、拡張機能管理画面で更新してください。
+変更後は再ビルドし、拡張機能管理画面で更新してください。配布する場合は`dist/Triadichrome-<version>.zip`を使用します。以前のバージョンのZIPは保持します。
 
 ## ストア掲載画像
 
@@ -258,6 +258,6 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 - `Triadichrome-extension/manifest.template.json`：Manifestの正本。
 - `scripts/build.mjs`：配布物の生成と同期。`node-bundle.mjs`は通常テストと確認用データ生成で使う一時bundle・Wasm解決を共有します。
 - `tests/core-api.ts`と`tests/sample-api.ts`：通常テストと確認用データ生成の明示的な入口。
-- `dist/`：ビルドと検証の一時領域。コミット対象外。
+- `dist/`：読み込み用の`extension/`、バージョン付き配布ZIP、ビルドと検証の一時領域。コミット対象外。
 
 開発・検証・コミットのルールは[AGENTS.md](AGENTS.md)を参照してください。

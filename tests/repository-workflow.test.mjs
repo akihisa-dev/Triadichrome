@@ -155,3 +155,34 @@ test("計画ファイルは大小文字とGit設定に依存せず除外し強�
     assert.equal(await readFile(path.join(repo.root, file), "utf8"), "local sample", "拒否後も元ファイルを保持する");
   }
 });
+
+test("配布ZIPは読み込み用フォルダと一致し、ソースや確認用データを含めない", async () => {
+  const { default: JSZip } = await import("jszip");
+  const { version } = JSON.parse(await readFile(path.join(projectRoot, "package.json"), "utf8"));
+  const zip = await JSZip.loadAsync(await readFile(path.join(projectRoot, "dist", `Triadichrome-${version}.zip`)), { checkCRC32: true });
+  const { readdir } = await import("node:fs/promises");
+  async function files(root, prefix = "") {
+    const result = [];
+    for (const entry of await readdir(root, { withFileTypes: true })) {
+      const name = prefix + entry.name;
+      if (entry.isDirectory()) result.push(...await files(path.join(root, entry.name), name + "/"));
+      else result.push(name);
+    }
+    return result.sort();
+  }
+  const root = path.join(projectRoot, "dist", "extension");
+  const names = Object.keys(zip.files).filter(name => !zip.files[name].dir).sort();
+  assert.deepEqual(names, await files(root));
+  assert.ok(names.includes("manifest.json"), "ZIP直下にManifestが必要");
+  assert.ok(names.includes("index.html"));
+  for (const name of names) {
+    assert.ok(/^(?:manifest\.json|index\.html|assets\/[^/]+|icons\/icon-(?:16|32|48|128)\.png|src\/extension\/background\.js)$/.test(name), name);
+    assert.ok(!/\.(?:ts|tsx|map|triadic)$/i.test(name), name);
+    const bytes = await zip.files[name].async("nodebuffer");
+    assert.deepEqual(bytes, await readFile(path.join(root, name)), name);
+    assert.deepEqual(bytes, await readFile(path.join(projectRoot, "Triadichrome-extension", name)), name);
+  }
+  const manifest = JSON.parse(await zip.file("manifest.json").async("string"));
+  assert.equal(manifest.version, version);
+  assert.ok(names.includes(manifest.background.service_worker));
+});

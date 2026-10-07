@@ -35,7 +35,7 @@
 - パッケージ管理と実行手順は`npm`を使用します。`pnpm`や`yarn`へ置き換えません。
 - `Triadichrome-extension/src/`は編集用のTypeScript/React正本です。Chrome APIに依存しないデータ処理は`Triadichrome-extension/src/core/`へ置き、`chrome.*`や直接の拡張環境依存処理は`Triadichrome-extension/src/extension/`へ置きます。
 - Manifest V3を使います。`Triadichrome-extension/src/extension/`はservice worker、独立拡張ページ、Chrome adapterなどの環境依存入口を所有します。保存形式の処理と、File System Access APIによる実ファイルの読み書きを分離します。
-- `Triadichrome-extension/manifest.template.json`は編集するManifestの正本、`Triadichrome-extension/`直下の`manifest.json`・独立ページ・assetsはbuild補助が同期するChrome読み込み・配布物です。生成物を直接編集せず、TypeScript正本と区別します。`dist/`はbuild時だけ使う一時領域としてcommitしません。
+- `Triadichrome-extension/manifest.template.json`は編集するManifestの正本、`Triadichrome-extension/`直下の`manifest.json`・独立ページ・assetsはbuild補助が同期するChrome読み込み・配布物です。生成物を直接編集せず、TypeScript正本と区別します。`dist/extension/`をChrome読み込み用、`dist/Triadichrome-<version>.zip`を配布用の生成先とします。ZIPには配布物だけを含め、ソース・確認用データ・一時ファイルを含めません。`dist/`はcommitしません。
 - 依頼が画面不要と指定している間は、Reactの起動確認用入口を除き、UI、デザイン、業務機能、サンプルデータを追加しません。
 - 既存のAGPLv3 LICENSEを変更せず、他プロジェクトのライセンス、著作権表示、公開先、秘密情報、権限、host permissionをコピーしません。
 
