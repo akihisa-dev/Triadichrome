@@ -48,7 +48,8 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
       "ゼロと相殺の確認": "8", "未確定施策の入力準備": "8",
     };
     const expansionId = expansions.find(item => item.expansionCode === (codes[name] ?? "5"))!.id;
-    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypeId ?? periodTypes[(await readPlanContents(bytes)).initiatives.length % periodTypes.length]!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
+    // Choose a meaningful period instead of cycling incompatible start-month rules.
+    bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypeId ?? periodTypes.find(item => item.periodName === "新規")!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
   await add("既存商品の販売拡大", "ホームの「計算の仕組み」で予算の引き継ぎ・科目から売上と利益・開始年月を、「処理の流れ」で自動保存・失敗・履歴を確認できます。仕組みの閲覧は実際の値を出さず、計画を変更しません。「画面とデータ」で施策一覧を選び、施策名・開始年月・科目行・月別増減・確定予算の手修正の保存先を確認できます。全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
@@ -81,12 +82,12 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
   await add("ゼロと相殺の確認", "4月は明示的なゼロ、5月は同じ科目の正負が相殺、6月以降の空欄は0として保存されます。総原価表・展開表では表示上0の金額・差額は空白です。展開表のこの施策は全月空白ですが、施策入力では0を確認できます。", [
     row("売上高", { 4: "0", 5: "12.5" }), row("売上高", { 5: "-12.5" }),
   ]);
-  await add("未確定施策の入力準備", "全月0でも科目は使用中です。未所属費用を集計へ移す操作も試せます。", [row("未所属費用", {})]);
+  await add("未確定施策の入力準備", "全月0のため開始年月は空欄です。全月0でも科目は使用中です。未所属費用を集計へ移す操作も試せます。", [row("未所属費用", {})]);
 
   await add("確定予算の手修正", "確定予算だけを月ごとに手修正します。総原価表で一次予算のみ・確定予算のみ・両方を選び、前年差と一次予算差を確認できます。売上高4月は前年25,290、一次予算25,640、確定予算25,670。一次予算のみの前年差は350、確定予算のみと両方の前年差は380、両方の一次予算差は30です。5月の一次予算差は-100です。", [{ ...annual("売上高", 100), overrides: { 2: { 4: "120", 5: "0" } } }]);
   await add("確定予算の下期調整", "確定予算10月を150に手修正しています。一次予算との差を確認できます。この施策の一次予算は各四半期300・上期600・下期600・年間1,200、確定予算は第3四半期350・下期650・年間1,250です。両表の期間計と比較差50を確認できます。", [{ ...annual("売上高", 100), overrides: { 2: { 10: "150" } } }]);
   await add("確定予算のゼロ固定", "確定予算10月は0、4月は90。手修正0の固定と引き継ぎへの復帰を確認できます。", [{ ...annual("グループ売上高", 100), overrides: { 2: { 10: "0", 4: "90" } } }]);
-  await add("科目変更と削除の確認", "全種別・全月0の行は科目の変更と行の削除ができます。2行の4〜6月を範囲選択し、複数行・複数月の貼り付け、同値入力、0への消去を確認できます。", [row("未所属費用", {}), row("売上高", {})]);
+  await add("科目変更と削除の確認", "全種別・全月0のため開始年月は空欄です。全種別・全月0の行は科目の変更と行の削除ができます。2行の4〜6月を範囲選択し、複数行・複数月の貼り付け、同値入力、0への消去を確認できます。", [row("未所属費用", {}), row("売上高", {})]);
   await add("期間差の開始年月確認", "一次予算は4〜9月の増減から前年10月開始、確定予算は10月にも増減があるため前年11月開始です。6月の0も継続とみなし、正負の相殺で合計0でも開始年月を判定します。", [10, -10].map(amount => ({
     ...row("売上高", Object.fromEntries([4, 5, 7, 8, 9].map(month => [month, String(amount)]))),
     overrides: { 2: { 10: String(amount) } },

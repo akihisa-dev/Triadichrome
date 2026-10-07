@@ -64,6 +64,22 @@ export async function verifySamplePlan(api) {
   assert.equal(plan.details.length, 1704);
   assert.deepEqual(plan.initiatives.find(item => item.name === "保守サービスの新規契約").startYearMonths, { 1: "2026-07", 2: "2026-08" });
   assert.deepEqual(plan.initiatives.find(item => item.name === "期間差の開始年月確認").startYearMonths, { 1: "2025-10", 2: "2025-11" });
+  const starts = [
+    ["既存商品の販売拡大", "2026-04", "2026-04"], ["保守サービスの新規契約", "2026-07", "2026-08"],
+    ["季節キャンペーン", "2026-05", "2026-05"], ["通信運搬費と消耗品費の削減", "2026-04", "2026-04"],
+    ["サブスクリプション事業の拡大", "2026-04", "2026-04"], ["設備更新と償却費の見直し", "2026-09", "2026-09"],
+    ["助成金の受入れ", "2026-09", "2026-09"], ["ゼロと相殺の確認", "2026-05", "2026-05"],
+    ["未確定施策の入力準備", null, null], ["確定予算の手修正", "2026-04", "2026-04"],
+    ["確定予算の下期調整", "2026-04", "2026-04"], ["確定予算のゼロ固定", "2026-04", "2026-04"],
+    ["科目変更と削除の確認", null, null], ["期間差の開始年月確認", "2025-10", "2025-11"],
+  ];
+  assert.equal(starts.length, plan.initiatives.length, "全施策の開始年月を照合する");
+  for (const [name, primary, confirmed] of starts) {
+    const item = plan.initiatives.find(item => item.name === name);
+    assert.deepEqual(item.startYearMonths, { 1: primary, 2: confirmed }, `${name}の開始年月`);
+    for (const kind of [1, 2]) assert.ok(plan.details.filter(detail => detail.initiativeId === item.id && detail.kindId === kind)
+      .every(detail => detail.startYearMonth === (kind === 1 ? primary : confirmed)), `${name}の明細の開始年月`);
+  }
   assert.ok(plan.details.every(row => row.fiscalYear === 2026));
   assert.ok(plan.details.filter(row => row.kindId === 0).every(row => row.initiativeName === "前年" && row.kindName === "前年"));
   const unused = accounts.find(item => item.accountName === "削除確認用科目");
