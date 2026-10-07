@@ -64,7 +64,7 @@ function workbook() {
 }
 
 /** Editable original amounts, shared by formulas on independently selected output sheets. */
-function sources(wb: ExcelJS.Workbook, contents: PlanContents, kinds: KindId[], includePrevious: boolean) {
+function sources(wb: ExcelJS.Workbook, contents: PlanContents, kinds: KindId[], includeInput: (initiativeId: number, kind: KindId, accountId: number | null) => boolean) {
   const ws = wb.addWorksheet("計算元");
   ws.addRow(["区分", "業種", "部署", "施策", "種別", "科目コード", "科目名", "科目属性", ...initiativeMonths.map(m => `${m}月`)]);
   const previous = new Map<number, number[]>();
@@ -72,7 +72,7 @@ function sources(wb: ExcelJS.Workbook, contents: PlanContents, kinds: KindId[], 
   const inputs = new Map<string, number[]>();
   const initiativeInputs = new Map<string, { row: number; attribute: string | null }[]>();
   const classified = new Map<string, typeof contents.previousAmounts>();
-  for (const value of includePrevious ? contents.previousAmounts : []) {
+  for (const value of contents.previousAmounts) {
     const key = `${value.industryId}:${value.departmentId}:${value.accountId}`;
     classified.set(key, [...classified.get(key) ?? [], value]);
   }
@@ -88,6 +88,7 @@ function sources(wb: ExcelJS.Workbook, contents: PlanContents, kinds: KindId[], 
   }
   for (const item of contents.initiatives.filter(i => i.fiscalYear === contents.fiscalYear)) {
     for (const kind of kinds) for (const input of item.rows) {
+      if (!includeInput(item.id, kind, input.accountId)) continue;
       const account = contents.accounts.find(a => a.id === input.accountId);
       const row = ws.addRow(["施策", contents.industries.find(i => i.id === item.industryId)?.industryName,
         contents.departments.find(d => d.id === item.departmentId)?.departmentName, item.name, contents.kinds.find(k => k.id === kind)?.kindName,
@@ -114,15 +115,27 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
   const wb = workbook();
   // Source sheets are created last in tab order after all report sheets are populated.
   const filtered = filterPlan(contents, options.costFilter);
-  const sourceContents = options.tables.every(t => t === "cost-table") ? filtered : contents;
+  const costSelected = options.tables.includes("cost-table");
+  const listSelected = options.tables.includes("initiative-list");
+  const expansionTable = options.tables.includes("expansion-table") ? buildKindExpansionTable(contents, options.selections["expansion-table"], "registered") : null;
+  const expansionInitiatives = new Set(expansionTable?.groups.flatMap(group => group.initiatives.map(item => item.id)) ?? []);
+  const includedInitiatives = new Set(filtered.initiatives.map(i => i.id));
+  const costPrevious = new Set(filtered.previousAmounts);
+  const accounts = new Map(contents.accounts.map(account => [account.id, account]));
+  const hasEffect = (accountId: number | null) => accountId !== null && accountEffectsYen(1, accounts.get(accountId)?.accountType).profit !== 0;
+  // Union the actual requirements per classification/kind, rather than multiplying global unions.
+  const sourceContents = { ...contents, previousAmounts: contents.previousAmounts.filter(value =>
+    (costSelected && costPrevious.has(value)) || (expansionTable !== null && hasEffect(value.accountId))) };
   const sourceKinds = [...new Set(options.tables.flatMap(t => options.selections[t]))];
-  const unfiltered = sources(wb, sourceContents, sourceKinds, options.tables.some(t => t !== "initiative-list"));
+  const unfiltered = sources(wb, sourceContents, sourceKinds, (id, kind, accountId) =>
+    (costSelected && includedInitiatives.has(id) && options.selections["cost-table"].includes(kind) && accountId !== null && accounts.has(accountId))
+    || (hasEffect(accountId) && ((listSelected && options.selections["initiative-list"].includes(kind))
+      || (expansionInitiatives.has(id) && options.selections["expansion-table"].includes(kind)))));
   // References use classified original rows; indexes retain a stable original-record order.
   const priorRows = new Map<number, number[]>();
   unfiltered.previousSources.forEach(p => {
     if ((options.costFilter.industries === null || options.costFilter.industries.includes(p.industryId)) && (options.costFilter.departments === null || options.costFilter.departments.includes(p.departmentId))) priorRows.set(p.accountId, [...priorRows.get(p.accountId) ?? [], p.row]);
   });
-  const includedInitiatives = new Set(filtered.initiatives.map(i => i.id));
   const costInputRows = (accountId: number, kind: KindId) => contents.initiatives.filter(i => includedInitiatives.has(i.id)).flatMap(i => unfiltered.initiativeInputs.get(`${i.id}:${kind}`) ?? []).filter(r => unfiltered.inputs.get(`${accountId}:${kind}`)?.includes(r.row)).map(r => r.row);
   const inputRefs = (rowNumbers: number[], month: number) => rowNumbers.map(r => cellRef(unfiltered.ws, r, initiativeMonths.indexOf(month as typeof initiativeMonths[number]) + 9));
   if (options.tables.includes("cost-table")) {
@@ -198,7 +211,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
   }
   if (options.tables.includes("expansion-table")) {
     const selected = options.selections["expansion-table"];
-    const table = buildKindExpansionTable(contents, selected, "registered");
+    const table = expansionTable!;
     const labels = [...selected.map(k => contents.kinds.find(t => t.id === k)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
     const width = labels.length * 2;
     const ws = sheet(wb, "展開表", [17, 34, ...tablePeriods.flatMap(() => labels.flatMap(() => [14, 14]))], 3, 2);

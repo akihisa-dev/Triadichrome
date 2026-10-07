@@ -55,6 +55,58 @@ export async function verifySpreadsheetIO(api) {
     });
     wb.getWorksheet("総原価表").eachRow(row => row.eachCell(cell => { if (cell.formula) { const result = evaluate(wb.getWorksheet("総原価表"), cell.address); assert.ok(typeof result !== "number" || Number.isFinite(result)); if (typeof cell.result === "number") assert.ok(Math.abs(result - cell.result) < 1e-7); } }));
   }
+  // Mixed reports must export only the union of each sheet's actual requirements.
+  const industries = plan.industries.slice(0, 2), departments = plan.departments.slice(0, 2);
+  const salesAccount = plan.accounts.find(account => account.accountType === "sales");
+  const pairsForScope = industries.flatMap(industry => departments.map(department => ({ industry, department })));
+  const scoped = { ...plan, previousAmounts: [], initiatives: pairsForScope.map(({ industry, department }, index) => ({
+    ...plan.initiatives[0], id: index + 1000, name: `分類確認${index}`, industryId: industry.id, departmentId: department.id,
+    rows: [{ accountId: salesAccount.id, amounts: { 4: String(101 + 100 * index) }, overrides: { 2: { 4: String(102 + 100 * index) } } }],
+  })) };
+  scoped.previousAmounts = pairsForScope.map(({ industry, department }, index) => ({ id: index + 1,
+    industryId: industry.id, departmentId: department.id, accountId: salesAccount.id, month: 4, amount: String(7 + 10 * index), revision: 0 }));
+  for (let mask = 1; mask < 8; mask++) for (const costFilter of [
+    { industries: null, departments: null }, { industries: [industries[0].id], departments: null },
+    { industries: null, departments: [departments[0].id] }, { industries: [industries[0].id], departments: [departments[0].id] },
+    { industries: [], departments: null },
+  ]) for (const selections of [
+    { "cost-table": [1], "expansion-table": [2], "initiative-list": [2] },
+    { "cost-table": [2, 1], "expansion-table": [1], "initiative-list": [1] },
+  ]) {
+    const chosen = tables.filter((_, i) => mask & (1 << i));
+    const exported = await roundtrip(api.createReportWorkbook(scoped, { tables: chosen, selections, costFilter }));
+    const expected = [];
+    pairsForScope.forEach(({ industry, department }, index) => {
+      const costIncludes = chosen.includes("cost-table") && (costFilter.industries === null || costFilter.industries.includes(industry.id))
+        && (costFilter.departments === null || costFilter.departments.includes(department.id));
+      if (costIncludes || chosen.includes("expansion-table")) expected.push(["前年", industry.industryName, department.departmentName, "", "前年", 7 + 10 * index]);
+      for (const kind of [1, 2]) if ((costIncludes && selections["cost-table"].includes(kind))
+        || (chosen.includes("initiative-list") && selections["initiative-list"].includes(kind))
+        || (chosen.includes("expansion-table") && selections["expansion-table"].includes(kind)))
+        expected.push(["施策", industry.industryName, department.departmentName, `分類確認${index}`, plan.kinds.find(k => k.id === kind).kindName, (kind === 1 ? 101 : 102) + 100 * index]);
+    });
+    const actual = [];
+    exported.getWorksheet("計算元").eachRow((row, index) => {
+      if (index > 1) actual.push([1, 2, 3, 4, 5, 9].map(column => row.getCell(column).value ?? ""));
+    });
+    const sorted = values => values.map(value => JSON.stringify(value)).sort();
+    assert.deepEqual(sorted(actual), sorted(expected), "混在条件の分類・種別・前年の範囲と重複をXLSX往復後に確認");
+    const referenced = new Set(), evaluate = evaluator(exported);
+    for (const report of exported.worksheets.filter(sheet => sheet.name !== "計算元")) report.eachRow(row => row.eachCell(cell => {
+      if (!cell.formula) return;
+      for (const match of cell.formula.matchAll(/'計算元'![A-Z]+(\d+)/g)) referenced.add(Number(match[1]));
+      const calculated = evaluate(report, cell.address);
+      if (typeof cell.result === "number") assert.ok(Math.abs(calculated - cell.result) < 1e-7);
+      else assert.equal(calculated, cell.result ?? "", "XLSXの空文字結果は未格納のキャッシュと同じ表示");
+    }));
+    for (let row = 2; row <= exported.getWorksheet("計算元").rowCount; row++) assert.ok(referenced.has(row), "未参照の計算元を共有しない");
+  }
+  const unassigned = { ...scoped, accounts: scoped.accounts.map(account => account.id === salesAccount.id ? { ...account, accountType: null } : account),
+    initiatives: scoped.initiatives.map(item => ({ ...item, expansionId: null })) };
+  for (const chosen of [["initiative-list"], ["expansion-table"]]) {
+    const exported = api.createReportWorkbook(unassigned, { tables: chosen, selections: { "cost-table": [1], "expansion-table": [1], "initiative-list": [1] }, costFilter: { industries: null, departments: null } });
+    assert.equal(exported.getWorksheet("計算元").rowCount, 1, "表の数式が使わない属性・展開未設定の金額を含めない");
+  }
   // Editing an exported source must propagate into the annual total and rate formulas.
   const wb = api.createReportWorkbook(plan, { tables, selections: { "cost-table": [1, 2], "expansion-table": [1, 2], "initiative-list": [1] }, costFilter: { industries: null, departments: null } });
   const source = wb.getWorksheet("計算元"), expansion = wb.getWorksheet("展開表"), cost = wb.getWorksheet("総原価表");

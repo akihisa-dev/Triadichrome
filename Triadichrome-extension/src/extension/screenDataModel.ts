@@ -45,7 +45,7 @@ const blankZero = "丸めた表示が0になる金額・差額は空白にしま
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [
   { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, ...classifications],
-    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。Excelの集計・差・期間計・利益率には元の値を参照する数式を出力します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
+    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。Excelの集計・差・期間計・利益率には元の値を参照する数式を出力します。計算元は各選択表が必要とする分類・種別・前年値の和集合に限定します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [plan, use("initiatives", "施策名・備考の吹き出し・種別ごとの開始年月・並び順", "id", "name", "note", "primary_start_year_month", "confirmed_start_year_month", "sort_order"), rows, primary, overrides, accounts, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [resolved, "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。集計結果の保存テーブルはありません。", rounded] },
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,

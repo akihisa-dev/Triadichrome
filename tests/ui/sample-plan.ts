@@ -1,3 +1,4 @@
+// Excel混在出力では総原価表の分類と各表の種別を別々に選び、計算元に不要な分類・種別がないことを確認する。
 import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/storage/dataHistory";
 import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/domain/kinds";
