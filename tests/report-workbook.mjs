@@ -33,6 +33,30 @@ function cachedReports({ wb, evaluate }) {
 }
 
 export async function verifyReportWorkbooks(api, sample) {
+  // #11: aggregate more than 255 inputs, interleaved with excluded rows. The
+  // serialized formulas must remain bounded and recalculate from source edits.
+  let previousFormula;
+  for (const count of [255, 256]) {
+    const accountId = sample.accounts.find(a => a.accountType === "sales").id;
+    const industryId = sample.industries[0].id;
+    const plan = { ...sample, previousAmounts: [], initiatives: Array.from({ length: count * 2 }, (_, index) => ({
+      ...sample.initiatives[0], id: index + 1, industryId: index % 2 ? sample.industries[1].id : industryId,
+      rows: [{ accountId, amounts: { 4: index % 2 ? "999" : "1" } }],
+    })) };
+    const { wb, bytes, evaluate } = await exported(api, plan, options(["cost-table"], [1], { industries: [industryId], departments: null }));
+    const xml = await (await JSZip.loadAsync(bytes)).file("xl/workbook.xml").async("string");
+    const formula = xml.match(/<definedName name="TC_Account"[^>]*>([\s\S]*?)<\/definedName>/)[1];
+    assert.match(formula, /SUMIFS/);
+    if (previousFormula) assert.equal(formula, previousFormula, "入力件数で数式の引数や長さを増やさない");
+    previousFormula = formula;
+    for (const match of xml.matchAll(/<definedName[^>]*>([\s\S]*?)<\/definedName>/g)) assert.ok(match[1].length < 8192);
+    assert.equal(evaluate.named("TC_Account")(accountId, 1, 1), count);
+    assert.equal(wb.getWorksheet("総原価表").getCell("C5").result, count);
+    wb.getWorksheet("施策金額").getCell("C4").value = 7;
+    wb.getWorksheet("施策金額").getCell("C5").value = 9999;
+    evaluate.reset();
+    assert.equal(evaluate.named("TC_Account")(accountId, 1, 1), count + 6, "対象外の行を混ぜず元金額の変更を再計算");
+  }
   const sampleWorkbook = await exported(api, sample);
   cachedReports(sampleWorkbook);
   const zip = await JSZip.loadAsync(sampleWorkbook.bytes);
