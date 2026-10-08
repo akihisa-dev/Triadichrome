@@ -1,3 +1,4 @@
+import { version as appVersion } from "../../../package.json";
 import { useMutation } from "./useMutation";
 import { useScreenHistory } from "./useScreenHistory";
 import { KindSelectionSlots } from "./KindSelectionSlots";
@@ -274,6 +275,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
           <span className="home-brand">
             <img src={appIcon} width="28" height="28" alt="" draggable={false} />
             Triadichrome
+            <span className="app-version" aria-label={`バージョン ${appVersion}`}>v{appVersion}</span>
           </span>
           <output className="home-fiscal-year" aria-label="基準年度">{contents.fiscalYear}年度</output>
         </div>

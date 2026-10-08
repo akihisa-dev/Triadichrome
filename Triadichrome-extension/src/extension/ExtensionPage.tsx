@@ -1,3 +1,4 @@
+import { version as appVersion } from "../../../package.json";
 import type { PlanChange } from "../core/domain/kinds";
 import type { PlanCommand } from "./planCommands";
 import { type PeriodTypeChange } from "../core/domain/periodMaster";
@@ -186,6 +187,7 @@ export function ExtensionPage() {
       <header className="entry-brand">
         <img className="entry-logo" src={appIcon} width="40" height="40" alt="" draggable={false} />
         <h1 className="entry-title">Triadichrome</h1>
+        <span className="app-version" aria-label={`バージョン ${appVersion}`}>v{appVersion}</span>
       </header>
       <section className="entry-drop-zone" aria-label="ファイルを開く・新規作成">
         <div className={`entry-resume${recentFile ? " has-recent" : ""}`}>

@@ -91,3 +91,11 @@ button:focus-visible {
 .motion-text {
   --motion-distance: 0px;
 }
+
+.app-version {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  white-space: nowrap;
+}
