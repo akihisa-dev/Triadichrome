@@ -1,3 +1,4 @@
+import { verifyInitiativeListRendering } from '../tests/initiative-list-rendering.mjs';
 import { verifyPerformanceData } from '../tests/performance-data.mjs';
 import { verifySchemaBoundary } from "../tests/schema-boundary.mjs";
 import { verifyYenPrecision } from "../tests/yen-precision.mjs";
@@ -65,3 +66,5 @@ await withNodeBundle("tests/core-api.ts", async production => {
   await verifySamplePlan(api);
   await verifyPerformanceData(api, root);
 });
+
+await withNodeBundle("tests/performance-api.ts", verifyInitiativeListRendering);

@@ -6,10 +6,11 @@ export { processingTasks } from '../Triadichrome-extension/src/extension/planPro
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { InitiativeListPage } from '../Triadichrome-extension/src/extension/InitiativeListPage';
+import type { KindId } from '../Triadichrome-extension/src/core/domain/kinds';
 import type { PlanContents } from '../Triadichrome-extension/src/core/domain/plan';
-export function renderInitiativeList(contents: PlanContents) {
+export function renderInitiativeList(contents: PlanContents, selectedKind: KindId = 1) {
   return renderToStaticMarkup(createElement(InitiativeListPage, {
-    selection: null, selectedKind: 1, initiatives: contents.initiatives,
+    selection: null, selectedKind, initiatives: contents.initiatives, accounts: contents.accounts,
     expansions: contents.expansions, periodTypes: contents.periodTypes,
     fiscalYear: String(contents.fiscalYear), onAddInitiative() {}, onOpenInitiative() {}, navigationBlocked: false,
   }));

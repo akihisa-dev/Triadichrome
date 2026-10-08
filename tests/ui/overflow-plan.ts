@@ -4,7 +4,7 @@ import { registerInitiative } from "../../Triadichrome-extension/src/core/storag
 import { saveKindSelection, savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { createInitiativeDraft } from "../../Triadichrome-extension/src/core/domain/initiativeRules";
 
-export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal";
+export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal" | "initiative";
 
 /** Real, accepted SQLite data; only file I/O is replaced by memory-files. */
 export async function createOverflowPlan(scenario: OverflowScenario) {
@@ -16,7 +16,9 @@ export async function createOverflowPlan(scenario: OverflowScenario) {
     rows: [{ accountId, amounts: { 4: scenario === "normal" ? "10" : scenario === "difference" ? `-${huge}` : huge,
       ...(scenario === "period" ? { 5: huge } : {}) },
       ...(scenario === "difference" ? { overrides: { 2: { 4: huge } } } : {}) }] };
+  if (scenario === "initiative") draft.rows = [1, 2].map(() => ({ accountId, amounts: { 4: "0" }, overrides: { 2: { 4: huge } } }));
   bytes = await registerInitiative(bytes, draft);
+  if (scenario === "initiative") bytes = await registerInitiative(bytes, { ...draft, name: "通常確認", rows: [{ accountId, amounts: { 4: "1" }, overrides: { 2: { 4: "2" } } }] });
   if (scenario === "monthly") bytes = await registerInitiative(bytes, { ...draft, name: "上限確認B", industryId: 2 });
   if (scenario === "previous") bytes = await savePreviousAmounts(bytes, { industryId: 1, departmentId: 1, rows: [{ accountId, amounts: { 4: huge } }] });
   if (scenario === "difference") {

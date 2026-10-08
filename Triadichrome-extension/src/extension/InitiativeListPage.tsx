@@ -1,5 +1,7 @@
 import { useRowWindow, WindowRows } from "./VirtualTableRows";
 import { TableCalculationBoundary } from "./TableCalculationBoundary";
+import { initiativesForKind } from "../core/tables/initiatives";
+import type { Account } from "../core/domain/accountMaster";
 import { initiativeTotals } from "../core/tables/initiativeTotals";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
@@ -18,6 +20,7 @@ type InitiativeListPageProps = {
   selection: ReactNode;
   selectedKind: KindId;
   initiatives: Initiative[];
+  accounts: Account[];
   expansions: Expansion[];
   periodTypes: PeriodType[];
   fiscalYear: string;
@@ -26,13 +29,28 @@ type InitiativeListPageProps = {
   navigationBlocked: boolean;
 };
 
-export function InitiativeListPage({ selection, selectedKind, initiatives, expansions, periodTypes, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
+export function InitiativeListPage({ selection, selectedKind, initiatives, accounts, expansions, periodTypes, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
   const readOnly = useHistoryReadOnly();
   const [sort, setSort] = useState<InitiativeSort | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const expansionNames = new Map(expansions.map(item => [item.id, item.expansionName]));
   const periodNames = new Map(periodTypes.map(item => [item.id, item.periodName]));
-  const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
+  const { source, errors } = useMemo(() => {
+    const current = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
+    const errors = new Map<number, string>();
+    try { return { source: initiativesForKind(current, accounts, selectedKind), errors }; }
+    catch {
+      // Isolate a failed initiative and keep its name available for correction.
+      const source = current.map(item => {
+        try { return initiativesForKind([item], accounts, selectedKind)[0]!; }
+        catch (failure) {
+          errors.set(item.id, failure instanceof Error ? failure.message : "金額を表示できませんでした。");
+          return item;
+        }
+      });
+      return { source, errors };
+    }
+  }, [initiatives, accounts, selectedKind, fiscalYear]);
   const displayed = sortInitiatives(source, sort, selectedKind, expansionNames, periodNames);
   const window = useRowWindow(container, displayed.length, 28, 200, 56);
   const virtual = displayed.length > 200;
@@ -51,7 +69,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
       {selection}
       <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>
-    <TableCalculationBoundary resetKeys={[initiatives, selectedKind, fiscalYear]}>
+    <TableCalculationBoundary resetKeys={[initiatives, accounts, selectedKind, fiscalYear]}>
     <div ref={container} className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
       <table className={`initiative-list-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "28px" } as React.CSSProperties} aria-label="施策一覧" aria-rowcount={displayed.length + 3}>
         <colgroup>
@@ -80,13 +98,13 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
             <button className="initiative-name-button" type="button" disabled={navigationBlocked} onClick={() => onOpenInitiative(item)}>{item.name}</button>
           </th>
           <td className="initiative-list-fixed initiative-list-start">{item.startYearMonths[selectedKind]}</td>
-          {initiativeMonths.map(month => <Fragment key={month}>
+          {errors.has(item.id) ? <td colSpan={36} role="alert" style={{ textAlign: "left" }}>{errors.get(item.id)} 施策を開いて金額を修正してください。</td> : initiativeMonths.map(month => <Fragment key={month}>
             <td>{amountText(item.months[month]?.sales)}</td>
             <td>{amountText(item.months[month]?.expense)}</td>
             <td className="initiative-month-end">{amountText(item.months[month]?.profit)}</td>
           </Fragment>)}
         </tr>} /></tbody>
-        <tfoot><InitiativeTotalRow initiatives={source} /></tfoot>
+        <tfoot>{errors.size ? <tr className="initiative-total-row"><th colSpan={40} scope="row" style={{ textAlign: "left" }}>計算できない施策があるため、合計を表示できません。</th></tr> : <InitiativeTotalRow initiatives={source} />}</tfoot>
       </table>
     </div>
     </TableCalculationBoundary>
