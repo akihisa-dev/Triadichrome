@@ -52,12 +52,6 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
             onChange={event => onDraftChange({ ...draft, name: event.target.value })}
           />
         </div>
-        {!editing && <button className="primary-button" type="button" disabled={readOnly || isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
-          const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
-          for (const input of inputs) if (!input.reportValidity()) return;
-          onRegister();
-        }}>登録</button>}
-      </div>
       <div className="initiative-field">
         <label htmlFor="initiative-note">備考</label>
         <input
@@ -69,6 +63,12 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
           value={draft.note}
           onChange={event => onDraftChange({ ...draft, note: event.target.value })}
         />
+      </div>
+        {!editing && <button className="primary-button" type="button" disabled={readOnly || isSaving || !draft.name.trim() || draft.expansionId === null || draft.industryId == null || draft.departmentId == null} onClick={event => {
+          const inputs = event.currentTarget.closest("main")!.querySelectorAll("input");
+          for (const input of inputs) if (!input.reportValidity()) return;
+          onRegister();
+        }}>登録</button>}
       </div>
       </div>
       <div className="initiative-classification-slots">

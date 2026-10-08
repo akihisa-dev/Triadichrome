@@ -1,6 +1,6 @@
 import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
-test("施策名・備考の右側のスロットで分類を選択し、登録後も保持する", async ({ page, app }) => {
+test("施策名・備考の下段のスロットで分類を選択し、登録後も保持する", async ({ page, app }) => {
   await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -47,11 +47,9 @@ test("施策名・備考の右側のスロットで分類を選択し、登録�
     await settleMotion(app.locator("body"));
     const text = (await app.locator(".initiative-text-fields").boundingBox())!;
     const slots = (await app.locator(".initiative-classification-slots").boundingBox())!;
-    if (width === 1280) {
-      expect(slots.x).toBeGreaterThanOrEqual(text.x + text.width);
-      expect(slots.width).toBeLessThanOrEqual(440);
-    }
-    else expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
+    expect(slots.x).toBe(text.x);
+    expect(slots.width).toBeLessThanOrEqual(440);
+    expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   }
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption("1");

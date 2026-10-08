@@ -1,7 +1,7 @@
 import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
 
 for (const editing of [false, true]) {
-  test(`${editing ? "登録済み施策" : "新規施策"}の施策名と備考を同じ幅に揃え、分類欄を折り返す`, async ({ page, app }, testInfo) => {
+  test(`${editing ? "登録済み施策" : "新規施策"}の上段に施策名・備考、下段に分類欄を配置する`, async ({ page, app }, testInfo) => {
     await page.goto("/tests/ui/preview.html");
     await expect(page.getByRole("status")).toHaveText("操作できます");
     await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -19,12 +19,21 @@ for (const editing of [false, true]) {
       const nameBox = (await name.boundingBox())!;
       const noteBox = (await note.boundingBox())!;
       expect(Math.abs(nameBox.width - noteBox.width)).toBeLessThan(1);
-      expect(Math.abs(nameBox.x - noteBox.x)).toBeLessThan(1);
-      expect(noteBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
+      if (width >= 900) {
+        expect(noteBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
+        expect(noteBox.y).toBe(nameBox.y);
+      } else expect(noteBox.y).toBeGreaterThanOrEqual(nameBox.y);
+      if (!editing) {
+        const register = (await app.getByRole("button", { name: "登録", exact: true }).boundingBox())!;
+        if (width >= 900) {
+          expect(register.x).toBeGreaterThan(noteBox.x + noteBox.width);
+          expect(register.y).toBe(noteBox.y);
+        } else expect(register.y).toBeGreaterThanOrEqual(noteBox.y);
+      }
       const text = (await app.locator(".initiative-text-fields").boundingBox())!;
       const slots = (await app.locator(".initiative-classification-slots").boundingBox())!;
-      if (width >= 1280) expect(slots.x).toBeGreaterThanOrEqual(text.x + text.width);
-      else expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
+      expect(slots.x).toBe(text.x);
+      expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
       expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
       await expect(note).toHaveValue(originalNote);
       if (width === 1920 || width === 600) await testInfo.attach(`施策入力-${editing ? "編集" : "新規"}-${width}`, { body: await page.screenshot(), contentType: "image/png" });

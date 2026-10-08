@@ -198,15 +198,15 @@ test("施策名・備考・月別金額を入力し、画面を往復しても�
   expect(nameBox.y).toBeGreaterThan(titleBox.y + titleBox.height);
   expect(nameBox.x).toBe(titleBox.x);
   const registerBox = (await app.getByRole("button", { name: "登録", exact: true }).boundingBox())!;
-  expect(registerBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
-  expect(registerBox.y).toBe(nameBox.y);
+  expect(registerBox.x).toBeGreaterThanOrEqual(nameBox.x);
+  expect(registerBox.y).toBeGreaterThanOrEqual(nameBox.y);
   expect(registerBox.height).toBe(nameBox.height);
   const noteBox = (await note.boundingBox())!;
   expect(noteBox.height).toBe(nameBox.height);
   const tableBox = (await app.locator("#kind-amount-panel").boundingBox())!;
-  expect(noteBox.y).toBeGreaterThan(nameBox.y + nameBox.height);
+  expect(noteBox.y).toBeGreaterThanOrEqual(nameBox.y);
   expect(tableBox.y).toBeGreaterThan(noteBox.y + noteBox.height);
-  expect(noteBox.x).toBe(nameBox.x);
+  expect(noteBox.x).toBeGreaterThanOrEqual(nameBox.x);
   expect(tableBox.x).toBe(nameBox.x);
   await attachImage(testInfo, "施策入力・備考と月別金額", await page.locator("#app-preview").screenshot());
 
@@ -312,8 +312,8 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     expect(nameBox.x).toBeGreaterThanOrEqual(mainBox.x);
     expect(nameBox.x + nameBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     const registerBox = (await app.getByRole("button", { name: "登録", exact: true }).boundingBox())!;
-    expect(registerBox.x).toBeGreaterThan(nameBox.x + nameBox.width);
-    expect(registerBox.y).toBe(nameBox.y);
+    expect(registerBox.x).toBeGreaterThanOrEqual(nameBox.x);
+    expect(registerBox.y).toBeGreaterThanOrEqual(nameBox.y);
     expect(registerBox.x + registerBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
     const tableBox = (await app.locator("#kind-amount-panel").boundingBox())!;
     expect(tableBox.x + tableBox.width).toBeLessThanOrEqual(mainBox.x + mainBox.width);
