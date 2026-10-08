@@ -5,7 +5,7 @@ import type { FrameLocator, Locator } from "@playwright/test";
 const blue = "rgb(0, 51, 255)";
 const ink = "rgb(32, 32, 32)";
 const soft = "rgb(242, 242, 242)";
-const routes = ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "マスタ"];
+const routes = ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "マスタ", "履歴", "入出力"];
 
 async function navigate(app: FrameLocator, name: string) {
   if (name === "施策入力") await openInitiativeEntry(app);
@@ -57,7 +57,7 @@ test("全画面で選択中のサイドバーアイコンが青くなり、文�
   }
   await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
   await settleMotion(app.locator("body"));
-  await expect(navigation.getByRole("button", { name: "マスタ", exact: true }).locator("svg")).toHaveCSS("color", blue);
+  await expect(navigation.getByRole("button", { name: routes.at(-1)!, exact: true }).locator("svg")).toHaveCSS("color", blue);
 });
 
 test("施策の文字・金額・科目・分類に青い編集枠が付き、解除すると戻る", async ({ page, app }, testInfo) => {
@@ -180,4 +180,51 @@ test("配布用ビルドでも選択アイコンと編集枠が同じ青にな�
     await expect(production.locator('.sidebar-item[aria-current="page"] span')).toHaveCSS("color", ink);
     expect(errors).toEqual([]);
   } finally { await production.close(); }
+});
+
+
+test("入口のファイルドロップ案内は文字・背景・破線をモノクロに保つ", async ({ page, app }) => {
+  await page.getByRole("button", { name: "入口に戻す", exact: true }).click();
+  const entry = app.locator(".entry-page");
+  await expect(entry).toBeVisible();
+  await entry.evaluate(node => {
+    const data = new DataTransfer();
+    data.items.add(new File([""], "確認.triadic"));
+    node.dispatchEvent(new DragEvent("dragenter", { bubbles: true, dataTransfer: data }));
+  });
+  await expect(entry).toHaveClass(/is-drag-active/);
+  await expect(app.getByRole("heading", { name: "ここにドロップして開く", exact: true })).toBeVisible();
+  await settleMotion(app.locator("body"));
+  const section = app.locator(".entry-open-section");
+  await expect(section).toHaveCSS("background-color", soft);
+  await expect(section).toHaveCSS("color", ink);
+  await expect(app.locator(".entry-drop-description")).toHaveCSS("color", "rgb(98, 98, 98)");
+  expect(await section.evaluate(node => getComputedStyle(node, "::after").borderColor)).toBe(ink);
+  await entry.dispatchEvent("dragleave", { relatedTarget: null });
+  await expect(entry).not.toHaveClass(/is-drag-active/);
+  await expect(app.getByRole("heading", { name: "ファイルを開く", exact: true })).toBeVisible();
+  await settleMotion(app.locator("body"));
+  await expect(section).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+});
+
+test("履歴選択と入出力のファイルドロップ案内はモノクロ", async ({ app }) => {
+  await navigate(app, "履歴");
+  for (const checkbox of await app.locator('.data-history-list input[type="checkbox"]').all()) {
+    await expect(checkbox).toHaveCSS("accent-color", ink);
+  }
+  await navigate(app, "入出力");
+  for (const checkbox of await app.locator('.io-check input').all()) {
+    await expect(checkbox).toHaveCSS("accent-color", ink);
+  }
+  const panel = app.locator(".io-previous-panel");
+  await panel.evaluate(node => {
+    const data = new DataTransfer();
+    data.items.add(new File([""], "前年.xlsx"));
+    node.dispatchEvent(new DragEvent("dragenter", { bubbles: true, dataTransfer: data }));
+  });
+  await expect(panel).toHaveClass(/is-drag-active/);
+  await expect(panel).toHaveCSS("outline-color", ink);
+  await expect(panel).toHaveCSS("background-color", soft);
+  await panel.dispatchEvent("dragleave", { relatedTarget: null });
+  await expect(panel).not.toHaveClass(/is-drag-active/);
 });

@@ -6,7 +6,7 @@
 .data-history-list table { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; text-align: left; }
 .data-history-list th, .data-history-list td { padding: 8px; border-bottom: 1px solid var(--line); }
 .data-history-list th { color: var(--muted); font-size: 13px; font-weight: 500; }
-.data-history-list input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+.data-history-list input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--ink); }
 .data-history-list th:first-child, .data-history-list td:first-child { width: 42px; text-align: center; }
 .data-history-list thead { position: sticky; top: 0; z-index: 1; background: var(--surface); }
 .history-date { font-variant-numeric: tabular-nums; white-space: nowrap; }

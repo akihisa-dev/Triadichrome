@@ -53,15 +53,14 @@
   content: "";
   position: absolute;
   inset: 0.75rem;
-  border: 2px dashed var(--accent);
+  border: 2px dashed var(--ink);
   border-radius: 0.625rem;
   pointer-events: none;
   opacity: 0;
   transition: opacity var(--motion-feedback) var(--motion-ease);
 }
-.is-drag-active .entry-open-section { background: #eef2ff; color: var(--accent); }
+.is-drag-active .entry-open-section { background: var(--soft); }
 .is-drag-active .entry-open-section::after { opacity: 1; }
-.is-drag-active .entry-drop-description { color: var(--accent); }
 .entry-create-section { border-left: 1px solid var(--line); }
 .entry-option-icon { margin-bottom: 1rem; }
 .entry-drop-title, .entry-section-title { margin: 0; font-size: 1rem; font-weight: 600; }
