@@ -9,6 +9,26 @@ export async function verifySpreadsheetIO(api) {
   const bytes = await api.createSamplePlan(2026), plan = await api.readPlanContents(bytes);
   await verifyReportWorkbooks(api, plan);
   const pairs = [{ industryId: plan.industries[0].id, departmentId: plan.departments[0].id }, { industryId: plan.industries[1].id, departmentId: plan.departments[1].id }];
+  // #13: sanitize the output name after truncation without modifying masters.
+  for (const departmentName of ["検証", "検証'", "部".repeat(26) + "'続き", "O'Brien", "検証/部署"]) {
+    const input = { ...plan, industries: plan.industries.map((item, index) => index === 0 ? { ...item, industryName: "業" } : item),
+      departments: plan.departments.map((item, index) => index === 0 ? { ...item, departmentName } : item) };
+    const original = structuredClone(input);
+    const output = await api.serializeWorkbook(api.createPreviousWorkbook(input, pairs));
+    const loaded = new ExcelJS.Workbook(); await loaded.xlsx.load(output);
+    const ws = loaded.worksheets[0];
+    assert.ok(ws.name.length <= 31);
+    assert.doesNotMatch(ws.name, /^'|'$/);
+    if (departmentName === "検証") assert.equal(ws.name, "1_業_検証");
+    assert.equal(loaded.getWorksheet("_triadichrome").getCell("A3").value, ws.name);
+    assert.deepEqual(await api.parsePreviousWorkbook(output, input), []);
+    ws.getCell("C4").value = 123.456;
+    const imported = await api.parsePreviousWorkbook(await api.serializeWorkbook(loaded), input);
+    assert.equal(imported.length, 1);
+    assert.equal(imported[0].departmentId, pairs[0].departmentId);
+    assert.equal(imported[0].after, "123.456");
+    assert.deepEqual(input, original, "出力用シート名だけを整え、マスタ名を変更しない");
+  }
   const template = await roundtrip(api.createPreviousWorkbook(plan, pairs));
   assert.equal(template.worksheets.length, 3);
   assert.equal(template.getWorksheet("_triadichrome").state, "veryHidden");

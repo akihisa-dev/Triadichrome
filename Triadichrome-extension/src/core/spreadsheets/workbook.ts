@@ -52,7 +52,7 @@ export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPa
     const industry = contents.industries.find(i => i.id === pair.industryId);
     const department = contents.departments.find(d => d.id === pair.departmentId);
     if (!industry || !department) throw new Error("業種・部署が見つかりません。");
-    const name = `${index + 1}_${industry.industryName}_${department.departmentName}`.replace(/[\\/*?:\[\]]/g, "_").slice(0, 31);
+    const name = `${index + 1}_${industry.industryName}_${department.departmentName}`.replace(/[\\/*?:\[\]]/g, "_").slice(0, 31).replace(/^'|'$/g, "_");
     const ws = sheet(wb, name, [14, 30, ...initiativeMonths.map(() => 14)], 1, 2);
     ws.getCell("A1").value = "前年入力";
     ws.getCell("A2").value = `${contents.fiscalYear}年度 · ${industry.industryName} · ${department.departmentName} · 単位：千円`;
