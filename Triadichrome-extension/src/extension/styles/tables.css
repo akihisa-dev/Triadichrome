@@ -15,6 +15,7 @@
 .cost-table .cost-name-column { width: 176px; }
 .cost-table .cost-amount-column { width: 64px; }
 .cost-table th, .cost-table td { height: 28px; padding: 4px 6px; white-space: nowrap; }
+.cost-table-page .cost-table th, .cost-table-page .cost-table td { height: 24px; padding-block: 2px; }
 .cost-table thead th { font-size: 12px; }
 .cost-table .initiative-list-name { position: sticky; left: 0; z-index: 1; width: 176px; white-space: normal; background: var(--soft); border-right: 1px solid var(--line); }
 .cost-table thead { position: sticky; top: 0; z-index: 2; }
@@ -67,3 +68,7 @@
 .cost-classification-row .kind-selection-field { min-width: 0; }
 .cost-classification-row .kind-selection-field:first-child { flex: 3 1 0; }
 .cost-classification-row .kind-selection-field:last-child { flex: 1 1 0; }
+
+/* Keep compact rows in both full and windowed table rendering. */
+:is(.initiative-overview-page, .expansion-table-page) .initiative-list-table { font-size: 14px; line-height: 20px; }
+:is(.initiative-overview-page, .expansion-table-page) .initiative-list-table tr:not(.virtual-row-spacer) > :is(th, td) { height: 28px; padding-block: 3px; }

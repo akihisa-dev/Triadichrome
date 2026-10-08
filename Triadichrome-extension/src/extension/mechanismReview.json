@@ -1,6 +1,6 @@
 {
   "amount": {
-    "implementation": "a99fb724e5b4c24555da8099172732c857222b03bcd4247c999e24a108f306f0",
+    "implementation": "b4e0b7a5ca3555d18221ee9965915ee223660c7317064c4ba635112f82036cfb",
     "description": "3002960876625a3ecdcf2c319be6e330e74dbaa296f26aa4d7d848ef75db921b"
   },
   "inheritance": {
@@ -32,7 +32,7 @@
     "description": "f86f24a7fd5f1907476d0ac2b11d6360c99c4c2ebcf2e4b86296d1a868716946"
   },
   "open": {
-    "implementation": "b71696d8bc17b5c7a460ccddd9579ba79072364b77631edddc3bccac54d9db52",
+    "implementation": "039a6babefc5ec9426bc01164dfccbb2ae6cac6da1af4c76b97ae7dada524a2e",
     "description": "110105133113aa70786ca352790e37c14675b722955fb7ce32be17d08de5f406"
   },
   "save": {
@@ -52,7 +52,7 @@
     "description": "bec96fc1e99f71a0f9c372d32d7aafecba9df1b86b8783a999a5cd7f71acdba1"
   },
   "storage": {
-    "implementation": "8077b3ff4436e2997c951ef030de33bea0b5e92e30cad9038ac8083b2a7abdad",
+    "implementation": "3c57f3f8e2676277cf725d44ee9e6d7f66d69ccb77fd72b1a5f2ab242175ed8f",
     "description": "49fbdaa85d1107ae187d8ebe415f9c8ba991f16bd64708f6c8936d76e6d113ad"
   },
   "validation": {
@@ -68,11 +68,11 @@
     "description": "91fb7f7c0f9f5eb048930d074a7786a42f7272816576faa3c71542aa582484a7"
   },
   "initiative-sort": {
-    "implementation": "3b9e04835c7adf9389e7ce633db2e8348391aebf39f2c7730db76067cee62af3",
+    "implementation": "95ae26fa2693b4706d85bbb85438ebac6ccc25cc3ffa5671efe60273af1fea4c",
     "description": "b604bcd0b73f6bc0da87d2caedb348ca6a6078ebfee4856989833013378c14b1"
   },
   "initiative-total": {
-    "implementation": "3b9e04835c7adf9389e7ce633db2e8348391aebf39f2c7730db76067cee62af3",
+    "implementation": "95ae26fa2693b4706d85bbb85438ebac6ccc25cc3ffa5671efe60273af1fea4c",
     "description": "d762cd2fc01de6304b9be0e088126f7c3e242cad8c261d78218b90f45f955a2a"
   }
 }

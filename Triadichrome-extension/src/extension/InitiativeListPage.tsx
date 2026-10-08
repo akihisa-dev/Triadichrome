@@ -34,7 +34,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
   const periodNames = new Map(periodTypes.map(item => [item.id, item.periodName]));
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   const displayed = sortInitiatives(source, sort, selectedKind, expansionNames, periodNames);
-  const window = useRowWindow(container, displayed.length, 40, 200, 90);
+  const window = useRowWindow(container, displayed.length, 28, 200, 56);
   const virtual = displayed.length > 200;
   const sortHeader = (column: InitiativeSort["column"], label: string, className: string) => {
     const active = sort?.column === column;
@@ -53,7 +53,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
     </div>
     <TableCalculationBoundary resetKeys={[initiatives, selectedKind, fiscalYear]}>
     <div ref={container} className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
-      <table className={`initiative-list-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "40px" } as React.CSSProperties} aria-label="施策一覧" aria-rowcount={displayed.length + 3}>
+      <table className={`initiative-list-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "28px" } as React.CSSProperties} aria-label="施策一覧" aria-rowcount={displayed.length + 3}>
         <colgroup>
           <col className="initiative-expansion-column" />
           <col className="initiative-period-column" />
@@ -73,7 +73,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
             <th scope="col">売上</th><th scope="col">費用</th><th scope="col" className="initiative-month-end">利益</th>
           </Fragment>)}</tr>
         </thead>
-        <tbody><WindowRows items={displayed.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={displayed.length} height={40} columns={40} render={(item, index) => <tr key={item.id} aria-rowindex={index + 3}>
+        <tbody><WindowRows items={displayed.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={displayed.length} height={28} columns={40} render={(item, index) => <tr key={item.id} aria-rowindex={index + 3}>
           <td className="initiative-list-fixed initiative-list-expansion">{expansionNames.get(item.expansionId ?? -1) ?? ""}</td>
           <td className="initiative-list-fixed initiative-list-period">{periodNames.get(item.periodTypeId ?? -1) ?? ""}</td>
           <th scope="row" className="initiative-list-fixed initiative-list-name" title={item.note || item.name}>

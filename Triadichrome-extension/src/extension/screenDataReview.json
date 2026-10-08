@@ -16,7 +16,7 @@
     "description": "95ffc1a6b18172f269cb2d22bb76e0532b88af756286107b9df39e6febb5300d"
   },
   "initiative-list": {
-    "implementation": "39312388d2bfef603696337fd4ebf1a5d2505a1a2927e9c6dc14abba5ee06ef6",
+    "implementation": "b79237333bfcf6f5139b3f823c8f72239f683e35c70e41eb3a9b15a2cfc9471a",
     "description": "5cde6c915dcd5a3944fdef16858d9e14c5ded3d16ed28f37ba2f202137253e5b"
   },
   "cost-table": {
@@ -24,7 +24,7 @@
     "description": "728ae14a32aa28548f32572f86079eb62d0ef0fc47281c5d4c6838e7ff5aa12d"
   },
   "expansion-table": {
-    "implementation": "78ae2c8f6ddcc1be40d7fb79e4b5e042b33af2643a5818529c174aa7d1f408df",
+    "implementation": "0610ad96c4684d647fe4ea4a4cbab45cc3ba20b68f0d28cc4506086e3d6b0a56",
     "description": "6485fb14bbd528b8f408ce8790307d838142627dfcc52f5e62f6d2740955dcab"
   },
   "kind-master": {

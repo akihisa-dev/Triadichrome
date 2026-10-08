@@ -17,6 +17,7 @@ test('巨大計画でも全件を保持し、描画・並べ替え・編集を�
   const list=app.locator('.initiative-list-table');
   await expect(list).toHaveAttribute('aria-rowcount','1017');
   expect(await list.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
+  for (const height of await list.locator('tbody tr:not(.virtual-row-spacer)').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))) expect(height).toBeCloseTo(28, 2);
   const total=await list.locator('tfoot').textContent();
   await app.locator('.initiative-list-container').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   await expect(list.getByRole('button',{name:'大規模確認施策1000',exact:true})).toBeAttached();
@@ -25,6 +26,7 @@ test('巨大計画でも全件を保持し、描画・並べ替え・編集を�
   await navigate('展開表');
   const expansion=app.locator('.expansion-table-page .initiative-list-table');
   expect(await expansion.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
+  for (const height of await expansion.locator('tbody tr:not(.virtual-row-spacer)').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))) expect(height).toBeCloseTo(28, 2);
   await app.locator('.expansion-table-page .initiative-list-container').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   await expect(expansion.locator('.expansion-subtotal-name').last()).toContainText('計');
   await expect(nav.getByRole('button',{name:'明細',exact:true})).toHaveCount(0);

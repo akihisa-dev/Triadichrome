@@ -51,11 +51,11 @@ function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<P
     }));
     return [...items, { group, item: null, period: null, groupOffset: offset, groupCount: count, periodOffset: 0, subtotal: true }];
   }), [table, contents.periodTypes]);
-  const window = useRowWindow(container, flat.length, 40, 200, 240);
+  const window = useRowWindow(container, flat.length, 28, 200, 165);
   const virtual = flat.length > 200;
   const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
   return <div ref={container} className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>
-      <table className={`initiative-list-table expansion-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "40px" } as React.CSSProperties} aria-label="展開表" aria-rowcount={flat.length + 6}>
+      <table className={`initiative-list-table expansion-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "28px" } as React.CSSProperties} aria-label="展開表" aria-rowcount={flat.length + 6}>
         <colgroup>
           <col className="expansion-group-col" /><col className="expansion-period-col" /><col className="expansion-name-col" />
           {tablePeriods.flatMap(period => labels.flatMap((_, index) => ["sales", "profit"].map(metric =>
@@ -73,7 +73,7 @@ function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<P
         <tr className="expansion-total"><th colSpan={3} scope="row" className="expansion-summary">合計</th><AmountCells values={table.total} /></tr>
         <tr className="expansion-total"><th colSpan={3} scope="row" className="expansion-summary">展開計</th><AmountCells values={table.changes} /></tr>
       </tbody>
-      {virtual ? <tbody><WindowRows items={flat.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={flat.length} height={40} columns={3 + labels.length * tablePeriods.length * 2} render={(row, index) => {
+      {virtual ? <tbody><WindowRows items={flat.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={flat.length} height={28} columns={3 + labels.length * tablePeriods.length * 2} render={(row, index) => {
         const firstGroup = row.groupOffset === 0 || index === window.start;
         const groupSpan = Math.min(row.groupCount - row.groupOffset, window.end - index);
         const firstPeriod = row.periodOffset === 0 || index === window.start;

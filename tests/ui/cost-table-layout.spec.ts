@@ -45,7 +45,7 @@ test("総原価表は画面内で縦横に移動でき、見出しから社内�
   expect(metrics.bottom).toBeLessThanOrEqual(metrics.height);
   expect(metrics.horizontal).toBe(true);
   expect(metrics.vertical).toBe(true);
-  expect(metrics.rowHeight).toBeLessThanOrEqual(30);
+  expect(metrics.rowHeight).toBeLessThanOrEqual(24);
   await page.screenshot({ path: testInfo.outputPath("compact.png") });
   const sales = region.getByRole("rowheader", { name: "社内控除後売上", exact: true });
   const initialSales = (await sales.boundingBox())!;
