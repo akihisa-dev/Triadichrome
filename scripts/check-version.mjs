@@ -5,6 +5,7 @@ import { projectRoot } from "./paths.mjs";
 
 const files = [
   "package.json",
+  "package-lock.json",
   "Triadichrome-extension/manifest.template.json",
   "Triadichrome-extension/manifest.json",
 ];
@@ -15,22 +16,19 @@ if (args.length > 1 || (args.length === 1 && args[0] !== "--staged")) {
 const staged = args[0] === "--staged";
 const git = (...args) => execFileSync("git", args, { cwd: projectRoot, encoding: "utf8" });
 
-if (staged) {
-  const changed = new Set(git("diff", "--cached", "--name-only", "--diff-filter=ACMR", "-z").split("\0"));
-  for (const file of files) {
-    if (!changed.has(file)) throw new Error(`同一commitに${file}のversion更新を含めてください。`);
-  }
-}
-
 const versions = files.map(file => {
   const source = staged ? git("show", `:${file}`) : readFileSync(path.join(projectRoot, file), "utf8");
-  const { version } = JSON.parse(source);
+  const document = JSON.parse(source);
+  const { version } = document;
+  if (file === "package-lock.json" && document.packages?.[""]?.version !== version) {
+    throw new Error("lockfileのroot packageのversionが一致しません。");
+  }
   if (typeof version !== "string" || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
     throw new Error(`${file}のversionはMAJOR.MINOR.PATCH形式で指定してください。`);
   }
   return version;
 });
 if (versions.some(version => version !== versions[0])) {
-  throw new Error("packageとManifestのversionが一致しません。");
+  throw new Error("package・lockfile・Manifestのversionが一致しません。");
 }
 console.log(`${staged ? "staged " : ""}version ok: ${versions[0]}`);

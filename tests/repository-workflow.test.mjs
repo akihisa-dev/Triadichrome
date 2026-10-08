@@ -8,6 +8,7 @@ import { projectRoot } from "../scripts/paths.mjs";
 
 const versionFiles = [
   "package.json",
+  "package-lock.json",
   "Triadichrome-extension/manifest.template.json",
   "Triadichrome-extension/manifest.json",
 ];
@@ -29,7 +30,7 @@ async function repository(t) {
   const script = (name, ...args) => run(process.execPath, [path.join(root, "scripts", name), ...args]);
   const setVersion = async (file, version) => {
     await mkdir(path.dirname(path.join(root, file)), { recursive: true });
-    await writeFile(path.join(root, file), JSON.stringify({ version }) + "\n");
+    await writeFile(path.join(root, file), JSON.stringify(file === "package-lock.json" ? { version, packages: { "": { version } } } : { version }) + "\n");
   };
   await mkdir(path.join(root, "scripts"));
   for (const name of ["paths.mjs", "check-samples.mjs", "check-version.mjs", "check-hooks.mjs", "setup-hooks.mjs", "version-next.mjs", "check-release.mjs"]) {
@@ -73,27 +74,38 @@ test("既存の別フック設定を上書きしない", async t => {
   fails(repo.script("check-hooks.mjs"), /npm run setup:hooks/);
 });
 
-test("コミットは3つのversionの登録漏れ・不一致を拒否し、揃えた変更だけ通す", async t => {
+test("コミットはversion据え置きを許可し、部分更新・不一致を拒否する", async t => {
   const repo = await repository(t);
   succeeds(repo.script("setup-hooks.mjs"));
+  await writeFile(path.join(repo.root, "change.txt"), "ordinary change\n");
+  repo.git("add", "--", "change.txt");
+  succeeds(repo.run("git", ["commit", "-m", "Keep version"]));
   const head = repo.git("rev-parse", "HEAD");
-  for (const file of versionFiles.slice(0, 2)) await repo.setVersion(file, "1.2.1");
-  repo.git("add", "--", ...versionFiles.slice(0, 2));
-  fails(repo.run("git", ["commit", "-m", "Missing generated version"]), /同一commitに/);
+  for (const file of versionFiles.slice(0, -1)) await repo.setVersion(file, "1.2.1");
+  repo.git("add", "--", ...versionFiles.slice(0, -1));
+  fails(repo.run("git", ["commit", "-m", "Missing generated version"]), /versionが一致しません/);
   assert.equal(repo.git("rev-parse", "HEAD"), head);
 
-  await repo.setVersion(versionFiles[2], "1.2.2");
-  repo.git("add", "--", versionFiles[2]);
+  await repo.setVersion(versionFiles.at(-1), "1.2.2");
+  repo.git("add", "--", versionFiles.at(-1));
   fails(repo.run("git", ["commit", "-m", "Mismatched version"]), /versionが一致しません/);
   assert.equal(repo.git("rev-parse", "HEAD"), head);
 
-  await repo.setVersion(versionFiles[2], "1.2.1");
+  await repo.setVersion(versionFiles.at(-1), "1.2.1");
   succeeds(repo.script("check-version.mjs"));
   // 作業ツリーだけ直しても、stage済みの不一致は解消した扱いにしない。
   fails(repo.script("check-version.mjs", "--staged"), /versionが一致しません/);
-  repo.git("add", "--", versionFiles[2]);
+  repo.git("add", "--", versionFiles.at(-1));
   repo.git("commit", "--quiet", "-m", "Consistent version");
   assert.notEqual(repo.git("rev-parse", "HEAD"), head);
+});
+
+test("lockfileの内側のversion不一致は通常確認とstage確認で拒否する", async t => {
+  const repo = await repository(t);
+  await writeFile(path.join(repo.root, "package-lock.json"), JSON.stringify({ version: "1.2.0", packages: { "": { version: "1.2.1" } } }));
+  fails(repo.script("check-version.mjs"), /root packageのversion/);
+  repo.git("add", "--", "package-lock.json");
+  fails(repo.script("check-version.mjs", "--staged"), /root packageのversion/);
 });
 
 test("version候補は下位桁を戻して表示し、ファイルを変更しない", async t => {
@@ -103,6 +115,17 @@ test("version候補は下位桁を戻して表示し、ファイルを変更し�
     succeeds(result);
     assert.equal(result.stdout.trim(), expected);
   }
+  for (const [sequence, expected] of [
+    [["patch", "patch", "patch"], "1.2.3"],
+    [["patch", "minor", "patch"], "1.3.1"],
+    [["minor", "patch", "major", "patch"], "2.0.1"],
+    [["major", "minor"], "2.1.0"],
+  ]) {
+    const result = repo.script("version-next.mjs", ...sequence);
+    succeeds(result);
+    assert.equal(result.stdout.trim(), expected);
+  }
+  fails(repo.script("version-next.mjs", "patch", "unknown"), /更新区分/);
   assert.equal(repo.git("status", "--porcelain"), "");
   fails(repo.script("version-next.mjs", "unknown"), /更新区分/);
   for (const file of versionFiles) await repo.setVersion(file, "01.2.0");
