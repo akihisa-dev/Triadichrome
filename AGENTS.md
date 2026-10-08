@@ -79,7 +79,7 @@
 - versionの実ファイルは毎commitでは変更せず、利用者がまとめて更新を依頼した時点、または明示されたtag・releaseの準備時に更新します。前回の反映範囲より後の各commitを古い順に確認し、一件ずつ従来の加算規則を適用します。MAJORでは下位二桁、MINORではPATCHを0へ戻します。複数commitを最大の区分一回へまとめません。
 - まとめたversion更新は専用commitとして許可します。本文に`semver: none`、`version-base: <加算前のversion>`、`version-from: <前回反映済みcommitの完全なID>`、`version-through: <今回反映した最後のcommitの完全なID>`と各対象commitの区分を記録します。version更新専用commit自体は加算せず、次回も除外します。追加の独立した変更を混在させません。
 - 移行前のversion更新を含むcommitは反映済みとして扱います。最初の集約では移行前最後のversion更新commitを基点にします。反映済み範囲を再加算せず、区分が未記録のcommitは内容と互換性から確認します。
-- commit件名は`<type>[!]: <version> <日本語の説明>`とします。通常commitの件名のversionは据え置いた番号、version更新commitでは更新後の番号を記載します。typeは`feat`、`fix`、`docs`、`style`、`refactor`、`perf`、`test`、`build`、`ci`、`chore`、`revert`から選びます。件名・本文は日本語とし、複数ファイル、version更新、運用変更を含む本文には`scope:`、`目的:`、`内容:`、`確認:`、`影響:`を記載します。`scope:`の対象は英語小文字の名詞で書きます。
+- 通常commitの件名は`<type>[!]: <日本語の説明>`とし、バージョン番号を書きません。version更新専用commitだけ`<type>: <更新後のversion> <日本語の説明>`とします。typeは`feat`、`fix`、`docs`、`style`、`refactor`、`perf`、`test`、`build`、`ci`、`chore`、`revert`から選びます。件名・本文は日本語とし、複数ファイル、version更新、運用変更を含む本文には`scope:`、`目的:`、`内容:`、`確認:`、`影響:`を記載します。`scope:`の対象は英語小文字の名詞で書きます。
 - commit前に`git status`、通常・cached diff、`git diff --cached --check`、version一致、変更に応じた検証を確認します。stageは対象pathを明示し、`git add .`と`git add -A`を使いません。commit後はcommit IDと残存差分を確認します。
 - 通常のcommitではGit tagを作りません。tagまたはreleaseは利用者が明示した場合だけ行い、`npm run verify:release`を通します。対象worktreeがclean、packageとManifestのversionが一致、必要な検証が成功、versionと一致する未使用の`vX.Y.Z`であることを確認します。tagは注釈付きで作成し、作成後に参照先とGit状態を確認します。既存tagを移動、上書き、削除しません。
 

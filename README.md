@@ -179,7 +179,7 @@ SQLite本体は拡張機能へ同梱し、メモリ内で処理します。外�
 | `npm run samples:generate` | 確認用の`.triadic`ファイルを生成・更新。buildでも実行 |
 | `npm run samples:check` | 保存済みの確認用ファイルと現在の生成元が一致するか確認。testでも実行 |
 
-通常のcommitではversionを据え置き、更新区分と反映範囲は[AGENTS.mdのversion運用](AGENTS.md#versioncommitrelease)に従ってcommit本文へ記録します。まとめて更新するときは、前回反映済みのcommitを除外した履歴を`git log --reverse <前回反映済みcommit>..HEAD`で確認し、各commitの区分を順に`npm run version:next -- patch patch minor patch`のように渡して候補を計算します。番号の変更は行わないため、確認した候補をpackage・lockfile・Manifest templateに設定してbuildし、反映範囲を記録した専用commitにまとめます。
+通常のcommitではversionを据え置き、件名にバージョン番号を書きません。番号はversion更新専用commitにだけ記載し、更新区分と反映範囲は[AGENTS.mdのversion運用](AGENTS.md#versioncommitrelease)に従ってcommit本文へ記録します。まとめて更新するときは、前回反映済みのcommitを除外した履歴を`git log --reverse <前回反映済みcommit>..HEAD`で確認し、各commitの区分を順に`npm run version:next -- patch patch minor patch`のように渡して候補を計算します。番号の変更は行わないため、確認した候補をpackage・lockfile・Manifest templateに設定してbuildし、反映範囲を記録した専用commitにまとめます。
 
 新しくcloneした環境では`npm run setup:hooks`を実行します。`pre-commit`はstage済み差分の空白エラーとversionを、`pre-push`は`npm run verify`でbuild・通常テスト・versionなどを確認します。画面自動テストはpush時に起動しません。通常の検証もフック未設定なら停止します。設定時に既存の別フックが検出された場合は、その設定内容を確認してください。
 
