@@ -1,3 +1,4 @@
+import { createOverflowPlan, type OverflowScenario } from "./overflow-plan";
 import { createEmptyTestPlan, createCurrentEmptyTestPlan } from "./empty-plan";
 import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
 import { installMemoryFiles, type FileScenario } from "./memory-files";
@@ -15,7 +16,7 @@ const legacyBytes = Array.from(await createEmptyTestPlan());
 const defaultBytes = Array.from(await createTriadicDatabase());
 const sampleBytes = Array.from(await createSamplePlan());
 const requested = new URLSearchParams(location.search).get("data");
-dataset.value = requested === "empty" || requested === "defaults" || requested === "legacy" ? requested : "full";
+dataset.value = [...dataset.options].some(option => option.value === requested) ? requested! : "full";
 export let fixtureBytes = dataset.value === "legacy" ? legacyBytes : dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
 
 frame.addEventListener("load", () => {
@@ -26,10 +27,16 @@ frame.addEventListener("load", () => {
   frame.inert = false;
 });
 
-function reload() {
-  fixtureBytes = dataset.value === "legacy" ? legacyBytes : dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
+let reloadVersion = 0;
+async function reload() {
+  const version = ++reloadVersion;
+  const value = dataset.value;
   status.textContent = "準備中";
   frame.inert = true;
+  const bytes = value.startsWith("overflow-") ? Array.from(await createOverflowPlan(value.slice(9) as OverflowScenario)) :
+    value === "legacy" ? legacyBytes : value === "empty" ? emptyBytes : value === "defaults" ? defaultBytes : sampleBytes;
+  if (version !== reloadVersion) return;
+  fixtureBytes = bytes;
   frame.src = "/";
 }
 

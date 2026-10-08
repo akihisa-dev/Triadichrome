@@ -1,3 +1,4 @@
+import { TableCalculationBoundary } from "./TableCalculationBoundary";
 import { periodCellClass } from "./periodCellStyle";
 import type { ReactNode } from "react";
 import { Fragment } from "react";
@@ -21,8 +22,6 @@ function AmountCells({ values }: { values: Initiative["months"][] }) {
   </Fragment>)}</Fragment>);
 }
 export function ExpansionTablePage({ contents, selected, selection, onOpenInitiative }: Props) {
-  const table = buildKindExpansionTable(contents, selected, "registered");
-  const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
     <div className="initiative-list-heading">
       <h1 id="expansion-table-title">展開表</h1>
@@ -30,7 +29,16 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
       {selection}
       {selected.length === 2 && <span className="field-hint">比較：確定予算 − 一次予算</span>}
     </div>
-    <div className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>
+    <TableCalculationBoundary resetKeys={[contents, selected]}>
+      <ExpansionTableContents contents={contents} selected={selected} onOpenInitiative={onOpenInitiative} />
+    </TableCalculationBoundary>
+  </main>;
+}
+
+function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<Props, "selection">) {
+  const table = buildKindExpansionTable(contents, selected, "registered");
+  const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
+  return <div className="initiative-list-container" role="region" aria-label="展開表の月別種別・比較" tabIndex={0}>
       <table className="initiative-list-table expansion-table" aria-label="展開表">
         <colgroup>
           <col className="expansion-group-col" /><col className="expansion-name-col" />
@@ -58,6 +66,5 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
           <th scope="row" className="expansion-name">{group.expansion.expansionName}計</th><AmountCells values={group.values} />
         </tr>
       </tbody>; })}</table>
-    </div>
-  </main>;
+    </div>;
 }

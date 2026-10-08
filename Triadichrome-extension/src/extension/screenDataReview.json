@@ -24,12 +24,12 @@
     "description": "175fb8e39ae5aeca54f6222f15348c30f55a6137669e32106851d97de1769456"
   },
   "cost-table": {
-    "implementation": "8238fead9e8ab5b576d8e99e02edc8d99006ee71a419aa8fa0f31a7376ef4c6e",
-    "description": "721b6118e13f1fb5afdefaf905ca416f5785b7e8944cbf8f921bf5ea7be18796"
+    "implementation": "5c885c0543c55faaf815bd5ebcab2b5adb68b17050c872283ffbe1a99674bbfc",
+    "description": "728ae14a32aa28548f32572f86079eb62d0ef0fc47281c5d4c6838e7ff5aa12d"
   },
   "expansion-table": {
-    "implementation": "574f9338c4207d83cf313e13bceb9449d6d2c4ae07f9d575bcf5f42f81fcf84d",
-    "description": "6fe461a65711a19724778b125e3032260d8f258c1b5826ab3b94b01a69cc0fdd"
+    "implementation": "5f36806cfea806b8920812144b2182e8721ec489eec19896792374035a830cef",
+    "description": "aa042d647150c6e65f39c6b7d4975bb24ede23881ddee0bb4bbb25082109d55b"
   },
   "kind-master": {
     "implementation": "296929b0ccf7979624166c6c7d8eedefceae17317963c15e24a2e49dedd1e874",

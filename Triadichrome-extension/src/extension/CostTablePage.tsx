@@ -1,3 +1,4 @@
+import { TableCalculationBoundary } from "./TableCalculationBoundary";
 import { periodCellClass } from "./periodCellStyle";
 import type { ReactNode } from "react";
 import { Fragment, useState, useLayoutEffect } from "react";
@@ -13,7 +14,6 @@ import { formatTableYen, formatTableRate } from "./tableNumberFormat";
 type Props = { contents: PlanContents; selected: KindId[]; selection: ReactNode; onOpenMaster?: () => void };
 
 export function CostTablePage({ contents, selected, selection }: Props) {
-  const { aggregations } = contents;
   const [industryIds, setIndustries] = useState<number[]>([]);
   const [departmentIds, setDepartments] = useState<number[]>([]);
   const available = contents;
@@ -23,16 +23,6 @@ export function CostTablePage({ contents, selected, selection }: Props) {
     if (industries.length !== industryIds.length) setIndustries(industries);
     if (departments.length !== departmentIds.length) setDepartments(departments);
   }, [available, industryIds, departmentIds]);
-  const { labels, rows } = buildPeriodCostComparison(filterPlan(contents, {
-    industries: industries.length ? industries : null,
-    departments: departments.length ? departments : null,
-  }), selected);
-  const salesGroupId = aggregations.find(group => group.required === "sales")?.id;
-  const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
-  const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
-    <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
-    {tablePeriods.map(period => <Fragment key={period.id}>{row.values.map((values, index) => <td key={index} className={periodCellClass(period, index === 0, index === labels.length - 1)}>{row.kind === "ratio" ? formatTableRate(values[period.id], labels[index] === "前年差" || labels[index] === "一次予算差") : formatTableYen(values[period.id])}</td>)}</Fragment>)}
-  </tr>;
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
@@ -47,7 +37,24 @@ export function CostTablePage({ contents, selected, selection }: Props) {
         options={available.departments.map(item => ({ id: item.id, name: item.departmentName }))}
         disabled={false} onChange={setDepartments} />
     </div>
-    <div className="initiative-list-container cost-table-container" role="region" aria-label="総原価表の月別前年・種別別金額" tabIndex={0}>
+    <TableCalculationBoundary resetKeys={[contents, selected, industryIds, departmentIds]}>
+      <CostTableContents contents={filterPlan(contents, {
+        industries: industries.length ? industries : null,
+        departments: departments.length ? departments : null,
+      })} selected={selected} />
+    </TableCalculationBoundary>
+  </main>;
+}
+
+function CostTableContents({ contents, selected }: Pick<Props, "contents" | "selected">) {
+  const { labels, rows } = buildPeriodCostComparison(contents, selected);
+  const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
+  const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
+  const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
+    <th scope="row" className="initiative-list-name">{row.name}{!row.configured && <span className="cost-unconfigured">未設定</span>}</th>
+    {tablePeriods.map(period => <Fragment key={period.id}>{row.values.map((values, index) => <td key={index} className={periodCellClass(period, index === 0, index === labels.length - 1)}>{row.kind === "ratio" ? formatTableRate(values[period.id], labels[index] === "前年差" || labels[index] === "一次予算差") : formatTableYen(values[period.id])}</td>)}</Fragment>)}
+  </tr>;
+  return <div className="initiative-list-container cost-table-container" role="region" aria-label="総原価表の月別前年・種別別金額" tabIndex={0}>
       <table className="initiative-list-table cost-table" aria-label="総原価表">
         <colgroup>
           <col className="cost-name-column" />
@@ -62,6 +69,5 @@ export function CostTablePage({ contents, selected, selection }: Props) {
         </thead>
         <tbody>{rows.slice(salesIndex + 1).map(renderRow)}</tbody>
       </table>
-    </div>
-  </main>;
+    </div>;
 }

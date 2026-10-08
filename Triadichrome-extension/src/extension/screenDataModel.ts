@@ -42,6 +42,7 @@ const selection = use("kind_selections", "この画面の種別選択を復元",
 const resolved = "確定予算の増減は、手修正がある月だけ amount_overrides を使い、それ以外は initiative_amounts を引き継ぎます。手修正の0も有効です。";
 const rounded = "金額は保存と集計の途中も円の整数で保持し、画面では千円に換算して整数へ丸めます。編集欄では小数点以下3桁まで表示します。";
 const blankZero = "丸めた表示が0になる金額・差額は空白にします。総原価表の利益率・利益率の差も同様です。保存値と計算には元の値を使います。";
+const calculationFailure = "総原価表・展開表の計算範囲を超えた場合は表の部分に理由を表示し、画面移動・表示条件の変更を維持します。金額や条件の変更後に再計算し、表示失敗では保存値を書き換えません。";
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [
   { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, ...classifications],
@@ -55,9 +56,9 @@ export const screenData: ScreenData[] = [
   { page: "previous-input", name: "前年入力", tables: [plan, previous, accounts, classifications[1]!, classifications[2]!],
     calculated: ["選択した業種・部署の組み合わせを科目・月ごとに合算します。未選択は全件、複数選択の合計は参照専用です。業種・部署を一つずつ選ぶと、その組み合わせの前年実額を更新します。分類の選択は保存しません。", rounded] },
   { page: "cost-table", name: "総原価表", tables: [plan, previous, use("initiatives", "施策ごとの科目行と業種・部署への所属", "id", "industry_id", "department_id"), rows, primary, overrides, accounts, groups, members, classifications[1]!, classifications[2]!, selection],
-    calculated: [resolved, "業種・部署マスタの全候補から複数選択し、選択した組み合わせの科目別の施策増減と前年実額を合算して予算を求めます。分類の未選択は全件で、表示選択は保存しません。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。前年差は表示する予算−前年（両方なら確定予算−前年）、一次予算差は確定予算−一次予算です。利益率の差はポイントで表示し、差の値は保存しません。四半期・上期・下期・年間の計は丸める前の月額を合算し、利益率は期間の経常利益合計÷売上集計合計で再計算します。", rounded, blankZero] },
+    calculated: [resolved, "業種・部署マスタの全候補から複数選択し、選択した組み合わせの科目別の施策増減と前年実額を合算して予算を求めます。分類の未選択は全件で、表示選択は保存しません。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。前年差は表示する予算−前年（両方なら確定予算−前年）、一次予算差は確定予算−一次予算です。利益率の差はポイントで表示し、差の値は保存しません。四半期・上期・下期・年間の計は丸める前の月額を合算し、利益率は期間の経常利益合計÷売上集計合計で再計算します。", rounded, blankZero, calculationFailure] },
   { page: "expansion-table", name: "展開表", tables: [plan, use("initiatives", "施策名・展開への所属・並び順", "id", "name", "expansion_id", "sort_order"), rows, primary, overrides, previous, accounts, classifications[0]!, selection],
-    calculated: [resolved, "施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。四半期・上期・下期・年間の計は丸める前の売上・利益を期間内で合算し、属性未設定も引き継ぎます。展開表専用の保存テーブルはありません。", rounded, blankZero] },
+    calculated: [resolved, "施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。四半期・上期・下期・年間の計は丸める前の売上・利益を期間内で合算し、属性未設定も引き継ぎます。展開表専用の保存テーブルはありません。", rounded, blankZero, calculationFailure] },
   { page: "details", name: "明細", tables: [...initiativeTables, previous],
     calculated: [resolved, "施策・科目行・月・種別を組み合わせて明細行を作ります。前年行は previous_amounts から作ります。明細専用の保存テーブルはありません。", rounded] },
   { page: "account-master", name: "勘定科目マスタ", tables: [plan, accounts], calculated: [] },
