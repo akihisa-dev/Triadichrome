@@ -9,6 +9,30 @@ export async function verifySpreadsheetIO(api) {
   const bytes = await api.createSamplePlan(2026), plan = await api.readPlanContents(bytes);
   await verifyReportWorkbooks(api, plan);
   const pairs = [{ industryId: plan.industries[0].id, departmentId: plan.departments[0].id }, { industryId: plan.industries[1].id, departmentId: plan.departments[1].id }];
+  // #15: real XLSX round trips must preserve every yen, including Excel's 15-digit boundary.
+  const boundaryAmounts = ["9007199254740.991", "-9007199254740.991", "9007199254740.99", "-9007199254740.99", "1000000000000.001", "-1000000000000.001", "999999999999.999", "123.456", "-123.456", "0", "9007199254740", "0.001"];
+  const precise = { ...plan, previousAmounts: boundaryAmounts.map((amount, index) => ({ ...pairs[0], accountId: plan.accounts[0].id, month: [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3][index], amount })) };
+  const preciseBefore = structuredClone(precise);
+  const output = await api.serializeWorkbook(api.createPreviousWorkbook(precise, [pairs[0]]));
+  const loaded = new ExcelJS.Workbook(); await loaded.xlsx.load(output);
+  const amountsSheet = loaded.worksheets[0];
+  boundaryAmounts.forEach((amount, index) => {
+    const cell = amountsSheet.getCell(4, index + 3);
+    assert.equal(api.amountToYen(String(cell.value)), api.amountToYen(amount));
+    if ([0, 1, 4, 5].includes(index)) {
+      assert.equal(typeof cell.value, "string"); assert.equal(cell.numFmt, "@");
+    }
+  });
+  assert.equal(typeof amountsSheet.getCell("J4").value, "number", "通常額は数値として出力");
+  assert.deepEqual(await api.parsePreviousWorkbook(output, precise), [], "無編集の再取り込みは変更なし");
+  amountsSheet.getCell("C4").value = "9007199254740.990";
+  amountsSheet.getCell("D4").value = "-9007199254740.990";
+  amountsSheet.getCell("J4").value = 123.457;
+  const edited = await api.parsePreviousWorkbook(await api.serializeWorkbook(loaded), precise);
+  assert.deepEqual(edited.map(p => [p.month, p.after]), [[4, "9007199254740.99"], [5, "-9007199254740.99"], [11, "123.457"]]);
+  amountsSheet.getCell("C4").value = "9007199254740.992";
+  await assert.rejects(api.parsePreviousWorkbook(await api.serializeWorkbook(loaded), precise), /千円単位/);
+  assert.deepEqual(precise, preciseBefore, "出力・読込・失敗で元の計画を変更しない");
   // #13: sanitize the output name after truncation without modifying masters.
   for (const departmentName of ["検証", "検証'", "部".repeat(26) + "'続き", "O'Brien", "検証/部署"]) {
     const input = { ...plan, industries: plan.industries.map((item, index) => index === 0 ? { ...item, industryName: "業" } : item),

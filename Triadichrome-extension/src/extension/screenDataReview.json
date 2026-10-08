@@ -56,7 +56,7 @@
     "description": "8df249a57adfd96205126e28628e25b73d596699bc4ac87293beaac4cfc6759e"
   },
   "spreadsheet-io": {
-    "implementation": "7ba6c92ca41a544e43535af69e380f582d9a2e7744deb8332279fcc1c676c5a5",
-    "description": "3725ff283410eab15e911f047ef09cbfe7352be605a5eaba46822ffa1ecc4bf9"
+    "implementation": "b58662c8603c7e9e6348272d6e723ffe06dd18064fbbd2ebb76c1927d6232bea",
+    "description": "8210a365914dfbb269cf9beab4dfb3ec423db5fee9582ec0aff936e460e1c2a9"
   }
 }
