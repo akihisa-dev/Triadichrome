@@ -1,4 +1,5 @@
 // Excel出力では選択した表と条件を保ち、従来の三表と計算元、および基本関数による金額の再計算を確認する。
+import { editDatabase } from "../../Triadichrome-extension/src/core/storage/transaction";
 import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/storage/dataHistory";
 import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/domain/kinds";
@@ -17,7 +18,9 @@ import { type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrom
 // All amount literals are in thousands of yen; 0.001 represents one yen.
 // Previous amounts span every industry/department pair; varying sales verify full, partial and multi-chip totals.
 // Shared by the preview and the generated .triadic sample, using the app's own validation.
-export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promise<Uint8Array> {
+export const LARGE_SAMPLE_INITIATIVES = 1000;
+
+export async function createSamplePlan(fiscalYear = currentFiscalYear(), large = false): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase(fiscalYear);
   const kinds = (await readPlanContents(bytes)).kinds;
   if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
@@ -100,6 +103,35 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
         row("グループ売上高", { 4: "125.125", 5: "-20.001", 6: "0", 3: "0.001" }), annual("本支店売上原価", 400), annual("給料手当", 200), annual("営業外収益", 10),
       ].map(row => ({ accountId: row.accountId!, amounts: row.amounts })) });
     }
+  }
+  if (large) {
+    // Copy validated rows within the production transaction. Opposite signs preserve
+    // the original fixture's totals, including confirmed overrides and one-yen values.
+    bytes = (await editDatabase(bytes, database => {
+      const sourceId = Number(database.exec("SELECT id FROM initiatives ORDER BY sort_order LIMIT 1")[0]!.values[0]![0]);
+      const firstOrder = Number(database.exec("SELECT MAX(sort_order) + 1 FROM initiatives")[0]!.values[0]![0]);
+      for (let index = 0; index < LARGE_SAMPLE_INITIATIVES; index++) {
+        const name = `大規模確認施策${String(index + 1).padStart(4, "0")}`;
+        database.run(`INSERT INTO initiatives (name, note, expansion_id, industry_id, department_id, period_type_id, sort_order)
+          SELECT ?, ?, ?, ?, ?, period_type_id, ? FROM initiatives WHERE id = ?`,
+          [name, "12科目行・12か月・2種別。正負の対で相殺し、既存の確認用合計を維持します。",
+            expansions[index % expansions.length]!.id, industries[index % industries.length]!.id,
+            departments[index % departments.length]!.id, firstOrder + index, sourceId]);
+        const id = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
+        for (const sign of [1, -1]) {
+          const prefix = `large:${index}:${sign}:`;
+          database.run(`INSERT INTO initiative_rows (id, initiative_id, account_id, sort_order)
+            SELECT ? || id, ?, account_id, sort_order * 2 + ? FROM initiative_rows WHERE initiative_id = ?`,
+            [prefix, id, sign === 1 ? 0 : 1, sourceId]);
+          database.run(`INSERT INTO initiative_amounts (row_id, month, amount_yen)
+            SELECT ? || m.row_id, m.month, m.amount_yen * ? FROM initiative_amounts m
+            JOIN initiative_rows r ON r.id = m.row_id WHERE r.initiative_id = ?`, [prefix, sign, sourceId]);
+          database.run(`INSERT INTO amount_overrides (row_id, month, amount_yen)
+            SELECT ? || o.row_id, o.month, o.amount_yen * ? FROM amount_overrides o
+            JOIN initiative_rows r ON r.id = o.row_id WHERE r.initiative_id = ?`, [prefix, sign, sourceId]);
+        }
+      }
+    })).bytes;
   }
   const timestamp = `${String(fiscalYear).padStart(4, "0")}-04-01T00:00:00.000Z`;
   const stable = async (input: Uint8Array) => {

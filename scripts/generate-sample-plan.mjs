@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { withNodeBundle } from "./node-bundle.mjs";
@@ -18,12 +19,12 @@ await withNodeBundle("tests/sample-api.ts", async ({ createSamplePlan, openTriad
       const schema = database.exec("SELECT type, name, tbl_name, sql FROM sqlite_master ORDER BY type, name")[0].values;
       const tables = schema.filter(([type]) => type === "table").map(([, name]) => {
         const rows = database.exec(`SELECT * FROM "${String(name).replaceAll('"', '""')}"`)[0];
-        return [name, rows?.columns ?? [], (rows?.values ?? []).map(row => JSON.stringify(row)).sort()];
+        return [name, rows?.columns ?? [], (rows?.values ?? []).map(row => createHash("sha256").update(JSON.stringify(row.map(value => value instanceof Uint8Array ? { blob: createHash("sha256").update(value).digest("hex") } : value))).digest("hex")).sort()];
       });
       return JSON.stringify([database.exec("PRAGMA user_version"), database.exec("PRAGMA application_id"), schema, tables]);
     } finally { database.close(); }
   };
-  const bytes = Buffer.from(await createSamplePlan());
+  const bytes = Buffer.from(await createSamplePlan(undefined, true));
   const expected = await contents(bytes);
   const existing = await readFile(output).catch(error => {
     if (error.code === "ENOENT") return undefined;

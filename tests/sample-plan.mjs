@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 export async function verifySamplePlan(api) {
   const { createSamplePlan, validateTriadicDatabase, readPlanContents, buildCostTable, initiativeMonths, changeAccountMaster, changeAggregationMaster, openTriadicDatabase } = api;
@@ -97,5 +98,31 @@ export async function verifySamplePlan(api) {
     assert.deepEqual(plan.details.filter(row => row.initiativeId === product.id && row.kindId === 1 && [4,3].includes(row.month)).slice(0,2).map(row => [row.year,row.month]), [[2026,4],[2027,3]]);
   } finally { database.close(); }
   assert.equal((await readPlanContents(bytes)).accounts.length, 59, "削除確認後も元データを再利用できる");
+  const largeBytes = new Uint8Array(await readFile(new URL("../samples/全機能確認用.triadic", import.meta.url)));
+  await validateTriadicDatabase(largeBytes);
+  const large = await readPlanContents(largeBytes);
+  const added = large.initiatives.filter(item => item.name.startsWith("大規模確認施策"));
+  assert.equal(large.initiatives.length, 14 + api.LARGE_SAMPLE_INITIATIVES);
+  assert.equal(added.length, 1000);
+  assert.equal(large.details.length, 1704 + 1000 * 12 * 12 * 2);
+  assert.ok(largeBytes.length > bytes.length * 10, "実ファイルを従来の10倍以上に拡大する");
+  assert.deepEqual(new Set(added.map(item => item.expansionId)), new Set(large.expansions.map(item => item.id)));
+  assert.deepEqual(new Set(added.map(item => item.industryId)), new Set(large.industries.map(item => item.id)));
+  assert.deepEqual(new Set(added.map(item => item.departmentId)), new Set(large.departments.map(item => item.id)));
+  for (const item of added) {
+    assert.equal(item.rows.length, 12);
+    assert.deepEqual(item.startYearMonths, { 1: `${api.currentFiscalYear()}-04`, 2: `${api.currentFiscalYear()}-04` });
+    for (const kind of [1, 2]) {
+      const projected = api.initiativesForKind([item], large.accounts, kind)[0];
+      for (const month of initiativeMonths) assert.deepEqual(projected.months[month], { sales: 0, expense: 0, profit: 0 });
+    }
+  }
+  const largeCombined = api.buildKindExpansionTable(large, [1, 2], "registered");
+  assert.deepEqual(largeCombined.total, combined.total, "大規模化しても元の確認用合計を保持する");
+  const largeHistory = await api.readDataHistory(largeBytes);
+  assert.equal(largeHistory.entries.length, 3);
+  const largeOlder = await api.readSnapshotContents(await api.readHistorySnapshot(largeBytes, largeHistory.entries[2].id));
+  assert.equal(largeOlder.initiatives.length, 1014, "過去の履歴にも大規模データを保持する");
+  assert.equal(largeOlder.initiatives[0].rows[0].amounts[4], "100");
   console.log("PASS: sample plan years, monthly edge cases, configured totals and editable/deletable master data");
 }
