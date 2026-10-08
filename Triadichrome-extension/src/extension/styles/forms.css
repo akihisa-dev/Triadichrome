@@ -299,6 +299,8 @@
 .initiative-list-table .initiative-name-column { width: var(--initiative-name-width); }
 .initiative-list-table .initiative-start-column { width: var(--initiative-start-width); }
 .initiative-overview-page thead { position: sticky; top: 0; z-index: 2; }
+.initiative-overview-page .initiative-total-row > * { background: var(--soft); font-weight: 600; }
+.initiative-overview-page .initiative-list-table .initiative-total-label { position: sticky; left: 0; z-index: 1; text-align: left; }
 .initiative-list-container { max-width: 100%; margin-top: 24px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
 .initiative-list-container:focus-visible { outline-color: var(--focus); }
 .initiative-list-table { width: 100%; min-width: 2908px; table-layout: fixed; border-spacing: 0; font-variant-numeric: tabular-nums; }
@@ -317,6 +319,7 @@
 .initiative-sort-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .initiative-sort-indicator { margin-left: 4px; font-size: 10px; }
 @media (max-width: 600px) {
+  .initiative-overview-page thead th, .initiative-overview-page thead td { padding-block: 8px; }
   .initiative-overview-page .initiative-list-table { --initiative-expansion-width: 44px; --initiative-period-width: 44px; --initiative-name-width: 64px; --initiative-start-width: 72px; }
   .initiative-list-table .initiative-list-fixed { padding-inline: 6px; }
 }

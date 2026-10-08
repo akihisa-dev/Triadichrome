@@ -1,3 +1,5 @@
+import { TableCalculationBoundary } from "./TableCalculationBoundary";
+import { initiativeTotals } from "../core/tables/initiativeTotals";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, useState, type ReactNode } from "react";
 import { initiativeMonths } from "../core/domain/calendar";
@@ -45,6 +47,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
       {selection}
       <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>
+    <TableCalculationBoundary resetKeys={[initiatives, selectedKind, fiscalYear]}>
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
       <table className="initiative-list-table" aria-label="施策一覧">
         <colgroup>
@@ -65,6 +68,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
             <th scope="col">売上</th><th scope="col">費用</th><th scope="col" className="initiative-month-end">利益</th>
           </Fragment>)}</tr>
+          <InitiativeTotalRow initiatives={source} />
         </thead>
         <tbody>{displayed.map(item => <tr key={item.id}>
           <td className="initiative-list-fixed initiative-list-expansion">{expansionNames.get(item.expansionId ?? -1) ?? ""}</td>
@@ -81,6 +85,19 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
         </tr>)}</tbody>
       </table>
     </div>
+    </TableCalculationBoundary>
     {source.length === 0 && <p className="page-description">表示する施策がありません。</p>}
   </main>;
+}
+
+function InitiativeTotalRow({ initiatives }: { initiatives: Initiative[] }) {
+  const totals = initiativeTotals(initiatives);
+  return <tr className="initiative-total-row">
+    <th colSpan={4} scope="row" className="initiative-total-label">合計</th>
+    {initiativeMonths.map(month => <Fragment key={month}>
+      <td>{amountText(totals[month]?.sales)}</td>
+      <td>{amountText(totals[month]?.expense)}</td>
+      <td className="initiative-month-end">{amountText(totals[month]?.profit)}</td>
+    </Fragment>)}
+  </tr>;
 }

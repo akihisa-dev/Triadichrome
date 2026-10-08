@@ -42,7 +42,11 @@ for (const scenario of ["monthly", "period", "previous", "difference", "normal"]
       }
     }
     await nav.getByRole("button", { name: "施策一覧", exact: true }).click();
-    await app.getByRole("button", { name: "上限確認A", exact: true }).click();
+    if (scenario === "monthly") {
+      await expect(app.getByRole("alert")).toContainText("範囲を超えています");
+      await nav.getByRole("button", { name: "明細", exact: true }).click();
+    }
+    await app.getByRole("button", { name: "上限確認A", exact: true }).first().click();
     await app.getByRole("tab", { name: "一次予算", exact: true }).click();
     const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
     await april.fill("1"); await april.press("Tab");
