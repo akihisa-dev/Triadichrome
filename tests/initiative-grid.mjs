@@ -54,6 +54,35 @@ export function verifyInitiativeGrid(api) {
   assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 0, column: 11 }, "1\t2"), /外/);
   assert.throws(() => api.pasteInitiativeGrid(draft, 1, { row: 2, column: 0 }, "1\n2"), /外/);
   assert.throws(() => api.fillInitiativeGrid(draft, 1, { anchor: { row: -1, column: 0 }, end: { row: 0, column: 0 } }, "0"), /外/);
+  const accounts = ["sales", "cost", "expense", "profit", null].map((accountType, index) => ({ id: index + 1, accountType }));
+  const summaryDraft = { ...draft, rows: [
+    { accountId: 1, amounts: { 4: "1.125", 5: "-1" }, overrides: { 2: { 4: "0" } } },
+    { accountId: 1, amounts: { 4: "2.375" } },
+    { accountId: 2, amounts: { 4: "-4.001" } },
+    { accountId: 3, amounts: {} },
+    { accountId: 5, amounts: { 4: "900" } },
+    { accountId: null, amounts: { 4: "800" } },
+  ] };
+  const primaryTotals = api.initiativeAttributeTotals(summaryDraft, 1, accounts);
+  assert.equal(primaryTotals.error, "");
+  assert.deepEqual(primaryTotals.rows.map(row => row.attribute), ["sales", "cost", "expense"], "入力行にない属性と未設定属性は表示しない");
+  assert.equal(primaryTotals.rows[0].amounts[4], 3500, "重複科目も円の整数で合算し、丸めは表示時だけ行う");
+  assert.equal(primaryTotals.rows[1].amounts[4], -4001, "売上原価も符号を反転せず属性内で合算する");
+  assert.equal(primaryTotals.rows[2].amounts[4], 0, "存在する属性は全月0でも表示する");
+  const confirmedTotals = api.initiativeAttributeTotals(summaryDraft, 2, accounts);
+  assert.equal(confirmedTotals.rows[0].amounts[4], 2375, "確定予算は手修正0と引き継ぎを反映する");
+  const invalid = api.initiativeAttributeTotals({ ...summaryDraft, rows: [{ accountId: 1, amounts: { 4: "不正" } }] }, 1, accounts);
+  assert.equal(invalid.rows[0].amounts[4], undefined);
+  assert.equal(invalid.rows[0].amounts[5], 0);
+  assert.ok(invalid.error);
+  const max = "9007199254740.991";
+  const large = { ...draft, rows: [max, max, `-${max}`].map(amount => ({ accountId: 1, amounts: { 4: amount } })) };
+  assert.equal(api.initiativeAttributeTotals(large, 1, accounts).rows[0].amounts[4], Number.MAX_SAFE_INTEGER, "途中の合計で丸めず相殺後を検証する");
+  const overflow = api.initiativeAttributeTotals({ ...large, rows: large.rows.slice(0, 2) }, 1, accounts);
+  assert.equal(overflow.rows[0].amounts[4], undefined);
+  assert.match(overflow.error, /範囲/);
+  assert.equal(api.initiativeAttributeTotals({ ...summaryDraft, invalidNumbers: true }, 1, accounts).rows[0].amounts[4], undefined);
+  assert.deepEqual(api.initiativeAttributeTotals(blank, 1, accounts).rows, []);
   assert.deepEqual(draft, before, "成功・失敗とも入力元を変更しない");
   console.log("PASS: 施策の範囲入力、複数行の貼り付け、手修正0、精度と編集禁止セルの保護");
 }

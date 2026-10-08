@@ -15,6 +15,7 @@
 | 施策の共通情報 | [core/storage/initiatives.ts](../Triadichrome-extension/src/core/storage/initiatives.ts) | 各施策の展開・業種・部署・任意の期間・備考 | タブを切り替えても共通情報は同じ | 通常テスト | DB・計算を確認。画面は操作手順として準備 |
 | 種別 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 前年表示と固定の一次・確定 | 施策タブは一次・確定のみ、種別マスタは前年・一次・確定の閲覧のみ | 通常テスト・固定の業務定義と種別選択制約 | 固定2種と前年表示、無効な種別選択の拒否を確認 |
 | 自動引き継ぎ | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「確定予算の下期調整」の一次4月100を120へ変更 | 手修正のない確定は120に追従 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
+| 科目属性別の月別合計 | [core/tables/initiativeGrid.ts](../Triadichrome-extension/src/core/tables/initiativeGrid.ts) | 「既存商品の販売拡大」と「科目変更と削除の確認」の最下部、種別切替と金額編集 | 前者の一次4月は売上150・売上原価60・費用11・利益属性0、確定の売上160。後者は売上・費用の2行のみ。存在する属性は全月0でも表示 | 通常テスト・Codex内のブラウザ | 重複科目、符号、円精度、手修正0、合計範囲超過を自動検証。属性の有無、種別切替、入力への追従をブラウザで確認 |
 | 手修正と解除 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「確定予算の手修正」の確定4月120・5月0 | 一次変更でも手修正は残り、表の上の「一次予算を反映する」で表示中の施策の全科目・全月を追従に戻す | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
 | 共通科目行 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「科目変更と削除の確認」の0行を変更・削除、別タブで追加 | 全タブに反映。どこかに1円でもある行は変更・削除不可 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
 | 前年入力 | [extension/PreviousInputPage.tsx](../Triadichrome-extension/src/extension/PreviousInputPage.tsx) | 業種9件×部署2件に売上・原価・費用・利益の12か月 | 未選択で売上高4月25,290、直営自動車の全部署2,010、全業種の部署A12,600を表示。合計は参照専用、個別の組合せで編集・上書き更新 | 通常テスト・sample-plan画面テスト | 保存・再読込・画面入力を確認 |

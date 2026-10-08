@@ -1,6 +1,9 @@
+import { type Account } from "../domain/accountMaster";
+import { accountTypes, type AccountType } from "../domain/accountTypes";
+import { amountToYen, checkedYen } from "../domain/amounts";
 import { initiativeMonths } from "../domain/calendar";
 import { type InitiativeEntryDraft } from "../domain/plan";
-import { isKindId, type KindId } from "../domain/kinds";
+import { isKindId, resolvedAmount, type KindId } from "../domain/kinds";
 import { gridBounds, normalizeGridAmount, type GridCell, type GridSelection } from "./previousGrid";
 
 export function canEditInitiativeCell(draft: InitiativeEntryDraft, kind: KindId, cell: GridCell): boolean {
@@ -52,4 +55,26 @@ export function reflectPrimaryBudget(draft: InitiativeEntryDraft): InitiativeEnt
     delete overrides[2];
     return { ...row, overrides };
   }) };
+}
+
+/** Group entered rows by their own attribute; do not convert costs into sales or profit effects. */
+export function initiativeAttributeTotals(draft: InitiativeEntryDraft, kind: KindId, accounts: Account[]) {
+  const accountById = new Map(accounts.map(account => [account.id, account]));
+  let error = "";
+  const rows = (Object.keys(accountTypes) as AccountType[]).flatMap(attribute => {
+    const sources = draft.rows.filter(row => row.accountId !== null && accountById.get(row.accountId)?.accountType === attribute);
+    if (sources.length === 0) return [];
+    const amounts = Object.fromEntries(initiativeMonths.map(month => {
+      if (draft.invalidNumbers) return [month, undefined];
+      try {
+        const total = sources.reduce((sum, row) => sum + BigInt(amountToYen(resolvedAmount(row, kind, month))), 0n);
+        return [month, checkedYen(total)];
+      } catch (failure) {
+        error = `科目属性別の合計を計算できません。${failure instanceof Error ? failure.message : "金額を確認してください。"}`;
+        return [month, undefined];
+      }
+    }));
+    return [{ attribute, amounts }];
+  });
+  return { rows, error };
 }

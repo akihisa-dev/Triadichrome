@@ -155,3 +155,29 @@ test("範囲の自動保存が失敗しても入力と未変更セルを保持�
   await app.getByRole("button", { name: "入力を取り消す", exact: true }).click();
   await expect(april).toHaveValue("120"); await expect(may).toHaveValue("125");
 });
+
+
+test("科目属性別の合計は存在する属性だけを表示し、入力と種別に追従する", async ({ app }) => {
+  const table = app.getByRole("table", { name: "月別計画金額", exact: true });
+  const footer = table.locator("tfoot");
+  await expect(footer.getByRole("row")).toHaveCount(1);
+  const sales = footer.getByRole("row", { name: /^売上合計/ });
+  await expect(sales.getByRole("cell").first()).toHaveText("0");
+  const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
+  await april.nth(0).fill("1200.125");
+  await april.nth(1).fill("25.375");
+  await expect(sales.getByRole("cell").first()).toHaveText("1,226");
+  await app.getByRole("tab", { name: "確定予算", exact: true }).click();
+  await april.nth(0).fill("0");
+  await expect(sales.getByRole("cell").first()).toHaveText("25");
+  await app.getByRole("button", { name: "一次予算を反映する", exact: true }).click();
+  await expect(sales.getByRole("cell").first()).toHaveText("1,226");
+  await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+  await app.getByRole("combobox", { name: "3行目の勘定科目", exact: true }).selectOption({ label: "537 旅費" });
+  await expect(footer.getByRole("row")).toHaveCount(2);
+  await expect(footer.getByRole("row", { name: /^費用合計/ }).getByRole("cell").first()).toHaveText("0");
+  await expect(footer.getByRole("rowheader", { name: "売上原価合計", exact: true })).toHaveCount(0);
+  await expect(footer.getByRole("rowheader", { name: "利益合計", exact: true })).toHaveCount(0);
+  await app.getByRole("button", { name: "3行目を削除", exact: true }).click();
+  await expect(footer.getByRole("row")).toHaveCount(1);
+});

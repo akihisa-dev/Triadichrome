@@ -8,12 +8,12 @@
     "description": "8809e0646c7fb2687bd80cc7e6e0615ff876378a3d83f1ef56860ce5d6102b62"
   },
   "initiative-entry": {
-    "implementation": "00ad229d2de6f92cdc722acad544df583e0a57f25d1900186f18df9bddc18935",
-    "description": "dae83fe566bfe8637d9687d0b3d1d3c73d91a01c698a11bc46b34bcbb9efa474"
+    "implementation": "a81214b2327d4544da71be3e75101dc9e3b5d738892514eefba90aa7bd18bfeb",
+    "description": "a26769d3115e972930aa7aefb0d01a8503e397b246eca9689b2d7777e2786e19"
   },
   "initiative-detail": {
-    "implementation": "0484efe5471c4f62e2c640573c984824559eba2eccc99f804d40885d323c4800",
-    "description": "d6bc59c950577e50b5986347967a700d2c6fc0fb0d4a5bec96ad90642d7eaf61"
+    "implementation": "0be1f670d2bd274b7bc857cbfdb48cf0930ce82f238c3589e0441f54b9ab1bf2",
+    "description": "a7e2018a4d328a02be0c78e1d1ba0b2f1fed27f4909be6eb44714481278efbe1"
   },
   "initiative-list": {
     "implementation": "95a42156ccc9d6c0431266b95466b12f14808a7865b615430d1022892109fe1c",
