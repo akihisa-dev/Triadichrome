@@ -68,11 +68,10 @@ function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<P
         </tr>
         <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.map((label, index) => <th key={index} scope="colgroup" colSpan={2} className={periodCellClass(period, index === 0)}>{label}</th>)}</Fragment>)}</tr>
         <tr>{tablePeriods.map(period => <Fragment key={period.id}>{labels.flatMap((_, index) => (["sales", "profit"] as const).map(key => <th key={`${index}-${key}`} scope="col" className={periodCellClass(period, key === "sales" && index === 0)}>{key === "sales" ? "売上" : "利益"}</th>))}</Fragment>)}</tr>
-      </thead><tbody>
-        <tr><th colSpan={3} scope="row" className="expansion-summary">前年</th><AmountCells values={table.previous} /></tr>
+        <tr className="expansion-previous"><th colSpan={3} scope="row" className="expansion-summary">前年</th><AmountCells values={table.previous} /></tr>
         <tr className="expansion-total"><th colSpan={3} scope="row" className="expansion-summary">合計</th><AmountCells values={table.total} /></tr>
         <tr className="expansion-total"><th colSpan={3} scope="row" className="expansion-summary">展開計</th><AmountCells values={table.changes} /></tr>
-      </tbody>
+      </thead>
       {virtual ? <tbody><WindowRows items={flat.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={flat.length} height={28} columns={3 + labels.length * tablePeriods.length * 2} render={(row, index) => {
         const firstGroup = row.groupOffset === 0 || index === window.start;
         const groupSpan = Math.min(row.groupCount - row.groupOffset, window.end - index);

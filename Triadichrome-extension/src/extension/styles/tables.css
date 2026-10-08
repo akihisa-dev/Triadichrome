@@ -55,9 +55,11 @@
 .expansion-table .expansion-name { left: calc(var(--expansion-group-width) + var(--expansion-period-width)); }
 .expansion-table thead tr:first-child > th[colspan], .expansion-table .initiative-month-end { border-right-color: var(--control-line); }
 .expansion-table thead tr:first-child > th { font-weight: 600; }
+.expansion-table .expansion-previous > * { background: var(--canvas); font-weight: 400; }
+.expansion-table thead th.expansion-summary { text-align: left; }
 .expansion-table .expansion-total > *, .expansion-table .expansion-subtotal > * { border-top: 1px solid var(--control-line); }
 .expansion-table thead .expansion-group, .expansion-table thead .expansion-name, .expansion-table thead .expansion-period, .expansion-table .expansion-total > *, .expansion-table .expansion-subtotal > * { background: var(--soft); font-weight: 600; }
-.expansion-table tbody + tbody tr:first-child > * { border-top: 1px solid var(--control-line); }
+.expansion-table thead + tbody tr:first-child > *, .expansion-table tbody + tbody tr:first-child > * { border-top: 1px solid var(--control-line); }
 @media (max-width: 600px) {
   .expansion-table { --expansion-group-width: 72px; --expansion-period-width: 60px; --expansion-name-width: 144px; }
 }
