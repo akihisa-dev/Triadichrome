@@ -27,9 +27,7 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
     <div className="initiative-list-heading">
       <h1 id="expansion-table-title">展開表</h1>
-      <span className="field-hint">単位：千円</span>
       {selection}
-      {selected.length === 2 && <span className="field-hint">比較：確定予算 − 一次予算</span>}
     </div>
     <TableCalculationBoundary resetKeys={[contents, selected]}>
       <ExpansionTableContents contents={contents} selected={selected} onOpenInitiative={onOpenInitiative} />

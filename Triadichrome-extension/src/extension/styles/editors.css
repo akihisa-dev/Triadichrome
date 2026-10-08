@@ -11,8 +11,7 @@
 .kind-tabs { display: flex; gap: .35rem; margin: 1.25rem 0 .75rem; border-bottom: 1px solid var(--line); }
 .kind-tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: .4rem .4rem 0 0; background: transparent; padding: .6rem .9rem; color: var(--muted); transition: background-color 160ms ease, color 160ms ease; }
 .kind-tabs button[aria-selected="true"] { border-bottom-color: var(--ink); color: var(--ink); background: var(--soft); }
-.amount-source { min-height: 1.5rem; margin-top: .25rem; font-size: .7rem; color: var(--muted); }
-.amount-source .text-button { padding: 0; font-size: inherit; }
+.initiative-budget-actions { margin-bottom: .75rem; }
 @media (prefers-reduced-motion: reduce) { .kind-tabs button { transition-duration: 1ms; } }
 @media (max-width: 600px) {
   .home-header { flex-wrap: wrap; }

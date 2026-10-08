@@ -1,3 +1,4 @@
+import { reflectPrimaryBudget } from "../core/tables/initiativeGrid";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
 import { ClassificationSlot } from "./ClassificationSlot";
@@ -91,7 +92,10 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
         <button className="secondary-button" type="button" disabled={isSaving || editing?.pending} onClick={onOpenMaster}>勘定科目マスタを開く</button>
       </div>}
       <div className="kind-tabs" role="tablist" aria-label="入力する種別">{INITIAL_KINDS.map(item => <button key={item.id} id={`kind-tab-${item.id}`} type="button" role="tab" aria-selected={kind === item.id} aria-controls="kind-amount-panel" onClick={() => setKind(item.id)}>{item.kindName}</button>)}</div>
-      <span className="field-hint">前年差・単位：千円（小数点以下3桁まで）</span>
+      {kind === 2 && <div className="initiative-budget-actions">
+        <button className="secondary-button" type="button" disabled={readOnly || isSaving || !draft.rows.some(row => Object.keys(row.overrides?.[2] ?? {}).length > 0)}
+          onClick={() => onDraftChange(reflectPrimaryBudget(draft))}>一次予算を反映する</button>
+      </div>}
       <div className="initiative-amount-table-container" id="kind-amount-panel" role="tabpanel" aria-labelledby={`kind-tab-${kind}`} aria-label="月別計画金額の入力表" tabIndex={0}>
         <InitiativeAmountGrid key={kind} draft={draft} kind={kind}
           accounts={accounts} isSaving={readOnly || isSaving} onDraftChange={onDraftChange} />

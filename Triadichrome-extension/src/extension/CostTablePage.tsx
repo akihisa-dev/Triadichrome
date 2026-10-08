@@ -26,7 +26,6 @@ export function CostTablePage({ contents, selected, selection }: Props) {
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
-      <span className="field-hint">単位：千円</span>
       {selection}
     </div>
     <div className="cost-classification-row">

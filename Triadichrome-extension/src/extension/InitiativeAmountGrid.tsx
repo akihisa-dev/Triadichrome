@@ -153,13 +153,7 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, onDraftC
                         else { setEditing(false); if (event.key === "Tab") event.currentTarget.blur(); }
                       }}
                     />
-                    {kind !== 1 && <div className="amount-source">{row.overrides?.[kind]?.[month] !== undefined
-                      ? <button type="button" className="text-button" aria-label={`${accountName} ${month}月を引き継ぎに戻す`} disabled={readOnly || isSaving} onClick={() => {
-                        const overrides = { ...row.overrides, [kind]: { ...row.overrides?.[kind] } };
-                        delete overrides[kind]![month];
-                        onDraftChange({ ...draft, rows: draft.rows.map((current, position) => position === index ? { ...current, overrides } : current) });
-                      }}>引き継ぎに戻す</button>
-                      : <span>引き継ぎ</span>}</div>}
+
                   </td>
                 })}
               </tr>;

@@ -58,6 +58,12 @@ test("複数行・月の貼り付け、範囲コピー・同値入力・消去�
   await april.fill("10");
   await app.getByRole("tab", { name: "確定予算", exact: true }).click();
   await expect(april).toHaveValue("0");
+  await expect(app.getByText("引き継ぎ", { exact: true })).toHaveCount(0);
+  await expect(app.getByText(/前年差・単位/)).toHaveCount(0);
+  await app.getByRole("button", { name: "一次予算を反映する", exact: true }).click();
+  await expect(april).toHaveValue("10");
+  await expect(cell(1, 5)).toHaveValue("8.001");
+  await expect(app.getByRole("button", { name: "一次予算を反映する", exact: true })).toBeDisabled();
   await settleMotion(app.locator("body"));
   await page.screenshot({ path: testInfo.outputPath("initiative-grid.png") });
 });

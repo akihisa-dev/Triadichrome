@@ -65,7 +65,6 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
   return <main className="initiative-list-page initiative-overview-page" aria-labelledby="initiative-list-title">
     <div className="initiative-list-heading">
       <h1 id="initiative-list-title">施策一覧</h1>
-      <span className="field-hint">単位：千円</span>
       {selection}
       <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>

@@ -44,3 +44,12 @@ export function fillInitiativeGrid(draft: InitiativeEntryDraft, kind: KindId, se
   return applyRectangle(draft, kind, { row: top, column: left },
     Array.from({ length: bottom - top + 1 }, () => Array<string>(right - left + 1).fill(text)));
 }
+
+/** Clear this initiative's confirmed adjustments and resume following its primary budget. */
+export function reflectPrimaryBudget(draft: InitiativeEntryDraft): InitiativeEntryDraft {
+  return { ...draft, rows: draft.rows.map(row => {
+    const overrides = { ...row.overrides };
+    delete overrides[2];
+    return { ...row, overrides };
+  }) };
+}

@@ -30,7 +30,6 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
     <div className="initiative-list-heading">
       <h1 id="previous-input-title">前年入力</h1>
-      <span className="field-hint">単位：千円（小数点以下3桁まで）</span>
       <div className="initiative-classification-row">
         <ChoiceChips id="previous-industry" label="業種名" value={industryIds} emptyLabel="全業種の合計"
           options={contents.industries.map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
