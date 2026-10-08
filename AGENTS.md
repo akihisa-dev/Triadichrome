@@ -53,9 +53,7 @@
 
 プロジェクトSkillは`.agents/skills/*/SKILL.md`に置き、依頼に実際に該当する場合だけ全文を読みます。参照文書はSkillからリンクされた必要なものだけを読み、無関係なSkillや参照元固有の設計を持ち込みません。
 
-- [extension-release](.agents/skills/extension-release/SKILL.md): commit、SemVer、tag、releaseの判断と検証
 - [refactor-triadichrome](.agents/skills/refactor-triadichrome/SKILL.md): リポジトリ全体の調査と、機能・操作・保存データを維持する全面リファクタリングの設計・実行
-- [extension-issue-workflow](.agents/skills/extension-issue-workflow/SKILL.md): GitHub Issueの妥当性判断、修正・検証、対応コメント・クローズ
 - [generate-triadic-sample](.agents/skills/generate-triadic-sample/SKILL.md): 作成時点の全機能を試せる.triadicサンプルの設計、生成、網羅性の検証
 
 ## 検証と完了条件
