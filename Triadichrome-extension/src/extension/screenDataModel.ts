@@ -46,7 +46,7 @@ const calculationFailure = "総原価表・展開表の計算範囲を超えた�
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [
   { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, ...classifications],
-    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。Microsoft 365向けに計画全体の前年実額・一次予算・確定予算の手修正・全施策・全マスタを出力します。入力テーブルの行を追加しても、条件付きの集計と配列数式で三表の値と表示行へ反映します。集計対象・符号・分類の対象変更も反映し、修正欄の空欄は引き継ぎ、0を含む数値は固定とします。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
+    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [plan, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・種別ごとの開始年月・並び順", "id", "name", "note", "expansion_id", "period_type_id", "primary_start_year_month", "confirmed_start_year_month", "sort_order"), rows, primary, overrides, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [resolved, "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。集計結果の保存テーブルはありません。", rounded] },
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,

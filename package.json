@@ -1,7 +1,7 @@
 {
   "name": "triadichrome",
   "private": true,
-  "version": "7.9.4",
+  "version": "7.9.5",
   "description": "Triadichrome Chrome Extension development environment",
   "type": "module",
   "engines": {
@@ -37,7 +37,6 @@
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "3.53.4-build2",
     "exceljs": "4.4.0",
-    "jszip": "3.10.2",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
@@ -53,7 +52,8 @@
     "pixelmatch": "7.2.0",
     "pngjs": "7.0.0",
     "typescript": "5.9.3",
-    "vite": "7.3.6"
+    "vite": "7.3.6",
+    "jszip": "3.10.2"
   },
   "overrides": {
     "exceljs": {

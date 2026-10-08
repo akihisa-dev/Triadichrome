@@ -7,7 +7,6 @@ import type { PlanContents } from "../domain/plan";
 
 export { createReportWorkbook } from "./reportWorkbook";
 export type { ExportTable, ExportOptions } from "./reportWorkbook";
-import { serializeWithFormulaSupport } from "./xlsxFormulaSupport";
 export type PreviousPair = { industryId: number; departmentId: number };
 const amountFormat = '[>=0.5]#,##0;[<=-0.5]-#,##0;""';
 const font = { name: "Yu Gothic", size: 10, color: { argb: "FF202020" } };
@@ -120,7 +119,7 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
 }
 
 export async function serializeWorkbook(wb: ExcelJS.Workbook): Promise<Uint8Array> {
-  return serializeWithFormulaSupport(wb);
+  return new Uint8Array(await wb.xlsx.writeBuffer());
 }
 export async function parsePreviousWorkbook(bytes: Uint8Array, contents: PlanContents): Promise<PreviousPatch[]> {
   if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
