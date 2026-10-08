@@ -86,6 +86,8 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
     </form>;
   };
 
+  const memberLabels = (group: Aggregation) => <div className="aggregation-targets">{group.members.length ? group.members.map(member => <span key={`${member.kind}:${member.id}`}><b>{member.sign === 1 ? "＋" : "−"}</b> {targets.find(target => target.value === `${member.kind}:${member.id}`)?.label}</span>) : <span className="required-marker">未設定</span>}</div>;
+
   const membership = (member: Pick<AggregationMember, "kind" | "id">, label: string) => {
     const parentId = owners.get(`${member.kind}:${member.id}`) ?? null;
     const parent = groups.find(group => group.id === parentId);
@@ -111,13 +113,13 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
     </>;
   };
 
-  return <main ref={page} onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page aggregation-page" aria-labelledby="aggregation-master-title" aria-busy={isSaving}>
-    <div className="aggregation-heading"><h1 id="aggregation-master-title">集計マスタ</h1>
+  return <main ref={page} onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page aggregation-page master-data-page" aria-labelledby="aggregation-master-title" aria-busy={isSaving}>
+    <div className="aggregation-heading"><h1 id="aggregation-master-title">集計マスタ</h1><span className="master-count">{groups.length}集計・{accounts.length}科目</span>
       <div className="form-actions"><button type="button" className="text-button master-back" aria-label="← マスタへ戻る" title="マスタへ戻る" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
         <button ref={addButton} className="primary-button" type="button" disabled={readOnly || isSaving || editing !== null || adding} onClick={() => setAdding(true)}>＋ 集計を追加</button></div>
     </div>
-    {adding && <form className="aggregation-add-form" onSubmit={event => { event.preventDefault(); if (!isSaving) void save({ type: "add", name }); }}>
-      <div className="initiative-field"><label htmlFor="aggregation-name">集計名</label>
+    {adding && <form className="aggregation-add-form" aria-label="集計の新規登録" onSubmit={event => { event.preventDefault(); if (!isSaving) void save({ type: "add", name }); }}>
+      <span className="master-form-label">新規登録</span><div className="initiative-field"><label htmlFor="aggregation-name">集計名</label>
         <input id="aggregation-name" autoFocus value={name} disabled={readOnly || isSaving} onChange={event => setName(event.target.value)} autoComplete="off" />
       </div>
       <div className="form-actions"><button type="submit" className="primary-button" disabled={readOnly || isSaving || !name.trim()}>登録</button>
@@ -131,7 +133,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
         <thead><tr>{["区分", "集計名・科目名", "総原価表の表示名", "計算対象", "所属先", "加減算", "操作"].map(label => <th scope="col" key={label}>{label}</th>)}</tr></thead>
         <tbody>{groups.map(group => {
           const draft = editing?.id === group.id ? editing : null;
-          return <tr key={group.id} onKeyDown={event => {
+          return <tr key={group.id} className={draft ? "master-row-editing" : undefined} onKeyDown={event => {
             if (draft && event.key === "Escape" && !autoSave.pending) { event.preventDefault(); event.stopPropagation(); cancel(); }
           }}>
             <td>集計{group.required && <span className="required-marker"> 必須</span>}</td>
@@ -139,7 +141,7 @@ export function AggregationMasterPage({ accounts, groups, isSaving, onChange, on
               ? <input autoFocus aria-label={`${group.name}の集計名`} value={draft.name} onChange={event => setEditing({ ...draft, name: event.target.value })} />
               : <button className="text-button" data-edit-id={group.id} aria-label={`${group.name}を編集`} disabled={readOnly || isSaving || editing !== null || adding} onClick={() => edit(group)}>{group.name}</button>}</th>
             <td>{draft ? <input autoFocus={!!group.required} aria-label={`${group.name}の総原価表の表示名`} value={draft.displayName} onChange={event => setEditing({ ...draft, displayName: event.target.value })} /> : group.displayName ?? group.name}</td>
-            <td>{draft ? editor(group) : <div className="aggregation-targets">{group.members.length ? group.members.map(member => <span key={`${member.kind}:${member.id}`}>{member.sign === 1 ? "＋" : "−"} {targets.find(target => target.value === `${member.kind}:${member.id}`)?.label}</span>) : <span className="required-marker">未設定</span>}</div>}</td>
+            <td>{draft ? editor(group) : group.members.length > 4 ? <details className="aggregation-target-details"><summary>{group.members.length}件の計算対象</summary>{memberLabels(group)}</details> : memberLabels(group)}</td>
             {membership({ kind: "group", id: group.id }, group.name)}
             <td><button type="button" className="text-button" aria-label={`${group.name}を削除`} disabled={readOnly || isSaving || editing !== null || adding || !!group.required || group.members.length > 0 || owners.has(`group:${group.id}`)} onClick={() => { dismiss(); setDeleting(group); }}>削除</button></td>
           </tr>;

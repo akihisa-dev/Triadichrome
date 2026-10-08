@@ -27,15 +27,15 @@ export function NamedMasterPage({ rows, usedIds = new Set(), isSaving, onChange,
     onSuccess: change => { if (change.type === "add") { setCode(""); setName(""); } setDeleting(null); },
     successMessage: change => change.type === "delete" ? `${subject}を削除しました。` : `${subject}を登録しました。`,
   });
-  return <main className="master-page" aria-labelledby={`${slug}-master-title`} aria-busy={isSaving}
+  return <main className="master-page account-master-page master-data-page named-master-page" aria-labelledby={`${slug}-master-title`} aria-busy={isSaving}
     onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
-    <button className="text-button master-back" type="button" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
-    <h1 id={`${slug}-master-title`}>{subject}マスタ</h1>
-    <form className="account-master-form" onSubmit={event => {
+    <div className="account-master-heading"><button className="text-button master-back" type="button" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
+    <h1 id={`${slug}-master-title`}>{subject}マスタ</h1><span className="master-count">{rows.length}件</span></div>
+    <form className="account-master-form" aria-label={`${subject}の新規登録`} onSubmit={event => {
       event.preventDefault();
       if (!isSaving && !draft) void save({ type: "add", code, name });
     }}>
-      <div className="account-master-fields">
+      <span className="master-form-label">新規登録</span><div className="account-master-fields">
         {coded && <div className="initiative-field account-code-field">
           <label htmlFor={`${slug}-code`}>{subject}コード</label>
           <input id={`${slug}-code`} inputMode="numeric" autoComplete="off" value={code} disabled={readOnly || isSaving || draft !== null} onChange={event => setCode(event.target.value)} />
@@ -59,7 +59,7 @@ export function NamedMasterPage({ rows, usedIds = new Set(), isSaving, onChange,
           {rows.length === 0 && <tr><td colSpan={coded ? 3 : 2} className="page-description">{subject}はまだ登録されていません。</td></tr>}
           {rows.map(item => {
             const editing = draft?.id === item.id ? draft : null;
-            return <tr key={item.id} onKeyDown={event => {
+            return <tr key={item.id} className={editing ? "master-row-editing" : undefined} onKeyDown={event => {
               if (editing && (event.key === "Escape" || event.key === "Enter") && !event.nativeEvent.isComposing) {
                 event.preventDefault(); event.stopPropagation();
                 if (!autoSave.pending) controller.end();

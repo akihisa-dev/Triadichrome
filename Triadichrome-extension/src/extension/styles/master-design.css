@@ -1,0 +1,98 @@
+/* A shared working surface for every master, independent of its field count. */
+.home-content:has(.master-data-page) { overflow: hidden; }
+.page-switch:has(> .master-data-page) { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr); }
+.master-page.master-data-page { display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: auto; padding: 24px 28px; gap: 18px; background: #f8f8f8; }
+.master-data-page .account-master-heading, .master-data-page .aggregation-heading { flex-shrink: 0; display: flex; align-items: center; justify-content: flex-start; flex-wrap: wrap; gap: 12px; min-height: 40px; }
+.master-data-page h1 { font-size: 22px; font-weight: 650; letter-spacing: -.025em; color: var(--ink); }
+.master-data-page .master-back { margin: 0; padding: 5px 10px; border: 1px solid #e1e1e1; border-radius: 6px; background: white; font-size: 12px; min-height: 32px; }
+.master-data-page .master-count { color: #666666; font-size: 12px; font-weight: 500; background: #eeeeee; padding: 4px 9px; border-radius: 5px; white-space: nowrap; }
+.master-data-page .aggregation-heading .form-actions { margin-left: auto; }
+.master-data-page .account-master-form, .master-data-page .aggregation-add-form { display: flex; align-items: center; flex-wrap: wrap; flex: 0 0 auto; gap: 12px 18px; width: 100%; max-width: 1100px; margin: 0; padding: 14px 18px; border: 1px solid #e1e1e1; border-radius: 9px; background: white; box-shadow: 0 1px 3px #00000004; }
+.master-data-page .master-form-label { flex: 0 0 auto; color: #666666; font-size: 12px; font-weight: 600; }
+.master-data-page .account-master-fields { flex: 1 1 360px; display: flex; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+.master-data-page .initiative-field { flex: 1 1 200px; width: auto; max-width: 28rem; margin: 0; gap: 5px; }
+.master-data-page .account-code-field { flex: 0 0 110px; }
+.master-data-page .account-type-field { flex: 0 0 140px; }
+.master-data-page .initiative-field label { font-size: 12px; color: #4d4d4d; font-weight: 550; }
+.master-data-page .field-hint { font-size: 10px; line-height: 1.2; color: #888888; }
+.master-data-page .account-master-form > .form-actions { margin: 20px 0 0; }
+.master-data-page .account-master-form > .primary-button { align-self: flex-start; margin-top: 20px; }
+.master-data-page input, .master-data-page select { min-height: 32px; padding: 5px 9px; font-size: 13px; border-radius: 5px; border-color: #d9d9d9; color: #292929; background-color: white; }
+.master-data-page .primary-button { min-height: 34px; padding: 6px 14px; background: var(--ink); border: 1px solid var(--ink); border-radius: 6px; color: white; font-size: 13px; font-weight: 600; }
+.master-data-page .primary-button:hover:not(:disabled) { background: #333333; }
+.master-data-page .primary-button:disabled { background: #eeeeee; border-color: #e3e3e3; color: #999999; opacity: 1; }
+.master-data-page .account-master-list, .master-data-page .aggregation-list { margin: 0; flex: 0 1 auto; min-height: 0; width: 100%; max-width: 1100px; overflow: auto; scroll-padding-top: 40px; border: 1px solid #e1e1e1; border-radius: 9px; background: white; box-shadow: 0 2px 5px #00000005; }
+.master-data-page.named-master-page .account-master-form, .master-data-page.named-master-page .account-master-list { max-width: 900px; }
+.master-data-page.kind-master-page .account-master-list { max-width: 720px; }
+.master-data-page .aggregation-list { max-width: none; }
+.master-data-page .account-master-table, .master-data-page .aggregation-table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; font-size: 13px; color: #292929; }
+.master-data-page .account-master-table { min-width: 640px; }
+.master-data-page .industry-master-table, .master-data-page .expansion-master-table { min-width: 500px; }
+.master-data-page .department-master-table, .master-data-page .period-master-table { min-width: 380px; }
+.master-data-page .kind-master-table { min-width: 260px; }
+.master-data-page .account-master-table th, .master-data-page .account-master-table td, .master-data-page .aggregation-table th, .master-data-page .aggregation-table td { padding: 6px 14px; border-bottom: 1px solid #eeeeee; text-align: left; vertical-align: middle; overflow-wrap: anywhere; }
+.master-data-page .account-master-table thead th, .master-data-page .aggregation-table thead th { position: sticky; top: 0; z-index: 2; height: 40px; color: #555555; background: #f1f1f1; border-bottom: 1px solid #dddddd; font-weight: 600; font-size: 11px; white-space: nowrap; letter-spacing: .02em; }
+.master-data-page .account-master-table tbody:nth-of-type(even) tr > *, .master-data-page.named-master-page tbody tr:nth-child(even) > *, .master-data-page.kind-master-page tbody tr:nth-child(even) > *, .master-data-page .aggregation-table tbody tr:nth-child(even) > * { background: #fafafa; }
+.master-data-page .account-master-table tbody tr:hover > *, .master-data-page .aggregation-table tbody tr:hover > * { background: #f3f3f3; }
+.master-data-page .account-master-table tbody tr.master-row-editing > *, .master-data-page .aggregation-table tbody tr.master-row-editing > * { background: #f0f0f0; border-bottom-color: #d0d0d0; }
+.master-data-page .master-row-editing > :first-child { box-shadow: inset 3px 0 var(--ink); }
+.master-data-page .account-master-table th[scope="row"], .master-data-page .aggregation-table th[scope="row"] { font-weight: 500; color: #292929; font-size: 13px; line-height: 1.45; }
+.master-data-page .account-code { font-variant-numeric: tabular-nums; color: #666666; }
+.master-data-page .account-master-table .text-button, .master-data-page .aggregation-table .text-button { min-height: 28px; padding: 4px 9px; border-radius: 5px; font-size: 12px; white-space: nowrap; }
+.master-data-page .account-master-table button[aria-label$="を編集"], .master-data-page .aggregation-table button[aria-label$="を編集"], .master-data-page .master-row-editing button[type="submit"] { color: var(--ink); background: #f1f1f1; }
+.master-data-page .aggregation-table th button[aria-label$="を編集"] { background: transparent; padding-left: 0; white-space: normal; text-align: left; }
+.master-data-page .account-master-table button:disabled, .master-data-page .aggregation-table button:disabled { opacity: .35; }
+.master-data-page .account-master-table .form-actions { gap: 4px; margin: 0; }
+.master-data-page .account-drag-handle { font-size: 18px; color: #999999; padding-inline: 0; min-width: 20px; }
+.master-data-page .master-type-badge { display: inline-block; border: 1px solid #e3e3e3; border-radius: 4px; padding: 2px 7px; background: #f5f5f5; color: #666666; font-size: 11px; white-space: nowrap; }
+.master-data-page .account-master-table thead th:first-child { width: 48px; }
+.master-data-page .account-master-table thead th:nth-child(2) { width: 104px; }
+.master-data-page .account-master-table thead th:nth-child(3) { width: auto; }
+.master-data-page .account-master-table thead th:nth-child(4) { width: 120px; }
+.master-data-page .account-master-table thead th:last-child { width: 136px; }
+.master-data-page.named-master-page .account-master-table thead th:first-child { width: auto; }
+.master-data-page.named-master-page .account-master-table thead th:nth-child(2) { width: auto; }
+.master-data-page.named-master-page .account-master-table thead th:last-child { width: 136px; }
+.master-data-page.named-master-page .industry-master-table thead th:first-child, .master-data-page.named-master-page .expansion-master-table thead th:first-child { width: 120px; }
+.master-data-page .kind-master-table thead th:first-child { width: auto; }
+.master-data-page .aggregation-table { min-width: 1120px; }
+.master-data-page .aggregation-table th:nth-child(1) { width: 84px; }
+.master-data-page .aggregation-table th:nth-child(2) { width: 170px; }
+.master-data-page .aggregation-table th:nth-child(3) { width: 160px; }
+.master-data-page .aggregation-table th:nth-child(5) { width: 170px; }
+.master-data-page .aggregation-table th:nth-child(6) { width: 76px; }
+.master-data-page .aggregation-table th:nth-child(7) { width: 72px; }
+.master-data-page .aggregation-table td { min-width: 0; }
+.master-data-page .aggregation-targets { gap: 4px 6px; line-height: 1.5; }
+.master-data-page .aggregation-targets > span:not(.required-marker) { display: inline-block; padding: 3px 6px; background: #f3f3f3; border-radius: 4px; font-size: 11px; }
+.master-data-page .aggregation-targets b { font-weight: 500; color: #777777; }
+.master-data-page .required-marker { display: inline-block; font-size: 10px; color: #777777; }
+.master-data-page .aggregation-target-details summary { cursor: pointer; color: #555555; font-size: 12px; padding: 5px 0; }
+.master-data-page .aggregation-target-details[open] summary { margin-bottom: 4px; }
+.master-data-page .aggregation-member { grid-template-columns: 42px minmax(0,1fr) 24px; }
+.master-page.master-index { background: #f8f8f8; padding: 28px; }
+.master-index .master-menu { max-width: 900px; grid-template-columns: 1fr; gap: 0; margin-top: 20px; border: 1px solid #e1e1e1; border-radius: 9px; overflow: hidden; background: white; }
+.master-index .master-menu-item { padding: 14px 18px; border: 0; border-bottom: 1px solid #eeeeee; border-radius: 0; }
+.master-index .master-menu-item:last-child { border-bottom: 0; }
+.master-index .master-menu-item:hover { background: #f1f1f1; }
+.master-index .master-menu-icon { color: var(--ink); background: #f1f1f1; border-radius: 7px; }
+.master-index .master-menu-label strong { margin-bottom: 2px; }
+@media (max-width: 600px) {
+  .master-page.master-data-page { padding: 14px 12px; gap: 12px; }
+  .master-data-page h1 { font-size: 19px; }
+  .master-data-page .account-master-heading, .master-data-page .aggregation-heading { gap: 8px; }
+  .master-data-page .account-master-heading .master-back { order: 3; flex-basis: 100%; text-align: left; border: 0; background: transparent; padding-left: 0; }
+  .master-data-page .account-master-form, .master-data-page .aggregation-add-form { padding: 12px; gap: 10px; }
+  .master-data-page .master-form-label { flex-basis: 100%; }
+  .master-data-page .account-master-fields { flex-basis: 100%; }
+  .master-data-page .account-master-fields .initiative-field { flex: 1 1 140px; }
+  .master-data-page .account-master-fields .account-code-field { flex: 0 0 95px; }
+  .master-data-page .account-master-fields .account-type-field { flex: 1 1 130px; }
+  .master-data-page .account-master-form > .primary-button, .master-data-page .account-master-form > .form-actions { margin: 0; }
+  .master-data-page .aggregation-heading .form-actions { margin: 0; flex-basis: 100%; justify-content: space-between; }
+  .master-data-page .account-master-table th, .master-data-page .account-master-table td, .master-data-page .aggregation-table th, .master-data-page .aggregation-table td { padding: 6px 10px; }
+  .master-data-page .account-master-list, .master-data-page .aggregation-list { flex-shrink: 0; max-height: 50vh; }
+  .master-page.master-index { padding: 16px; }
+}
+
+.master-data-page .account-master-table tbody tr { height: 40px; }

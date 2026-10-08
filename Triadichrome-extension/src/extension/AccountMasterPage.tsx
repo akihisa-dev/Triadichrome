@@ -76,16 +76,16 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
     dismissNotice();
   };
 
-  return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page account-master-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
+  return <main onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()} className="master-page account-master-page master-data-page" aria-labelledby="account-master-title" aria-busy={isSaving}>
     <div className="account-master-heading">
     <button className="text-button master-back" type="button" disabled={isSaving || autoSave.pending} onClick={onBack}>← マスタへ戻る</button>
-    <h1 id="account-master-title">勘定科目マスタ</h1>
+    <h1 id="account-master-title">勘定科目マスタ</h1><span className="master-count">{accounts.length}件</span>
     </div>
-    <form className="account-master-form" onSubmit={event => {
+    <form className="account-master-form" aria-label="勘定科目の新規登録" onSubmit={event => {
       event.preventDefault();
       if (!isSaving && !autoSave.pending) void save({ type: "add", accountCode, accountName, accountType });
     }}>
-      <div className="account-master-fields">
+      <span className="master-form-label">新規登録</span><div className="account-master-fields">
         <div className="initiative-field account-code-field">
           <label htmlFor="account-code">科目コード</label>
           <input ref={input} id="account-code" name="accountCode" type="text" inputMode="numeric" autoComplete="off" aria-describedby="account-code-hint" value={accountCode} disabled={readOnly || isSaving} onChange={event => setAccountCode(event.target.value)} />
@@ -135,7 +135,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
               reorder(dragged, account.id, event.clientY < bounds.top + bounds.height / 2);
               setDragged(null); setDropTarget(null);
             }}>
-            <tr onKeyDown={event => {
+            <tr className={editing?.id === account.id ? "master-row-editing" : undefined} onKeyDown={event => {
               if (draft && event.key === "Escape") {
                 event.preventDefault(); event.stopPropagation();
                 if (!autoSave.pending) cancelEditing();
@@ -162,7 +162,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                   <option value="">属性を選択</option>
                   {Object.entries(accountTypes).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
-                : account.accountType ? accountTypes[account.accountType] : "未設定"}</td>
+                : <span className="master-type-badge">{account.accountType ? accountTypes[account.accountType] : "未設定"}</span>}</td>
               <td>{draft ? <form id={editFormId} className="form-actions" onSubmit={event => {
                 event.preventDefault();
                 if (!autoSave.pending) cancelEditing();
