@@ -24,6 +24,7 @@ import { verifyAutoSave } from "../tests/auto-save.mjs";
 import { verifyAggregationData } from "../tests/aggregation-data.mjs";
 import { verifySamplePlan } from "../tests/sample-plan.mjs";
 import { verifySingleYearPlan } from "../tests/single-year-plan.mjs";
+import { verifyInitiativeSort } from "../tests/initiative-sort.mjs";
 import { verifyStartMonths } from "../tests/start-months.mjs";
 import { withNodeBundle } from "./node-bundle.mjs";
 import { projectRoot as root } from "./paths.mjs";
@@ -40,6 +41,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   verifyHomeMasterCoverage(api);
   await verifySingleYearPlan(api);
   await verifyStartMonths(api);
+  verifyInitiativeSort(api);
   await verifyDetails(api);
   await verifyInitiativeData({ ...api, createTriadicDatabase: () => api.createCurrentEmptyTestPlan(2026) }, root);
   await verifyFileBoundaries(api);

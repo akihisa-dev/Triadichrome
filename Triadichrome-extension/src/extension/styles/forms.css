@@ -313,6 +313,9 @@
 .initiative-list-table .initiative-list-name { left: calc(var(--initiative-expansion-width) + var(--initiative-period-width)); text-align: left; }
 .initiative-list-table .initiative-list-start { left: calc(var(--initiative-expansion-width) + var(--initiative-period-width) + var(--initiative-name-width)); white-space: nowrap; }
 .initiative-list-table thead .initiative-list-fixed { vertical-align: bottom; background: var(--soft); }
+.initiative-sort-button { width: 100%; padding: 0; border: 0; color: inherit; background: transparent; font: inherit; text-align: inherit; cursor: pointer; }
+.initiative-sort-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.initiative-sort-indicator { margin-left: 4px; font-size: 10px; }
 @media (max-width: 600px) {
   .initiative-overview-page .initiative-list-table { --initiative-expansion-width: 44px; --initiative-period-width: 44px; --initiative-name-width: 64px; --initiative-start-width: 72px; }
   .initiative-list-table .initiative-list-fixed { padding-inline: 6px; }
