@@ -12,16 +12,16 @@ test("展開表の結合セル・固定列・全月の列境界をスクロー�
     const table = node.querySelector("table")!;
     const rect = (element: Element) => element.getBoundingClientRect();
     const headers = table.querySelectorAll("thead tr:first-child th");
-    const group = rect(headers[0]!); const name = rect(headers[1]!);
+    const group = rect(headers[0]!); const period = rect(headers[1]!); const name = rect(headers[2]!);
     const summary = rect(table.querySelector(".expansion-summary")!);
     const amounts = [...table.querySelectorAll("tbody tr:first-child td")].slice(0, 114);
-    const monthHeaders = [...headers].slice(2);
+    const monthHeaders = [...headers].slice(3);
     const mismatch = monthHeaders.some((header, index) => {
       const start = rect(amounts[index * 6]!); const end = rect(amounts[index * 6 + 5]!);
       return Math.abs(rect(header).left - start.left) > 1 || Math.abs(rect(header).right - end.right) > 1;
     });
     const nameCells = [...table.querySelectorAll("tbody .expansion-name")];
-    return { gap: name.left - group.right, summaryWidth: summary.width, labelsWidth: group.width + name.width,
+    return { gap: name.left - period.right, summaryWidth: summary.width, labelsWidth: group.width + period.width + name.width,
       fixedNameMismatch: nameCells.some(cell => Math.abs(rect(cell).left - name.left) > 1), mismatch,
       bottom: rect(node).bottom, viewport: window.innerHeight,
       horizontal: node.scrollWidth > node.clientWidth, counts: [...table.querySelectorAll("tbody tr")].map(row => row.querySelectorAll("td").length),

@@ -82,3 +82,6 @@ export * from "../Triadichrome-extension/src/core/tables/initiativeSort";
 export * from "../Triadichrome-extension/src/core/tables/initiativeTotals";
 
 export * from "../Triadichrome-extension/src/core/tables/tableSort";
+export { processingTasks } from '../Triadichrome-extension/src/extension/planProcessingTasks';
+export { detailColumns } from '../Triadichrome-extension/src/extension/detailPresentation';
+export { visibleRows } from '../Triadichrome-extension/src/core/tables/visibleRows';

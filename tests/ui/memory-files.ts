@@ -1,7 +1,7 @@
 export type FileScenario = "normal" | "cancel" | "invalid" | "save-failure" | "write-permission" | "permission-denied";
 
 export type MemoryFileOptions = {
-  bytes: number[];
+  bytes: number[] | Uint8Array;
   scenario: FileScenario;
   name?: string;
 };

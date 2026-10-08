@@ -1,22 +1,21 @@
 import type { Database } from "./sqliteRuntime";
 import { deriveStartYearMonth, type InitiativeStartMonths, type StartMonthRule } from "../domain/initiativeStartMonth";
-import { yenToAmount } from "../domain/amounts";
 import type { AmountSource } from "../domain/kinds";
 
 function derivedStartMonths(db: Database) {
   const fiscalYear = Number(db.exec("SELECT fiscal_year FROM plan WHERE id = 1")[0]!.values[0]![0]);
   const owners = new Map<number, AmountSource[]>();
-  const rows = new Map<string, AmountSource>();
-  for (const [id, owner, month, amount, manual] of db.exec(`SELECT r.id, r.initiative_id, m.month, m.amount_yen, o.amount_yen
+  // Test each amount before grouping: opposite values must remain active.
+  // Only month activity is needed, not every account's amount in JavaScript.
+  for (const [owner, month, primary, confirmed] of db.exec(`SELECT r.initiative_id, m.month,
+    MAX(m.amount_yen != 0), MAX(COALESCE(o.amount_yen, m.amount_yen) != 0)
     FROM initiative_rows r JOIN initiative_amounts m ON m.row_id = r.id
-    LEFT JOIN amount_overrides o ON o.row_id = r.id AND o.month = m.month`)[0]?.values ?? []) {
-    let row = rows.get(String(id));
-    if (!row) {
-      row = { amounts: {}, overrides: { 2: {} } }; rows.set(String(id), row);
-      const owned = owners.get(Number(owner)) ?? []; owned.push(row); owners.set(Number(owner), owned);
-    }
-    row.amounts[Number(month)] = yenToAmount(Number(amount));
-    if (manual !== null) row.overrides![2]![Number(month)] = yenToAmount(Number(manual));
+    LEFT JOIN amount_overrides o ON o.row_id = r.id AND o.month = m.month
+    GROUP BY r.initiative_id, m.month`)[0]?.values ?? []) {
+    let source = owners.get(Number(owner));
+    if (!source) { source = [{ amounts: {}, overrides: { 2: {} } }]; owners.set(Number(owner), source); }
+    source[0]!.amounts[Number(month)] = String(primary);
+    source[0]!.overrides![2]![Number(month)] = String(confirmed);
   }
   return (db.exec(`SELECT i.id, p.start_month_rule, i.primary_start_year_month, i.confirmed_start_year_month
     FROM initiatives i LEFT JOIN period_types p ON p.id = i.period_type_id`)[0]?.values ?? []).map(([id, rule, primary, confirmed]) => {

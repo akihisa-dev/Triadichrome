@@ -1,8 +1,8 @@
 import { TRIADIC_FILE_EXTENSION } from "../core/storage/triadicSchema";
-import { readPlanContents } from "../core/storage/readPlan";
+import { readPlanContents, processPlan } from "./planProcessing";
 import { type PlanContents } from "../core/domain/plan";
 import { writeTriadicFile } from "./triadicFile";
-import { trackHistoryChange } from "../core/storage/dataHistory";
+import { trackHistoryChange } from "./planProcessing";
 
 export type OpenPlan = PlanContents & { name: string; bytes: Uint8Array; handle?: FileSystemFileHandle; destinationBytes?: Uint8Array };
 
@@ -14,7 +14,7 @@ export async function writePlanChange(plan: OpenPlan, handle: FileSystemFileHand
     if (plan.handle) {
       const current = new Uint8Array(await (await handle.getFile()).arrayBuffer());
       const expected = plan.destinationBytes ?? plan.bytes;
-      if (current.length !== expected.length || current.some((value, index) => value !== expected[index])) {
+      if (!await processPlan("bytesEqual", current, expected)) {
         throw new Error("ファイルが別の操作で更新されています。入力内容を控え、ファイルを開き直してから更新してください。");
       }
     }

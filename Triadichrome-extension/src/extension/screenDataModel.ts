@@ -43,12 +43,13 @@ const resolved = "確定予算の増減は、手修正がある月だけ amount_
 const rounded = "金額は保存と集計の途中も円の整数で保持し、画面では千円に換算して整数へ丸めます。編集欄では小数点以下3桁まで表示します。";
 const blankZero = "丸めた表示が0になる金額・差額は空白にします。総原価表の利益率・利益率の差も同様です。保存値と計算には元の値を使います。";
 const calculationFailure = "総原価表・展開表の計算範囲を超えた場合は表の部分に理由を表示し、画面移動・表示条件の変更を維持します。金額や条件の変更後に再計算し、表示失敗では保存値を書き換えません。";
+const largeDisplay = "行数が多い表は画面周辺の行だけを描画します。合計と並べ替えは全件を対象とし、スクロールで全行を確認できます。表示を省いた行も保存内容から削除しません。";
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [
   { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, ...classifications],
     calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。ファイル選択または前年入力領域への単一の.xlsxファイルのドロップで取り込みます。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [plan, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・種別ごとの開始年月・並び順", "id", "name", "note", "expansion_id", "period_type_id", "primary_start_year_month", "confirmed_start_year_month", "sort_order"), rows, primary, overrides, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
-    calculated: [resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、上限超過は表内で通知します。合計行は並べ替えず、集計結果の保存テーブルはありません。", rounded] },
+    calculated: [resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、上限超過は表内で通知します。合計行は並べ替えず、集計結果の保存テーブルはありません。", largeDisplay, rounded] },
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,
     calculated: ["登録前の入力は画面内で保持し、登録時に施策・科目行・月別金額へ保存します。", resolved, "開始年月は期間の算出規則と種別ごとの月別増減から求め、施策へ保存します。", rounded] },
   { page: "initiative-detail", name: "施策詳細", tables: initiativeTables,
@@ -58,9 +59,9 @@ export const screenData: ScreenData[] = [
   { page: "cost-table", name: "総原価表", tables: [plan, previous, use("initiatives", "施策ごとの科目行と業種・部署への所属", "id", "industry_id", "department_id"), rows, primary, overrides, accounts, groups, members, classifications[1]!, classifications[2]!, selection],
     calculated: [resolved, "業種・部署マスタの全候補から複数選択し、選択した組み合わせの科目別の施策増減と前年実額を合算して予算を求めます。分類の未選択は全件で、表示選択は保存しません。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。前年差は表示する予算−前年（両方なら確定予算−前年）、一次予算差は確定予算−一次予算です。利益率の差はポイントで表示し、差の値は保存しません。四半期・上期・下期・年間の計は丸める前の月額を合算し、利益率は期間の経常利益合計÷売上集計合計で再計算します。", rounded, blankZero, calculationFailure] },
   { page: "expansion-table", name: "展開表", tables: [plan, use("initiatives", "施策名・展開と期間への所属・並び順", "id", "name", "expansion_id", "period_type_id", "sort_order"), rows, primary, overrides, previous, accounts, classifications[0]!, use("period_types", "期間名と表示順", "id", "name"), selection],
-    calculated: [resolved, "各展開内を期間マスタ順・未選択は最後にまとめ、同じ期間名を縦結合します。同じ期間内は登録順で、表示順は保存しません。施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。四半期・上期・下期・年間の計は丸める前の売上・利益を期間内で合算し、属性未設定も引き継ぎます。展開表専用の保存テーブルはありません。", rounded, blankZero, calculationFailure] },
+    calculated: [resolved, "各展開内を期間マスタ順・未選択は最後にまとめ、同じ期間名を縦結合します。同じ期間内は登録順で、表示順は保存しません。施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。四半期・上期・下期・年間の計は丸める前の売上・利益を期間内で合算し、属性未設定も引き継ぎます。展開表専用の保存テーブルはありません。", largeDisplay, rounded, blankZero, calculationFailure] },
   { page: "details", name: "明細", tables: [...initiativeTables, previous],
-    calculated: [resolved, "施策・科目行・月・種別を組み合わせて明細行を作ります。前年行は previous_amounts から作ります。明細専用の保存テーブルはありません。列見出しの並べ替えは表示だけに適用し、保存しません。", rounded] },
+    calculated: [resolved, "施策・科目行・月・種別を組み合わせて明細行を作ります。前年行は previous_amounts から作ります。明細専用の保存テーブルはありません。列見出しの並べ替えは表示だけに適用し、保存しません。", largeDisplay, rounded] },
   { page: "account-master", name: "勘定科目マスタ", tables: [plan, accounts], calculated: [] },
   { page: "aggregation-master", name: "集計マスタ", tables: [plan, groups, members, accounts], calculated: ["科目または子集計を所属先に結び、加算・減算と並び順を保存します。"] },
   ...classifications.map((item, index) => ({ page: (["expansion-master", "industry-master", "department-master", "period-master"] as const)[index]!,

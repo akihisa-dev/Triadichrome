@@ -1,7 +1,8 @@
+import { useRowWindow, WindowRows } from "./VirtualTableRows";
 import { TableCalculationBoundary } from "./TableCalculationBoundary";
 import { initiativeTotals } from "../core/tables/initiativeTotals";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { Fragment, useState, type ReactNode } from "react";
+import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
 import type { Expansion } from "../core/domain/expansionMaster";
@@ -28,10 +29,13 @@ type InitiativeListPageProps = {
 export function InitiativeListPage({ selection, selectedKind, initiatives, expansions, periodTypes, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
   const readOnly = useHistoryReadOnly();
   const [sort, setSort] = useState<InitiativeSort | null>(null);
+  const container = useRef<HTMLDivElement>(null);
   const expansionNames = new Map(expansions.map(item => [item.id, item.expansionName]));
   const periodNames = new Map(periodTypes.map(item => [item.id, item.periodName]));
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   const displayed = sortInitiatives(source, sort, selectedKind, expansionNames, periodNames);
+  const window = useRowWindow(container, displayed.length, 40, 200, 90);
+  const virtual = displayed.length > 200;
   const sortHeader = (column: InitiativeSort["column"], label: string, className: string) => {
     const active = sort?.column === column;
     return <th rowSpan={2} scope="col" className={`initiative-list-fixed ${className}`} aria-sort={active ? sort.direction : undefined}>
@@ -48,8 +52,8 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
       <button className="primary-button" type="button" disabled={navigationBlocked || readOnly} onClick={onAddInitiative}>施策を追加</button>
     </div>
     <TableCalculationBoundary resetKeys={[initiatives, selectedKind, fiscalYear]}>
-    <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
-      <table className="initiative-list-table" aria-label="施策一覧">
+    <div ref={container} className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
+      <table className={`initiative-list-table${virtual ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "40px" } as React.CSSProperties} aria-label="施策一覧" aria-rowcount={displayed.length + 3}>
         <colgroup>
           <col className="initiative-expansion-column" />
           <col className="initiative-period-column" />
@@ -69,7 +73,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
             <th scope="col">売上</th><th scope="col">費用</th><th scope="col" className="initiative-month-end">利益</th>
           </Fragment>)}</tr>
         </thead>
-        <tbody>{displayed.map(item => <tr key={item.id}>
+        <tbody><WindowRows items={displayed.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={displayed.length} height={40} columns={40} render={(item, index) => <tr key={item.id} aria-rowindex={index + 3}>
           <td className="initiative-list-fixed initiative-list-expansion">{expansionNames.get(item.expansionId ?? -1) ?? ""}</td>
           <td className="initiative-list-fixed initiative-list-period">{periodNames.get(item.periodTypeId ?? -1) ?? ""}</td>
           <th scope="row" className="initiative-list-fixed initiative-list-name" title={item.note || item.name}>
@@ -81,7 +85,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
             <td>{amountText(item.months[month]?.expense)}</td>
             <td className="initiative-month-end">{amountText(item.months[month]?.profit)}</td>
           </Fragment>)}
-        </tr>)}</tbody>
+        </tr>} /></tbody>
         <tfoot><InitiativeTotalRow initiatives={source} /></tfoot>
       </table>
     </div>
@@ -91,7 +95,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
 }
 
 function InitiativeTotalRow({ initiatives }: { initiatives: Initiative[] }) {
-  const totals = initiativeTotals(initiatives);
+  const totals = useMemo(() => initiativeTotals(initiatives), [initiatives]);
   return <tr className="initiative-total-row">
     <th colSpan={4} scope="row" className="initiative-total-label">合計</th>
     {initiativeMonths.map(month => <Fragment key={month}>

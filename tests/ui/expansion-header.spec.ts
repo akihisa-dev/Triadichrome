@@ -16,12 +16,13 @@ test("展開表の3段見出しと名称列を縦横スクロール中も保持�
   const rows = await header.locator("tr").all();
   for (const row of rows) await expect(row).toBeInViewport();
   const group = header.getByRole("columnheader", { name: "展開名", exact: true });
+  const period = header.getByRole("columnheader", { name: "期間名", exact: true });
   const name = header.getByRole("columnheader", { name: "施策名", exact: true });
   await expect(group).toBeInViewport();
   await expect(name).toBeInViewport();
   const bounds = await region.boundingBox();
   expect((await group.boundingBox())!.x).toBeCloseTo(bounds!.x, 0);
-  expect((await name.boundingBox())!.x).toBeCloseTo(bounds!.x + (await group.boundingBox())!.width, 0);
+  expect((await name.boundingBox())!.x).toBeCloseTo(bounds!.x + (await group.boundingBox())!.width + (await period.boundingBox())!.width, 0);
   const firstCell = region.locator("tbody td").first();
   expect((await firstCell.boundingBox())!.y).toBeLessThan((await header.boundingBox())!.y);
 });

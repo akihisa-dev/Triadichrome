@@ -1,9 +1,8 @@
-import { createBusinessSnapshot, deleteDataHistory, emptyDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, type DataHistoryStatus, type HistoryDeletion } from "../core/storage/dataHistory";
-import { applyOperationSnapshot } from "../core/storage/operationSnapshot";
-import { readPlanContents, readSnapshotContents } from "../core/storage/readPlan";
+import { emptyDataHistory, type DataHistoryStatus, type HistoryDeletion } from "../core/storage/dataHistory";
+import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand } from "./planProcessing";
 import type { PlanContents } from "../core/domain/plan";
 import { writePlanChange, type OpenPlan } from "./planFile";
-import { applyPlanCommand, isAutomatic, validatePlanCommand, type PlanCommand } from "./planCommands";
+import { isAutomatic, validatePlanCommand, type PlanCommand } from "./planCommands";
 export const OPERATION_HISTORY_LIMIT = 100;
 type SavedOperation = { before: Uint8Array; after: Uint8Array };
 export type SessionSnapshot = { contents: PlanContents | null; name: string; history: DataHistoryStatus; busy: boolean; historyError: string; canUndo: boolean; canRedo: boolean; operationRevision: number };
@@ -11,7 +10,7 @@ type Destination = () => Promise<FileSystemFileHandle>;
 function operationContents(contents: PlanContents): string {
   // Conflict counters describe write sequencing, not a user-visible change.
   return JSON.stringify(contents, (key, value: unknown) =>
-    ["revision", "initiativeRevision", "rowRevision", "amountRevisions", "overrideRevisions"].includes(key) ? undefined : value);
+    ["details", "revision", "initiativeRevision", "rowRevision", "amountRevisions", "overrideRevisions"].includes(key) ? undefined : value);
 }
 /** Owns the saved document. Drafts and navigation never enter this store. */
 export class PlanSession {

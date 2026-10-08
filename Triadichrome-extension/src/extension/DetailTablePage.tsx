@@ -1,10 +1,12 @@
+import { useRowWindow, WindowRows } from "./VirtualTableRows";
+import { detailCount, useDetailWindow } from "./useDetailWindow";
 import { detailColumns, detailChoices } from "./detailPresentation";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { canChangeAccountRow } from "../core/domain/kinds";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type DetailChange, type DetailField, type DetailRecord } from "../core/domain/details";
 import { type Initiative, type PlanContents } from "../core/domain/plan";
-import { sortTableRows, type TableSort } from "../core/tables/tableSort";
+import { type TableSort } from "../core/tables/tableSort";
 import { tableDisplayValue } from "../core/tables/tableView";
 import "./DetailTablePage.css";
 
@@ -25,10 +27,17 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [focusCell, setFocusCell] = useState<{ rowId: string; columnId: string; index: number } | null>(null);
   const latest = useRef({ editing, contents, onOpenInitiative });
   latest.current = { editing, contents, onOpenInitiative };
   const columns = useMemo(() => detailColumns(contents), [contents]);
-  const rows = useMemo(() => sortTableRows(contents.details ?? [], columns, sort), [contents.details, columns, sort]);
+  const count = detailCount(contents);
+  const rowWindow = useRowWindow(container, count, 34, 2000, 34);
+  const detailWindow = useDetailWindow(contents, sort, rowWindow, editing?.row.id ?? focusCell?.rowId);
+  useEffect(() => {
+    if (!focusCell || editing || detailWindow.loading) return;
+    container.current?.querySelector<HTMLElement>(`[data-cell="${focusCell.rowId}-${focusCell.columnId}"]`)?.focus();
+  }, [focusCell, editing, detailWindow.items, detailWindow.loading]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);
   useEffect(() => { onPendingChange(editing !== null); return () => onPendingChange(false); }, [editing, onPendingChange]);
   useEffect(() => {
@@ -38,44 +47,64 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
     return () => window.removeEventListener("beforeunload", preventLoss);
   }, [editing]);
   useEffect(() => () => cancelNavigation(), []);
-  const editableRows = new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row)).map(row => row.id)));
+  const editableRows = useMemo(() => new Set(contents.initiatives.flatMap(initiative => initiative.rows.filter(row => canChangeAccountRow(row)).map(row => row.id))), [contents.initiatives]);
   const canEdit = (row: DetailRecord, field: DetailField | undefined) => !readOnly && field !== undefined && (row.kindId !== 0 || field === "amount") && (field !== "accountId" || editableRows.has(row.rowId));
   const begin = (row: DetailRecord, field: DetailField, columnId: string) => {
     if (editing || lock.current || !canEdit(row, field)) return;
     cancelNavigation();
     const value = field === "name" ? row.initiativeName : field === "fiscalYear" ? String(row.fiscalYear) : field === "amount" ? row.amount : field === "note" ? row.note : String(row[field] ?? "");
     setSearch(""); setError(""); setEditing({ row, field, columnId, value });
+    setFocusCell(null);
+  };
+  const nextCell = async (row: DetailRecord, columnId: string, direction = 1) => {
+    const position = columns.findIndex(column => column.id === columnId);
+    for (let index = position + direction; index >= 0 && index < columns.length; index += direction) {
+      const column = columns[index]!;
+      if (canEdit(row, column.field)) return { rowId: row.id, columnId: column.id, index: detailWindow.items.find(item => item.item.id === row.id)!.index };
+    }
+    const adjacent = await detailWindow.neighbor(row.id, direction);
+    if (!adjacent) return null;
+    const column = (direction === 1 ? columns : [...columns].reverse()).find(column => canEdit(adjacent.item, column.field));
+    return column ? { rowId: adjacent.item.id, columnId: column.id, index: adjacent.index } : null;
   };
   const commit = async (next = false) => {
     if (!editing || lock.current) return;
     const current = editing;
     lock.current = true; setSaving(true); setError("");
     try {
+      const following = next ? await nextCell(current.row, current.columnId) : null;
       await onSave({ target: current.row, field: current.field, value: current.value });
       setEditing(null);
-      if (next) {
-        const cells = rows.flatMap(row => columns.filter(column => canEdit(row, column.field)).map(column => ({ row, column })));
-        const position = cells.findIndex(cell => cell.row.id === current.row.id && cell.column.id === current.columnId);
-        const nextCell = cells[position + 1];
-        if (nextCell) requestAnimationFrame(() => container.current?.querySelector<HTMLElement>(`[data-cell="${nextCell.row.id}-${nextCell.column.id}"]`)?.focus());
-      }
+      if (following) setFocusCell(following);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "保存できませんでした。入力内容は残っています。"); }
     finally { lock.current = false; setSaving(false); }
   };
   const choices = detailChoices(contents, editing?.field);
   return <main className="detail-page">
-    <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
+    <div className="detail-toolbar"><h1>明細</h1><span>{count} 行</span><span>金額：千円</span></div>
+    {detailWindow.error && <p role="alert">{detailWindow.error}</p>}
     <div ref={container} className="detail-scroll" onPointerDownCapture={cancelNavigation} onKeyDownCapture={cancelNavigation} onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
-      <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col" aria-sort={sort?.column === column.id ? sort.direction : undefined}>
+      <table className={`detail-table${count > 2000 ? " virtual-table" : ""}`} style={{ "--virtual-row-height": "34px" } as React.CSSProperties} aria-rowcount={count + 1} aria-busy={detailWindow.loading}><thead><tr>{columns.map(column => <th key={column.id} scope="col" aria-sort={sort?.column === column.id ? sort.direction : undefined}>
         <button type="button" className="detail-sort-button" disabled={editing !== null || saving} onClick={() => {
           cancelNavigation();
+          setFocusCell(null);
           setSort({ column: column.id, direction: sort?.column === column.id && sort.direction === "ascending" ? "descending" : "ascending" });
         }}>{column.label}{sort?.column === column.id && <span className="detail-sort-indicator" aria-hidden="true">{sort.direction === "ascending" ? "▲" : "▼"}</span>}</button>
       </th>)}</tr></thead>
-      <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {
+      <tbody><WindowRows items={detailWindow.items} count={count} height={34} columns={columns.length} render={(row, index) => <tr key={row.id} data-detail-id={row.id} aria-rowindex={index + 2}>{columns.map(column => {
         const active = editing?.row.id === row.id && editing.columnId === column.id;
         return <td key={column.id} data-cell={`${row.id}-${column.id}`} tabIndex={canEdit(row, column.field) && !editing ? 0 : -1} className={column.numeric ? "is-number" : undefined}
-          onDoubleClick={() => column.field && begin(row, column.field, column.id)} onKeyDown={event => { if (!active && (event.key === "Enter" || event.key === "F2") && column.field) { event.preventDefault(); begin(row, column.field, column.id); } }}>
+          onDoubleClick={() => column.field && begin(row, column.field, column.id)} onKeyDown={event => {
+            if (!active && !editing && count > 2000 && event.key === "Tab" && canEdit(row, column.field)) {
+              const direction = event.shiftKey ? -1 : 1;
+              const columnIndex = columns.indexOf(column);
+              const remaining = direction === 1 ? columns.slice(columnIndex + 1) : columns.slice(0, columnIndex);
+              const boundary = index === (direction === 1 ? count - 1 : 0) && !remaining.some(item => canEdit(row, item.field));
+              if (!boundary) {
+                event.preventDefault(); void nextCell(row, column.id, direction).then(cell => { if (cell) setFocusCell(cell); }).catch(failure => setError(String(failure)));
+              }
+            } else if (!active && (event.key === "Enter" || event.key === "F2") && column.field) { event.preventDefault(); begin(row, column.field, column.id); }
+          }}>
           {active && editing ? <div className="detail-editor" onKeyDown={event => {
             if (event.nativeEvent.isComposing) return;
             if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (!saving) { setEditing(null); setError(""); } }
@@ -97,8 +126,8 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
             }, 650);
           }}>{row.initiativeName}</button> : tableDisplayValue(column, row)}
         </td>;
-      })}</tr>)}</tbody></table>
-      {!rows.length && <p className="detail-empty">表示する明細がありません。</p>}
+      })}</tr>} /></tbody></table>
+      {!count && <p className="detail-empty">表示する明細がありません。</p>}
     </div>
   </main>;
 }

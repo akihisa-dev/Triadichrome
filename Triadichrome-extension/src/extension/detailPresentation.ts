@@ -4,15 +4,18 @@ import { accountTypes, isAccountType } from "../core/domain/accountTypes";
 import type { TableColumn } from "../core/tables/tableView";
 export type DetailColumn = TableColumn<DetailRecord> & { field?: DetailField };
 export function detailColumns(contents: PlanContents): DetailColumn[] {
-  const name = (list: { id: number; name: string }[], id: number | null) => list.find(item => item.id === id)?.name ?? null;
+  const industries = new Map(contents.industries.map(item => [item.id, item.industryName]));
+  const expansions = new Map(contents.expansions.map(item => [item.id, item.expansionName]));
+  const departments = new Map(contents.departments.map(item => [item.id, item.departmentName]));
+  const periods = new Map(contents.periodTypes.map(item => [item.id, item.periodName]));
   return [
     { id: "fiscalYear", label: "年度", numeric: true, value: row => row.fiscalYear },
     { id: "kind", label: "種別", value: row => row.kindName },
-    { id: "industry", label: "業種名", field: "industryId", value: row => name(contents.industries.map(item => ({ id: item.id, name: item.industryName })), row.industryId) },
+    { id: "industry", label: "業種名", field: "industryId", value: row => industries.get(row.industryId ?? -1) ?? null },
     { id: "initiativeName", label: "施策名", field: "name", value: row => row.initiativeName },
-    { id: "expansion", label: "展開名", field: "expansionId", value: row => name(contents.expansions.map(item => ({ id: item.id, name: item.expansionName })), row.expansionId) },
-    { id: "department", label: "部署名", field: "departmentId", value: row => name(contents.departments.map(item => ({ id: item.id, name: item.departmentName })), row.departmentId) },
-    { id: "period", label: "期間名", field: "periodTypeId", value: row => name(contents.periodTypes.map(item => ({ id: item.id, name: item.periodName })), row.periodTypeId) },
+    { id: "expansion", label: "展開名", field: "expansionId", value: row => expansions.get(row.expansionId ?? -1) ?? null },
+    { id: "department", label: "部署名", field: "departmentId", value: row => departments.get(row.departmentId ?? -1) ?? null },
+    { id: "period", label: "期間名", field: "periodTypeId", value: row => periods.get(row.periodTypeId ?? -1) ?? null },
     { id: "startYearMonth", label: "開始年月", value: row => row.startYearMonth ?? "" },
     { id: "accountCode", label: "科目コード", field: "accountId", value: row => row.accountCode },
     { id: "account", label: "科目名", field: "accountId", value: row => row.accountName },

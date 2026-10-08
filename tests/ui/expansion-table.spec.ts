@@ -14,7 +14,7 @@ test("展開名ごとの集計・並び順・編集からの移動と再読込�
   await expect(table.locator("thead tr").first().locator("th").first()).toHaveText("展開名");
   await expect(table.locator("thead tr").first().locator("th").nth(1)).toHaveText("期間名");
   await expect(table.locator("thead tr").first().locator("th").nth(2)).toHaveText("施策名");
-  const salesGroup = table.locator("tbody").filter({ has: table.locator(".expansion-group").filter({ hasText: /^拡販$/ }) });
+  const salesGroup = table.locator("tbody").filter({ has: app.locator(".expansion-group").filter({ hasText: /^拡販$/ }) });
   await expect(salesGroup.locator(".expansion-period")).toHaveText(["期間差", "新規"]);
   await expect(salesGroup.locator(".expansion-period").nth(1)).toHaveAttribute("rowspan", "7");
   const registeredOrder = await table.getByRole("button").allTextContents();

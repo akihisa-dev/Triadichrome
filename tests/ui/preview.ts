@@ -15,10 +15,10 @@ const emptyBytes = Array.from(await createCurrentEmptyTestPlan());
 const legacyBytes = Array.from(await createEmptyTestPlan());
 const defaultBytes = Array.from(await createTriadicDatabase());
 const sampleBytes = Array.from(await createSamplePlan());
-let largeSampleBytes: number[] | undefined;
+let largeSampleBytes: Uint8Array | undefined;
 const requested = new URLSearchParams(location.search).get("data");
 dataset.value = [...dataset.options].some(option => option.value === requested) ? requested! : "full";
-export let fixtureBytes = dataset.value === "legacy" ? legacyBytes : dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
+export let fixtureBytes: number[] | Uint8Array = dataset.value === "legacy" ? legacyBytes : dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
 
 frame.addEventListener("load", () => {
   const target = frame.contentWindow as Window & typeof globalThis;
@@ -34,7 +34,7 @@ async function reload() {
   const value = dataset.value;
   status.textContent = "準備中";
   frame.inert = true;
-  const bytes = value === "large" ? (largeSampleBytes ??= Array.from(await createSamplePlan(undefined, true))) : value.startsWith("overflow-") ? Array.from(await createOverflowPlan(value.slice(9) as OverflowScenario)) :
+  const bytes = value === "large" ? (largeSampleBytes ??= new Uint8Array(await (await fetch("/samples/全機能確認用.triadic")).arrayBuffer())) : value.startsWith("overflow-") ? Array.from(await createOverflowPlan(value.slice(9) as OverflowScenario)) :
     value === "legacy" ? legacyBytes : value === "empty" ? emptyBytes : value === "defaults" ? defaultBytes : sampleBytes;
   if (version !== reloadVersion) return;
   fixtureBytes = bytes;

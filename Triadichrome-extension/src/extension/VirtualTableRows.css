@@ -1,0 +1,8 @@
+:is(.detail-table, .initiative-list-table) .virtual-row-spacer > td { padding: 0; border: 0; min-height: 0; background: transparent; }
+.virtual-table tbody > tr:not(.virtual-row-spacer) { height: var(--virtual-row-height); }
+.virtual-table tbody > tr:not(.virtual-row-spacer) > :is(th, td) { box-sizing: border-box; height: var(--virtual-row-height); padding-block: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.virtual-table .initiative-name-button { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.detail-table.virtual-table { table-layout: fixed; width: 2400px; }
+.detail-table.virtual-table td { position: relative; }
+.detail-table.virtual-table td:has(.detail-editor) { overflow: visible; }
+.detail-table.virtual-table .detail-editor { position: absolute; top: 0; left: 0; z-index: 4; width: 260px; padding: 8px; background: var(--canvas); border: 1px solid var(--line); box-shadow: 0 3px 12px #0002; }

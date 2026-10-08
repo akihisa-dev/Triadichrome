@@ -18,7 +18,7 @@ import { type IndustryChange } from "../core/domain/industryMaster";
 import { IndustryMasterPage } from "./IndustryMasterPage";
 import { type ExpansionChange } from "../core/domain/expansionMaster";
 import { ExpansionMasterPage } from "./ExpansionMasterPage";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InitiativeEntryPage } from "./InitiativeEntryPage";
 import { InitiativeListPage } from "./InitiativeListPage";
 import { InitiativeDetailPage } from "./InitiativeDetailPage";
@@ -100,6 +100,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const assertWritable = () => { if (preview) throw new Error("過去のデータは閲覧専用です。"); };
 
   const { accounts, initiatives } = contents;
+  const listedInitiatives = useMemo(() => initiativesForKind(initiatives, accounts, contents.kindSelections["initiative-list"][0]!), [initiatives, accounts, contents.kindSelections]);
   useEffect(() => {
     screens.prune(entry => entry.page !== "initiative-detail" || initiatives.some(item => item.id === entry.selectedInitiative?.id),
       { page: "home", selectedInitiative: null, detailOrigin: "initiative-list" });
@@ -385,7 +386,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "home": return <HomeRelationsPage view={relationView} disabled={navigationBlocked} onNavigate={target => { dismissNotice(); setPage(target); }} />;
                 case "initiative-entry": return <InitiativeEntryPage onBack={() => setPage("initiative-list")} draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage key={currentInitiative.id} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "details" ? "明細" : detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
-                case "initiative-list": return <InitiativeListPage expansions={contents.expansions} periodTypes={contents.periodTypes} onAddInitiative={startInitiative} selectedKind={contents.kindSelections["initiative-list"][0]!} selection={kindSelection("initiative-list")} initiatives={initiativesForKind(contents.initiatives, accounts, contents.kindSelections["initiative-list"][0]!)} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} />;
+                case "initiative-list": return <InitiativeListPage expansions={contents.expansions} periodTypes={contents.periodTypes} onAddInitiative={startInitiative} selectedKind={contents.kindSelections["initiative-list"][0]!} selection={kindSelection("initiative-list")} initiatives={listedInitiatives} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} />;
                 case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
                 case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
                 case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;

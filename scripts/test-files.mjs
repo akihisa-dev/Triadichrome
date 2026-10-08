@@ -1,3 +1,4 @@
+import { verifyPerformanceData } from '../tests/performance-data.mjs';
 import { verifySchemaBoundary } from "../tests/schema-boundary.mjs";
 import { verifyYenPrecision } from "../tests/yen-precision.mjs";
 import { verifyPeriodTables } from "../tests/period-tables.mjs";
@@ -62,4 +63,5 @@ await withNodeBundle("tests/core-api.ts", async production => {
   await verifySavedOperations(api);
   await verifyRecentFile(api);
   await verifySamplePlan(api);
+  await verifyPerformanceData(api, root);
 });

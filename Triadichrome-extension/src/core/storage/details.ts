@@ -3,11 +3,14 @@ import { canChangeAccountRow, type AmountSource } from "../domain/kinds";
 import { readRowOverrides } from "./settings";
 import { readContents } from "./readPlan";
 import { editDatabase } from "./transaction";
+import { buildDetails } from "../tables/details";
 import { detailKey, type DetailChange } from "../domain/details";
 export async function changeDetail(bytes: Uint8Array, change: DetailChange): Promise<Uint8Array> {
   return (await editDatabase(bytes, db => {
     const target = change.target;
-    const current = readContents(db).details!.find(d => d.id === detailKey(target));
+    const contents = readContents(db, false);
+    const scoped = { ...contents, initiatives: target.source === "initiative" ? contents.initiatives.filter(item => item.id === target.initiativeId) : [], previousAmounts: target.source === "previous" ? contents.previousAmounts.filter(item => item.id === target.previousId) : [] };
+    const current = buildDetails(scoped).find(d => d.id === detailKey(target));
     if (!current || current.source !== target.source || (target.source === "initiative" && current.initiativeId !== target.initiativeId)) throw new Error("編集対象の明細が一致しません。");
     if ((target.source === "initiative" && (current.initiativeRevision !== target.initiativeRevision || current.rowRevision !== target.rowRevision)) || current.revision !== target.revision) throw new Error("編集開始後にデータが変更されています。最新の値を確認して編集し直してください。");
     const { field, value } = change;

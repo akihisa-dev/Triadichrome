@@ -19,7 +19,7 @@ export function hasInitiativeDraftInput(draft: InitiativeEntryDraft): boolean {
       || [row.amounts, ...Object.values(row.overrides ?? {})].some(amounts => Object.values(amounts).some(value => value !== "")));
 }
 
-export function validateInitiative(draft: InitiativeEntryDraft, accounts: Account[], initiatives: Initiative[], expansions: Expansion[], departments: Department[] = [], periodTypes: PeriodType[] = [], industries: Industry[] = [], allowEmptyRows = false): void {
+export function validateInitiative(draft: InitiativeEntryDraft, accounts: Account[], initiatives: Pick<Initiative, "name">[], expansions: Expansion[], departments: Department[] = [], periodTypes: PeriodType[] = [], industries: Industry[] = [], allowEmptyRows = false): void {
   if (draft.invalidNumbers) throw new Error("年度・金額に有効な数値を入力してください。");
   if (!draft.name.trim()) throw new Error("施策名を入力してください。");
   if (!expansions.some(item => item.id === draft.expansionId)) throw new Error("展開名を選択してください。");
