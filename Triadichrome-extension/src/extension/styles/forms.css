@@ -293,7 +293,9 @@
 .initiative-overview-page .initiative-list-container::-webkit-scrollbar-track,
 .initiative-overview-page .initiative-list-container::-webkit-scrollbar-corner { background: var(--soft); }
 .initiative-overview-page .initiative-list-container::-webkit-scrollbar-thumb { background: var(--control-line); border: 3px solid var(--soft); border-radius: 6px; }
-.initiative-overview-page .initiative-list-table { min-width: 4252px; }
+.initiative-overview-page .initiative-list-table { --initiative-name-width: 220px; --initiative-start-width: 112px; width: calc(var(--initiative-name-width) + var(--initiative-start-width) + 4032px); min-width: calc(var(--initiative-name-width) + var(--initiative-start-width) + 4032px); }
+.initiative-list-table .initiative-name-column { width: var(--initiative-name-width); }
+.initiative-list-table .initiative-start-column { width: var(--initiative-start-width); }
 .initiative-overview-page thead { position: sticky; top: 0; z-index: 2; }
 .initiative-list-container { max-width: 100%; margin-top: 24px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }
 .initiative-list-container:focus-visible { outline-color: var(--focus); }
@@ -303,8 +305,14 @@
 .initiative-list-table thead th[colspan] { border-right: 1px solid var(--line); text-align: center; }
 .initiative-list-table tbody th { font-weight: 400; }
 .initiative-list-table td { text-align: right; }
-.initiative-list-table .initiative-list-name { position: sticky; left: 0; z-index: 1; width: 220px; text-align: left; overflow-wrap: anywhere; background: var(--canvas); border-right: 1px solid var(--line); }
-.initiative-list-table thead .initiative-list-name { vertical-align: bottom; background: var(--soft); }
+.initiative-list-table .initiative-list-name, .initiative-list-table .initiative-list-start { position: sticky; z-index: 1; overflow-wrap: anywhere; background: var(--canvas); border-right: 1px solid var(--line); }
+.initiative-list-table .initiative-list-name { left: 0; text-align: left; }
+.initiative-list-table .initiative-list-start { left: var(--initiative-name-width); white-space: nowrap; }
+.initiative-list-table thead .initiative-list-name, .initiative-list-table thead .initiative-list-start { vertical-align: bottom; background: var(--soft); }
+@media (max-width: 600px) {
+  .initiative-overview-page .initiative-list-table { --initiative-name-width: 128px; --initiative-start-width: 88px; }
+  .initiative-list-table .initiative-list-name, .initiative-list-table .initiative-list-start { padding-inline: 8px; }
+}
 .initiative-list-table .initiative-month-end { border-right: 1px solid var(--line); }
 .initiative-name-button { max-width: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; text-decoration: underline; text-decoration-color: var(--control-line); text-underline-offset: 4px; }
 .initiative-name-button:hover { text-decoration-color: currentColor; }

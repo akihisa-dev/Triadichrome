@@ -29,10 +29,15 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, fisca
     </div>
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
       <table className="initiative-list-table" aria-label="施策一覧">
+        <colgroup>
+          <col className="initiative-name-column" />
+          <col className="initiative-start-column" />
+          <col span={36} />
+        </colgroup>
         <thead>
           <tr>
             <th rowSpan={2} scope="col" className="initiative-list-name">施策名</th>
-            <th rowSpan={2} scope="col">開始年月</th>
+            <th rowSpan={2} scope="col" className="initiative-list-start">開始年月</th>
             {initiativeMonths.map(month => <th key={month} colSpan={3} scope="colgroup">{month}月</th>)}
           </tr>
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
@@ -43,7 +48,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, fisca
           <th scope="row" className="initiative-list-name" title={item.note || item.name}>
             <button className="initiative-name-button" type="button" disabled={navigationBlocked} onClick={() => onOpenInitiative(item)}>{item.name}</button>
           </th>
-          <td>{item.startYearMonths[selectedKind]}</td>
+          <td className="initiative-list-start">{item.startYearMonths[selectedKind]}</td>
           {initiativeMonths.map(month => <Fragment key={month}>
             <td>{amountText(item.months[month]?.sales)}</td>
             <td>{amountText(item.months[month]?.expense)}</td>
