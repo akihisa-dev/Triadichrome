@@ -44,7 +44,7 @@ description: Triadichromeの.triadicサンプル・確認用データの作成�
 
 - 生成元：[tests/ui/sample-plan.ts](../../../tests/ui/sample-plan.ts)
 - 生成処理：[scripts/generate-sample-plan.mjs](../../../scripts/generate-sample-plan.mjs)
-- 主成果物：[samples/全機能確認用.triadic](../../../samples/全機能確認用.triadic)（Git管理・commitに含める。pushは利用者から依頼された場合に行う）
+- 主成果物：[samples/全機能確認用.triadic](../../../samples/全機能確認用.triadic)（ローカルで生成・検証し、Git管理・commit・pushには含めない）
 - データの検証：[tests/sample-plan.mjs](../../../tests/sample-plan.mjs)
 - 画面の検証：[tests/ui/sample-plan.spec.ts](../../../tests/ui/sample-plan.spec.ts)
 

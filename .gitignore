@@ -18,6 +18,5 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# 利用者データは除外し、確認用サンプルだけをGit管理する
+# 利用者データと生成した確認用サンプルはGit管理しない
 *.[tT][rR][iI][aA][dD][iI][cC]
-!/samples/全機能確認用.triadic

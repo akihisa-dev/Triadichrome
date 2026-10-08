@@ -158,19 +158,25 @@ test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗を
 });
 
 
-test("全機能確認用サンプルは通常のstageとコミットを許可する", async t => {
+test("全機能確認用サンプルも除外し強制追加したコミットを拒否する", async t => {
   const repo = await repository(t);
   await cp(path.join(projectRoot, ".gitignore"), path.join(repo.root, ".gitignore"));
   await mkdir(path.join(repo.root, "samples"));
   const sample = "samples/全機能確認用.triadic";
   await writeFile(path.join(repo.root, sample), "generated sample");
-  repo.git("add", "--", sample);
+  succeeds(repo.run("git", ["check-ignore", "--quiet", "--", sample]));
+  fails(repo.run("git", ["add", "--", sample]), /ignored/);
   succeeds(repo.script("check-samples.mjs"));
+  repo.git("add", "-f", "--", sample);
+  fails(repo.script("check-samples.mjs"), /Git管理に含められません/);
   succeeds(repo.script("setup-hooks.mjs"));
-  for (const file of versionFiles) await repo.setVersion(file, "1.2.1");
-  repo.git("add", "--", ...versionFiles);
-  repo.git("commit", "--quiet", "-m", "Include generated sample");
-  assert.equal(repo.git("show", `HEAD:${sample}`), "generated sample");
+  const head = repo.git("rev-parse", "HEAD");
+  fails(repo.run("git", ["commit", "-m", "Sample must be rejected"]), /Git管理に含められません/);
+  assert.equal(repo.git("rev-parse", "HEAD"), head);
+  assert.equal(await readFile(path.join(repo.root, sample), "utf8"), "generated sample");
+  repo.git("rm", "--cached", "--", sample);
+  succeeds(repo.script("check-samples.mjs"));
+  assert.equal(await readFile(path.join(repo.root, sample), "utf8"), "generated sample", "管理対象から外してもローカルのサンプルを保持する");
 });
 
 test("計画ファイルは大小文字とGit設定に依存せず除外し強制追加も拒否する", async t => {
