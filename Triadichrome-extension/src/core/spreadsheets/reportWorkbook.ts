@@ -110,7 +110,14 @@ const sum = (refs: string[]) => {
     }
     ranges.push(start === end ? start : `${start}:${end}`);
   }
-  return `SUM(${ranges.join(",")})`;
+  // Each SUM, including the outer aggregation, stays within Excel's 255 arguments.
+  let terms = ranges;
+  while (terms.length > 255) {
+    const grouped: string[] = [];
+    for (let offset = 0; offset < terms.length; offset += 255) grouped.push(`SUM(${terms.slice(offset, offset + 255).join(",")})`);
+    terms = grouped;
+  }
+  return `SUM(${terms.join(",")})`;
 };
 
 export function createReportWorkbook(contents: PlanContents, options: ExportOptions): ExcelJS.Workbook {
