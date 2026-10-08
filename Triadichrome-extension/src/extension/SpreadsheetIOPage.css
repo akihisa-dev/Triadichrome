@@ -23,3 +23,5 @@
 .io-preview-table thead { position: sticky; top: 0; background: var(--soft); }
 .io-preview-table td:nth-last-child(-n+2) { text-align: right; }
 @media (max-width: 600px) { .io-panel { padding: 12px; } .io-table-conditions { padding-left: 0; } .io-pair-list { grid-template-columns: 1fr; } }
+
+.io-previous-panel.is-drag-active { outline: 2px dashed var(--accent); outline-offset: -3px; background: var(--soft); }

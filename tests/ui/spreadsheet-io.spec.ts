@@ -33,7 +33,48 @@ test("表と前年フォーマットの出力、確認・取消・一括取り�
   await expect(app.getByRole("button", { name: "前の画面に戻る", exact: true })).toBeDisabled();
   await preview.getByRole("button", { name: "キャンセル", exact: true }).click();
   await expect(preview).toHaveCount(0);
-  await app.locator('input[type="file"]').setInputFiles(file);
+  const frame = page.frames()[1]!;
+  const zone = frame.locator(".io-previous-panel");
+  const transfer = await frame.evaluateHandle(({ bytes, name }) => {
+    const data = new DataTransfer();
+    data.items.add(new File([new Uint8Array(bytes)], name));
+    return data;
+  }, { bytes: [...file.buffer], name: file.name });
+  const text = await frame.evaluateHandle(() => {
+    const data = new DataTransfer(); data.setData("text/plain", "text"); return data;
+  });
+  await zone.dispatchEvent("dragover", { dataTransfer: text });
+  await expect(zone).not.toHaveClass(/is-drag-active/);
+  await zone.dispatchEvent("dragenter", { dataTransfer: transfer });
+  await expect(zone).toHaveClass(/is-drag-active/);
+  await expect(app.getByRole("heading", { name: "ここにドロップして取り込む" })).toBeVisible();
+  await zone.evaluate(node => node.dispatchEvent(new DragEvent("dragleave", { bubbles: true, relatedTarget: node.querySelector("button") })));
+  await expect(zone).toHaveClass(/is-drag-active/);
+  await zone.dispatchEvent("dragleave", { relatedTarget: null });
+  await expect(zone).not.toHaveClass(/is-drag-active/);
+  await zone.dispatchEvent("dragover", { dataTransfer: transfer });
+  await zone.dispatchEvent("drop", { dataTransfer: transfer });
+  await expect(zone).not.toHaveClass(/is-drag-active/);
+  await expect(preview.getByRole("heading")).toHaveText("変更内容 · 2件");
+  const multiple = await frame.evaluateHandle(() => {
+    const data = new DataTransfer();
+    data.items.add(new File(["invalid"], "a.xlsx")); data.items.add(new File(["invalid"], "b.xlsx"));
+    return data;
+  });
+  await zone.dispatchEvent("drop", { dataTransfer: multiple });
+  await expect(preview.getByRole("heading")).toHaveText("変更内容 · 2件");
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await preview.getByRole("button", { name: "キャンセル", exact: true }).click();
+  await zone.dispatchEvent("drop", { dataTransfer: multiple });
+  await expect(app.getByRole("alert")).toContainText("一つずつ");
+  await expect(preview).toHaveCount(0);
+  const invalid = await frame.evaluateHandle(() => {
+    const data = new DataTransfer(); data.items.add(new File(["invalid"], "a.txt")); return data;
+  });
+  await zone.dispatchEvent("drop", { dataTransfer: invalid });
+  await expect(app.getByRole("alert")).toContainText(".xlsx");
+  await expect(preview).toHaveCount(0);
+  await zone.dispatchEvent("drop", { dataTransfer: transfer });
   await preview.getByRole("button", { name: "確認した内容を取り込む", exact: true }).click();
   await expect(app.getByText("前年金額を取り込みました。", { exact: true })).toBeVisible();
   await expect(preview).toHaveCount(0);

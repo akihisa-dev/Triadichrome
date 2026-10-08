@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import type { PlanContents } from "../core/domain/plan";
 import type { KindSelections, PlanChange, PreviousPatch } from "../core/domain/kinds";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
@@ -35,6 +35,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
   const [patches, setPatches] = useState<PreviousPatch[] | null>(null);
   const [retry, setRetry] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
   const disabled = busy || working || patches !== null;
   const operation = async (action: () => Promise<void>) => {
     if (running.current) return;
@@ -42,15 +43,23 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
     try { await action(); } catch (failure) { setNotice(failure instanceof Error ? failure.message : "処理できませんでした。"); setError(true); }
     finally { running.current = false; setWorking(false); onPendingChange(previewPending.current); }
   };
-  const importFile = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]; event.target.value = "";
-    if (!file || disabled || readOnly) return;
+  const importFiles = async (files: File[]) => {
+    if (!files.length || disabled || readOnly) return;
     await operation(async () => {
+      if (files.length !== 1) throw new Error("取り込みファイルは一つずつ選択してください。");
+      const file = files[0]!;
+      if (!/\.xlsx$/i.test(file.name)) throw new Error("前年入力フォーマットのExcelファイル（.xlsx）を選択してください。");
       if (file.size > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
       const changes = await parsePreviousWorkbook(new Uint8Array(await file.arrayBuffer()), contents);
       if (!changes.length) { setNotice("変更する金額がありません。"); return; }
       previewPending.current = true; setPatches(changes); setRetry(false);
     });
+  };
+  const drag = (event: DragEvent<HTMLElement>) => {
+    if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = disabled || readOnly ? "none" : "copy";
+    setDragging(!disabled && !readOnly);
   };
   return <main className="spreadsheet-io-page" aria-labelledby="spreadsheet-io-title">
     <h1 id="spreadsheet-io-title">入出力</h1>
@@ -71,8 +80,17 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
         download(await serializeWorkbook(wb), `${contents.fiscalYear}年度_三表.xlsx`); setNotice("表を出力しました。");
       }); }}>選んだ表を出力</button>
     </section>
-    <section className="io-panel" aria-labelledby="io-previous-title">
-      <div className="io-heading"><h2 id="io-previous-title">前年入力</h2><span className="field-hint">千円 · 小数点以下3桁まで</span></div>
+    <section className={`io-panel io-previous-panel${dragging && !disabled && !readOnly ? " is-drag-active" : ""}`} aria-labelledby="io-previous-title"
+      onDragEnter={drag} onDragOver={drag}
+      onDragLeave={event => {
+        if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) setDragging(false);
+      }}
+      onDrop={event => {
+        if (!Array.from(event.dataTransfer.types).includes("Files")) return;
+        event.preventDefault(); setDragging(false);
+        void importFiles(Array.from(event.dataTransfer.files));
+      }}>
+      <div className="io-heading"><h2 id="io-previous-title">{dragging && !disabled && !readOnly ? "ここにドロップして取り込む" : "前年入力"}</h2><span className="field-hint">千円 · 小数点以下3桁まで</span></div>
       <div className="io-pair-list" role="group" aria-label="フォーマットに含める業種・部署">
         {contents.industries.map(i => <fieldset key={i.id}><legend>{i.industryName}</legend>{contents.departments.map(d => {
           const checked = pairs.some(p => p.industryId === i.id && p.departmentId === d.id);
@@ -84,7 +102,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
           download(await serializeWorkbook(createPreviousWorkbook(contents, pairs)), `${contents.fiscalYear}年度_前年入力.xlsx`); setNotice("前年入力フォーマットを出力しました。");
         }); }}>フォーマットを出力</button>
         <button type="button" className="primary-button" disabled={disabled || readOnly} onClick={() => input.current?.click()}>フォーマットを取り込む</button>
-        <input ref={input} type="file" accept=".xlsx" hidden onChange={event => { void importFile(event); }} />
+        <input ref={input} type="file" accept=".xlsx" hidden onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void importFiles(files); }} />
       </div>
       {patches && <div className="io-import-preview" role="region" aria-label="前年金額の変更確認">
         <h3>変更内容 · {patches.length}件</h3>
