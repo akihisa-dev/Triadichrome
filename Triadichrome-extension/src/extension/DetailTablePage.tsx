@@ -4,6 +4,7 @@ import { canChangeAccountRow } from "../core/domain/kinds";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { type DetailChange, type DetailField, type DetailRecord } from "../core/domain/details";
 import { type Initiative, type PlanContents } from "../core/domain/plan";
+import { sortTableRows, type TableSort } from "../core/tables/tableSort";
 import { tableDisplayValue } from "../core/tables/tableView";
 import "./DetailTablePage.css";
 
@@ -12,7 +13,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   onSave: (change: DetailChange) => Promise<void>; onOpenInitiative: (initiative: Initiative) => void; onPendingChange: (pending: boolean) => void; onPrepareSave: () => Promise<void>;
 }) {
   const readOnly = useHistoryReadOnly();
-  const rows = contents.details ?? [];
+  const [sort, setSort] = useState<TableSort | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const clickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cancelNavigation = () => {
@@ -27,6 +28,7 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   const latest = useRef({ editing, contents, onOpenInitiative });
   latest.current = { editing, contents, onOpenInitiative };
   const columns = useMemo(() => detailColumns(contents), [contents]);
+  const rows = useMemo(() => sortTableRows(contents.details ?? [], columns, sort), [contents.details, columns, sort]);
   useEffect(() => { if (container.current) { container.current.scrollTop = scroll.current.top; container.current.scrollLeft = scroll.current.left; } }, [scroll]);
   useEffect(() => { onPendingChange(editing !== null); return () => onPendingChange(false); }, [editing, onPendingChange]);
   useEffect(() => {
@@ -64,7 +66,12 @@ export function DetailTablePage({ contents, scroll, onSave, onOpenInitiative, on
   return <main className="detail-page">
     <div className="detail-toolbar"><h1>明細</h1><span>{rows.length} 行</span><span>金額：千円</span></div>
     <div ref={container} className="detail-scroll" onPointerDownCapture={cancelNavigation} onKeyDownCapture={cancelNavigation} onScroll={event => { scroll.current = { top: event.currentTarget.scrollTop, left: event.currentTarget.scrollLeft }; }}>
-      <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col">{column.label}</th>)}</tr></thead>
+      <table className="detail-table"><thead><tr>{columns.map(column => <th key={column.id} scope="col" aria-sort={sort?.column === column.id ? sort.direction : undefined}>
+        <button type="button" className="detail-sort-button" disabled={editing !== null || saving} onClick={() => {
+          cancelNavigation();
+          setSort({ column: column.id, direction: sort?.column === column.id && sort.direction === "ascending" ? "descending" : "ascending" });
+        }}>{column.label}{sort?.column === column.id && <span className="detail-sort-indicator" aria-hidden="true">{sort.direction === "ascending" ? "▲" : "▼"}</span>}</button>
+      </th>)}</tr></thead>
       <tbody>{rows.map(row => <tr key={row.id} data-detail-id={row.id}>{columns.map(column => {
         const active = editing?.row.id === row.id && editing.columnId === column.id;
         return <td key={column.id} data-cell={`${row.id}-${column.id}`} tabIndex={canEdit(row, column.field) && !editing ? 0 : -1} className={column.numeric ? "is-number" : undefined}

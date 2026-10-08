@@ -32,7 +32,7 @@ test("明細の直接編集・全件表示・施策への移動と帰還", async
   await amount.dblclick();
   await expect(app.getByLabel("金額を編集", { exact: true })).toHaveValue("12.345");
   await app.getByLabel("金額を編集", { exact: true }).press("Escape");
-  await expect(table.locator("thead button")).toHaveCount(0);
+  await expect(table.locator("thead button")).toHaveCount(17);
   await expect(app.getByRole("button", { name: "クリア", exact: true })).toHaveCount(0);
   const link = table.getByRole("button", { name: "確定予算の下期調整", exact: true }).first();
   await link.dblclick();
@@ -124,4 +124,33 @@ test("明細の連続クリックと編集・取消・画面切替で古い遷�
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "Home", exact: true }).click();
   await page.waitForTimeout(800);
   await expect(app.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
+});
+
+
+test("明細の見出しで昇降順を切り替え、編集中は順序を保持する", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("main", { name: "ホーム", exact: true }).getByRole("button", { name: "明細", exact: true }).click();
+  const table = app.locator(".detail-table");
+  const original = await table.locator("tbody tr").first().getAttribute("data-detail-id");
+  const header = table.getByRole("columnheader", { name: "金額", exact: true });
+  await header.getByRole("button").click();
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  await expect(table.locator("tbody tr").first().locator('[data-cell$="-amount"]')).toHaveText("-20");
+  await header.getByRole("button").press("Enter");
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  await table.locator("tbody tr").first().locator('[data-cell$="-amount"]').dblclick();
+  await expect(header.getByRole("button")).toBeDisabled();
+  const nextAmount = table.locator("tbody tr").nth(1).locator('[data-cell$="-amount"]');
+  await app.getByLabel("金額を編集", { exact: true }).press("Tab");
+  await expect(nextAmount).toBeFocused();
+  const month = table.getByRole("columnheader", { name: "年月", exact: true });
+  await month.getByRole("button").click();
+  await expect(month).toHaveAttribute("aria-sort", "ascending");
+  await expect(header).not.toHaveAttribute("aria-sort");
+  await app.getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("button", { name: "明細", exact: true }).click();
+  await expect(table.locator("thead [aria-sort]")).toHaveCount(0);
+  await expect(table.locator("tbody tr").first()).toHaveAttribute("data-detail-id", original!);
 });

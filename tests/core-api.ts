@@ -80,3 +80,5 @@ export * from "../Triadichrome-extension/src/core/spreadsheets/workbook";
 export * from "../Triadichrome-extension/src/core/tables/initiativeSort";
 
 export * from "../Triadichrome-extension/src/core/tables/initiativeTotals";
+
+export * from "../Triadichrome-extension/src/core/tables/tableSort";

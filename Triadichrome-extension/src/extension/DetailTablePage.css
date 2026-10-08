@@ -27,3 +27,8 @@
 .page-switch:has(> .detail-page) { grid-template-columns: minmax(0, 1fr); }
 .detail-scroll { scroll-padding-top: 44px; }
 .detail-table td { scroll-margin-top: 44px; }
+
+.detail-sort-button { width: 100%; padding: 0; border: 0; color: inherit; background: transparent; font: inherit; text-align: inherit; cursor: pointer; }
+.detail-sort-button:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.detail-sort-button:disabled { cursor: default; opacity: .5; }
+.detail-sort-indicator { margin-left: 4px; font-size: 10px; }
