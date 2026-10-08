@@ -36,7 +36,7 @@
     "description": "f86f24a7fd5f1907476d0ac2b11d6360c99c4c2ebcf2e4b86296d1a868716946"
   },
   "open": {
-    "implementation": "bf6e595616c2255b0dbecc6e2ace022557e0323a42594fb9fd96f5e9bcacf7ab",
+    "implementation": "30a75a2caa7422716ab7e733afa0097d8afa853a9cc49562bfac5b2b8bb035c8",
     "description": "d5bad72997f6e91b29a25f777fe5b471b9f7592de8125e1f978c20b851cbe4a0"
   },
   "save": {
@@ -56,7 +56,7 @@
     "description": "bec96fc1e99f71a0f9c372d32d7aafecba9df1b86b8783a999a5cd7f71acdba1"
   },
   "storage": {
-    "implementation": "7bd552015422d2e87a14356bef9a5bafb229981a610713337941814825fac688",
+    "implementation": "dd5ee5c43142a196c762c63f14fa7ad4e39b08c35e9044cd83eda06fcbae94f3",
     "description": "49fbdaa85d1107ae187d8ebe415f9c8ba991f16bd64708f6c8936d76e6d113ad"
   },
   "validation": {
@@ -68,7 +68,7 @@
     "description": "aa291492ad6831f72230ce85e0e9ee0827b2384320fb409fb36dcf93b1d2013b"
   },
   "spreadsheet": {
-    "implementation": "90a417108ee86b2414e83d7371ec8ac0f8d9bb6dc4fd9978f2a6d4c38f1ca7c0",
+    "implementation": "0e475ce2940a2a3cbce049a3cbf9961afa4c951889151aff54524fc6f1ef15b9",
     "description": "7ef60e1a2b114300d1840567b14b71f217624b3b64d97cf89a94543c6883d890"
   }
 }

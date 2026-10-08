@@ -278,20 +278,24 @@ export function createReportWorkbook(plan: PlanContents, options: ExportOptions)
   if (options.tables.includes("initiative-list")) {
     const kind = options.selections["initiative-list"][0]!;
     const items = initiativesForKind(plan.initiatives, plan.accounts, kind).filter(i => i.fiscalYear === plan.fiscalYear);
-    const ws = reportSheet(wb, "施策一覧", [34, 14, ...initiativeMonths.flatMap(() => [14, 14, 14])], 4, 2, plan.fiscalYear); reports.push(ws);
+    const ws = reportSheet(wb, "施策一覧", [17, 17, 34, 14, ...initiativeMonths.flatMap(() => [14, 14, 14])], 4, 4, plan.fiscalYear); reports.push(ws);
     ws.getCell("A2").value += ` · ${plan.kinds.find(k => k.id === kind)!.kindName}`;
-    for (const [col, label] of [[1, "施策名"], [2, "開始年月"]] as const) { ws.mergeCells(3, col, 4, col); ws.getCell(3, col).value = label; }
-    spillColumn(wb, ws, 5, 1, `MAP(TC_InitiativeKeys,LAMBDA(pId,IF(pId="","",XLOOKUP(pId,${names.initiatives}[施策ID],${names.initiatives}[施策名]))))`, items.map(i => i.name));
-    spillColumn(wb, ws, 5, 2, `MAP(TC_InitiativeKeys,LAMBDA(pId,TC_Start(pId,${kind})))`, items.map(i => i.startYearMonths[kind] ?? ""));
+    for (const [col, label] of [[1, "展開名"], [2, "期間名"], [3, "施策名"], [4, "開始年月"]] as const) { ws.mergeCells(3, col, 4, col); ws.getCell(3, col).value = label; }
+    for (const [col, label] of [[1, "展開名"], [2, "期間名"]] as const) {
+      spillColumn(wb, ws, 5, col, `MAP(TC_InitiativeKeys,LAMBDA(pId,IF(pId="","",XLOOKUP(pId,${names.initiatives}[施策ID],${names.initiatives}[${label}]))))`,
+        items.map(i => label === "展開名" ? plan.expansions.find(e => e.id === i.expansionId)?.expansionName ?? "" : plan.periodTypes.find(p => p.id === i.periodTypeId)?.periodName ?? ""));
+    }
+    spillColumn(wb, ws, 5, 3, `MAP(TC_InitiativeKeys,LAMBDA(pId,IF(pId="","",XLOOKUP(pId,${names.initiatives}[施策ID],${names.initiatives}[施策名]))))`, items.map(i => i.name));
+    spillColumn(wb, ws, 5, 4, `MAP(TC_InitiativeKeys,LAMBDA(pId,TC_Start(pId,${kind})))`, items.map(i => i.startYearMonths[kind] ?? ""));
     initiativeMonths.forEach((month, mi) => {
-      ws.mergeCells(3, 3 + mi * 3, 3, 5 + mi * 3); ws.getCell(3, 3 + mi * 3).value = `${month}月`;
+      ws.mergeCells(3, 5 + mi * 3, 3, 7 + mi * 3); ws.getCell(3, 5 + mi * 3).value = `${month}月`;
       (["sales", "expense", "profit"] as const).forEach((metric, offset) => {
-        const col = 3 + mi * 3 + offset; ws.getCell(4, col).value = ["売上", "費用", "利益"][offset];
+        const col = 5 + mi * 3 + offset; ws.getCell(4, col).value = ["売上", "費用", "利益"][offset];
         ws.getColumn(col).numFmt = '#,##0;-#,##0;0';
         spillColumn(wb, ws, 5, col, `MAP(TC_InitiativeKeys,LAMBDA(pId,IF(pId="","",TC_Effect(pId,${mi + 1},${kind},"${metric}"))))`, items.map(i => thousand(i.months[month]?.[metric])));
       });
     });
-    finish(ws, 4, 3, 0);
+    finish(ws, 4, 5, 0);
   }
   if (options.tables.includes("expansion-table")) {
     const selected = options.selections["expansion-table"];

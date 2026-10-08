@@ -116,6 +116,15 @@ export async function verifyReportWorkbooks(api, sample) {
   }
   const report = await exported(api, plan, options(allTables, [1, 2], { industries: [1], departments: null }));
   const { wb, evaluate: calc } = report;
+  const initiativeSheet = wb.getWorksheet("施策一覧");
+  assert.deepEqual([1, 2, 3, 4].map(c => initiativeSheet.getCell(3, c).value), ["展開名", "期間名", "施策名", "開始年月"]);
+  assert.equal(initiativeSheet.views[0].xSplit, 4);
+  assert.equal(initiativeSheet.getCell("E3").value, "4月");
+  assert.equal(initiativeSheet.getCell("G3").master.address, "E3");
+  assert.deepEqual([1, 2, 3, 4].map(c => initiativeSheet.getColumn(c).width), [17, 17, 34, 14]);
+  assert.deepEqual(flatten(calc.evaluate(initiativeSheet, "A5")), ["拡販", "コスト"]);
+  assert.deepEqual(flatten(calc.evaluate(initiativeSheet, "B5")), ["新規", "新規"]);
+  assert.deepEqual(flatten(calc.evaluate(initiativeSheet, "E5")), [-1, 50]);
   const account = (...args) => calc.named("TC_Account")(...args), group = (...args) => calc.named("TC_Group")(...args);
   assert.equal(account(1, 1, 1), 113);
   assert.equal(account(1, 1, 2), 103);
@@ -132,13 +141,16 @@ export async function verifyReportWorkbooks(api, sample) {
   wb.getWorksheet("施策入力").getCell("B4").value = "施策A改名";
   wb.getWorksheet("科目マスタ").getCell("C4").value = "売上改名";
   wb.getWorksheet("展開マスタ").getCell("C4").value = "展開改名"; calc.reset();
-  assert.equal(flatten(calc.evaluate(wb.getWorksheet("施策一覧"), "A5"))[0], "施策A改名");
+  assert.equal(flatten(calc.evaluate(wb.getWorksheet("施策一覧"), "C5"))[0], "施策A改名");
   assert.equal(flatten(calc.evaluate(wb.getWorksheet("総原価表"), "A5"))[0], "売上改名");
   assert.ok(flatten(calc.evaluate(wb.getWorksheet("展開表"), "A6")).includes("展開改名"));
+  wb.getWorksheet("期間マスタ").getCell("B4").value = "期間改名"; calc.reset();
+  assert.equal(flatten(calc.evaluate(initiativeSheet, "A5"))[0], "展開改名");
+  assert.equal(flatten(calc.evaluate(initiativeSheet, "B5"))[0], "期間改名");
   calc.append("TC_Initiatives", [30, "追加施策", "", 1, 1, 1, 1]);
   calc.append("TC_Amounts", [30, 1, 7, ...Array(23).fill(null)]);
   assert.equal(account(1, 1, 2), 190, "追加行の計算列と集計は増えたテーブルを参照");
-  assert.deepEqual(flatten(calc.evaluate(wb.getWorksheet("施策一覧"), "A5")), ["施策A改名", "施策B", "追加施策"]);
+  assert.deepEqual(flatten(calc.evaluate(wb.getWorksheet("施策一覧"), "C5")), ["施策A改名", "施策B", "追加施策"]);
   assert.ok(flatten(calc.evaluate(wb.getWorksheet("展開表"), "B6")).includes("追加施策"));
   calc.append("TC_Accounts", [4, "004", "追加費用", "expense"]);
   calc.append("TC_Members", [2, "科目", 4, 1]);
@@ -164,6 +176,11 @@ export async function verifyReportWorkbooks(api, sample) {
   assert.equal(gap.evaluate.named("TC_Start")(10, 1), "2025-07", "期間差の間の0月で途切れず、翌月を前年の開始月にする");
   gap.wb.getWorksheet("施策金額").getCell("N4").value = 1; gap.evaluate.reset();
   assert.equal(gap.evaluate.named("TC_Start")(10, 1), "", "3月まで続く期間差は未確定");
+  const unselected = await exported(api, { ...plan, initiatives: [{ ...plan.initiatives[0], expansionId: null, periodTypeId: null,
+    startYearMonths: { 1: null, 2: null } }] }, options(["initiative-list"]));
+  cachedReports(unselected);
+  assert.deepEqual(flatten(unselected.evaluate.evaluate(unselected.wb.getWorksheet("施策一覧"), "A5")), [""]);
+  assert.deepEqual(flatten(unselected.evaluate.evaluate(unselected.wb.getWorksheet("施策一覧"), "B5")), [""]);
   const empty = { ...plan, initiatives: [], previousAmounts: [], expansions: [], industries: [], departments: [], periodTypes: [] };
   cachedReports(await exported(api, empty));
   assert.throws(() => api.createReportWorkbook(plan, options([])), /選択/);
