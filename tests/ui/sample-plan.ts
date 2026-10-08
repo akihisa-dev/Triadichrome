@@ -1,4 +1,4 @@
-// Excel混在出力では総原価表の分類と各表の種別を別々に選び、計算元に不要な分類・種別がないことを確認する。
+// Excel出力では選択した表と条件を保ち、計画全体の元データ・マスタと追加行へ追従する数式を確認する。
 import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/storage/dataHistory";
 import { savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { INITIAL_KINDS } from "../../Triadichrome-extension/src/core/domain/kinds";
@@ -53,7 +53,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear()): Promis
     bytes = await registerInitiative(bytes, { name, note, expansionId, industryId: industries[(await readPlanContents(bytes)).initiatives.filter(item => item.industryId != null).length % industries.length]!.id, periodTypeId: periodTypeId ?? periodTypes.find(item => item.periodName === "新規")!.id, departmentId: departments[(await readPlanContents(bytes)).initiatives.length % departments.length]!.id, fiscalYear: String(fiscalYear), rows: rows.map((row,index) => ({ ...row, id: `sample:${name}:${index}` })) });
   };
 
-  await add("既存商品の販売拡大", "「入出力」で三表を選び、一次・確定の比較と期間計をExcelへ出力できます。前年入力フォーマットは必要な業種・部署だけを選び、金額の修正・空欄の保持・0への更新・変更確認・取り消しを試せます。ホームの「計算の仕組み」で予算の引き継ぎ・科目から売上と利益・開始年月を、「処理の流れ」で自動保存・失敗・履歴を確認できます。仕組みの閲覧は実際の値を出さず、計画を変更しません。「画面とデータ」で施策一覧を選び、展開名・期間名・施策名・開始年月・科目行・月別増減・確定予算の手修正の保存先を確認できます。施策一覧の固定列は展開名「拡販」・期間名「新規」・施策名・開始年月の順で、横スクロール後も確認できます。期間差の確認施策は期間名「期間差」、費用削減施策は展開名「コスト」と表示されます。全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
+  await add("既存商品の販売拡大", "「入出力」で三表を選び、一次・確定の比較と期間計をExcelへ出力できます。Microsoft 365のExcelでは計画全体の元データとマスタを含みます。「施策金額」の一次4月を変えて修正欄が空欄の確定予算への引き継ぎを確認し、修正0の固定と修正の消去による解除を試せます。「施策入力」と「施策金額」のテーブル末尾へ同じ新しい施策IDで行を追加すると三表へ反映します。科目や分類の改名、科目の追加と集計対象の所属・符号変更、総原価対象の1／0切り替えも確認できます。前年入力フォーマットは必要な業種・部署だけを選び、金額の修正・空欄の保持・0への更新・変更確認・取り消しを試せます。ホームの「計算の仕組み」で予算の引き継ぎ・科目から売上と利益・開始年月を、「処理の流れ」で自動保存・失敗・履歴を確認できます。仕組みの閲覧は実際の値を出さず、計画を変更しません。「画面とデータ」で施策一覧を選び、展開名・期間名・施策名・開始年月・科目行・月別増減・確定予算の手修正の保存先を確認できます。施策一覧の固定列は展開名「拡販」・期間名「新規」・施策名・開始年月の順で、横スクロール後も確認できます。期間差の確認施策は期間名「期間差」、費用削減施策は展開名「コスト」と表示されます。全12か月の増減計画。同じ売上高の2行は直販と代理店販売です。新規登録は施策一覧の「施策を追加」から進みます。入力後に一覧へ戻ると破棄確認が出ます。キャンセルで入力を保持し、破棄後の追加は空欄、登録成功後は一覧へ戻ることを確認できます。一次予算4月の120を130へ変更し、保存後に「操作を取り消す」で120、「操作をやり直す」で130になることを確認できます。確定予算4月の手修正130と11月の手修正0は維持します。", [
     { ...annual("売上高", 120, 5), overrides: { 2: { 4: "130", 10: "170", 11: "0" } } }, annual("売上高", 30, 1), annual("本支店売上原価", 60, 2.5),
     annual("宣伝広告費", 8), annual("旅費", 3), annual("営業外収益", 0.125),
   ]);

@@ -1,4 +1,5 @@
-export type PeriodType = { id: number; periodName: string };
+import type { StartMonthRule } from "./initiativeStartMonth";
+export type PeriodType = { id: number; periodName: string; startMonthRule?: StartMonthRule | null };
 export type PeriodTypeChange =
   | { type: "add"; periodName: string }
   | { type: "update"; id: number; periodName: string }

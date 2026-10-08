@@ -3,8 +3,8 @@ import { startMonthRuleForName } from "../domain/initiativeStartMonth";
 import { editDatabase } from "./transaction";
 import { validatePeriodTypeChange, type PeriodType, type PeriodTypeChange } from "../domain/periodMaster";
 export function listPeriodTypes(database: Database): PeriodType[] {
-  return (database.exec("SELECT id, name FROM period_types ORDER BY id")[0]?.values ?? [])
-    .map(([id, name]) => ({ id: Number(id), periodName: String(name) }));
+  return (database.exec("SELECT id, name, start_month_rule FROM period_types ORDER BY id")[0]?.values ?? [])
+    .map(([id, name, rule]) => ({ id: Number(id), periodName: String(name), startMonthRule: rule === "new" || rule === "period_gap" ? rule : null }));
 }
 
 export async function changePeriodMaster(bytes: Uint8Array, change: PeriodTypeChange): Promise<Uint8Array> {

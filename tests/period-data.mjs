@@ -24,6 +24,7 @@ export async function verifyPeriodData(api) {
   assert.equal((await readPlanContents(assigned)).initiatives[0].departmentId, 2);
   assigned = await changePeriodMaster(assigned, { type: "update", id: 2, periodName: "新規改定" });
   assert.equal((await readPlanContents(assigned)).initiatives[0].periodTypeId, 2);
+  assert.equal((await readPlanContents(assigned)).periodTypes.find(item => item.id === 2).startMonthRule, "new", "改名後もExcel出力へ保存済みの開始年月規則を渡す");
   assigned = await updateInitiative(assigned, 1, 2026, { ...draft, periodTypeId: null });
   assert.equal((await readPlanContents(assigned)).initiatives[0].periodTypeId, null);
   let empty = bytes;

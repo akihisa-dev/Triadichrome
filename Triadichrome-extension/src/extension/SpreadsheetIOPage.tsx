@@ -55,7 +55,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
   return <main className="spreadsheet-io-page" aria-labelledby="spreadsheet-io-title">
     <h1 id="spreadsheet-io-title">入出力</h1>
     <section className="io-panel" aria-labelledby="io-export-title">
-      <div className="io-heading"><h2 id="io-export-title">表の出力</h2><span className="field-hint">Excel · 単位：千円</span></div>
+      <div className="io-heading"><h2 id="io-export-title">表の出力</h2><span className="field-hint">Microsoft 365 Excel · 計画全体の元データを含む · 千円</span></div>
       {(Object.keys(tableNames) as ExportTable[]).map(table => <div className="io-table-option" key={table}>
         <label className="io-check"><input type="checkbox" checked={tables.includes(table)} disabled={disabled} onChange={event => setTables(current => event.target.checked ? [...current, table] : current.filter(t => t !== table))} />{tableNames[table]}</label>
         {tables.includes(table) && <div className="io-table-conditions">
