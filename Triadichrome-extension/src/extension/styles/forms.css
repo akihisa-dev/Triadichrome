@@ -299,6 +299,7 @@
 .initiative-list-table .initiative-name-column { width: var(--initiative-name-width); }
 .initiative-list-table .initiative-start-column { width: var(--initiative-start-width); }
 .initiative-overview-page thead { position: sticky; top: 0; z-index: 2; }
+.initiative-overview-page tfoot { position: sticky; bottom: 0; z-index: 2; }
 .initiative-overview-page .initiative-total-row > * { background: var(--soft); font-weight: 600; }
 .initiative-overview-page .initiative-list-table .initiative-total-label { position: sticky; left: 0; z-index: 1; text-align: left; }
 .initiative-list-container { max-width: 100%; margin-top: 24px; overflow: auto; outline: 2px solid transparent; outline-offset: 2px; }

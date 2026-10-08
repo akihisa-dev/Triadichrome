@@ -1,6 +1,6 @@
 import { test, expect, settleMotion } from "./fixtures";
 
-test("合計行は見出し直下で固定し、並べ替えで変わらず種別切替で再計算する", async ({ app, page }) => {
+test("合計行は表の最下部で下端に追従し、並べ替えで変わらず種別切替で再計算する", async ({ app, page }) => {
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
@@ -12,6 +12,13 @@ test("合計行は見出し直下で固定し、並べ替えで変わらず種�
   await expect(total.getByRole("cell").nth(0)).toHaveText("435");
   await expect(total.getByRole("cell").nth(1)).toHaveText("47");
   await expect(total.getByRole("cell").nth(2)).toHaveText("388");
+  await expect(region.locator("tfoot .initiative-total-row")).toHaveCount(1);
+  await expect(region.locator("thead .initiative-total-row")).toHaveCount(0);
+  const bottomGap = await total.evaluate(node => {
+    const container = node.closest(".initiative-list-container")!;
+    return container.getBoundingClientRect().top + container.clientHeight - node.getBoundingClientRect().bottom;
+  });
+  expect(Math.abs(bottomGap)).toBeLessThan(2);
   const confirmed = await total.innerText();
   await region.getByRole("button", { name: "開始年月", exact: true }).click();
   expect(await total.innerText()).toBe(confirmed);

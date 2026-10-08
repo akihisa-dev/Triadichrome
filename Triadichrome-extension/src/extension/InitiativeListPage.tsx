@@ -68,7 +68,6 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
             <th scope="col">売上</th><th scope="col">費用</th><th scope="col" className="initiative-month-end">利益</th>
           </Fragment>)}</tr>
-          <InitiativeTotalRow initiatives={source} />
         </thead>
         <tbody>{displayed.map(item => <tr key={item.id}>
           <td className="initiative-list-fixed initiative-list-expansion">{expansionNames.get(item.expansionId ?? -1) ?? ""}</td>
@@ -83,6 +82,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
             <td className="initiative-month-end">{amountText(item.months[month]?.profit)}</td>
           </Fragment>)}
         </tr>)}</tbody>
+        <tfoot><InitiativeTotalRow initiatives={source} /></tfoot>
       </table>
     </div>
     </TableCalculationBoundary>
