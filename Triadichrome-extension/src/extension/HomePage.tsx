@@ -333,9 +333,6 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               <SidebarIcon name="home" />
               <span className="sidebar-label">Home</span>
             </button>
-            <button className="sidebar-item" type="button" aria-label="前年入力" disabled={navigationBlocked} aria-current={page === "previous-input" ? "page" : undefined} onClick={() => setPage("previous-input")}>
-              <SidebarIcon name="previous" /><span className="sidebar-label">前年入力</span>
-            </button>
             <button className="sidebar-item" type="button" aria-label="施策一覧" disabled={navigationBlocked} aria-current={page === "initiative-list" || page === "initiative-entry" || (page === "initiative-detail" && detailOrigin === "initiative-list") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("initiative-list"); }}>
               <SidebarIcon name="list" />
               <span className="sidebar-label">施策一覧</span>
@@ -347,6 +344,9 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
             <button className="sidebar-item" type="button" aria-label="展開表" disabled={navigationBlocked} aria-current={page === "expansion-table" || (page === "initiative-detail" && detailOrigin === "expansion-table") ? "page" : undefined} onClick={() => { dismissNotice(); setPage("expansion-table"); }}>
               <SidebarIcon name="expansion" />
               <span className="sidebar-label">展開表</span>
+            </button>
+            <button className="sidebar-item" type="button" aria-label="前年入力" disabled={navigationBlocked} aria-current={page === "previous-input" ? "page" : undefined} onClick={() => setPage("previous-input")}>
+              <SidebarIcon name="previous" /><span className="sidebar-label">前年入力</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="入出力" disabled={navigationBlocked} aria-current={page === "spreadsheet-io" ? "page" : undefined} onClick={() => setPage("spreadsheet-io")}><SidebarIcon name="io" /><span className="sidebar-label">入出力</span></button>
             <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>

@@ -107,15 +107,13 @@ test("サイドバーを開いたまま施策一覧とホームを往復でき�
   const initiativeEntry = navigation.getByRole("button", { name: "施策一覧", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "入出力", "マスタ", "履歴"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "施策一覧", "総原価表", "展開表", "前年入力", "入出力", "マスタ", "履歴"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Tab");
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(home).toBeFocused();
-  await page.keyboard.press("Tab");
-  await expect(sidebar.getByRole("button", { name: "前年入力", exact: true })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(initiativeEntry).toBeFocused();
   await page.keyboard.press("Enter");

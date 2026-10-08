@@ -68,11 +68,9 @@ test("キーボードでレールへ入ると項目名が現れ、外へ戻る�
   await expect(sidebar.getByRole("button", { name: "Home", exact: true })).toBeFocused();
   await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await page.keyboard.press("Tab");
-  await expect(sidebar.getByRole("button", { name: "前年入力", exact: true })).toBeFocused();
-  await page.keyboard.press("Tab");
+  await expect(sidebar.getByRole("button", { name: "施策一覧", exact: true })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(app.getByRole("main", { name: "施策一覧", exact: true })).toBeVisible();
-  await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Shift+Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(sidebar.getByRole("button", { name: "サイドバーを閉じる", exact: true })).toBeFocused();
