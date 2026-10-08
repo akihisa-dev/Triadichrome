@@ -49,5 +49,18 @@ export async function verifyExpansionTable(api) {
   assert.equal(fractionalTable.total[4].profit, 600, "表示で丸めず1円精度で合算する");
   const overflow = { ...contents.initiatives[0], months: { 4: { sales: 9007199254740991, profit: 9007199254740991 } } };
   assert.throws(() => buildExpansionTable({ ...contents, initiatives: [overflow, { ...overflow, months: { 4: { sales: 1, profit: 1 } } }] }, 2026, "registered"), /範囲/);
+  const periodRows = [
+    { id: 1, periodTypeId: 2, amount: 10 }, { id: 2, periodTypeId: null, amount: 20 },
+    { id: 3, periodTypeId: 1, amount: 30 }, { id: 4, periodTypeId: 2, amount: 40 },
+    { id: 5, amount: 50 },
+  ];
+  const snapshot = structuredClone(periodRows);
+  const periods = [{ id: 1, periodName: "期間差" }, { id: 2, periodName: "新規" }, { id: 3, periodName: "未使用" }];
+  const grouped = api.groupExpansionPeriods(periodRows, periods);
+  assert.deepEqual(grouped.map(group => [group.name, group.initiatives.map(item => item.id)]), [["期間差", [3]], ["新規", [1, 4]], ["", [2, 5]]]);
+  assert.deepEqual(api.groupExpansionPeriods(periodRows, [...periods].reverse()).map(group => group.id), [2, 1, null], "名称ではなく期間マスタ順");
+  assert.equal(api.groupExpansionPeriods(periodRows, [{ ...periods[0], periodName: "名称変更" }, periods[1]])[0].name, "名称変更");
+  assert.deepEqual(periodRows, snapshot, "表示順と金額を保存データへ反映しない");
+  assert.deepEqual(api.groupExpansionPeriods([], periods), []);
   console.log("PASS: expansion assignment, grouped totals, sorting, year isolation, reassignment and deletion protection");
 }

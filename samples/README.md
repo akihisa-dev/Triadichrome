@@ -1,6 +1,6 @@
 # 全機能確認用の計画
 
-[全機能確認用.triadic](全機能確認用.triadic)はアプリ7.13.2の実装に対応した、基準年度2026・保存形式16の確認用データです。生成元は[tests/ui/sample-plan.ts](../tests/ui/sample-plan.ts)、再生成・一致確認は[README](../README.md#確認用のtriadicファイル)を参照してください。実ファイルの上書きを避けるため、試す際はコピーを使用します。
+[全機能確認用.triadic](全機能確認用.triadic)はアプリ7.14.0の実装に対応した、基準年度2026・保存形式16の確認用データです。生成元は[tests/ui/sample-plan.ts](../tests/ui/sample-plan.ts)、再生成・一致確認は[README](../README.md#確認用のtriadicファイル)を参照してください。実ファイルの上書きを避けるため、試す際はコピーを使用します。
 
 1,014施策・12,032科目行・289,704明細を含む大規模サンプルです。元の14施策に「大規模確認施策0001」から「大規模確認施策1000」を追加しています。各追加施策は12科目行を持ち、一次予算の金額と確定予算の手修正を正負の対で相殺します。全展開・業種・部署に分散し、両種別の開始年月は2026-04です。既存の確認用金額と未使用科目は維持します。3時点の履歴にも1,014施策を保持します。
 
@@ -20,6 +20,7 @@
 | 前年入力 | [extension/PreviousInputPage.tsx](../Triadichrome-extension/src/extension/PreviousInputPage.tsx) | 業種9件×部署2件に売上・原価・費用・利益の12か月 | 未選択で売上高4月25,290、直営自動車の全部署2,010、全業種の部署A12,600を表示。合計は参照専用、個別の組合せで編集・上書き更新 | 通常テスト・sample-plan画面テスト | 保存・再読込・画面入力を確認 |
 | 総原価表 | [core/tables/costComparison.ts](../Triadichrome-extension/src/core/tables/costComparison.ts) | 一次予算のみ・確定予算のみ・両方を選ぶ | 各月に前年差、両方なら一次予算差も表示。売上高4月の前年差は一次350・確定380、一次予算差30。5月の一次予算差は−100 | 通常テスト・Codex内のブラウザ | 3通りの表示と正負の差を画面確認。逆順選択、1円精度、集計、利益率、未設定・分母0を通常テストで確認 |
 | 施策一覧 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 一次予算を選び、ファイルを閉じて開き直す | 一次予算の施策増減を表示し、選択を復元 | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
+| 展開表の期間分類 | [core/tables/expansionTable.ts](../Triadichrome-extension/src/core/tables/expansionTable.ts) | 拡販の期間差・新規、効率の未選択施策 | 展開表を開き横スクロールする | 期間マスタ順、同期間の縦結合、期間内は登録順、未選択は最後の空欄。3名称列を固定し、金額・展開別小計を維持 | 通常テストと画面確認 |
 | 展開表 | [core/tables/planTables.ts](../Triadichrome-extension/src/core/tables/planTables.ts) | 一次・確定の2種を選ぶ | 2種と「確定−一次」を表示。2つ目を未選択にすると比較列も消える。再読込でも選択順を復元 | 通常テスト・sample-plan画面テスト | 計算を確認。展開表の選択上限と復元を画面確認 |
 | 業種・部署 | [extension/HomePage.tsx](../Triadichrome-extension/src/extension/HomePage.tsx) | 各表で全業種・全部署のデータを確認 | 各表は全分類を表示し、分類の選択操作は設けない | 通常テスト・sample-plan画面テスト | 選択・分類条件・再読込時の復元範囲を確認 |
 | 前年の範囲入力 | [extension/PreviousAmountGrid.tsx](../Triadichrome-extension/src/extension/PreviousAmountGrid.tsx) | 直営自動車・部署Aの売上高とグループ売上高、4〜5月を範囲選択。グループ売上高は4月125.125、5月−20.001、6月0、3月0.001 | コピー・貼り付け・同値入力・消去で科目セルだけを更新し、小計を再計算。不正な貼り付けは全体を拒否 | 通常テスト・previous-grid画面テスト・Codex内のブラウザ | 円精度、範囲操作、部分更新の拒否、保存後の再表示を確認 |

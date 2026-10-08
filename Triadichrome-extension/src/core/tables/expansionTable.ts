@@ -35,3 +35,20 @@ export function buildExpansionTable(contents: PlanContents, fiscalYear: number, 
     }),
   };
 }
+
+/** Group only the displayed rows; retain the original registration order and amounts. */
+export function groupExpansionPeriods<T extends { periodTypeId?: number | null }>(initiatives: T[], periodTypes: PlanContents["periodTypes"]) {
+  const members = new Map<number | null, T[]>();
+  const known = new Set(periodTypes.map(period => period.id));
+  for (const item of initiatives) {
+    const id = item.periodTypeId != null && known.has(item.periodTypeId) ? item.periodTypeId : null;
+    const group = members.get(id) ?? [];
+    group.push(item);
+    members.set(id, group);
+  }
+  return [...periodTypes.map(period => ({ id: period.id as number | null, name: period.periodName })), { id: null, name: "" }]
+    .flatMap(period => {
+      const items = members.get(period.id);
+      return items?.length ? [{ ...period, initiatives: items }] : [];
+    });
+}

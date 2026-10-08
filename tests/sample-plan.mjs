@@ -19,7 +19,7 @@ export async function verifySamplePlan(api) {
   assert.deepEqual((await readPlanContents(bytes)).kinds.map(item => item.kindName), ["一次予算", "確定予算"]);
   assert.deepEqual((await readPlanContents(bytes)).periodTypes.map(item => item.periodName), ["期間差", "新規"]);
   assert.deepEqual(new Set(initiatives.map(item => item.industryId)), new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]));
-  assert.deepEqual(new Set(initiatives.map(item => item.periodTypeId)), new Set([1, 2]));
+  assert.deepEqual(new Set(initiatives.map(item => item.periodTypeId)), new Set([1, 2, null]));
   assert.deepEqual(industries.map(item => item.industryName), ["直営自動車", "自動車取扱", "不動産A", "不動産B", "納品代行", "雑作業", "業務費B", "一般管理費", "営業外"]);
   assert.equal(accounts.length, 59);
   assert.equal(aggregations.length, 16);

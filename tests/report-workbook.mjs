@@ -66,7 +66,24 @@ export async function verifyReportWorkbooks(api, sample) {
       assert.equal(list.views[0].xSplit, 4);
     }
     const expansion = wb.getWorksheet('展開表');
-    if (expansion) assert.ok(expansion.getCell('A9').isMerged, '元の展開名の本文結合を維持');
+    if (expansion) {
+      assert.ok(expansion.getCell('A9').isMerged, '元の展開名の本文結合を維持');
+      assert.deepEqual([1, 2, 3].map(col => expansion.getCell(3, col).value), ['展開名', '期間名', '施策名']);
+      assert.equal(expansion.views[0].xSplit, 3);
+      const grouped = api.buildKindExpansionTable(sample, selected, 'registered');
+      let row = 9;
+      for (const group of grouped.groups) {
+        for (const period of api.groupExpansionPeriods(group.initiatives, sample.periodTypes)) {
+          const start = row;
+          for (const item of period.initiatives) {
+            assert.equal(expansion.getCell(row, 2).value, period.name);
+            assert.equal(expansion.getCell(row++, 3).value, item.name);
+          }
+          if (row - start > 1) assert.equal(expansion.getCell(row - 1, 2).master.address, `B${start}`);
+        }
+        assert.equal(expansion.getCell(row++, 2).value, `${group.expansion.expansionName}計`);
+      }
+    }
   }
   for (const filter of [ { industries: [sample.industries[0].id], departments: null }, { industries: null, departments: [sample.departments[0].id] }, { industries: [], departments: null } ]) {
     const wb = await exported(api, sample, settings(tables, [1, 2], filter)); reconcile(wb);
