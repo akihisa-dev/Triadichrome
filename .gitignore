@@ -1,5 +1,8 @@
 node_modules/
-dist/
+# distの拡張機能と配布ZIPはGit管理し、一時作業ファイルだけ除外する
+/dist/*
+!/dist/extension/
+!/dist/Triadichrome-*.zip
 .npm-cache/
 coverage/
 playwright-report/

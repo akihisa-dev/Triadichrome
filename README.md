@@ -286,6 +286,6 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 - `Triadichrome-extension/manifest.template.json`：Manifestの正本。
 - `scripts/build.mjs`：配布物の生成と同期。`node-bundle.mjs`は通常テストと確認用データ生成で使う一時bundle・Wasm解決を共有します。
 - `tests/core-api.ts`と`tests/sample-api.ts`：通常テストと確認用データ生成の明示的な入口。
-- `dist/`：読み込み用の`extension/`、バージョン付き配布ZIP、ビルドと検証の一時領域。コミット対象外。
+- `dist/`：読み込み用の`extension/`とバージョン付き配布ZIPをGit管理し、リポジトリ取得後すぐに拡張機能を読み込めるようにします。ビルドと検証の一時ファイルだけを除外します。成果物が変わる変更では、buildで更新して同じコミットに含めます。
 
 開発・検証・コミットのルールは[AGENTS.md](AGENTS.md)を参照してください。
