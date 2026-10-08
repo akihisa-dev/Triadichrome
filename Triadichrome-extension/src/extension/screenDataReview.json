@@ -48,7 +48,7 @@
     "description": "484fac85fe3fb92597590a240c92921eaa7626f3e8bbc3abb2db8b949c666b11"
   },
   "aggregation-master": {
-    "implementation": "964cb68c891a0a5577be60cb8b9279edaf29ab78492eef1992e5dfb915d2371c",
+    "implementation": "d8fccf2f2307c339e01a88975d730655cb8496f57b4e2dc56a54f1249c0af117",
     "description": "8ee3f004e2b18a02d2b5c21a927de42bbf3b9f03056db048a078a3daee2eacdd"
   },
   "account-master": {

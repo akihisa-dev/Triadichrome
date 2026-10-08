@@ -131,8 +131,8 @@ test("全マスタの登録・編集欄と集計編集にも青を適用する",
   await navigate(app, "マスタ");
   await app.locator(".master-menu").getByRole("button", { name: /^集計マスタ/ }).click();
   await app.getByRole("button", { name: "売上集計を編集", exact: true }).click();
-  for (const input of await app.locator(".graph-editor input:not(:disabled)").all()) await expectEditingColor(input);
-  const target = app.locator(".graph-editor select").first();
+  for (const input of await app.locator(".aggregation-table input:not(:disabled)").all()) await expectEditingColor(input);
+  const target = app.locator(".aggregation-editor select").first();
   await target.focus();
   await expect(target).toHaveCSS("outline-color", blue);
   await expect(app.locator('.sidebar-item[aria-current="page"] svg')).toHaveCSS("color", blue);

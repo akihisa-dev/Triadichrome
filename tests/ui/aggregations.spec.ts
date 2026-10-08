@@ -36,7 +36,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   for (const [code, name, type] of [["100", "売上科目1", "sales"], ["200", "原価科目1", "cost"], ["500", "費用科目1", "expense"], ["900", "利益科目1", "profit"]] as const) await addAccount(app, code, name, type);
   await master(app, "集計マスタ");
   if (testInfo.project.name === "narrow") await app.getByRole("button", { name: "サイドバーを閉じる", exact: true }).first().click();
-  for (const name of ["売上集計", "費用集計", "営業利益", "経常利益"]) await expect(app.getByRole("region", { name, exact: true })).toBeAttached();
+  for (const name of ["売上集計", "費用集計", "営業利益", "経常利益"]) await expect(app.getByRole("button", { name: `${name}を編集`, exact: true })).toBeAttached();
   await app.getByRole("button", { name: "＋ 集計を追加", exact: true }).click();
   await app.getByRole("textbox", { name: "集計名", exact: true }).fill("売上小計");
   await app.getByRole("button", { name: "登録", exact: true }).click();
@@ -124,7 +124,7 @@ test("集計の保存失敗で入力と必須集計を保持する", async ({ ap
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");
   await expect(app.getByRole("textbox", { name: "集計名", exact: true })).toHaveValue("保存待ち");
-  await expect(app.locator(".aggregation-node")).toHaveCount(4);
+  await expect(app.locator(".aggregation-table tbody tr")).toHaveCount(4);
   await app.getByRole("button", { name: "キャンセル", exact: true }).click();
   await app.getByRole("button", { name: "営業利益を編集", exact: true }).click();
   await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).press("Enter");
@@ -137,83 +137,54 @@ test("集計の保存失敗で入力と必須集計を保持する", async ({ ap
   await expect(app.getByText("営業利益未設定", { exact: true })).toBeVisible();
 });
 
-test("関係図で所属と加減算を移動し、配下・科目順・再読込後の関係を保つ", async ({ app, page }, testInfo) => {
+test("表の所属先と加減算を変更し、配下・再読込後の関係を保つ", async ({ app }) => {
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await master(app, "勘定科目マスタ");
   await addAccount(app, "500", "費用科目1", "expense");
   await addAccount(app, "600", "費用科目2", "expense");
   await master(app, "集計マスタ");
-  await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
-  await app.getByRole("button", { name: /^未所属 / }).click();
-  const move = async (sourceName: string, parentName: string, sign: "加算" | "減算") => {
-    const source = app.getByRole("button", { name: `${sourceName}の所属を移動`, exact: true });
-    const target = app.getByRole("region", { name: parentName, exact: true });
-    if (testInfo.project.name === "desktop") {
-      await source.scrollIntoViewIfNeeded();
-      await settleMotion(app.locator("body"));
-      const to = (await target.boundingBox())!;
-      const from = (await source.boundingBox())!;
-      await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(to.x + 80, to.y + 20, { steps: 10 });
-      const destination = app.getByRole("button", { name: `${parentName}に${sign}として移動`, exact: true });
-      await expect(destination).toBeVisible();
-      const drop = (await destination.boundingBox())!;
-      await page.mouse.move(drop.x + drop.width / 2, drop.y + drop.height / 2, { steps: 8 });
-      await page.mouse.up();
-    } else {
-      // The same operation is available without a pointer across a scrolled diagram.
-      await source.press("Enter");
-      await app.getByRole("button", { name: `${parentName}に${sign}として移動`, exact: true }).press("Enter");
-    }
-    await expect(app.getByText("所属・加減算を保存しました。", { exact: true })).toBeVisible();
-    await expect(source).toBeEnabled();
+  const owner = (name: string) => app.getByRole("combobox", { name: `${name}の所属先`, exact: true });
+  const sign = (name: string) => app.getByRole("combobox", { name: `${name}の加減算`, exact: true });
+  const move = async (name: string, target: string) => {
+    await owner(name).selectOption({ label: target });
+    await expect(owner(name)).toBeEnabled();
+    await expect(owner(name).locator("option:checked")).toHaveText(target);
   };
-  await move("600 費用科目2", "費用集計", "減算");
-  await expect(app.getByRole("region", { name: "費用集計", exact: true }).getByText("600費用科目2", { exact: true })).toBeVisible();
-  await move("500 費用科目1", "費用集計", "加算");
-  await expect(app.getByRole("region", { name: "費用集計", exact: true }).locator(".graph-account-label")).toHaveText(["500費用科目1", "600費用科目2"]);
-  await move("費用集計", "営業利益", "減算");
-  await expect(app.getByRole("button", { name: "費用集計 → 営業利益：減算。押すと切り替え", exact: true })).toBeVisible();
-  await expect(app.getByRole("region", { name: "費用集計", exact: true }).locator(".graph-account-label")).toHaveCount(2);
-  await settleMotion(app.locator("body"));
-  const parentBounds = (await app.getByRole("region", { name: "営業利益", exact: true }).boundingBox())!;
-  const childBounds = (await app.getByRole("region", { name: "費用集計", exact: true }).boundingBox())!;
-  expect(childBounds.y).toBeGreaterThan(parentBounds.y + parentBounds.height);
-  await app.getByRole("button", { name: "営業利益の所属を移動", exact: true }).press("Enter");
-  for (const name of ["営業利益", "費用集計"]) await expect(app.getByRole("button", { name: `${name}に加算として移動`, exact: true })).toBeDisabled();
-  await app.getByRole("button", { name: "営業利益の所属を移動", exact: true }).press("Escape");
-  await app.getByRole("button", { name: "費用集計 → 営業利益：減算。押すと切り替え", exact: true }).click();
-  await expect(app.getByRole("button", { name: "費用集計 → 営業利益：加算。押すと切り替え", exact: true })).toBeVisible();
-  await move("600 費用科目2", "売上集計", "加算");
-  await expect(app.getByRole("region", { name: "費用集計", exact: true }).locator(".graph-account-label")).toHaveText(["500費用科目1"]);
-  await expect(app.getByRole("button", { name: "600 費用科目2の所属を移動", exact: true })).toHaveCount(1);
-  await app.getByRole("button", { name: "600 費用科目2の所属を移動", exact: true }).press("Enter");
-  await app.getByRole("button", { name: "ここへ移動して所属を外す", exact: true }).click();
-  await expect(app.getByRole("region", { name: "未所属", exact: true }).getByText("600費用科目2", { exact: true })).toBeVisible();
-  expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
-  await settleMotion(app.locator("body"));
-  await page.screenshot({ path: join(tmpdir(), `triadichrome-graph-${testInfo.project.name}.png`) });
-  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await move("500 費用科目1", "費用集計");
+  await move("600 費用科目2", "費用集計");
+  await sign("600 費用科目2").selectOption("-1");
+  await expect(sign("600 費用科目2")).toBeEnabled();
+  await move("費用集計", "営業利益");
+  await sign("費用集計").selectOption("-1");
+  await expect(sign("費用集計")).toBeEnabled();
+  for (const name of ["営業利益", "費用集計"]) await expect(owner("営業利益").getByRole("option", { name, exact: true })).toBeDisabled();
+  await expect(owner("500 費用科目1").locator("option:checked")).toHaveText("費用集計");
+  await expect(sign("600 費用科目2")).toHaveValue("-1");
+  await move("600 費用科目2", "売上集計");
+  await move("600 費用科目2", "未所属");
+  await expect(sign("600 費用科目2")).toBeDisabled();
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await master(app, "集計マスタ");
-  await expect(app.getByRole("button", { name: "費用集計 → 営業利益：加算。押すと切り替え", exact: true })).toBeAttached();
-  await expect(app.getByRole("region", { name: "費用集計", exact: true }).locator(".graph-account-label")).toHaveText(["500費用科目1"]);
+  await expect(owner("費用集計").locator("option:checked")).toHaveText("営業利益");
+  await expect(sign("費用集計")).toHaveValue("-1");
+  await expect(owner("500 費用科目1").locator("option:checked")).toHaveText("費用集計");
+  await expect(owner("600 費用科目2")).toHaveValue("");
 });
 
-test("所属移動の保存失敗では関係線と元の所属を保持する", async ({ app, page }) => {
+test("所属変更の保存失敗では表の元の所属を保持する", async ({ app, page }) => {
   await page.getByRole("combobox", { name: "ファイル操作", exact: true }).selectOption("save-failure");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await master(app, "集計マスタ");
-  await app.getByRole("button", { name: "売上集計の所属を移動", exact: true }).click();
-  await app.getByRole("button", { name: "営業利益に加算として移動", exact: true }).click();
+  const owner = app.getByRole("combobox", { name: "売上集計の所属先", exact: true });
+  await owner.selectOption({ label: "営業利益" });
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");
-  await expect(app.locator(".graph-edge-sign")).toHaveCount(0);
-  await expect(app.locator(".aggregation-node")).toHaveCount(4);
-  await expect(app.getByRole("button", { name: "営業利益に加算として移動", exact: true })).toBeEnabled();
+  await expect(owner).toHaveValue("");
+  await expect(owner).toBeEnabled();
+  await expect(app.getByRole("combobox", { name: "売上集計の加減算", exact: true })).toBeDisabled();
+  await expect(app.locator(".aggregation-table tbody tr")).toHaveCount(4);
 });

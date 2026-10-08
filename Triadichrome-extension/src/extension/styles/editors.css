@@ -62,7 +62,7 @@
 
 /* 編集位置だけにアクセントを使い、操作ボタンと図のフォーカスは分ける。 */
 input:focus, textarea:focus { caret-color: var(--accent); }
-.graph-editor input:focus, .graph-editor select:focus {
+.aggregation-table input:focus, .aggregation-table select:focus {
   border-color: var(--accent);
   outline: 2px solid var(--accent);
   outline-offset: -2px;

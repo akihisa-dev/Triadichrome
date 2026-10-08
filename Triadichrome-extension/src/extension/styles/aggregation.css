@@ -86,3 +86,23 @@
 @media (prefers-reduced-motion: reduce) {
   .aggregation-node, .graph-edge-sign, .aggregation-connections > path { transition-duration: 0ms; animation: app-appear var(--motion-fade); }
 }
+
+.aggregation-list { flex: 1; min-height: 0; min-width: 0; overflow: auto; border: 1px solid var(--line); border-radius: 4px; }
+.aggregation-table { width: 100%; min-width: 1000px; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+.aggregation-table th, .aggregation-table td { padding: 4px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+.aggregation-table thead th { position: sticky; top: 0; z-index: 1; background: var(--canvas); white-space: nowrap; height: 32px; vertical-align: middle; }
+.aggregation-table th[scope="row"] { font-weight: 400; min-width: 150px; }
+.aggregation-table td:first-child { white-space: nowrap; }
+.aggregation-table td:nth-child(3) { min-width: 140px; }
+.aggregation-table td:nth-child(4) { min-width: 260px; }
+.aggregation-table td:nth-child(5) { min-width: 150px; }
+.aggregation-table td:nth-child(6) { width: 64px; }
+.aggregation-table td:last-child { width: 64px; }
+.aggregation-table input, .aggregation-table select { width: 100%; min-width: 0; min-height: 32px; padding: 4px 6px; border: 1px solid var(--control-line); border-radius: 3px; background: var(--surface); color: var(--ink); font: inherit; }
+.aggregation-table .text-button { min-height: 32px; padding: 4px 0; text-align: left; }
+.aggregation-targets { display: flex; flex-wrap: wrap; gap: 4px 12px; line-height: 32px; }
+.aggregation-editor .form-actions { margin-top: 4px; }
+.aggregation-editor .aggregation-members { gap: 4px; }
+.aggregation-add-form { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 12px; }
+.aggregation-add-form .initiative-field { margin: 0; }
+.aggregation-add-form .form-actions { margin: 0; }
