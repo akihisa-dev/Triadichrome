@@ -30,7 +30,9 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
         assert.ok(screen.calculated.some(text => text.includes("手修正の0")), "確定予算の0による手修正も説明する");
       }
       const list = screenData.find(item => item.page === "initiative-list");
-      assert.ok(!list.tables.some(item => ["aggregation_groups", "aggregation_members", "expansions", "industries", "departments", "period_types"].includes(item.table)), "施策一覧に表示しない分類や使わない集計を構成テーブルへ混ぜない");
+      for (const name of ["expansions", "period_types"]) assert.ok(list.tables.some(item => item.table === name), "施策一覧の展開名と期間名の参照先を説明する");
+      for (const field of ["expansion_id", "period_type_id"]) assert.ok(list.tables.find(item => item.table === "initiatives").fields.includes(field), "施策の分類への所属を説明する");
+      assert.ok(!list.tables.some(item => ["aggregation_groups", "aggregation_members", "industries", "departments"].includes(item.table)), "施策一覧に表示しない分類や使わない集計を構成テーブルへ混ぜない");
       const kind = screenData.find(item => item.page === "kind-master");
       assert.deepEqual(kind.tables.map(item => item.table), ["plan"], "共通ヘッダーの年度だけを参照し、種別マスタの保存表を捏造しない");
       assert.ok(kind.calculated.some(text => text.includes("固定定義")));

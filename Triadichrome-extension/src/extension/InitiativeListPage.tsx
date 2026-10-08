@@ -2,6 +2,8 @@ import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, type ReactNode } from "react";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
+import type { Expansion } from "../core/domain/expansionMaster";
+import type { PeriodType } from "../core/domain/periodMaster";
 import type { KindId } from "../core/domain/kinds";
 
 import { formatYen } from "../core/domain/amounts";
@@ -11,14 +13,18 @@ type InitiativeListPageProps = {
   selection: ReactNode;
   selectedKind: KindId;
   initiatives: Initiative[];
+  expansions: Expansion[];
+  periodTypes: PeriodType[];
   fiscalYear: string;
   onAddInitiative: () => void;
   onOpenInitiative: (initiative: Initiative) => void;
   navigationBlocked: boolean;
 };
 
-export function InitiativeListPage({ selection, selectedKind, initiatives, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
+export function InitiativeListPage({ selection, selectedKind, initiatives, expansions, periodTypes, fiscalYear, onAddInitiative, onOpenInitiative, navigationBlocked }: InitiativeListPageProps) {
   const readOnly = useHistoryReadOnly();
+  const expansionNames = new Map(expansions.map(item => [item.id, item.expansionName]));
+  const periodNames = new Map(periodTypes.map(item => [item.id, item.periodName]));
   const source = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
   return <main className="initiative-list-page initiative-overview-page" aria-labelledby="initiative-list-title">
     <div className="initiative-list-heading">
@@ -30,14 +36,18 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, fisca
     <div className="initiative-list-container" role="region" aria-label="施策一覧の月別売上・費用・利益" tabIndex={0}>
       <table className="initiative-list-table" aria-label="施策一覧">
         <colgroup>
+          <col className="initiative-expansion-column" />
+          <col className="initiative-period-column" />
           <col className="initiative-name-column" />
           <col className="initiative-start-column" />
           <col span={36} />
         </colgroup>
         <thead>
           <tr>
-            <th rowSpan={2} scope="col" className="initiative-list-name">施策名</th>
-            <th rowSpan={2} scope="col" className="initiative-list-start">開始年月</th>
+            <th rowSpan={2} scope="col" className="initiative-list-fixed initiative-list-expansion">展開名</th>
+            <th rowSpan={2} scope="col" className="initiative-list-fixed initiative-list-period">期間名</th>
+            <th rowSpan={2} scope="col" className="initiative-list-fixed initiative-list-name">施策名</th>
+            <th rowSpan={2} scope="col" className="initiative-list-fixed initiative-list-start">開始年月</th>
             {initiativeMonths.map(month => <th key={month} colSpan={3} scope="colgroup">{month}月</th>)}
           </tr>
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
@@ -45,10 +55,12 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, fisca
           </Fragment>)}</tr>
         </thead>
         <tbody>{source.map(item => <tr key={item.id}>
-          <th scope="row" className="initiative-list-name" title={item.note || item.name}>
+          <td className="initiative-list-fixed initiative-list-expansion">{expansionNames.get(item.expansionId ?? -1) ?? ""}</td>
+          <td className="initiative-list-fixed initiative-list-period">{periodNames.get(item.periodTypeId ?? -1) ?? ""}</td>
+          <th scope="row" className="initiative-list-fixed initiative-list-name" title={item.note || item.name}>
             <button className="initiative-name-button" type="button" disabled={navigationBlocked} onClick={() => onOpenInitiative(item)}>{item.name}</button>
           </th>
-          <td className="initiative-list-start">{item.startYearMonths[selectedKind]}</td>
+          <td className="initiative-list-fixed initiative-list-start">{item.startYearMonths[selectedKind]}</td>
           {initiativeMonths.map(month => <Fragment key={month}>
             <td>{amountText(item.months[month]?.sales)}</td>
             <td>{amountText(item.months[month]?.expense)}</td>
