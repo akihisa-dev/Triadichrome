@@ -45,7 +45,8 @@ export async function verifySavedOperations(api) {
     rows: [{ id: "operation-row", accountId, amounts: { 4: "120.125", 5: "-0.001" }, overrides: { 2: { 4: "0" } } }] } });
   const initiative = contents().initiatives[0];
   await add({ type: "initiative.update", id: initiative.id, draft: { ...initiative, fiscalYear: "2026", note: "更新後", rows: initiative.rows.map(row => ({ ...row, amounts: { ...row.amounts, 4: "130.001" } })) } });
-  await add({ type: "detail", change: { target: contents().details.find(row => row.source === "initiative" && row.kindId === 2 && row.month === 5), field: "amount", value: "-2.001" } });
+  const confirmed = contents().initiatives[0];
+  await add({ type: "initiative.update", id: confirmed.id, draft: { ...confirmed, fiscalYear: "2026", rows: confirmed.rows.map(row => ({ ...row, overrides: { 2: { ...row.overrides[2], 5: "-2.001" } } })) } });
   await session.checkpoint(true, noPicker);
   const ids = session.getSnapshot().history.entries.map(item => item.id);
   await session.deleteHistory({ ids: [ids.at(-1)] }, noPicker);

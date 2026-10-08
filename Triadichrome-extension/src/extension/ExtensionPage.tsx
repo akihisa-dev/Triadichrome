@@ -1,6 +1,5 @@
 import type { PlanChange } from "../core/domain/kinds";
 import type { PlanCommand } from "./planCommands";
-import { type DetailChange } from "../core/domain/details";
 import { type PeriodTypeChange } from "../core/domain/periodMaster";
 import { type DepartmentChange } from "../core/domain/departmentMaster";
 import { type IndustryChange } from "../core/domain/industryMaster";
@@ -141,7 +140,6 @@ export function ExtensionPage() {
     return contents;
   };
   const changePlan = (change: PlanChange) => dispatch({ type: "settings", change });
-  const changeDetail = (change: DetailChange) => dispatch({ type: "detail", change });
   const changeMaster = (change: AccountChange) => dispatch({ type: "account", change });
   const changePeriodTypes = (change: PeriodTypeChange) => dispatch({ type: "period", change });
   const changeDepartments = (change: DepartmentChange) => dispatch({ type: "department", change });
@@ -160,7 +158,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={displayedContents.current!} onChangeDetail={changeDetail} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={displayedContents.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       dataHistory={dataHistory} historyError={historyError} historyBusy={isBusy || snapshot.busy} onPreviewHistory={previewHistory} onRestoreHistory={restoreHistory} onDeleteHistory={deleteHistory}
       canUndo={snapshot.canUndo} canRedo={snapshot.canRedo} operationRevision={snapshot.operationRevision} onTravelOperation={direction => session.travelOperation(direction, chooseDestination)}
       onRetryHistory={async () => { await prepareSave(); await session.checkpoint(true, chooseDestination); }}

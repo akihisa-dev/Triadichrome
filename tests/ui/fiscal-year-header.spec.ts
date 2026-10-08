@@ -8,7 +8,7 @@ test("基準年度は各画面でアプリ名の右隣に表示する", async ({
   const yearText = await year.textContent();
   expect(yearText).toMatch(/^\d+年度$/);
 
-  for (const name of ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"]) {
+  for (const name of ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "マスタ"]) {
     await app.locator(".sidebar-navigation").getByRole("button", { name, exact: true }).click();
     await settleMotion(app.locator(".home-page"));
     await expect(year).toHaveText(yearText!);
@@ -24,8 +24,6 @@ test("基準年度は各画面でアプリ名の右隣に表示する", async ({
   }
   await openInitiativeEntry(app);
   await expect(year).toHaveText(yearText!);
-  await app.locator(".sidebar-navigation").getByRole("button", { name: "明細", exact: true }).click();
-  await expect(app.getByRole("columnheader", { name: "年度", exact: true })).toBeVisible();
   await app.locator(".sidebar-navigation").getByRole("button", { name: "施策一覧", exact: true }).click();
   await app.getByRole("button", { name: "既存商品の販売拡大", exact: true }).click();
   await expect(app.getByRole("heading", { name: "施策入力", exact: true })).toBeVisible();

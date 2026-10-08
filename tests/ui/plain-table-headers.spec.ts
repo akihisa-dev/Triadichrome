@@ -6,7 +6,7 @@ test("施策一覧だけ4列を並べ替えられ、各表とマスタは全件�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   const menu = app.getByRole("complementary", { name: "メニュー" });
-  for (const screen of ["施策一覧", "総原価表", "展開表", "明細"]) {
+  for (const screen of ["施策一覧", "総原価表", "展開表"]) {
     await menu.getByRole("button", { name: screen, exact: true }).click();
     await expect(app.getByRole("heading", { name: screen, exact: true })).toBeVisible();
     await expect(app.locator("thead button")).toHaveCount(screen === "施策一覧" ? 4 : 0);

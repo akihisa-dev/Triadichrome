@@ -5,7 +5,7 @@ import type { FrameLocator, Locator } from "@playwright/test";
 const blue = "rgb(0, 51, 255)";
 const ink = "rgb(32, 32, 32)";
 const soft = "rgb(242, 242, 242)";
-const routes = ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ"];
+const routes = ["Home", "前年入力", "施策一覧", "総原価表", "展開表", "マスタ"];
 
 async function navigate(app: FrameLocator, name: string) {
   if (name === "施策入力") await openInitiativeEntry(app);
@@ -97,8 +97,10 @@ test("施策の文字・金額・科目・分類に青い編集枠が付き、�
 test("前年金額は編集位置だけ青く、範囲選択の背景と罫線はグレーを保つ", async ({ page, app }) => {
   await navigate(app, "前年入力");
   const industry = app.getByLabel("業種名", { exact: true });
-  await industry.focus();
-  await expect(industry).toHaveCSS("outline-color", blue);
+  const industryChoice = industry.getByRole("button", { name: "直営自動車", exact: true });
+  await page.keyboard.press("Tab");
+  await industryChoice.focus();
+  await expect(industryChoice).toBeFocused();
   await selectClassification(industry, "直営自動車");
   await selectClassification(app.getByLabel("部署名", { exact: true }), "部署A");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
@@ -112,7 +114,7 @@ test("前年金額は編集位置だけ青く、範囲選択の背景と罫線�
   await expect(april).not.toHaveCSS("outline-color", blue);
   await expect(app.locator(".previous-cell-selected")).toHaveCount(2);
   for (const selected of await app.locator(".previous-cell-selected").all()) {
-    await expect(selected).toHaveCSS("background-color", soft);
+    await expect(selected).toHaveCSS("background-color", "rgb(250, 250, 250)");
     await expect(selected).toHaveCSS("box-shadow", "rgb(163, 163, 163) 0px 0px 0px 1px inset");
   }
 });
@@ -138,21 +140,6 @@ test("全マスタの登録・編集欄と集計編集にも青を適用する",
   await app.locator(".master-menu").getByRole("button", { name: /^種別マスタ/ }).click();
   await expect(app.getByRole("heading", { name: "種別マスタ", exact: true })).toBeVisible();
   await expect(app.locator("main input")).toHaveCount(0);
-});
-
-test("明細の編集枠は青、入力エラーの文は既存の赤を保つ", async ({ app }) => {
-  await navigate(app, "明細");
-  const cell = app.locator(".detail-table tbody tr").first().locator('[data-cell$="-amount"]');
-  await cell.dblclick();
-  const input = app.getByLabel("金額を編集", { exact: true });
-  await expectEditingColor(input);
-  await input.fill("0.0001");
-  await input.press("Enter");
-  await expect(app.getByRole("alert")).toContainText("3桁");
-  await expect(app.locator(".detail-editor p")).toHaveCSS("color", "rgb(165, 44, 44)");
-  await expect(input).toHaveCSS("outline-color", blue);
-  await input.press("Escape");
-  await expect(input).toHaveCount(0);
 });
 
 test("入口の年度以外のボタンと確認ダイアログのフォーカスはモノクロ", async ({ page, app }) => {

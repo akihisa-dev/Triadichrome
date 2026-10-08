@@ -7,7 +7,6 @@ import { validatePeriodTypeChange, type PeriodTypeChange } from "../core/domain/
 import { validateInitiative } from "../core/domain/initiativeRules";
 import type { InitiativeEntryDraft } from "../core/domain/plan";
 import type { PlanChange } from "../core/domain/kinds";
-import type { DetailChange } from "../core/domain/details";
 import { changeAccountMaster } from "../core/storage/accountMaster";
 import { changeAggregationMaster } from "../core/storage/aggregationMaster";
 import { changeExpansionMaster } from "../core/storage/expansionMaster";
@@ -16,17 +15,16 @@ import { changeDepartmentMaster } from "../core/storage/departmentMaster";
 import { changePeriodMaster } from "../core/storage/periodMaster";
 import { registerInitiative, updateInitiative } from "../core/storage/initiatives";
 import { changePlanSettings } from "../core/storage/settings";
-import { changeDetail } from "../core/storage/details";
 import { writePlanChange, type OpenPlan } from "./planFile";
 export type PlanCommand =
   | { type: "account"; change: AccountChange } | { type: "aggregation"; change: AggregationChange }
   | { type: "expansion"; change: ExpansionChange } | { type: "industry"; change: IndustryChange }
   | { type: "department"; change: DepartmentChange } | { type: "period"; change: PeriodTypeChange }
-  | { type: "settings"; change: PlanChange } | { type: "detail"; change: DetailChange }
+  | { type: "settings"; change: PlanChange }
   | { type: "initiative.register"; draft: InitiativeEntryDraft }
   | { type: "initiative.update"; id: number; draft: InitiativeEntryDraft };
 export function isAutomatic(command: PlanCommand): boolean {
-  if (command.type === "initiative.update" || command.type === "detail") return true;
+  if (command.type === "initiative.update") return true;
   if (command.type === "initiative.register") return false;
   if (command.type === "settings") return command.change.type === "previous";
   return command.change.type === "update";
@@ -53,7 +51,6 @@ export async function applyPlanCommand(bytes: Uint8Array, command: PlanCommand, 
     case "department": return changeDepartmentMaster(bytes, command.change);
     case "period": return changePeriodMaster(bytes, command.change);
     case "settings": return changePlanSettings(bytes, command.change);
-    case "detail": return changeDetail(bytes, command.change);
     case "initiative.register": return registerInitiative(bytes, command.draft);
     case "initiative.update": return updateInitiative(bytes, command.id, fiscalYear, command.draft);
   }

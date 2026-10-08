@@ -24,11 +24,12 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
           for (const field of usage.fields) assert.ok(table.columns.some(column => column.name === field), `${usage.table}.${field}が実在する`);
         }
       }
-      for (const page of ["initiative-list", "initiative-detail", "details", "cost-table", "expansion-table"]) {
+      for (const page of ["initiative-list", "initiative-detail", "cost-table", "expansion-table"]) {
         const screen = screenData.find(item => item.page === page);
         for (const name of ["initiative_rows", "initiative_amounts", "amount_overrides", "accounts"]) assert.ok(screen.tables.some(item => item.table === name));
         assert.ok(screen.calculated.some(text => text.includes("手修正の0")), "確定予算の0による手修正も説明する");
       }
+      assert.ok(!screenData.some(screen => screen.page === "details"), "独立した明細画面を持たない");
       const list = screenData.find(item => item.page === "initiative-list");
       for (const name of ["expansions", "period_types"]) assert.ok(list.tables.some(item => item.table === name), "施策一覧の展開名と期間名の参照先を説明する");
       for (const field of ["expansion_id", "period_type_id"]) assert.ok(list.tables.find(item => item.table === "initiatives").fields.includes(field), "施策の分類への所属を説明する");

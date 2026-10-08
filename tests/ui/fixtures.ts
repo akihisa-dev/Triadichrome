@@ -16,7 +16,7 @@ export async function settleMotion(element: Locator) {
 }
 
 export const test = base.extend<{ app: FrameLocator }>({
-  app: async ({ page }, use) => {
+  app: async ({ page }, use, testInfo) => {
     const errors: string[] = [];
     page.on("pageerror", error => errors.push(error.message));
     page.on("console", message => {
@@ -30,7 +30,9 @@ export const test = base.extend<{ app: FrameLocator }>({
     await settleMotion(app.locator("body"));
     await use(app);
     await expect(app.locator("vite-error-overlay")).toHaveCount(0);
-    expect(errors, "画面の実行時エラー・警告").toEqual([]);
+    const expected = testInfo.annotations.filter(item => item.type === "expected-console").map(item => item.description);
+    for (const message of expected) expect(errors).toContain(message);
+    expect(errors.filter(message => !expected.includes(message)), "画面の実行時エラー・警告").toEqual([]);
   },
 });
 

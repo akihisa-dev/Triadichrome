@@ -107,7 +107,7 @@ test("サイドバーを開いたまま施策一覧とホームを往復でき�
   const initiativeEntry = navigation.getByRole("button", { name: "施策一覧", exact: true });
 
   await trigger.click();
-  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
+  await expect(navigation.getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "入出力", "マスタ", "履歴"]);
   await expect(home).toHaveAttribute("aria-current", "page");
   await expect(initiativeEntry).not.toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Tab");
@@ -365,6 +365,7 @@ test("選択・新規作成のキャンセル後も入口を操作できる", as
 });
 
 test("壊れたファイルを拒否し、正常なファイルで再開できる", async ({ page, app }, testInfo) => {
+  testInfo.annotations.push({ type: "expected-console", description: "sqlite3_step() rc= 26 SQLITE_NOTADB SQL = PRAGMA user_version" });
   await page.getByLabel("ファイル操作", { exact: true }).selectOption("invalid");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();

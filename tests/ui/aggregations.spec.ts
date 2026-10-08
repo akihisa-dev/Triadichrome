@@ -19,7 +19,7 @@ async function addAccount(app: FrameLocator, code: string, name: string, type: s
 async function configure(app: FrameLocator, group: string, members: [string, string][]) {
   await app.getByRole("button", { name: `${group}を編集`, exact: true }).click();
   for (const [index, [label, sign]] of members.entries()) {
-    await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).click();
+    await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).press("Enter");
     await app.getByRole("combobox", { name: `${index + 1}番目の集計対象`, exact: true }).selectOption({ label });
     await app.getByRole("combobox", { name: `${index + 1}番目の加減算`, exact: true }).selectOption(sign);
   }
@@ -31,7 +31,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   test.setTimeout(60_000);
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
-  await expect(app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "明細", "マスタ", "履歴"]);
+  await expect(app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button")).toHaveText(["Home", "前年入力", "施策一覧", "総原価表", "展開表", "入出力", "マスタ", "履歴"]);
   await master(app, "勘定科目マスタ");
   for (const [code, name, type] of [["100", "売上科目1", "sales"], ["200", "原価科目1", "cost"], ["500", "費用科目1", "expense"], ["900", "利益科目1", "profit"]] as const) await addAccount(app, code, name, type);
   await master(app, "集計マスタ");
@@ -47,7 +47,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   await configure(app, "営業利益", [["売上集計", "1"], ["費用集計", "-1"]]);
   await configure(app, "経常利益", [["営業利益", "1"], ["900 利益科目1", "1"]]);
   await app.getByRole("button", { name: "売上小計を編集", exact: true }).click();
-  await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).click();
+  await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).press("Enter");
   const options = app.getByRole("combobox", { name: "2番目の集計対象", exact: true });
   for (const label of ["100 売上科目1", "売上小計（所属済み）", "売上集計（所属済み）", "営業利益（所属済み）", "経常利益", "500 費用科目1（所属済み）"]) {
     await expect(options.getByRole("option", { name: label, exact: true })).toBeDisabled();
@@ -76,10 +76,10 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
   const table = app.getByRole("table", { name: "総原価表", exact: true });
   await expect(table.getByRole("rowheader")).toHaveText(["売上科目1", "売上小計", "原価科目1", "売上集計", "費用科目1", "費用集計", "営業利益", "利益科目1", "経常利益", "利益率"]);
   const ordinary = table.getByRole("row").filter({ has: app.getByRole("rowheader", { name: "経常利益", exact: true }) });
-  await expect(ordinary.getByRole("cell").nth(0)).toHaveText("0");
+  await expect(ordinary.getByRole("cell").nth(0)).toHaveText("");
   await expect(ordinary.getByRole("cell").nth(1)).toHaveText("91");
-  await expect(ordinary.getByRole("cell").nth(4)).toHaveText("0");
-  await expect(ordinary.getByRole("cell").nth(7)).toHaveText("0");
+  await expect(ordinary.getByRole("cell").nth(4)).toHaveText("");
+  await expect(ordinary.getByRole("cell").nth(7)).toHaveText("");
   await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
   await settleMotion(app.locator("body"));
   expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
@@ -127,7 +127,7 @@ test("集計の保存失敗で入力と必須集計を保持する", async ({ ap
   await expect(app.locator(".aggregation-node")).toHaveCount(4);
   await app.getByRole("button", { name: "キャンセル", exact: true }).click();
   await app.getByRole("button", { name: "営業利益を編集", exact: true }).click();
-  await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).click();
+  await app.getByRole("button", { name: "＋ 対象を追加", exact: true }).press("Enter");
   await app.getByRole("combobox", { name: "1番目の集計対象", exact: true }).selectOption({ label: "売上集計" });
   await expect(app.getByRole("alert")).toContainText("テスト用の保存失敗です。");
   await expect(app.getByRole("combobox", { name: "1番目の集計対象", exact: true })).toHaveValue("group:1");

@@ -1,6 +1,6 @@
 import {test, expect} from './fixtures';
 
-test('巨大計画でも全件を保持し、描画・並べ替え・編集を画面範囲に限定する', async ({page,app}, testInfo) => {
+test('巨大計画でも全件を保持し、描画・並べ替え・編集を画面範囲に限定する', async ({page,app}) => {
   test.setTimeout(120_000);
   await page.getByLabel('テストデータ').selectOption('large');
   await expect(page.getByRole('status')).toHaveText('操作できます');
@@ -27,50 +27,17 @@ test('巨大計画でも全件を保持し、描画・並べ替え・編集を�
   expect(await expansion.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
   await app.locator('.expansion-table-page .initiative-list-container').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   await expect(expansion.locator('.expansion-subtotal-name').last()).toContainText('計');
-  await navigate('明細');
-  const details=app.locator('.detail-table');
-  await expect(details).toHaveAttribute('aria-rowcount','289705');
-  await expect(details).toHaveAttribute('aria-busy','false');
-  expect(await details.locator('tr[data-detail-id]').count()).toBeLessThan(60);
-  await app.locator('.detail-scroll').evaluate(el=>{el.scrollTop=el.scrollHeight;});
-  await expect(details.locator('tr[aria-rowindex="289705"]')).toBeAttached();
-  const last=details.locator('tr[data-detail-id]').last();
-  expect(await last.locator('td').last().textContent()).toContain('12科目行');
-  await last.locator('td').last().press('Shift+Tab');
-  await expect(app.locator('td[data-cell]:focus')).toBeAttached();
-  await details.getByRole('button',{name:'金額',exact:true}).click();
-  await expect(details).toHaveAttribute('aria-busy','false');
-  expect(await details.locator('tr[data-detail-id]').count()).toBeLessThan(60);
-  await app.locator('.detail-scroll').evaluate(el=>{el.scrollTop=0;});
-  await expect(details.locator('tr[aria-rowindex="2"]')).toBeAttached();
-  const edge=details.locator('tr[data-detail-id]').last();
-  const edgeIndex=Number(await edge.getAttribute('aria-rowindex'));
-  const edgeCell=await edge.locator('td').last().getAttribute('tabindex') === '0' ? edge.locator('td').last() : edge.locator('td').nth(12);
-  await edgeCell.press('Tab');
-  await expect(details.locator(`tr[aria-rowindex="${edgeIndex+1}"] td:focus`)).toBeAttached();
-  await app.locator('.detail-scroll').evaluate(el=>{el.scrollTop=0;});
-  await expect(details.locator('tr[aria-rowindex="2"]')).toBeAttached();
-  const amount=details.locator('tr[data-detail-id]').first().locator('td').nth(12);
-  await amount.dblclick();
-  const input=app.getByRole('textbox',{name:'金額を編集',exact:true});
-  await expect(input).toBeVisible();
-  await input.fill('2.123');
-  await input.evaluate(el=>{
-    const win=el.ownerDocument.defaultView! as Window & {samplePerf?:{active:boolean;frames:number;maxGap:number;previous:number;start:number}};
-    win.samplePerf={active:true,frames:0,maxGap:0,previous:performance.now(),start:performance.now()};
-    const tick=(now:number)=>{const value=win.samplePerf!;if(!value.active)return;value.frames++;value.maxGap=Math.max(value.maxGap,now-value.previous);value.previous=now;win.requestAnimationFrame(tick);};
-    win.requestAnimationFrame(tick);
-  });
-  await input.press('Enter');
-  await expect(input).toHaveCount(0,{timeout:60_000});
-  const timing=await details.evaluate(el=>{
-    const value=(el.ownerDocument.defaultView! as Window & {samplePerf?:{active:boolean;frames:number;maxGap:number;start:number}}).samplePerf!;
-    value.active=false; return {frames:value.frames,maxGapMs:Math.round(value.maxGap),saveMs:Math.round(performance.now()-value.start)};
-  });
-  expect(timing.frames).toBeGreaterThan(10);
-  console.log('大規模保存中の画面応答',timing);
-  await testInfo.attach('save-performance',{body:JSON.stringify(timing),contentType:'application/json'});
-  await expect(app.getByRole('button',{name:'操作を取り消す',exact:true})).toBeEnabled();
+  await expect(nav.getByRole('button',{name:'明細',exact:true})).toHaveCount(0);
+  await navigate('施策一覧');
+  await app.locator('.initiative-list-container').evaluate(el=>{el.scrollTop=0;});
+  await list.getByRole('button',{name:'既存商品の販売拡大',exact:true}).click();
+  await app.getByRole('tab',{name:'一次予算',exact:true}).click();
+  const amount=app.getByRole('spinbutton',{name:'売上高 4月の金額',exact:true}).first();
+  await expect(amount).toHaveValue('120');
+  await amount.fill('130');
+  await amount.press('Tab');
+  await expect(app.getByRole('button',{name:'操作を取り消す',exact:true})).toBeEnabled({timeout:60_000});
   await app.getByRole('button',{name:'操作を取り消す',exact:true}).click();
-  await expect(app.getByRole('button',{name:'操作をやり直す',exact:true})).toBeEnabled({timeout:60_000});
+  await expect(amount).toHaveValue('120',{timeout:60_000});
+  await expect(app.getByRole('button',{name:'操作をやり直す',exact:true})).toBeEnabled();
 });

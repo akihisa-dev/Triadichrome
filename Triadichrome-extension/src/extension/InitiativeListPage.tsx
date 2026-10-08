@@ -95,7 +95,12 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, expan
 }
 
 function InitiativeTotalRow({ initiatives }: { initiatives: Initiative[] }) {
-  const totals = useMemo(() => initiativeTotals(initiatives), [initiatives]);
+  const result = useMemo(() => {
+    try { return { totals: initiativeTotals(initiatives), error: null }; }
+    catch (error) { return { totals: null, error: error instanceof Error ? error.message : "合計を表示できませんでした。" }; }
+  }, [initiatives]);
+  if (!result.totals) return <tr className="initiative-total-row"><th colSpan={40} scope="row" role="alert">{result.error} 施策を開いて金額を修正してください。</th></tr>;
+  const totals = result.totals;
   return <tr className="initiative-total-row">
     <th colSpan={4} scope="row" className="initiative-total-label">合計</th>
     {initiativeMonths.map(month => <Fragment key={month}>

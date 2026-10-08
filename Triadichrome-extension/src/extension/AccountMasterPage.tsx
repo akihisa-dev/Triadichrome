@@ -170,7 +170,7 @@ export function AccountMasterPage({ accounts, usedAccountIds, isSaving, onChange
                 <button className="text-button" type="submit" disabled={readOnly || autoSave.pending}>完了</button>
               </form> : <div className="form-actions">
                 <button ref={button => { if (button && focusAfterEdit.current === account.id) { button.focus({ preventScroll: true }); focusAfterEdit.current = null; } }} className="text-button" type="button" aria-label={`${account.accountName}を編集`} disabled={readOnly || isSaving || editing !== null} onClick={() => { controller.begin({ type: "update", id: account.id, accountCode: account.accountCode ?? "", accountName: account.accountName, accountType: account.accountType ?? "" }); dismissNotice(); }}>編集</button>
-                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={readOnly || isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・明細・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
+                <button className="text-button" type="button" aria-label={`${account.accountName}を削除`} disabled={readOnly || isSaving || inUse || editing !== null} title={inUse ? "この科目を使う施策・前年入力・集計があるため削除できません" : undefined} onClick={() => { setDeletingAccount(account); setDeleteDialogOpen(true); dismissNotice(); }}>削除</button>
               </div>}</td>
             </tr>
           </tbody>;

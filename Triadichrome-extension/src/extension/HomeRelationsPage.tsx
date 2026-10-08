@@ -18,7 +18,6 @@ const nodes = [
   { page: "previous-input", name: "前年入力", icon: "previous", x: 750, y: 60, master: false },
   { page: "initiative-list", name: "施策一覧", icon: "list", x: 520, y: 308, master: false },
   { page: "cost-table", name: "総原価表", icon: "cost", x: 850, y: 220, master: false },
-  { page: "details", name: "明細", icon: "details", x: 760, y: 480, master: false },
   { page: "expansion-table", name: "展開表", icon: "expansion", x: 950, y: 520, master: false },
 ] as const;
 
@@ -26,7 +25,6 @@ export type HomeDestination = typeof nodes[number]["page"];
 const edges: { from: HomeDestination; to: HomeDestination; label: string }[] = [
   { from: "previous-input", to: "cost-table", label: "前年の実額" },
   { from: "kind-master", to: "initiative-list", label: "種別ごとに入力" },
-  { from: "previous-input", to: "details", label: "前年の明細" },
   { from: "account-master", to: "aggregation-master", label: "集計する科目" },
   { from: "aggregation-master", to: "cost-table", label: "所属・加減算" },
   { from: "account-master", to: "initiative-list", label: "科目を選択" },
@@ -35,7 +33,6 @@ const edges: { from: HomeDestination; to: HomeDestination; label: string }[] = [
   { from: "period-master", to: "initiative-list", label: "期間名を選択" },
   { from: "expansion-master", to: "initiative-list", label: "展開名を選択" },
   { from: "initiative-list", to: "cost-table", label: "同じ内容を科目別に確認" },
-  { from: "initiative-list", to: "details", label: "同じ内容を月別・科目別に確認" },
   { from: "initiative-list", to: "expansion-table", label: "同じ内容を展開別に確認" },
   { from: "expansion-master", to: "expansion-table", label: "グループ分け" },
 ];

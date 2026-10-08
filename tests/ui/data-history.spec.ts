@@ -27,9 +27,6 @@ test("マスタの直下の日時履歴から全画面を閲覧でき、編集�
   await app.getByRole("tab", { name: "確定予算", exact: true }).click();
   await expect(firstAmount).toHaveValue("130");
   await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();
-  await menu.getByRole("button", { name: "明細", exact: true }).click();
-  await app.locator('.detail-table td[data-cell$="-amount"]').first().dblclick();
-  await expect(app.locator(".detail-editor")).toHaveCount(0);
   await menu.getByRole("button", { name: "前年入力", exact: true }).click();
   await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");

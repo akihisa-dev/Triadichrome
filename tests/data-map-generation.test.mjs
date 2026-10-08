@@ -45,7 +45,7 @@ test("画面・計算・接続・対応説明の変更と画面の追加漏れ�
     });
     assert.ok(staleScreens(review, wiring, screenData).includes("initiative-list"), "親画面から渡す表示元の変更も検出する");
     assert.ok(staleScreens(review, { ...implementations, "new-screen": "new-source" }, screenData).includes("new-screen"));
-    assert.ok(staleScreens(review, implementations, screenData.filter(screen => screen.page !== "details")).includes("details"));
+    assert.ok(staleScreens(review, implementations, screenData.filter(screen => screen.page !== "initiative-list")).includes("initiative-list"));
     const descriptions = screenData.map(screen => screen.page === "initiative-list" ? { ...screen, calculated: ["新しい説明"] } : screen);
     assert.ok(staleScreens(review, implementations, descriptions).includes("initiative-list"));
   });

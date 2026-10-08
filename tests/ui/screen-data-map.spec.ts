@@ -18,7 +18,7 @@ test("画面の保存項目と参照先をたどり、関連図の入口へ戻�
   await screens.getByRole("button", { name: "種別マスタ", exact: true }).click();
   await expect(map.locator(".screen-data-table")).toHaveCount(1);
   await expect(map).toContainText("アプリの固定定義");
-  for (const name of ["施策入力", "施策詳細", "前年入力", "展開表", "明細", "勘定科目マスタ", "集計マスタ", "展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ", "履歴"]) {
+  for (const name of ["施策入力", "施策詳細", "前年入力", "展開表", "勘定科目マスタ", "集計マスタ", "展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ", "履歴"]) {
     await screens.getByRole("button", { name, exact: true }).click();
     await expect(map.getByRole("heading", { name, exact: true })).toBeVisible();
   }
