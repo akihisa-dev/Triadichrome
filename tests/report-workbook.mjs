@@ -104,6 +104,32 @@ export async function verifyReportWorkbooks(api, sample) {
   assert.ok(Math.abs(evaluator(wb)(report, accountRow.getCell(3).address) - before - 1.234 - 7.654) < 1e-7);
   assert.match(accountRow.getCell(3).formula, /SUMIFS/);
   assert.match(report.getCell(accountRow.number, 2 + 3 * 5 + 1).formula, /SUMIF\([A-Z]+\d+:[A-Z]+\d+/, '四半期は連続範囲の条件集計');
+  // #20: footer caches and formulas include every initiative of the selected kind.
+  for (const kind of [1, 2]) for (const empty of [false, true]) {
+    const plan = { ...sample, initiatives: empty ? [] : sample.initiatives };
+    const options = settings(['initiative-list']); options.selections['initiative-list'] = [kind];
+    const output = await exported(api, plan, options);
+    const list = output.getWorksheet('施策一覧');
+    const totalRow = list.rowCount;
+    assert.equal(list.getCell(totalRow, 1).value, '合計');
+    assert.equal(list.getCell(totalRow, 4).master.address, `A${totalRow}`);
+    const totals = api.initiativeTotals(api.initiativesForKind(plan.initiatives, plan.accounts, kind));
+    const evaluate = evaluator(output);
+    for (const [mi, month] of api.initiativeMonths.entries()) for (const [i, metric] of ['sales', 'expense', 'profit'].entries()) {
+      const cell = list.getCell(totalRow, 5 + mi * 3 + i);
+      assert.equal(cell.result, totals[month][metric] === null ? '属性未設定' : totals[month][metric] / 1000);
+      assert.equal(evaluate(list, cell.address), cell.result);
+    }
+    if (!empty) {
+      const source = output.getWorksheet('計算元');
+      const row = source.getRows(2, source.rowCount - 1).find(r => r.getCell(8).value === 'sales' && r.getCell(23).value === kind);
+      const before = evaluate(list, `E${totalRow}`);
+      row.getCell(9).value += 0.125;
+      assert.ok(Math.abs(evaluator(output)(list, `E${totalRow}`) - before - 0.125) < 1e-7);
+      const copied = source.addRow(row.values); copied.getCell(9).value = -0.625;
+      assert.ok(Math.abs(evaluator(output)(list, `E${totalRow}`) - before + 0.5) < 1e-7);
+    }
+  }
   // #16: separated subtotals at and beyond Excel's argument limit; empty groups stay harmless.
   for (const count of [255, 256]) for (const selected of [[1], [2], [1, 2], [2, 1]]) {
     const large = { ...sample, previousAmounts: [],
