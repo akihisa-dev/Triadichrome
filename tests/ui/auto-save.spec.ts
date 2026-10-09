@@ -171,3 +171,38 @@ test("0化が保存されるまで科目変更・削除を待ち、保存後に�
   await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
   await expect(app.getByRole("spinbutton", { name: "未所属費用 4月の金額", exact: true })).toHaveCount(0);
 });
+
+
+test("合計エラーと保存失敗が重ならず入力を取り消せる", async ({ page, app }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("full");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+  await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
+  const amount = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
+  await amount.click();
+  await settleMotion(app.locator("body"));
+  const originalBounds = await amount.boundingBox();
+  await amount.fill("0.0001");
+  const cancel = app.getByRole("button", { name: "入力を取り消す", exact: true });
+  await expect(cancel).toBeVisible();
+  await expect(app.getByRole("alert")).toHaveCount(2);
+  await settleMotion(app.locator("#status-notice-layer"));
+  const boxes = await app.locator(".status-notice").evaluateAll(nodes => nodes.map(node => {
+    const box = node.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, left: box.left, right: box.right };
+  }));
+  expect(boxes).toHaveLength(2);
+  expect(boxes[0]!.bottom).toBeLessThanOrEqual(boxes[1]!.top);
+  expect(await amount.boundingBox()).toEqual(originalBounds);
+  await cancel.click();
+  await expect(amount).toHaveValue("0");
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await amount.fill("0.0001");
+  await expect(cancel).toBeVisible();
+  await app.getByRole("button", { name: "保存を再試行", exact: true }).click();
+  await expect(amount).toHaveValue("0.0001");
+  await amount.fill("1.125");
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await expect(amount).toHaveValue("1.125");
+});

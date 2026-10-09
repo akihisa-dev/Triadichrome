@@ -361,8 +361,15 @@
   z-index: 10;
   width: max-content;
   max-width: min(28rem, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: calc(100svh - 32px);
+  overflow-y: auto;
   pointer-events: none;
 }
+.status-notice-slot { flex-shrink: 0; }
+.status-notice-slot:not(:has(.status-notice)) { display: none; }
 .status-notice {
   display: flex;
   align-items: center;
