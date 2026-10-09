@@ -52,6 +52,7 @@ test("施策名・備考の下段のスロットで分類を選択し、登録�
     expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
   }
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption("1");
   await register.click();
   await expect(app.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();

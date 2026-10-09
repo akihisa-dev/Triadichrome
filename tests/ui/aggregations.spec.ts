@@ -65,6 +65,7 @@ test("集計の加減算・重複防止と総原価表を保存し、科目の�
     await app.getByRole("textbox", { name: "施策名", exact: true }).fill(name);
     for (const [index, label] of ["100 売上科目1", "200 原価科目1", "500 費用科目1", "900 利益科目1"].entries()) {
       if (index) await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+      await app.getByRole("combobox", { name: `${index + 1}行目の勘定科目`, exact: true }).focus();
       await app.getByRole("combobox", { name: `${index + 1}行目の勘定科目`, exact: true }).selectOption({ label });
       await app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("row").nth(index + 1).getByRole("spinbutton").nth(0).fill(amounts[index]!);
     }

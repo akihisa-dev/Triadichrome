@@ -80,7 +80,9 @@ test("施策の文字・金額・科目・分類に青い編集枠が付き、�
     await expect(select.locator(".is-selected")).toHaveCSS("color", ink);
   }
   const account = app.getByRole("combobox", { name: "1行目の勘定科目", exact: true });
+  await account.focus();
   const value = await account.locator("option").nth(1).getAttribute("value");
+  await account.focus();
   await account.selectOption(value!);
   await account.focus();
   await expect(account).toHaveCSS("outline-color", blue);

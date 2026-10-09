@@ -32,6 +32,7 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("保存する施策");
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption({ label: "100 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("100");
   await app.getByRole("button", { name: "登録", exact: true }).click();
@@ -136,6 +137,7 @@ test("既存の全月0行を空欄・未選択に戻すと再表示で旧科目�
     await input.press("F2");
     await input.fill("");
   }
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("");
   const back = app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true });
   await expect(back).toBeEnabled();

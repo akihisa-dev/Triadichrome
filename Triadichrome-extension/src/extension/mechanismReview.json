@@ -4,8 +4,8 @@
     "description": "3002960876625a3ecdcf2c319be6e330e74dbaa296f26aa4d7d848ef75db921b"
   },
   "inheritance": {
-    "implementation": "2283fb17bc5a1defcb04bcb8f9735cefb920cac817a17ef4d4cab90fe77de986",
-    "description": "c5c25f91f01bd8f37f379014ff748481b1c77ac051b0f97454628db15c52d5f4"
+    "implementation": "f9f9ea1f52912954e4068f8dca7d6544b5aa0a76a445d188bb4cfb0b0a9cf4f9",
+    "description": "36d91abed3a55ee3256c09a9c2a5ff3860669eef918792dcc1eeaca0989780bf"
   },
   "effects": {
     "implementation": "7258964ccd05f32ea7fd1c900cb6c9e905b53c11dd26616299f817a18997187a",
@@ -32,7 +32,7 @@
     "description": "9e347cf45a8a9548833fcb66fb1618228003b96525f7912a39e895a2fbeea228"
   },
   "open": {
-    "implementation": "acbef2ad4c70ca4eb456f2db05561fc59885e81e806b0f540385abe18963adea",
+    "implementation": "11889fc9b3979e6c3ad9f1329329a4a89c1ce2886abffd9389381dcb67434ec0",
     "description": "110105133113aa70786ca352790e37c14675b722955fb7ce32be17d08de5f406"
   },
   "save": {
@@ -52,11 +52,11 @@
     "description": "bec96fc1e99f71a0f9c372d32d7aafecba9df1b86b8783a999a5cd7f71acdba1"
   },
   "storage": {
-    "implementation": "bb7f7e8eb3b72be2995112823986d2114ec132cc245294b985a6975e08767d8d",
+    "implementation": "66c515738f99ee0214b41802815450466b234d81f79bfecd355028abbec0e6c6",
     "description": "6496163f9f2647bd6b70a3f4df7d6b625fc839d2fb1a0c5fc8fb3ebdb60db010"
   },
   "validation": {
-    "implementation": "37e06de1ccec2bc69c589e41eaffd20cc1b866f1c33eb84c270ee9d6e39e2102",
+    "implementation": "72bbc44ae3fdc36b1d41d4830107398b7d598ccd0435e8eebea2be2a71714364",
     "description": "d30f91599be3a59e8f94fc34082d38ad93889d98c23dd5c7a1afad365691e544"
   },
   "periods": {
@@ -76,7 +76,7 @@
     "description": "79acf16dfe223c339e5e58f7ead275d2649c954b709b876e5524bb7d2f49fe90"
   },
   "attribute-totals": {
-    "implementation": "a661706c1d8d5ed45cb1cc9297c5d7d45ba5aa71089b9d516c42c7d6195b520e",
+    "implementation": "30579a3061fb7cce9640a2927775fd1b27fb289a23448fbbf45b437939271a4b",
     "description": "ac9b92ccb4d7440f5b35f40288618a21574a9b1780a8dde0d5436caa4d486e68"
   }
 }

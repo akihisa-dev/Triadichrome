@@ -71,6 +71,7 @@ test("新規施策の展開名を必須にして保存し、失敗した変更�
   await selectClassification(expansion, "料改");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption({ label: "401 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.456");
   await app.getByRole("button", { name: "登録", exact: true }).click();

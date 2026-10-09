@@ -11,7 +11,7 @@ import type { InitiativeEntryDraft } from "../../Triadichrome-extension/src/core
 import "../../Triadichrome-extension/src/extension/ExtensionPage.css";
 const params = new URLSearchParams(location.search), count = Number(params.get("count") ?? 100), mode = params.get("mode") ?? "previous";
 const base = await readPlanContents(await createSamplePlan(2026));
-const accounts = Array.from({length: count}, (_, i) => ({...base.accounts[0]!, id: i + 1, accountCode: String(i+1).padStart(3, "0"), accountName: `科目${i}`}));
+const accounts = Array.from({length: count}, (_, i) => ({...base.accounts[0]!, id: i + 1, accountCode: String(i+1).padStart(3, "0"), accountName: params.has("sameNames") && i < 2 ? "同名科目" : `科目${i}`}));
 const contents = {...base, accounts, previousAmounts: [], initiatives: Array.from({length: count}, (_, i) => ({...base.initiatives[0]!, id: i + 1, name: `施策${i}`, expansionId: base.expansions[0]!.id}))};
 const measurements: { phase: string; actualMs: number; baseMs: number }[] = [];
 Object.assign(window, { gridMeasurements: measurements });

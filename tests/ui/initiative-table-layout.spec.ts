@@ -25,6 +25,7 @@ test("施策の月別入力を罫線付きのコンパクトな表で表示す�
   expect(layout.bottom).toBe("1px");
   expect(layout.height).toBeLessThan(50);
   expect(layout.aligned).toBe(true);
+  await table.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await table.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption({ label: "401 売上高" });
   const amount = table.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   await amount.fill("123.456");

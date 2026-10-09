@@ -24,6 +24,7 @@ async function prepareAccountRows(target: FrameLocator | Page) {
   await selectClassification(target.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   for (const [index, name] of ["100 売上高", "501 消耗品費", "600 給与手当"].entries()) {
     if (index > 0) await target.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+    await target.getByRole("combobox", { name: `${index + 1}行目の勘定科目` }).focus();
     await target.getByRole("combobox", { name: `${index + 1}行目の勘定科目` }).selectOption({ label: name });
   }
 }

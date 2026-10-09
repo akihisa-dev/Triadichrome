@@ -1,6 +1,7 @@
+import { AccountRowSelect } from "./AccountRowSelect";
 import { useGridInteraction } from "./useGridInteraction";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/domain/kinds";
 import { accountTypes } from "../core/domain/accountTypes";
 import { formatYen, isValidAmount } from "../core/domain/amounts";
@@ -20,6 +21,9 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
   const readOnly = useHistoryReadOnly();
   const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
+  const [activeAccount, setActiveAccount] = useState<string | null>(null);
+  const accountsById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts]);
+  const savedById = useMemo(() => new Map(savedRows?.map(row => [row.id, row])), [savedRows]);
   const totals = initiativeAttributeTotals(draft, kind, accounts);
   useEffect(() => { setSelection(null); setEditing(false); }, [draft.rows.length]);
   const valueAt = (cell: GridCell, source = draft) => {
@@ -57,17 +61,18 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
           </thead>
           <tbody>
             {draft.rows.map((row, index) => {
-              const accountName = accounts.find(account => account.id === row.accountId)?.accountName ?? `${index + 1}行目`;
+              const rowKey = row.id ?? `draft:${index}`;
+              const accountName = accountsById.get(row.accountId!)?.accountName ?? `${index + 1}行目`;
               return <tr key={row.id ?? index}>
                 <th scope="row">
                   <div className="initiative-account-cell">
-                  <select aria-label={`${index + 1}行目の勘定科目`} value={row.accountId ?? ""} disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row, savedRows?.find(saved => saved.id === row.id))}
-                    onChange={event => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
-                      ? { ...current, accountId: event.target.value ? Number(event.target.value) : null } : current) })}>
-                    <option value="">科目を選択</option>
-                    {accounts.map(account => <option key={account.id} value={account.id}>{account.accountCode ?? "未設定"} {account.accountName}</option>)}
-                  </select>
-                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row, savedRows?.find(saved => saved.id === row.id))} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
+                  <AccountRowSelect label={`${index + 1}行目の勘定科目`} value={row.accountId} accounts={accounts} account={accountsById.get(row.accountId!)}
+                    disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row, savedById.get(row.id))}
+                    active={activeAccount === rowKey} onActivate={() => setActiveAccount(rowKey)}
+                    onDeactivate={() => setActiveAccount(current => current === rowKey ? null : current)}
+                    onChange={accountId => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
+                      ? { ...current, accountId } : current) })} />
+                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row, savedById.get(row.id))} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
                   </div>
                 </th>
                 {months.map((month, column) => {

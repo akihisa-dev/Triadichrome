@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 // Explicit diagnostic: use PERF_MODE; no machine-dependent duration assertions.
 const mode = process.env.PERF_MODE ?? 'expansion';
 test('合成データの描画・入力・DOM・メモリの観測', async ({page}, info) => {
- test.skip(info.project.name !== 'desktop');
+ test.skip(info.project.name !== 'desktop' || !process.env.PERF_MODE);
  test.setTimeout(120000);
  for (const count of (mode === 'expansion' ? [100,500,1000] : [100,300,600])) {
   for (let trial=0; trial<3; trial++) {

@@ -44,6 +44,7 @@ test("入口を一覧へ統一し、空欄なら確認なしで戻り、登録�
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.456");
   await app.getByRole("button", { name: "登録", exact: true }).click();
@@ -64,6 +65,7 @@ for (const exit of ["戻るボタン", "サイドバー", "画面履歴"] as con
     await name.fill("未登録の施策");
     await note.fill("破棄しない備考");
     await selectClassification(app.getByRole("spinbutton", { name: "期間名", exact: true }), "新規");
+    await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
     await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
     await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("12.345");
     const leave = () => exit === "戻るボタン"
@@ -113,6 +115,7 @@ test("登録失敗では入力画面と内容を保ち、再試行成功で一�
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("alert")).toContainText("テスト用の保存失敗");

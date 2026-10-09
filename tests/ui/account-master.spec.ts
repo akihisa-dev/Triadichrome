@@ -18,6 +18,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   for (const index of [1, 2, 3]) {
     if (index > 1) await add.click();
     await expect(add).toBeDisabled();
+    await app.getByRole("combobox", { name: `${index}行目の勘定科目` }).focus();
     await app.getByRole("combobox", { name: `${index}行目の勘定科目` }).selectOption({ label: "501 消耗品費" });
     await expect(add).toBeEnabled();
   }
@@ -85,9 +86,11 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   const select = app.getByRole("combobox", { name: "1行目の勘定科目" });
   await expect(select).toHaveValue("");
   await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton").first()).toBeDisabled();
+  await select.focus();
   await select.selectOption({ label: "100 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.5");
   await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+  await app.getByRole("combobox", { name: "2行目の勘定科目" }).focus();
   await expect(app.getByRole("combobox", { name: "2行目の勘定科目" }).locator("option", { hasText: "売上高" })).toBeEnabled();
   await master.click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();

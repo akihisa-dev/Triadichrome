@@ -15,8 +15,10 @@ test.beforeEach(async ({ page, app }) => {
   await openInitiativeEntry(app);
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await settleMotion(app.locator("body"));
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("1");
   await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+  await app.getByRole("combobox", { name: "2行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "2行目の勘定科目", exact: true }).selectOption("1");
 });
 
@@ -173,6 +175,7 @@ test("科目属性別の合計は存在する属性だけを表示し、入力�
   await app.getByRole("button", { name: "一次予算を反映する", exact: true }).click();
   await expect(sales.getByRole("cell").first()).toHaveText("1,226");
   await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
+  await app.getByRole("combobox", { name: "3行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "3行目の勘定科目", exact: true }).selectOption({ label: "537 旅費" });
   await expect(footer.getByRole("row")).toHaveCount(2);
   await expect(footer.getByRole("row", { name: /^費用合計/ }).getByRole("cell").first()).toHaveText("0");

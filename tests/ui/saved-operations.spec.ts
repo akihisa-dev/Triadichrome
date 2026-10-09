@@ -39,6 +39,7 @@ test("保存済み施策の編集・登録を取り消してやり直し、新�
   await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
   await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption({ label: "401 売上高" });
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "取消確認施策", exact: true }).click();
@@ -158,6 +159,7 @@ for (const leaveDetail of [false, true]) test(`登録取消後の画面履歴が
   await app.getByRole("button", { name: "施策を追加", exact: true }).click();
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("画面履歴確認");
   for (const [label, name] of ([["展開名", "コスト"], ["業種名", "直営自動車"], ["部署名", "部署A"]] as const)) await selectClassification(app.getByRole("spinbutton", { name: label, exact: true }), name);
+  await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目", exact: true }).selectOption("1");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "画面履歴確認", exact: true }).click();

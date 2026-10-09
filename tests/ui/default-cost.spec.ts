@@ -20,6 +20,7 @@ test("新規計画に承認済みマスタを用意し、千円入力・比較�
   await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("1円精度の確認");
   const account = app.getByRole("combobox", { name: "1行目の勘定科目", exact: true });
+  await account.focus();
   await account.selectOption({ label: "401 売上高" });
   const amount = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
   await expect(amount).toHaveAttribute("step", "0.001");
