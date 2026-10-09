@@ -10,7 +10,7 @@ async function prepareAccountRows(target: FrameLocator | Page) {
   await target.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"], ["600", "給与手当"]] as const) {
     await target.getByRole("textbox", { name: "科目コード", exact: true }).fill(code);
-    await target.getByRole("textbox", { name: "科目名", exact: true }).fill(name);
+    await target.getByRole("textbox", { name: "名称", exact: true }).fill(name);
     await target.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
     await target.getByRole("button", { name: "登録", exact: true }).click();
     await expect(target.getByRole("button", { name: `${name}を編集`, exact: true })).toBeVisible();

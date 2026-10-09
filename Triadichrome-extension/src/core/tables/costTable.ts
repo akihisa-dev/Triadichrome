@@ -1,3 +1,4 @@
+import { orderedMasterRows } from "../domain/masterRows";
 import { addYen, amountToYen } from "../domain/amounts";
 import { type Account } from "../domain/accountMaster";
 import { validateAggregations, type Aggregation } from "../domain/aggregations";
@@ -22,9 +23,8 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
   previousAmounts: ReadonlyMap<number, MonthlyAmounts> = new Map()): CostRow[] {
   validateAggregations(groups, new Set(accounts.map(account => account.id)));
   const byAccount = new Map<number, CostRow>();
-  const positions = new Map(accounts.map((account, index) => [account.id, index]));
   for (const account of accounts) byAccount.set(account.id, {
-    kind: "account", id: account.id, name: account.accountName, required: false, configured: true,
+    kind: "account", id: account.id, name: account.displayName ?? account.accountName, required: false, configured: true,
     previous: { ...previousAmounts.get(account.id) }, changes: {}, budget: {}, comparison: {},
   });
   for (const initiative of initiatives) {
@@ -43,7 +43,6 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     sum(row.budget, row.changes);
   }
   const byGroup = new Map<number, CostRow>();
-  const groupPositions = new Map<number, number>();
   const parents = new Map<number, number>();
   const pending = new Map<number, number>();
   const definitions = new Map(groups.map(group => [group.id, group]));
@@ -58,18 +57,15 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     const group = queue[index]!;
     const row: CostRow = { kind: "group", id: group.id, name: group.displayName ?? group.name, required: group.required !== null,
       configured: group.members.length > 0, previous: {}, changes: {}, budget: {}, comparison: {} };
-    let position = -1;
     for (const member of group.members) {
       const child = (member.kind === "account" ? byAccount : byGroup).get(member.id)!;
       row.configured &&= child.configured;
       sum(row.previous, child.previous, member.sign);
       sum(row.changes, child.changes, member.sign);
       sum(row.budget, child.budget, member.sign);
-      position = Math.max(position, (member.kind === "account" ? positions : groupPositions).get(member.id)!);
     }
     if (!row.configured) { row.previous = {}; row.changes = {}; row.budget = {}; }
     byGroup.set(group.id, row);
-    groupPositions.set(group.id, position < 0 ? accounts.length - 1 : position);
     const parentId = parents.get(group.id);
     if (parentId !== undefined) {
       const remaining = pending.get(parentId)! - 1;
@@ -77,15 +73,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
       if (remaining === 0) queue.push(definitions.get(parentId)!);
     }
   }
-  // Stable sorting puts a child subtotal before its parent at the same position.
-  const subtotals = [...byGroup.values()].sort((a, b) => groupPositions.get(a.id)! - groupPositions.get(b.id)!);
-  const output: CostRow[] = [];
-  let cursor = 0;
-  for (const [index, account] of accounts.entries()) {
-    output.push(byAccount.get(account.id)!);
-    while (cursor < subtotals.length && groupPositions.get(subtotals[cursor]!.id) === index) output.push(subtotals[cursor++]!);
-  }
-  output.push(...subtotals.slice(cursor));
+  const output = orderedMasterRows(accounts,groups).map(row => (row.kind === "account" ? byAccount : byGroup).get(row.id)!);
   const sales = byGroup.get(groups.find(group => group.required === "sales")!.id)!;
   const ordinary = byGroup.get(groups.find(group => group.required === "ordinary")!.id)!;
   const ratio: CostRow = { kind: "ratio", id: ordinary.id, name: "利益率", required: true,

@@ -1,0 +1,36 @@
+import { test, expect, settleMotion } from './fixtures';
+
+test('科目・集計の共通順と表示名を総原価表へ反映する', async ({ app },testInfo) => {
+  test.setTimeout(60_000);
+  await app.getByRole('button',{name:'新規作成',exact:true}).click();
+  await app.getByRole('button',{name:'サイドバーを開く',exact:true}).click();
+  await app.getByRole('button',{name:'マスタ',exact:true}).click();
+  await expect(app.getByRole('button',{name:/^集計マスタ/})).toHaveCount(0);
+  await app.getByRole('button',{name:/^勘定科目マスタ/}).click();
+  if(testInfo.project.name === 'narrow') await app.getByRole('button',{name:'サイドバーを閉じる',exact:true}).first().click();
+  const list=app.getByRole('table',{name:'科目・集計一覧',exact:true});
+  await expect(list.getByRole('columnheader')).toHaveText(['順序','区分','科目コード','名称','表示名','科目属性','集計','加減','操作']);
+  await expect(list.locator('tbody tr')).toHaveCount(72);
+  await expect(list.locator('tbody tr').nth(2)).toContainText('社外売上小計');
+  const subtotal=list.getByRole('row').filter({has:app.getByRole('button',{name:'社外売上小計を編集',exact:true})});
+  await expect(subtotal.locator('td').nth(2)).toBeEmpty();
+  await expect(subtotal.locator('td').nth(4)).toBeEmpty();
+  await list.getByRole('button',{name:'社外売上小計を並べ替え',exact:true}).press('ArrowUp');
+  await expect(list.locator('tbody tr').nth(1)).toContainText('社外売上小計');
+  await list.getByRole('button',{name:'売上高を編集',exact:true}).click();
+  await list.getByRole('textbox',{name:'売上高の名称',exact:true}).fill('売上改名');
+  await expect(list.getByRole('textbox',{name:/の表示名$/})).toHaveValue('売上改名');
+  await expect(app.getByRole('button',{name:'完了',exact:true})).toBeEnabled();
+  await app.getByRole('button',{name:'完了',exact:true}).click();
+  await list.getByRole('button',{name:'売上改名を編集',exact:true}).click();
+  await list.getByRole('textbox',{name:'売上改名の表示名',exact:true}).fill('売上表示');
+  await expect(app.getByRole('button',{name:'完了',exact:true})).toBeEnabled();
+  await app.getByRole('button',{name:'完了',exact:true}).click();
+  if(testInfo.project.name === 'narrow') await app.getByRole('button',{name:'サイドバーを開く',exact:true}).click();
+  await app.getByRole('button',{name:'総原価表',exact:true}).click();
+  await settleMotion(app.locator('body'));
+  const names=app.locator('.cost-table th[scope="row"]');
+  await expect(names.nth(0)).toContainText('売上表示');
+  await expect(names.nth(1)).toContainText('小計');
+  await expect(names.nth(2)).toContainText('グループ売上高');
+});

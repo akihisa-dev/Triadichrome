@@ -10,7 +10,7 @@ async function openMaster(app: FrameLocator) {
 
 async function addAccount(app: FrameLocator, code: string, name: string, attribute: string) {
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code);
-  await app.getByRole("textbox", { name: "科目名", exact: true }).fill(name);
+  await app.getByRole("textbox", { name: "名称", exact: true }).fill(name);
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption(attribute);
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: `${name}を編集`, exact: true })).toBeVisible();

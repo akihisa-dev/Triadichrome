@@ -3,7 +3,7 @@ export const requiredAggregations = {
 } as const;
 export type RequiredAggregation = keyof typeof requiredAggregations;
 export type AggregationMember = { kind: "account" | "group"; id: number; sign: 1 | -1 };
-export type Aggregation = { id: number; name: string; required: RequiredAggregation | null; displayName?: string; members: AggregationMember[] };
+export type Aggregation = { id: number; name: string; required: RequiredAggregation | null; displayName?: string; masterOrder?: number; members: AggregationMember[] };
 
 export function initialAggregations(): Aggregation[] {
   return Object.entries(requiredAggregations).map(([required, name], index) => ({
@@ -23,8 +23,8 @@ export function validateAggregations(groups: Aggregation[], accountIds: Set<numb
   }
   for (const group of groups) {
     if (group.required !== null && !Object.hasOwn(requiredAggregations, group.required)) throw new Error("必須集計の種類が正しくありません。");
-    if (group.displayName !== undefined && !group.displayName.trim()) throw new Error("総原価表の表示名を入力してください。");
     if (!group.name.trim()) throw new Error("集計名を入力してください。");
+    if (group.displayName !== undefined && !group.displayName.trim()) throw new Error("表示名を入力してください。");
     if (names.has(group.name.trim())) throw new Error("同じ名前の集計が登録されています。");
     names.add(group.name.trim());
     for (const member of group.members) {

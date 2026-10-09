@@ -24,7 +24,7 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("100");
-  await app.getByRole("textbox", { name: "科目名", exact: true }).fill("売上高");
+  await app.getByRole("textbox", { name: "名称", exact: true }).fill("売上高");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("sales");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await openInitiativeEntry(app);
@@ -98,7 +98,7 @@ test("開く操作で書き込み許可を得て、最初の編集から自動�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("100");
-  await app.getByRole("textbox", { name: "科目名", exact: true }).fill("権限テスト");
+  await app.getByRole("textbox", { name: "名称", exact: true }).fill("権限テスト");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("sales");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "権限テストを編集", exact: true }).click();

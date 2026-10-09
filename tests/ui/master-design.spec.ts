@@ -6,7 +6,7 @@ test("全マスタを共通の表で表示し、登録欄と一覧のスクロ�
   await page.goto("/tests/ui/preview.html");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  const masters = ["勘定科目", "集計", "展開", "業種", "部署", "期間", "種別"];
+  const masters = ["勘定科目", "展開", "業種", "部署", "期間", "種別"];
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   for (const [index, name] of masters.entries()) {
     await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "マスタ", exact: true }).click();
@@ -30,13 +30,6 @@ test("全マスタを共通の表で表示し、登録欄と一覧のスクロ�
     expect((await header.boundingBox())!.y).toBeCloseTo(top, 0);
     await region.evaluate(node => { node.scrollTop = 0; node.scrollLeft = 0; });
     if ([0, 1, 4].includes(index)) await page.screenshot({ path: join(tmpdir(), `triadichrome-master-${index}-${testInfo.project.name}.png`) });
-    if (name === "集計") {
-      const details = table.locator("details").first();
-      await expect(details).not.toHaveAttribute("open", "");
-      await details.locator("summary").click();
-      await expect(details).toHaveAttribute("open", "");
-      await expect(details.locator(".aggregation-targets")).toBeVisible();
-      await details.locator("summary").click();
-    }
+
   }
 });

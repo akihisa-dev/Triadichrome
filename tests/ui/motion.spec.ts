@@ -167,7 +167,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
       for (const [code, name] of [["100", "売上高"], ["501", "消耗品費"]]) {
         await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(code!);
-        await app.getByRole("textbox", { name: "科目名", exact: true }).fill(name!);
+        await app.getByRole("textbox", { name: "名称", exact: true }).fill(name!);
         await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
         await app.getByRole("button", { name: "登録", exact: true }).click();
         await expect(app.getByRole("button", { name: `${name}を編集` })).toBeVisible();
@@ -179,15 +179,15 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const options = {
         observe: ".status-notice-layer .fade-swap",
         anchors: ".account-master-form, .account-master-table thead, .account-master-table tbody",
-        actions: [{ frame: 0, selector: ".account-master-table button[type=submit]" }],
+        actions: [],
       };
       const failure = await app.locator("body").evaluate(sampleChange, options);
       await expect(app.getByRole("alert")).toContainText("同じ科目コードが登録されています。");
       const positions = failure[0]!.positions;
-      expect(positions).toHaveLength(4);
+      expect(positions).toHaveLength(3);
       for (const sample of failure) expect(sample.positions).toEqual(positions);
       await code.fill("100");
-      await app.getByRole("textbox", { name: "売上高の科目名", exact: true }).fill("売上");
+      await app.getByRole("textbox", { name: "売上高の名称", exact: true }).fill("売上");
       const saved = await app.locator("body").evaluate(sampleChange, { ...options, actions: [] });
       await expect(app.getByRole("alert")).toHaveCount(0);
       await expect(app.getByRole("button", { name: "完了", exact: true })).toBeEnabled();

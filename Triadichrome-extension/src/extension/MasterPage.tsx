@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-type MasterPageProps = { onOpenAccounts: () => void; onOpenAggregations: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void; onOpenKinds: () => void };
+type MasterPageProps = { onOpenAccounts: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void; onOpenKinds: () => void };
 
 const icons: ReactNode[] = [
   <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 7h6M9 11h6M9 15h2m3 0h1M9 18h2m3 0h1" /></>,
@@ -12,10 +12,9 @@ const icons: ReactNode[] = [
   <><path d="M3 4h9l9 9-8 8-10-10V4Z" /><circle cx="7.5" cy="8.5" r="1" /></>,
 ];
 
-export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods, onOpenKinds }: MasterPageProps) {
+export function MasterPage({ onOpenAccounts, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods, onOpenKinds }: MasterPageProps) {
   const items = [
-    { name: "勘定科目マスタ", description: "科目コード・科目名・科目属性", open: onOpenAccounts },
-    { name: "集計マスタ", description: "科目・集計の所属と加減算", open: onOpenAggregations },
+    { name: "勘定科目マスタ", description: "科目・集計の名称、表示順、所属と加減", open: onOpenAccounts },
     { name: "展開マスタ", description: "展開コード・展開名", open: onOpenExpansions },
     { name: "業種マスタ", description: "業種コード・業種名", open: onOpenIndustries },
     { name: "部署マスタ", description: "部署名", open: onOpenDepartments },
@@ -27,7 +26,7 @@ export function MasterPage({ onOpenAccounts, onOpenAggregations, onOpenExpansion
     <div className="master-menu">
       {items.map((item, index) => <button key={item.name} className="master-menu-item" type="button" onClick={item.open}>
         <span className="master-menu-icon" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{icons[index]}</svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{icons[index === 0 ? 0 : index + 1]}</svg>
         </span>
         <span className="master-menu-label"><strong>{item.name}</strong><span>{item.description}</span></span>
         <svg className="master-menu-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>

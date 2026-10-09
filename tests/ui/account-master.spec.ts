@@ -6,7 +6,7 @@ test("一つの勘定科目を複数行で選択し、金額を行ごとに保�
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("501");
-  await app.getByRole("textbox", { name: "科目名", exact: true }).fill("消耗品費");
+  await app.getByRole("textbox", { name: "名称", exact: true }).fill("消耗品費");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: "消耗品費を編集" })).toBeVisible();
@@ -47,8 +47,8 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("heading", { name: "マスタ", exact: true })).toBeVisible();
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await expect(master).toHaveAttribute("aria-current", "page");
-  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("columnheader")).toHaveText(["順序", "科目コード", "科目名", "科目属性", "操作"]);
-  const name = app.getByRole("textbox", { name: "科目名", exact: true });
+  await expect(app.getByRole("table", { name: "科目・集計一覧" }).getByRole("columnheader")).toHaveText(["順序", "区分", "科目コード", "名称", "表示名", "科目属性", "集計", "加減", "操作"]);
+  const name = app.getByRole("textbox", { name: "名称", exact: true });
   const register = app.getByRole("button", { name: "登録", exact: true });
   await name.fill("   ");
   await expect(register).toBeDisabled();
@@ -97,9 +97,9 @@ test("マスタから科目を管理し、施策で選択して再読込でき�
   await expect(app.getByRole("button", { name: "売上高を削除" })).toBeDisabled();
   await app.getByRole("button", { name: "売上高を編集" }).click();
   const editedCode = app.getByRole("textbox", { name: "売上高の科目コード", exact: true });
-  const editedName = app.getByRole("textbox", { name: "売上高の科目名", exact: true });
+  const editedName = app.getByRole("textbox", { name: "売上高の名称", exact: true });
   await expect(editedCode).toBeFocused();
-  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("textbox")).toHaveCount(2);
+  await expect(app.getByRole("table", { name: "科目・集計一覧" }).getByRole("textbox")).toHaveCount(3);
   await settleMotion(app.locator("body"));
   await attachImage(testInfo, "勘定科目マスタ・表内編集", await page.locator("#app-preview").screenshot());
   await editedName.fill("");
@@ -161,14 +161,14 @@ test("空のマスタへの案内と、保存に失敗した登録内容を保�
   await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toBeDisabled();
   await expect(app.getByRole("table", { name: "月別計画金額", exact: true }).getByRole("spinbutton")).toHaveCount(12);
   await app.getByRole("button", { name: "勘定科目マスタを開く" }).click();
-  const name = app.getByRole("textbox", { name: "科目名", exact: true });
+  const name = app.getByRole("textbox", { name: "名称", exact: true });
   await app.getByRole("textbox", { name: "科目コード", exact: true }).fill("100");
   await name.fill("売上高");
   await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");
   await expect(name).toHaveValue("売上高");
-  await expect(app.getByRole("table", { name: "勘定科目一覧" }).getByRole("cell")).toHaveText("勘定科目はまだ登録されていません。");
+  await expect(app.getByRole("table", { name: "科目・集計一覧" }).locator("tbody tr")).toHaveCount(4);
   await expect(app.getByRole("button", { name: "登録", exact: true })).toBeEnabled();
 });
 
@@ -180,7 +180,7 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   await app.locator(".home-header").getByRole("button", { name: /サイドバー/ }).click();
   for (let index = 1; index <= 25; index++) {
     await app.getByRole("textbox", { name: "科目コード", exact: true }).fill(String(100 + index));
-    await app.getByRole("textbox", { name: "科目名", exact: true }).fill(`科目${index}`);
+    await app.getByRole("textbox", { name: "名称", exact: true }).fill(`科目${index}`);
     await app.getByRole("combobox", { name: "科目属性", exact: true }).selectOption("expense");
     await app.getByRole("button", { name: "登録", exact: true }).click();
     await expect(app.getByRole("button", { name: `科目${index}を削除`, exact: true })).toBeVisible();
@@ -219,5 +219,5 @@ test("一覧が長くても削除確認は画面中央に開き、キャンセ�
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
   expect(await app.locator(".account-master-list").evaluate(readPosition)).toEqual(before);
-  await expect(app.getByRole("table").getByRole("row")).toHaveCount(26);
+  await expect(app.getByRole("table").getByRole("row")).toHaveCount(30);
 });

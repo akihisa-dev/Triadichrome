@@ -28,7 +28,6 @@ import { MasterPage } from "./MasterPage";
 import { AccountMasterPage } from "./AccountMasterPage";
 import { type AccountChange } from "../core/domain/accountMaster";
 import { type AggregationChange } from "../core/domain/aggregationMaster";
-import { AggregationMasterPage } from "./AggregationMasterPage";
 import { CostTablePage } from "./CostTablePage";
 import { useSidebar } from "./useSidebar";
 import { SidebarIcon } from "./SidebarIcon";
@@ -40,7 +39,7 @@ import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../co
 import "./ScreenHistory.css";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-export type Page = "spreadsheet-io" | "data-history" | "previous-input" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "aggregation-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
+export type Page = "spreadsheet-io" | "data-history" | "previous-input" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
 
 type Screen = {
   page: Page;
@@ -349,7 +348,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               <SidebarIcon name="previous" /><span className="sidebar-label">前年入力</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="入出力" disabled={navigationBlocked} aria-current={page === "spreadsheet-io" ? "page" : undefined} onClick={() => setPage("spreadsheet-io")}><SidebarIcon name="io" /><span className="sidebar-label">入出力</span></button>
-            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "aggregation-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>
+            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <SidebarIcon name="master" />
               <span className="sidebar-label">マスタ</span>
             </button>
@@ -378,16 +377,15 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "initiative-entry": return <InitiativeEntryPage onBack={() => setPage("initiative-list")} draft={initiativeDraft} onDraftChange={setInitiativeDraft} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} isSaving={isSaving} onRegister={() => { void register(); }} />;
                 case "initiative-detail": return currentInitiative && <InitiativeDetailPage key={currentInitiative.id} initiative={currentInitiative} accounts={accounts} expansions={contents.expansions} departments={contents.departments} periodTypes={contents.periodTypes} industries={contents.industries} onOpenMaster={() => setPage("account-master")} onUpdate={update} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} backLabel={detailOrigin === "home" ? "Home" : detailOrigin === "expansion-table" ? "展開表" : "施策一覧"} onBack={() => setPage(detailOrigin)} />;
                 case "initiative-list": return <InitiativeListPage expansions={contents.expansions} periodTypes={contents.periodTypes} onAddInitiative={startInitiative} selectedKind={contents.kindSelections["initiative-list"][0]!} selection={kindSelection("initiative-list")} initiatives={initiatives} accounts={accounts} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} />;
-                case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("aggregation-master")} />;
+                case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("account-master")} />;
                 case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
-                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenAggregations={() => setPage("aggregation-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
+                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
                 case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;
                 case "department-master": return <DepartmentMasterPage departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;
                 case "industry-master": return <IndustryMasterPage industries={contents.industries} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeIndustries} onBack={() => setPage("master")} />;
                 case "expansion-master": return <ExpansionMasterPage usedExpansionIds={new Set([...initiatives.map(item => item.expansionId), initiativeDraft.expansionId].filter((id): id is number => id !== null))} expansions={contents.expansions} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeExpansions} onBack={() => setPage("master")} />;
-                case "aggregation-master": return <AggregationMasterPage accounts={accounts} groups={contents.aggregations} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeAggregations} onBack={() => setPage("master")} />;
-                case "account-master": return <AccountMasterPage accounts={accounts} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;
+                case "account-master": return <AccountMasterPage accounts={accounts} groups={contents.aggregations} onChangeAggregations={changeAggregations} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;
               }
             }}
           </FadeSwap>

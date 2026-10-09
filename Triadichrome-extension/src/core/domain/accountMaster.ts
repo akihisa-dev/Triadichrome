@@ -1,8 +1,10 @@
+import type { MasterRow } from "./masterRows";
 import { isAccountType, type AccountType } from "./accountTypes";
-export type Account = { id: number; accountCode: string | null; accountName: string; accountType: AccountType | null; inUse: boolean };
-export type AccountChange =
-  | { type: "add"; accountCode: string; accountName: string; accountType: AccountType | "" }
-  | { type: "update"; id: number; accountCode: string; accountName: string; accountType: AccountType | "" }
+export type Account = { id: number; accountCode: string | null; accountName: string; accountType: AccountType | null; displayName?: string; masterOrder?: number; inUse: boolean };
+export type AccountChange = AccountChangeOperation & { presentationOrder?: MasterRow[] };
+type AccountChangeOperation =
+  | { type: "add"; accountCode: string; accountName: string; accountType: AccountType | ""; displayName?: string }
+  | { type: "update"; id: number; accountCode: string; accountName: string; accountType: AccountType | ""; displayName?: string }
   | { type: "reorder"; ids: number[] }
   | { type: "delete"; id: number };
 
@@ -18,6 +20,7 @@ export function validateAccountChange(accounts: Account[], change: AccountChange
     if (account?.inUse) throw new Error("施策・明細・集計で使用している勘定科目は削除できません。");
     return;
   }
+  if (change.displayName !== undefined && !change.displayName.trim()) throw new Error("表示名を入力してください。");
   const code = change.accountCode.trim();
   const name = change.accountName.trim();
   if (!/^[0-9]{3}$/.test(code)) throw new Error("科目コードは半角数字3桁で入力してください。");

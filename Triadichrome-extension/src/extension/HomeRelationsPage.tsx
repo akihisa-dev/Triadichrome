@@ -9,7 +9,6 @@ export type { RelationView } from "./useRelationCamera";
 
 const nodes = [
   { page: "account-master", name: "勘定科目マスタ", icon: "master", x: 260, y: 150, master: true },
-  { page: "aggregation-master", name: "集計マスタ", icon: "master", x: 520, y: 70, master: true },
   { page: "industry-master", name: "業種マスタ", icon: "master", x: 180, y: 290, master: true },
   { page: "department-master", name: "部署マスタ", icon: "master", x: 260, y: 430, master: true },
   { page: "period-master", name: "期間マスタ", icon: "master", x: 390, y: 530, master: true },
@@ -25,8 +24,7 @@ export type HomeDestination = typeof nodes[number]["page"];
 const edges: { from: HomeDestination; to: HomeDestination; label: string }[] = [
   { from: "previous-input", to: "cost-table", label: "前年の実額" },
   { from: "kind-master", to: "initiative-list", label: "種別ごとに入力" },
-  { from: "account-master", to: "aggregation-master", label: "集計する科目" },
-  { from: "aggregation-master", to: "cost-table", label: "所属・加減算" },
+  { from: "account-master", to: "cost-table", label: "表示順・集計・加減" },
   { from: "account-master", to: "initiative-list", label: "科目を選択" },
   { from: "industry-master", to: "initiative-list", label: "業種名を選択" },
   { from: "department-master", to: "initiative-list", label: "部署名を選択" },

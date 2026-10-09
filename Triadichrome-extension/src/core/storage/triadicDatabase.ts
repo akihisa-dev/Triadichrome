@@ -1,3 +1,4 @@
+import { validateMasterPresentation } from "./masterPresentation";
 import { initializeSqlite, type Database } from "./sqliteRuntime";
 import { listAggregations } from "./aggregations";
 import { validateAggregations } from "../domain/aggregations";
@@ -77,6 +78,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
   if (selections.length !== 3 || new Set(selections.map(row => row[0])).size !== 3 || selections.some(([screen, first, second]) =>
     !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1,2].includes(Number(first))
     || (second !== null && (![1,2].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null))) invalid();
+  validateMasterPresentation(db);
   validateAggregations(listAggregations(db), new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id))));
   if (db.exec("SELECT id FROM period_types WHERE start_month_rule IS NOT NULL AND start_month_rule NOT IN ('new', 'period_gap')").length) invalid();
   validateInitiativeStartMonths(db);

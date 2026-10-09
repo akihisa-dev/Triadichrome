@@ -35,7 +35,7 @@ test("マスタの直下の日時履歴から全画面を閲覧でき、編集�
     await menu.getByRole("button", { name: title, exact: true }).click();
     await expect(app.getByRole("heading", { name: title, exact: true })).toBeVisible();
   }
-  for (const title of ["勘定科目マスタ", "集計マスタ", "展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ", "種別マスタ"]) {
+  for (const title of ["勘定科目マスタ", "展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ", "種別マスタ"]) {
     await menu.getByRole("button", { name: "マスタ", exact: true }).click();
     await app.getByRole("button", { name: new RegExp(`^${title}`) }).click();
     await expect(app.getByRole("heading", { name: title, exact: true })).toBeVisible();
