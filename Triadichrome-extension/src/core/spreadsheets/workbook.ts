@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { inspectPreviousWorkbook } from "./previousWorkbookBoundary";
 import { excelAmount } from "./excelAmounts";
 import { initiativeMonths } from "../domain/calendar";
 import { amountToYen, yenToAmount } from "../domain/amounts";
@@ -137,6 +138,7 @@ export async function serializeWorkbook(wb: ExcelJS.Workbook): Promise<Uint8Arra
 }
 export async function parsePreviousWorkbook(bytes: Uint8Array, contents: PlanContents): Promise<PreviousPatch[]> {
   if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
+  await inspectPreviousWorkbook(bytes);
   const wb = workbook();
   try { await wb.xlsx.load(bytes as unknown as ExcelJS.Buffer); } catch { throw new Error("Excelファイルを読み込めません。前年入力フォーマットを選択してください。"); }
   return readPreviousWorkbook(wb, contents);

@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import JSZip from "jszip";
 import { readFile } from "node:fs/promises";
 import { test, expect } from "./fixtures";
 
@@ -26,6 +27,12 @@ test("表と前年フォーマットの出力、確認・取消・一括取り�
   template.worksheets[0]!.getCell("D4").value = 0;
   template.worksheets[0]!.getCell("E4").value = -123.456;
   const file = { name: "前年入力.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await template.xlsx.writeBuffer()) };
+  const hostile = await JSZip.loadAsync(file.buffer);
+  const sheetXml = await hostile.file("xl/worksheets/sheet1.xml")!.async("string");
+  hostile.file("xl/worksheets/sheet1.xml", sheetXml.replace("</worksheet>", '<mergeCells count="1"><mergeCell ref="A100:IV355"/></mergeCells></worksheet>'));
+  await app.locator('input[type="file"]').setInputFiles({ ...file, buffer: await hostile.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }) });
+  await expect(app.getByRole("alert")).toContainText("不要な結合");
+  await expect(app.getByRole("button", { name: "前の画面に戻る", exact: true })).toBeEnabled();
   await app.locator('input[type="file"]').setInputFiles(file);
   const preview = app.getByRole("region", { name: "前年金額の変更確認" });
   await expect(preview.getByRole("heading")).toHaveText("変更内容 · 2件");

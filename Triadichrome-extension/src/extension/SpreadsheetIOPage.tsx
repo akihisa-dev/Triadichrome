@@ -1,3 +1,4 @@
+import { processPreviousWorkbook } from "./previousWorkbookProcessing";
 import { useCallback, useEffect, useRef, useState, type DragEvent } from "react";
 import type { PlanContents } from "../core/domain/plan";
 import type { KindSelections, PlanChange, PreviousPatch } from "../core/domain/kinds";
@@ -6,7 +7,7 @@ import { KindSelectionSlots } from "./KindSelectionSlots";
 import { ChoiceChips } from "./ChoiceChips";
 import { StatusNotice } from "./StatusNotice";
 import { useSavedOperationRevision } from "./SavedOperationRevision";
-import { createReportWorkbook, createPreviousWorkbook, parsePreviousWorkbook, serializeWorkbook, type ExportTable, type PreviousPair } from "../core/spreadsheets/workbook";
+import { createReportWorkbook, createPreviousWorkbook, serializeWorkbook, type ExportTable, type PreviousPair } from "../core/spreadsheets/workbook";
 import "./SpreadsheetIOPage.css";
 
 const tableNames: Record<ExportTable, string> = { "cost-table": "総原価表", "expansion-table": "展開表", "initiative-list": "施策一覧" };
@@ -50,7 +51,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
       const file = files[0]!;
       if (!/\.xlsx$/i.test(file.name)) throw new Error("前年入力フォーマットのExcelファイル（.xlsx）を選択してください。");
       if (file.size > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
-      const changes = await parsePreviousWorkbook(new Uint8Array(await file.arrayBuffer()), contents);
+      const changes = await processPreviousWorkbook(new Uint8Array(await file.arrayBuffer()), contents);
       if (!changes.length) { setNotice("変更する金額がありません。"); return; }
       previewPending.current = true; setPatches(changes); setRetry(false);
     });
