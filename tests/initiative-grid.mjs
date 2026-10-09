@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 
 export function verifyInitiativeGrid(api) {
+  const nonzero = { amounts: { 4: "100" } };
+  const zero = { amounts: { 4: "0" } };
+  assert.equal(api.canChangeAccountRow(zero, nonzero), false, "0化の保存待ち・保存中・失敗時は行操作を許可しない");
+  assert.equal(api.canChangeAccountRow(zero, zero), true, "0化の保存成功後は行操作ができる");
+  assert.equal(api.canChangeAccountRow({ ...zero, overrides: { 2: { 4: "1" } } }, zero), false, "手修正に非0が残る場合は禁止");
+  assert.equal(api.canChangeAccountRow(zero), true, "新規行は入力の0で判断する");
   const blank = api.createInitiativeDraft("2026");
   assert.equal(api.hasInitiativeDraftInput(blank), false);
   for (const change of [

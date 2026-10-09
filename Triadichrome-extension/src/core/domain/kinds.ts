@@ -17,7 +17,8 @@ export function resolvedAmount(source: AmountSource, kind: KindId, month: number
   const manual = source.overrides?.[2]?.[month];
   return manual === undefined ? source.amounts[month] || "0" : manual || "0";
 }
-export function canChangeAccountRow(source: AmountSource): boolean {
+export function canChangeAccountRow(source: AmountSource, saved?: AmountSource): boolean {
+  if (saved && !canChangeAccountRow(saved)) return false;
   try { return kindIds.every(kind => Array.from({ length: 12 }, (_, i) => i + 1).every(month => amountToYen(resolvedAmount(source, kind, month)) === 0)); }
   catch { return false; }
 }
