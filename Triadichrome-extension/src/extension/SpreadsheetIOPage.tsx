@@ -7,7 +7,8 @@ import { KindSelectionSlots } from "./KindSelectionSlots";
 import { ChoiceChips } from "./ChoiceChips";
 import { StatusNotice } from "./StatusNotice";
 import { useSavedOperationRevision } from "./SavedOperationRevision";
-import { createReportWorkbook, createPreviousWorkbook, serializeWorkbook, type ExportTable, type PreviousPair } from "../core/spreadsheets/workbook";
+import { createReportWorkbook, createPreviousWorkbookBytes, serializeWorkbook, type ExportTable, type PreviousPair } from "../core/spreadsheets/workbook";
+import { previousWorkbookLimits } from "../core/spreadsheets/previousWorkbookBoundary";
 import "./SpreadsheetIOPage.css";
 
 const tableNames: Record<ExportTable, string> = { "cost-table": "総原価表", "expansion-table": "展開表", "initiative-list": "施策一覧" };
@@ -50,7 +51,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
       if (files.length !== 1) throw new Error("取り込みファイルは一つずつ選択してください。");
       const file = files[0]!;
       if (!/\.xlsx$/i.test(file.name)) throw new Error("前年入力フォーマットのExcelファイル（.xlsx）を選択してください。");
-      if (file.size > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
+      if (file.size > previousWorkbookLimits.compressedBytes) throw new Error("取り込みファイルは20MB以下にしてください。");
       const changes = await processPreviousWorkbook(new Uint8Array(await file.arrayBuffer()), contents);
       if (!changes.length) { setNotice("変更する金額がありません。"); return; }
       previewPending.current = true; setPatches(changes); setRetry(false);
@@ -100,7 +101,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
       </div>
       <div className="form-actions">
         <button type="button" className="secondary-button" disabled={disabled || !pairs.length} onClick={() => { void operation(async () => {
-          download(await serializeWorkbook(createPreviousWorkbook(contents, pairs)), `${contents.fiscalYear}年度_前年入力.xlsx`); setNotice("前年入力フォーマットを出力しました。");
+          download(await createPreviousWorkbookBytes(contents, pairs), `${contents.fiscalYear}年度_前年入力.xlsx`); setNotice("前年入力フォーマットを出力しました。");
         }); }}>フォーマットを出力</button>
         <button type="button" className="primary-button" disabled={disabled || readOnly} onClick={() => input.current?.click()}>フォーマットを取り込む</button>
         <input ref={input} type="file" accept=".xlsx" hidden onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ""; void importFiles(files); }} />

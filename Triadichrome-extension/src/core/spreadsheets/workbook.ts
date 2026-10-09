@@ -1,6 +1,6 @@
 import ExcelJS from "exceljs";
 import { indexPreviousAmounts, previousAmountKey } from "../domain/previousAmounts";
-import { inspectPreviousWorkbook } from "./previousWorkbookBoundary";
+import { inspectPreviousWorkbook, previousWorkbookLimits } from "./previousWorkbookBoundary";
 import { excelAmount } from "./excelAmounts";
 import { initiativeMonths } from "../domain/calendar";
 import { amountToYen, yenToAmount } from "../domain/amounts";
@@ -44,8 +44,16 @@ function workbook() {
 }
 
 const metaName = "_triadichrome";
+const previousExportLimit = () => new Error("前年入力フォーマットが取り込み上限を超えるため、出力できません。業種・部署の組み合わせを減らし、別ファイルに分けて出力してください。");
 export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPair[]): ExcelJS.Workbook {
   if (!pairs.length || new Set(pairs.map(p => `${p.industryId}:${p.departmentId}`)).size !== pairs.length) throw new Error("業種・部署の組み合わせを選択してください。");
+  const accounts = contents.accounts.length;
+  if (!accounts) throw new Error("前年入力フォーマットには勘定科目が必要です。マスタで勘定科目を登録してください。");
+  // Each pair has 14 visible and 20 metadata cells per account, plus 40 styled header cells.
+  // ExcelJS also writes 22 metadata header cells and 16 archive entries outside the pair sheets.
+  if (22 + pairs.length * (34 * accounts + 40) > previousWorkbookLimits.cells ||
+    accounts + 3 > previousWorkbookLimits.rows || 2 + accounts * pairs.length > previousWorkbookLimits.rows ||
+    20 > previousWorkbookLimits.columns || pairs.length + 16 > previousWorkbookLimits.entries) throw previousExportLimit();
   const amountsByKey = indexPreviousAmounts(contents.previousAmounts);
   const wb = workbook();
   const meta = wb.addWorksheet(metaName, { state: "veryHidden" });
@@ -139,8 +147,13 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
 export async function serializeWorkbook(wb: ExcelJS.Workbook): Promise<Uint8Array> {
   return new Uint8Array(await wb.xlsx.writeBuffer());
 }
+export async function createPreviousWorkbookBytes(contents: PlanContents, pairs: PreviousPair[]): Promise<Uint8Array> {
+  const bytes = await serializeWorkbook(createPreviousWorkbook(contents, pairs));
+  // Verify actual XML and compressed/expanded sizes before offering the file for download.
+  try { await inspectPreviousWorkbook(bytes); } catch { throw previousExportLimit(); }
+  return bytes;
+}
 export async function parsePreviousWorkbook(bytes: Uint8Array, contents: PlanContents): Promise<PreviousPatch[]> {
-  if (bytes.byteLength > 20 * 1024 * 1024) throw new Error("取り込みファイルは20MB以下にしてください。");
   await inspectPreviousWorkbook(bytes);
   const wb = workbook();
   try { await wb.xlsx.load(bytes as unknown as ExcelJS.Buffer); } catch { throw new Error("Excelファイルを読み込めません。前年入力フォーマットを選択してください。"); }

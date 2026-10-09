@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import { verifyPreviousWorkbookBoundary, verifyPreviousWorkbookProcessing } from "./previous-workbook-boundary.mjs";
+import { verifyPreviousWorkbookExport } from "./previous-workbook-export.mjs";
 import { verifyReportWorkbooks } from "./report-workbook.mjs";
 
 async function roundtrip(wb) {
@@ -23,6 +24,7 @@ export async function verifySpreadsheetIO(api) {
   assert.equal(indexedPatches.length, 1); assert.equal(indexedPatches[0].before, "1.001"); assert.equal(indexedPatches[0].after, "0");
   await verifyPreviousWorkbookBoundary(api, plan);
   await verifyPreviousWorkbookProcessing();
+  await verifyPreviousWorkbookExport(api);
   await verifyReportWorkbooks(api, plan);
   const pairs = [{ industryId: plan.industries[0].id, departmentId: plan.departments[0].id }, { industryId: plan.industries[1].id, departmentId: plan.departments[1].id }];
   // #15: real XLSX round trips must preserve every yen, including Excel's 15-digit boundary.

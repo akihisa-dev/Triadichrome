@@ -53,6 +53,7 @@ export * from "../Triadichrome-extension/src/extension/HomeRelationsPage";
 export * from "../Triadichrome-extension/src/extension/PlanSession";
 export * from "./ui/sample-plan";
 export * from "./ui/empty-plan";
+export * from "./ui/previous-export-plan";
 export * from "../Triadichrome-extension/src/extension/triadicFile";
 export * from "../Triadichrome-extension/src/extension/planFile";
 export * from "../Triadichrome-extension/src/extension/recentFile";

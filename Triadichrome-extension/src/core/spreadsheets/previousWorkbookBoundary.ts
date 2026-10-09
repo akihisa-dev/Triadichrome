@@ -1,7 +1,7 @@
 import JSZip from "jszip";
 import { SaxesParser } from "saxes";
 const MiB = 1024 * 1024;
-export const previousWorkbookLimits = { entries: 2048, entryBytes: 8 * MiB, expandedBytes: 32 * MiB, rows: 100000, columns: 20, cells: 200000, tags: 1000000 };
+export const previousWorkbookLimits = { compressedBytes: 20 * MiB, entries: 2048, entryBytes: 8 * MiB, expandedBytes: 32 * MiB, rows: 100000, columns: 20, cells: 200000, tags: 1000000 };
 const refuse = () => { throw new Error("前年入力フォーマットの処理量が上限を超えているか、不要な結合・構成が含まれています。フォーマットを出力し直してください。"); };
 /** Bound the central directory before JSZip creates one object per archive entry. */
 function inspectDirectory(bytes: Uint8Array): void {
@@ -60,6 +60,7 @@ function coordinate(value: string): void {
   if (column > previousWorkbookLimits.columns || Number(match![2]) > previousWorkbookLimits.rows) refuse();
 }
 export async function inspectPreviousWorkbook(bytes: Uint8Array): Promise<void> {
+  if (bytes.byteLength > previousWorkbookLimits.compressedBytes) throw new Error("取り込みファイルは20MB以下にしてください。");
   inspectDirectory(bytes);
   const archive = await JSZip.loadAsync(bytes);
   const budget = { bytes: 0 }; let cells = 0, tags = 0;

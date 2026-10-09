@@ -118,3 +118,39 @@ test("前年取り込みの保存失敗で確認内容を保持する", async ({
   await expect(app.getByRole("button", { name: "操作を取り消す", exact: true })).toBeDisabled();
   await app.getByRole("region", { name: "前年金額の変更確認" }).getByRole("button", { name: "キャンセル", exact: true }).click();
 });
+
+test("前年フォーマットの上限超過で出力せず、選択を減らして読み戻せる", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html?data=previous-export-limit");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "入出力", exact: true }).click();
+  const choices = app.getByRole("group", { name: "フォーマットに含める業種・部署" }).getByRole("checkbox");
+  await expect(choices).toHaveCount(18);
+  for (const choice of await choices.all()) await choice.check();
+  const downloads: string[] = []; page.on("download", file => downloads.push(file.suggestedFilename()));
+  await app.getByRole("button", { name: "フォーマットを出力", exact: true }).click();
+  await expect(app.getByRole("alert")).toContainText("組み合わせを減らし、別ファイルに分けて");
+  expect(downloads).toEqual([]);
+  await expect(choices.first()).toBeChecked();
+  await expect(app.getByRole("button", { name: "前の画面に戻る", exact: true })).toBeEnabled();
+  await app.getByRole("button", { name: "通知を閉じる", exact: true }).click();
+  // A small split keeps the browser round trip quick; the 17-pair boundary is tested in core.
+  for (const choice of (await choices.all()).slice(1)) await choice.uncheck();
+  const promise = page.waitForEvent("download");
+  await app.getByRole("button", { name: "フォーマットを出力", exact: true }).click();
+  const file = await promise;
+  const bytes = await readFile((await file.path())!);
+  await expect(app.getByText("前年入力フォーマットを出力しました。", { exact: true })).toBeVisible();
+  await app.locator('input[type="file"]').setInputFiles({ name: "前年.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: bytes });
+  await expect(app.getByText("変更する金額がありません。", { exact: true })).toBeVisible();
+  const wb = new ExcelJS.Workbook(); await wb.xlsx.load(bytes as unknown as ExcelJS.Buffer);
+  expect(wb.worksheets[0]!.getCell("C4").value).toBe(123.456);
+  wb.worksheets[0]!.getCell("C4").value = 0;
+  await app.locator('input[type="file"]').setInputFiles({ name: "前年.xlsx", mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer: Buffer.from(await wb.xlsx.writeBuffer()) });
+  const preview = app.getByRole("region", { name: "前年金額の変更確認" });
+  await expect(preview.getByRole("heading")).toHaveText("変更内容 · 1件");
+  await expect(preview.getByText("123.456", { exact: true })).toBeVisible();
+  await preview.getByRole("button", { name: "確認した内容を取り込む", exact: true }).click();
+  await expect(app.getByText("前年金額を取り込みました。", { exact: true })).toBeVisible();
+});
