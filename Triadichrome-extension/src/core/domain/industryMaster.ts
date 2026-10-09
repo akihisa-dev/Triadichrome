@@ -1,4 +1,4 @@
-export type Industry = { id: number; industryCode: string; industryName: string };
+export type Industry = { id: number; identity?: string; industryCode: string; industryName: string };
 export type IndustryChange =
   | { type: "add"; industryCode: string; industryName: string }
   | { type: "update"; id: number; industryCode: string; industryName: string }

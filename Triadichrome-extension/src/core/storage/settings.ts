@@ -1,3 +1,4 @@
+import { classificationIdentity } from "./classificationIdentity";
 import type { Database } from "./sqliteRuntime";
 import { amountToYen, yenToAmount } from "../domain/amounts";
 import { editDatabase } from "./transaction";
@@ -37,6 +38,8 @@ export async function changePlanSettings(bytes: Uint8Array, change: PlanChange):
       if (seen.has(key) || !Number.isInteger(patch.month) || patch.month < 1 || patch.month > 12) throw new Error("取り込み対象が重複しているか、月が正しくありません。");
       seen.add(key);
       if (!db.exec("SELECT id FROM industries WHERE id = ?", [patch.industryId]).length || !db.exec("SELECT id FROM departments WHERE id = ?", [patch.departmentId]).length || !db.exec("SELECT id FROM accounts WHERE id = ?", [patch.accountId]).length) throw new Error("取り込み対象のマスタが見つかりません。");
+      if (classificationIdentity(db, "industries", patch.industryId) !== patch.industryIdentity ||
+        classificationIdentity(db, "departments", patch.departmentId) !== patch.departmentIdentity) throw new Error("確認後に業種・部署が作り直されています。フォーマットを出力し直してください。");
       const current = db.exec("SELECT amount_yen FROM previous_amounts WHERE industry_id = ? AND department_id = ? AND account_id = ? AND month = ?", [patch.industryId, patch.departmentId, patch.accountId, patch.month])[0]?.values[0]?.[0] ?? 0;
       if (Number(current) !== amountToYen(patch.before)) throw new Error("確認後に前年金額が変更されています。ファイルを選び直してください。");
       const amount = amountToYen(patch.after);

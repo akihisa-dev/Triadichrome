@@ -80,5 +80,43 @@ export async function verifySpreadsheetIO(api) {
   first.getCell("A4").value = "changed"; assert.throws(() => api.readPreviousWorkbook(template, plan), /科目/);
   assert.throws(() => api.createPreviousWorkbook(plan, [pairs[0], pairs[0]]));
   await assert.rejects(api.parsePreviousWorkbook(new Uint8Array([1, 2, 3]), plan), /読み込めません/);
+  // #22: even same-ID/same-name recreation is distinct; rename remains the same classification.
+  const fresh = await api.createTriadicDatabase(2026);
+  const initial = await api.readPlanContents(fresh);
+  const pair = { industryId: 9, departmentId: 2 };
+  const oldBook = await roundtrip(api.createPreviousWorkbook(initial, [pair]));
+  oldBook.worksheets[0].getCell('C4').value = 1.125;
+  const oldBytes = await api.serializeWorkbook(oldBook);
+  const confirmed = await api.parsePreviousWorkbook(oldBytes, initial);
+  for (const kind of ['department', 'industry']) for (const sameName of [false, true]) {
+    const original = kind === 'department' ? initial.departments.find(x => x.id === 2) : initial.industries.find(x => x.id === 9);
+    const change = kind === 'department' ? api.changeDepartmentMaster : api.changeIndustryMaster;
+    let replaced = await change(fresh, { type: 'delete', id: original.id });
+    replaced = await change(replaced, kind === 'department' ? { type: 'add', departmentName: sameName ? original.departmentName : '新部署' } :
+      { type: 'add', industryCode: original.industryCode, industryName: sameName ? original.industryName : '新業種' });
+    const current = await api.readPlanContents(replaced);
+    const recreated = (kind === 'department' ? current.departments : current.industries).find(x => x.id === original.id);
+    assert.ok(recreated, 'SQLiteによる番号再利用を実データで再現');
+    assert.notEqual(recreated.identity, original.identity);
+    await assert.rejects(api.parsePreviousWorkbook(oldBytes, current), /作り直/);
+    await assert.rejects(api.changePlanSettings(replaced, { type: 'previous-import', patches: confirmed }), /作り直/);
+    assert.deepEqual(await api.readPlanContents(replaced), current, '拒否時に金額を更新しない');
+    const newBook = api.createPreviousWorkbook(current, [pair]); newBook.worksheets[0].getCell('C4').value = -0.001;
+    const accepted = await api.parsePreviousWorkbook(await api.serializeWorkbook(newBook), current);
+    assert.equal(accepted[0].after, '-0.001');
+    await api.changePlanSettings(replaced, { type: 'previous-import', patches: accepted });
+    const snapshot = await api.createBusinessSnapshot(replaced);
+    const renamedNew = await change(replaced, kind === 'department' ? { type: 'update', id: original.id, departmentName: '改名後' } :
+      { type: 'update', id: original.id, industryCode: original.industryCode, industryName: '改名後' });
+    const restored = await api.applyOperationSnapshot(renamedNew, snapshot);
+    assert.deepEqual(await api.readPlanContents(restored), current, '取消で作成識別子も元の分類へ戻る');
+  }
+  let renamed = await api.changeDepartmentMaster(fresh, { type: 'update', id: 2, departmentName: '改名部署' });
+  renamed = await api.changeIndustryMaster(renamed, { type: 'update', id: 9, industryCode: '99', industryName: '改名業種' });
+  const renamedPlan = await api.readPlanContents(renamed);
+  assert.deepEqual(await api.parsePreviousWorkbook(oldBytes, renamedPlan), confirmed, '改名は同じ分類として取り込める');
+  await api.changePlanSettings(renamed, { type: 'previous-import', patches: confirmed });
+  oldBook.getWorksheet('_triadichrome').getCell('A1').value = 'Triadichrome previous v1';
+  await assert.rejects(api.parsePreviousWorkbook(await api.serializeWorkbook(oldBook), initial), /出力し直し/);
   console.log("spreadsheet io ok: all selections, formulas, styles, precision, import and atomic failure");
 }

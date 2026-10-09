@@ -8,7 +8,7 @@ const tableLabels: Partial<Record<TableName, string>> = {
   plan: "計画", initiatives: "施策", initiative_rows: "施策の科目行", initiative_amounts: "一次予算の月別増減",
   amount_overrides: "確定予算の手修正", previous_amounts: "前年の実額", accounts: "勘定科目", aggregation_groups: "集計",
   aggregation_members: "集計の所属・加減算", expansions: "展開", industries: "業種", departments: "部署", period_types: "期間",
-  kind_selections: "画面ごとの種別選択", data_history: "時点履歴", data_history_state: "履歴の記録状態", triadic_metadata: "ファイル形式",
+  kind_selections: "画面ごとの種別選択", data_history: "時点履歴", data_history_state: "履歴の記録状態", triadic_metadata: "形式・分類の識別情報",
 };
 // Labels explain meaning; table names, columns and references come from the saved schema.
 const columnLabels: Record<string, string> = {
@@ -38,6 +38,7 @@ const groups = use("aggregation_groups", "売上・費用・利益などの集�
 const members = use("aggregation_members", "科目・子集計の所属と加減算", "parent_id", "account_id", "group_id", "sign", "position");
 const classifications = [use("expansions", "展開名", "id", "name"), use("industries", "業種名", "id", "name"),
   use("departments", "部署名", "id", "name"), use("period_types", "期間名と開始年月の規則", "id", "name", "start_month_rule")];
+const identities = use("triadic_metadata", "業種・部署の作成識別子（既存分類はlegacy）", "key", "value");
 const selection = use("kind_selections", "この画面の種別選択を復元", "screen", "first_kind", "second_kind");
 const resolved = "確定予算の増減は、手修正がある月だけ amount_overrides を使い、それ以外は initiative_amounts を引き継ぎます。手修正の0も有効です。";
 const reflectPrimary = "確定予算タブの一次予算を反映する操作は、表示中の施策の全科目・全月の手修正を解除して一次予算への追従へ戻します。登録前は入力に反映し、登録済みは自動保存します。";
@@ -48,8 +49,8 @@ const calculationFailure = "総原価表・展開表の計算範囲を超えた�
 const largeDisplay = "行数が多い表は画面周辺の行だけを描画します。合計と並べ替えは全件を対象とし、スクロールで全行を確認できます。表示を省いた行も保存内容から削除しません。";
 const initiativeTables = [plan, initiative, rows, primary, overrides, accounts, ...classifications];
 export const screenData: ScreenData[] = [
-  { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, ...classifications],
-    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。Excelの施策一覧も最下部に月別売上・費用・利益の合計行を出力し、全施策の元金額の編集と行のコピー追加に追従します。施策0件は0です。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。離れた小計の合計は各SUMを255引数以内に分け、対象の小計だけを合算します。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。Excelの有効15桁または数値変換で1円精度を保てない金額は文字列セルとして出力し、文字列のまま編集します。ファイル選択または前年入力領域への単一の.xlsxファイルのドロップで取り込みます。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。不正値・競合・保存失敗では部分更新しません。", rounded] },
+  { page: "spreadsheet-io", name: "入出力", tables: [plan, initiative, rows, primary, overrides, accounts, previous, groups, members, identities, ...classifications],
+    calculated: ["出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。Excelの施策一覧も最下部に月別売上・費用・利益の合計行を出力し、全施策の元金額の編集と行のコピー追加に追従します。施策0件は0です。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。離れた小計の合計は各SUMを255引数以内に分け、対象の小計だけを合算します。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。Excelの有効15桁または数値変換で1円精度を保てない金額は文字列セルとして出力し、文字列のまま編集します。ファイル選択または前年入力領域への単一の.xlsxファイルのドロップで取り込みます。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。作成識別子を読込時と保存時に照合し、同じ番号・名称でも作り直した分類への取り込みは拒否します。改名は許可します。識別子のない旧Excelは再出力が必要です。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [plan, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・種別ごとの開始年月・並び順", "id", "name", "note", "expansion_id", "period_type_id", "primary_start_year_month", "confirmed_start_year_month", "sort_order"), rows, primary, overrides, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、表全体の上限超過は合計部分で通知します。施策内の上限超過はその行の金額欄で通知し、正常な施策の金額と施策名からの修正を維持します。この場合は合計を表示しません。一覧用の計算は一覧表示時だけ行い、ホームや施策編集を妨げません。合計行は並べ替えず、集計結果の保存テーブルはありません。", largeDisplay, rounded] },
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,
@@ -66,7 +67,7 @@ export const screenData: ScreenData[] = [
   { page: "aggregation-master", name: "集計マスタ", tables: [plan, groups, members, accounts], calculated: ["科目または子集計を所属先に結び、加算・減算と並び順を保存します。一覧の集計・科目件数は登録内容から求め、多数の計算対象は開閉して表示します。件数と開閉状態は保存しません。"] },
   ...classifications.map((item, index) => ({ page: (["expansion-master", "industry-master", "department-master", "period-master"] as const)[index]!,
     name: ["展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ"][index]!,
-    tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataMapSchema.find(table => table.name === item.table)!.columns.map(column => column.name))], calculated: ["一覧の件数は登録済みの分類から求め、保存しません。"] })),
+    tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataMapSchema.find(table => table.name === item.table)!.columns.map(column => column.name)), ...(index === 1 || index === 2 ? [identities] : [])], calculated: ["一覧の件数は登録済みの分類から求め、保存しません。業種・部署の追加時はtriadic_metadataに作成識別子を保存し、改名では維持、削除では除去します。"] })),
   { page: "kind-master", name: "種別マスタ", tables: [plan], calculated: ["前年・一次予算・確定予算はアプリの固定定義です。種別マスタの保存テーブルはありません。前年実額は previous_amounts、一次予算は initiative_amounts、確定予算の手修正は amount_overrides に保存します。"] },
   { page: "data-history", name: "履歴", tables: [plan, use("data_history", "記録日時と計画全体の保存内容", "id", "recorded_at", "snapshot"),
     use("data_history_state", "記録の識別子と未記録の変更を管理", "next_id", "dirty_since", "saved_at", "version")],

@@ -1,4 +1,4 @@
-export type Department = { id: number; departmentName: string };
+export type Department = { id: number; identity?: string; departmentName: string };
 export type DepartmentChange =
   | { type: "add"; departmentName: string }
   | { type: "update"; id: number; departmentName: string }
