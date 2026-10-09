@@ -91,3 +91,5 @@ export { processingTasks } from '../Triadichrome-extension/src/extension/planPro
 export { visibleRows } from '../Triadichrome-extension/src/core/tables/visibleRows';
 
 export { scheduleHistoryCheckpoint } from "../Triadichrome-extension/src/extension/usePlanSession";
+
+export * from "../Triadichrome-extension/src/core/domain/previousAmounts";

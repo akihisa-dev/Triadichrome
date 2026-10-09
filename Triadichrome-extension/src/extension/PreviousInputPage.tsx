@@ -1,6 +1,6 @@
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useLayoutEffect, useState } from "react";
-import { initiativeMonths } from "../core/domain/calendar";
+import { useLayoutEffect, useMemo, useState } from "react";
+import { createPreviousInput } from "../core/domain/previousAmounts";
 import { type PlanContents } from "../core/domain/plan";
 import { filterPlan } from "../core/tables/planTables";
 import { PreviousAmountGrid } from "./PreviousAmountGrid";
@@ -24,9 +24,11 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
     if (industryIds.some(id => !contents.industries.some(item => item.id === id))) { controller.end(); setIndustries(ids => ids.filter(id => contents.industries.some(item => item.id === id))); return; }
     if (departmentIds.some(id => !contents.departments.some(item => item.id === id))) { controller.end(); setDepartments(ids => ids.filter(id => contents.departments.some(item => item.id === id))); return; }
     if (industryId === null || departmentId === null || controller.getSnapshot().draft) return;
-    controller.begin({ industryId, departmentId, rows: contents.accounts.map(account => ({ accountId: account.id,
-      amounts: Object.fromEntries(initiativeMonths.map(month => [month, contents.previousAmounts.find(amount => amount.accountId === account.id && amount.industryId === industryId && amount.departmentId === departmentId && amount.month === month)?.amount ?? "0"])) })) });
+    controller.begin(createPreviousInput(contents, industryId, departmentId));
   }, [controller, contents, industryIds, departmentIds, industryId, departmentId, revision]);
+  const filtered = useMemo(() => filterPlan(contents, {
+    industries: industryIds.length ? industryIds : null, departments: departmentIds.length ? departmentIds : null,
+  }), [contents, industryIds, departmentIds]);
   return <main className="initiative-entry-page previous-input-page" aria-labelledby="previous-input-title" onCompositionStart={() => controller.pause()} onCompositionEnd={() => controller.resume()}>
     <div className="initiative-list-heading">
       <h1 id="previous-input-title">前年入力</h1>
@@ -40,8 +42,6 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
       </div>
       <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     </div>
-    <PreviousAmountGrid key={`${industryIds.join(",")}:${departmentIds.join(",")}`} contents={filterPlan(contents, {
-      industries: industryIds.length ? industryIds : null, departments: departmentIds.length ? departmentIds : null,
-    })} draft={!readOnly && industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
+    <PreviousAmountGrid key={`${industryIds.join(",")}:${departmentIds.join(",")}`} contents={filtered} draft={!readOnly && industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
   </main>;
 }

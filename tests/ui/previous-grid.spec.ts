@@ -219,3 +219,14 @@ test("前年の分類合計が上限を超えても分類変更と金額修正�
   await expect(april).toHaveValue("1");
   expect(failures).toEqual([]);
 });
+
+
+test("多科目の入力行を再検索せずに金額と選択を保持する", async ({ page }) => {
+  await page.goto("/tests/ui/performance-preview.html?mode=previous&count=100&guard=1");
+  const cell = page.getByRole("textbox", { name: "科目99 4月の前年金額", exact: true });
+  await expect(cell).toHaveValue("0");
+  await cell.fill("-0.001"); await expect(cell).toHaveValue("-0.001");
+  await cell.press("Tab");
+  await expect(page.getByRole("textbox", { name: "科目99 5月の前年金額", exact: true })).toBeFocused();
+  await expect(cell).toHaveValue("-0.001");
+});

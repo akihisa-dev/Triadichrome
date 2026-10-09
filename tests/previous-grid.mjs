@@ -1,5 +1,16 @@
 import assert from "node:assert/strict";
 export function verifyPreviousGrid(api) {
+  const source = { accounts: [{ id: 7, accountName: "同名" }, { id: 2, accountName: "同名" }], previousAmounts: [
+    { industryId: 1, departmentId: 1, accountId: 7, month: 4, amount: "-0.001" },
+    { industryId: 2, departmentId: 1, accountId: 7, month: 4, amount: "999" },
+    { industryId: 1, departmentId: 2, accountId: 2, month: 5, amount: "123.456" },
+  ] };
+  source.previousAmounts.find = () => { throw new Error("全件検索を繰り返さない"); };
+  const indexed = api.createPreviousInput(source, 1, 1);
+  assert.deepEqual(indexed.rows.map(row => row.accountId), [7, 2], "科目の表示順を維持");
+  assert.equal(indexed.rows[0].amounts[4], "-0.001"); assert.equal(indexed.rows[1].amounts[4], "0");
+  assert.equal(api.createPreviousInput(source, 1, 2).rows[1].amounts[5], "123.456");
+
   const draft = { industryId: 1, departmentId: 1, rows: [1, 2, 3].map(accountId => ({ accountId, amounts: { 4: "7", 5: "8", 3: "9" } })) };
   const before = structuredClone(draft);
   const ids = [1, 2, null, 3];

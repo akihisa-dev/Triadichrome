@@ -1,5 +1,5 @@
 import { useGridInteraction } from "./useGridInteraction";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { previousByAccount } from "../core/tables/planTables";
 import { buildCostTable } from "../core/tables/costTable";
 import { formatYen, formatRate, isValidAmount, amountToYen, yenToAmount } from "../core/domain/amounts";
@@ -14,17 +14,17 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
 }) {
   const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
-  const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
-  let rows;
-  let calculationFailed = invalid;
-  try {
-    const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
-      isValidAmount(row.amounts[month] ?? "0") ? amountToYen(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
-    rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous);
-  } catch {
-    rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear);
-    calculationFailed = true;
-  }
+  const inputsByAccount = useMemo(() => new Map(draft?.rows.map(row => [row.accountId, row])), [draft?.rows]);
+  const { rows, calculationFailed } = useMemo(() => {
+    const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
+    try {
+      const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
+        isValidAmount(row.amounts[month] ?? "0") ? amountToYen(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
+      return { rows: buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous), calculationFailed: invalid };
+    } catch {
+      return { rows: buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear), calculationFailed: true };
+    }
+  }, [contents, draft]);
   const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const rowIds = rows.map(row => row.kind === "account" ? row.id : null);
@@ -39,7 +39,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
           {initiativeMonths.map((month, column) => {
             const cell = { row: rowIndex, column };
             const selected = bounds && rowIndex >= bounds.top && rowIndex <= bounds.bottom && column >= bounds.left && column <= bounds.right;
-            const value = draft?.rows.find(input => input.accountId === row.id)?.amounts[month] ?? "0";
+            const value = inputsByAccount.get(row.id)?.amounts[month] ?? "0";
             return <td key={month} className={`${row.kind === "account" && draft ? "previous-input-cell" : ""}${selected ? " previous-cell-selected" : ""}`}
               onPointerEnter={() => { if (dragging.current) setSelection(current => current ? { ...current, end: cell } : null); }}>
               {row.kind !== "account" || !draft ? (calculationFailed ? "" : row.kind === "ratio" ? formatRate(row.previous[month]) : formatYen(row.previous[month])) :
@@ -57,7 +57,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
                     if (editing || !bounds) return;
                     event.preventDefault();
                     event.clipboardData.setData("text/plain", rows.slice(bounds.top, bounds.bottom + 1).map(item => initiativeMonths.slice(bounds.left, bounds.right + 1).map(m =>
-                      item.kind === "account" ? draft.rows.find(input => input.accountId === item.id)?.amounts[m] || "0" : calculationFailed ? "" : item.kind === "ratio" ? formatRate(item.previous[m]) : item.previous[m] === undefined ? "" : yenToAmount(item.previous[m]!)
+                      item.kind === "account" ? inputsByAccount.get(item.id)?.amounts[m] || "0" : calculationFailed ? "" : item.kind === "ratio" ? formatRate(item.previous[m]) : item.previous[m] === undefined ? "" : yenToAmount(item.previous[m]!)
                     ).join("\t")).join("\n"));
                   }}
                   onPaste={event => {

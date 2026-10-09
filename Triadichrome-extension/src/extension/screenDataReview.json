@@ -4,7 +4,7 @@
     "description": "42c2c1c83e2ebdcf166fd163d8b8c6c29cb5043644cb07ba5bf4e19146651317"
   },
   "previous-input": {
-    "implementation": "7b5cdbf0d7ee921d13f8c54fb184a0f46a18231991d0c12b4792f2b4ea15d844",
+    "implementation": "48f2cbb16dc6e6dbf0ee7d38e621c5795cb6fa81e3ebdc521c92a5c012ab6473",
     "description": "98ed8d89483dfe5010cd6312ea3f24ae43c54bebf96c33863ca40c88c67ed504"
   },
   "initiative-entry": {
@@ -56,7 +56,7 @@
     "description": "a221fee24164d31e622616ee1e2d76c360bdc40b2785548b53397c0dfccaced4"
   },
   "spreadsheet-io": {
-    "implementation": "99dba037b08021208c0e9f9f52320c3b51acb626a2bdcbb020c34b8cacfb9545",
+    "implementation": "143419937dd8daaa0aaabd7c1a12190faaec6fb6b2ac9a6a1bc0b31fb01319bb",
     "description": "6c0669e6699724df2f815648a644936c62f89fff0175fffd3ca99cff18d231e2"
   }
 }
