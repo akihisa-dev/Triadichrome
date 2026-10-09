@@ -89,3 +89,5 @@ export * from "../Triadichrome-extension/src/core/tables/initiativeTotals";
 export * from "../Triadichrome-extension/src/core/tables/tableSort";
 export { processingTasks } from '../Triadichrome-extension/src/extension/planProcessingTasks';
 export { visibleRows } from '../Triadichrome-extension/src/core/tables/visibleRows';
+
+export { scheduleHistoryCheckpoint } from "../Triadichrome-extension/src/extension/usePlanSession";
