@@ -52,6 +52,16 @@ export function combineTotals(left: Initiative["months"], right: Initiative["mon
 }
 export function buildKindExpansionTable(contents: PlanContents, selected: KindId[], sort: ExpansionSort) {
   const projections = selected.map(kind => initiativesForKind(contents.initiatives, contents.accounts, kind));
+  const indexes = projections.map(items => {
+    const byId = new Map<number, Initiative>();
+    const byExpansion = new Map<number | null, Initiative[]>();
+    for (const item of items) {
+      if (!byId.has(item.id)) byId.set(item.id, item);
+      const members = byExpansion.get(item.expansionId) ?? [];
+      members.push(item); byExpansion.set(item.expansionId, members);
+    }
+    return { byId, byExpansion };
+  });
   const table = buildExpansionTable({ ...contents, initiatives: projections[0]! }, contents.fiscalYear, sort);
   const prior = previousTotals(contents);
   const compare = (values: Initiative["months"][]) => selected.length === 2
@@ -62,9 +72,9 @@ export function buildKindExpansionTable(contents: PlanContents, selected: KindId
     total: compare(totals.map(total => combineTotals(prior, total))),
     changes: compare(totals),
     groups: table.groups.map(group => {
-      const members = projections.map(items => items.filter(item => item.expansionId === group.expansion.id));
+      const members = indexes.map(index => index.byExpansion.get(group.expansion.id) ?? []);
       return { ...group, values: compare(members.map(totalInitiatives)), initiatives: group.initiatives.map(item => ({
-        ...item, values: compare(members.map(items => items.find(next => next.id === item.id)!.months)),
+        ...item, values: compare(indexes.map(index => index.byId.get(item.id)!.months)),
       })) };
     }),
   };

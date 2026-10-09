@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
+import { verifyKindExpansionIndex } from "./kind-expansion-index.mjs";
 
 export async function verifyPeriodTables(api) {
   const { tablePeriods: periods } = api;
   assert.deepEqual(periods.map(period => period.label), ["4月", "5月", "6月", "第1四半期計", "7月", "8月", "9月", "第2四半期計", "上期計", "10月", "11月", "12月", "第3四半期計", "1月", "2月", "3月", "第4四半期計", "下期計", "年間計"]);
   const contents = await api.readPlanContents(await api.createSamplePlan(2026));
+  verifyKindExpansionIndex(api, contents);
   for (const selected of [[1], [2], [1, 2], [2, 1]]) {
     const monthly = api.buildCostComparison(contents, selected);
     const table = api.buildPeriodCostComparison(contents, selected);

@@ -299,3 +299,5 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 三表Excelの金額再計算は1円精度を維持する非表示の整数分割列を使います。金額はExcelでも円精度を保つため、大きい元金額を文字列として保持し、非表示列で上位の千円整数・下位6桁の千円整数・1円部分へ分けます。各部分をSUMIFS・SUMIF・SUMで合算し、期間計・比較差・利益率は丸める前の部分を参照します。表示セルだけ整数千円へ丸めます。計算元の文字列金額は千円単位・小数点以下3桁までの文字列として編集し、行を追加する場合は非表示列を含む行全体をコピーしてください。使用する追加関数はIF・ISNUMBER・TEXT・ABS・LEFT・MID・LEN・FIND・VALUE・INT・MODです。元金額に科学表記や不正な文字列を入力せず、計算用の非表示列は編集しないでください。
 
 前年Excelの出力・取り込みは、業種・部署・科目・月のIDで前年金額を一度索引化して参照します。`node --expose-gc scripts/measure-previous-workbook.mjs`で100・300・600科目の同条件の構築・検証時間とメモリ割当を確認できます。圧縮・解析・画面描画は別の処理であり、この測定には含みません。
+
+展開表は種別ごとの施策を施策IDで索引化し、展開IDで一度グループ化して参照します。`node --expose-gc scripts/measure-expansion-table.mjs`で100・500・1,000施策の集中・分散時の計算時間とメモリ割当を観測できます。任意の画面測定は `PERF_MODE=expansion npx playwright test grid-performance.spec.ts --project desktop` で行い、Reactの描画処理・DOM要素数・heapを記録します。開発ビルドの測定であり、実際の計画や製品全体の性能保証には使いません。
