@@ -141,8 +141,11 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "100 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("10");
   await app.getByRole("button", { name: "登録", exact: true }).click();
-  await expect(list.getByRole("rowheader")).toHaveText(["施策A", "施策B"]);
-  await expect(list.getByRole("rowheader")).toHaveText(["施策A", "施策B"]);
+  await expect(list.locator("tbody").getByRole("rowheader")).toHaveText(["施策A", "施策B"]);
+  const total = list.locator("tfoot");
+  await expect(total.getByRole("rowheader")).toHaveText("合計");
+  await expect(total.locator("td").nth(0)).toHaveText("836");
+  await expect(total.locator("td").nth(2)).toHaveText("786");
   await openMaster(app);
   await expect(app.getByRole("button", { name: "売上高を削除", exact: true })).toBeDisabled();
   await app.getByRole("button", { name: "費用を編集", exact: true }).click();
@@ -151,12 +154,16 @@ test("属性別に集計した施策を一覧で表示し、種別表示・属�
   await expect(app.getByRole("button", { name: "費用を編集", exact: true })).toBeVisible();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await expect(row.locator("td:not(.initiative-list-fixed)").nth(2)).toHaveText("976");
+  await expect(total.locator("td").nth(2)).toHaveText("986");
   await app.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
   await app.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く" }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
   await expect(row.locator("td:not(.initiative-list-fixed)").nth(2)).toHaveText("976");
+  await expect(list.locator("tbody").getByRole("rowheader")).toHaveText(["施策A", "施策B"]);
+  await expect(total.getByRole("rowheader")).toHaveText("合計");
+  await expect(total.locator("td").nth(2)).toHaveText("986");
   await expect(row.getByRole("rowheader")).toHaveAttribute("title", "登録時の備考");
 });
 
