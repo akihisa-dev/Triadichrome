@@ -244,3 +244,68 @@ test("配布ZIPは読み込み用フォルダと一致し、ソースや確認�
   assert.equal(manifest.version, version);
   assert.ok(names.includes(manifest.background.service_worker));
 });
+
+// #28: preparation and switching errors must leave the previous coherent outputs.
+test("配布物のコピー・ZIP書込み・切替失敗では旧版へ復元する", async t => {
+  const fs = await import("node:fs/promises");
+  const { replaceBuildOutputs } = await import("../scripts/replace-build-outputs.mjs");
+  for (const mode of ["copy", "write", "switch", "validate", "success"]) {
+    const root = await mkdtemp(path.join(tmpdir(), "triadichrome-build-rollback-"));
+    t.after(() => rm(root, { recursive: true, force: true }));
+    const old = path.join(root, "extension"), next = path.join(root, "staging");
+    for (const [directory, version] of [[old, "old"], [next, "new"]]) {
+      await mkdir(path.join(directory, "assets"), { recursive: true });
+      await writeFile(path.join(directory, "index.html"), `assets/${version}.js`);
+      await writeFile(path.join(directory, "assets", `${version}.js`), version);
+    }
+    await writeFile(path.join(root, "source.ts"), "source unchanged");
+    await writeFile(path.join(root, "test.triadic"), "data unchanged");
+    const archive = path.join(root, "current.zip"); await writeFile(archive, "old zip");
+    await writeFile(path.join(root, "older.zip"), "older zip");
+    let copies = 0, renames = 0;
+    const io = { ...fs,
+      cp: async (source, target, options) => {
+        if (mode === "copy" && ++copies === 2) { await writeFile(target, "partial"); throw new Error("copy failure"); }
+        await fs.cp(source, target, options);
+      },
+      writeFile: async (target, bytes) => {
+        if (mode === "write") { await fs.writeFile(target, "partial zip"); throw new Error("write failure"); }
+        await fs.writeFile(target, bytes);
+      },
+      rename: async (source, target) => {
+        if (mode === "switch" && ++renames === 6) throw new Error("switch failure");
+        await fs.rename(source, target);
+      },
+    };
+    const entries = ["index.html", "assets"].map(relative => ({ source: path.join(next, relative), target: path.join(old, relative) }));
+    entries.push({ bytes: Buffer.from("new zip"), target: archive });
+    const operation = replaceBuildOutputs(entries, { io,
+      validateInstalled: async () => { if (mode === "validate") throw new Error("validation failure"); },
+    });
+    if (mode === "success") await operation;
+    else await assert.rejects(operation, /failure/);
+    const version = mode === "success" ? "new" : "old";
+    assert.equal(await readFile(path.join(old, "index.html"), "utf8"), `assets/${version}.js`);
+    assert.equal(await readFile(path.join(old, "assets", `${version}.js`), "utf8"), version);
+    assert.equal(await readFile(archive, "utf8"), `${version} zip`);
+    for (const [name, expected] of [["source.ts", "source unchanged"], ["test.triadic", "data unchanged"], ["older.zip", "older zip"]])
+      assert.equal(await readFile(path.join(root, name), "utf8"), expected);
+    assert.ok(!(await fs.readdir(root)).some(name => name.startsWith(".triadichrome-replace-")));
+    assert.ok(!(await fs.readdir(old)).some(name => name.startsWith(".triadichrome-replace-")));
+  }
+});
+
+test("配布物の復元も失敗した場合は旧版の退避先を残す", async t => {
+  const fs = await import("node:fs/promises");
+  const { replaceBuildOutputs } = await import("../scripts/replace-build-outputs.mjs");
+  const root = await mkdtemp(path.join(tmpdir(), "triadichrome-backup-retained-"));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const target = path.join(root, "current.zip"); await writeFile(target, "old zip");
+  const io = { ...fs, rename: async (source, destination) => {
+    if (path.basename(source) === "next" || path.basename(source) === "previous") throw new Error("rename failure");
+    await fs.rename(source, destination);
+  } };
+  await assert.rejects(replaceBuildOutputs([{ target, bytes: Buffer.from("new zip") }], { io }), /退避先/);
+  const backup = (await fs.readdir(root)).find(name => name.startsWith(".triadichrome-replace-"));
+  assert.equal(await readFile(path.join(root, backup, "previous"), "utf8"), "old zip");
+});

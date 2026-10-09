@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import JSZip from "jszip";
+import { replaceBuildOutputs } from "./replace-build-outputs.mjs";
 import {
   buildStagingParent,
   extensionPackageRoot,
@@ -142,27 +143,6 @@ async function verifyBuild(buildRoot, manifest, checkSourceLeakage = true) {
   }
 }
 
-async function syncBuild(stagingRoot) {
-  const generatedPaths = [
-    "manifest.json",
-    "index.html",
-    "assets",
-    "icons",
-    "src/extension/background.js",
-  ];
-
-  await fs.mkdir(extensionPackageRoot, { recursive: true });
-
-  for (const relativePath of generatedPaths) {
-    const sourcePath = path.join(stagingRoot, relativePath);
-    const targetPath = path.join(extensionPackageRoot, relativePath);
-    await assertFile(sourcePath, "同期対象の生成物");
-    await fs.rm(targetPath, { recursive: true, force: true });
-    await fs.mkdir(path.dirname(targetPath), { recursive: true });
-    await fs.cp(sourcePath, targetPath, { recursive: true });
-  }
-}
-
 await fs.mkdir(buildStagingParent, { recursive: true });
 const stagingRoot = await fs.mkdtemp(
   path.join(buildStagingParent, ".triadichrome-build-"),
@@ -212,8 +192,6 @@ try {
   }
   await fs.copyFile(path.join(projectRoot, "branding", "sqlite-wasm-LICENSE.txt"), path.join(stagingRoot, "assets", "sqlite-wasm-LICENSE.txt"));
   await verifyBuild(stagingRoot, manifest);
-  await syncBuild(stagingRoot);
-  await verifyBuild(extensionPackageRoot, manifest, false);
   const zip = new JSZip();
   for (const file of (await walkFiles(stagingRoot)).sort()) {
     const relativePath = path.relative(stagingRoot, file).split(path.sep).join("/");
@@ -221,12 +199,23 @@ try {
   }
   const zipBytes = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
   const archivePath = path.join(buildStagingParent, `Triadichrome-${packageJson.version}.zip`);
-  // ZIP作成が成功してから、検証済みの配布フォルダとZIPを更新する。
+  await JSZip.loadAsync(zipBytes, { checkCRC32: true });
   const outputRoot = path.join(buildStagingParent, "extension");
-  await fs.rm(outputRoot, { recursive: true, force: true });
-  await fs.cp(stagingRoot, outputRoot, { recursive: true });
-  await verifyBuild(outputRoot, manifest);
-  await fs.writeFile(archivePath, zipBytes);
+  const generatedPaths = ["manifest.json", "index.html", "assets", "icons", "src/extension/background.js"];
+  await replaceBuildOutputs([
+    ...generatedPaths.map(relative => ({ source: path.join(stagingRoot, relative), target: path.join(extensionPackageRoot, relative) })),
+    { source: stagingRoot, target: outputRoot },
+    { bytes: zipBytes, target: archivePath },
+  ], {
+    validatePrepared: async outputs => {
+      await verifyBuild(outputs.get(outputRoot), manifest);
+      await JSZip.loadAsync(await fs.readFile(outputs.get(archivePath)), { checkCRC32: true });
+    },
+    validateInstalled: async () => {
+      await verifyBuild(extensionPackageRoot, manifest, false);
+      await verifyBuild(outputRoot, manifest);
+    },
+  });
   console.log(`build ok: dist/extension, ${path.relative(projectRoot, archivePath)}`);
 } catch (error) {
   process.exitCode = process.exitCode || 1;
