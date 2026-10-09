@@ -24,6 +24,28 @@ export async function verifyPreviousWorkbookBoundary(api, plan) {
     }
     for (const coordinate of ['A100001', 'U4']) await refuse(await mutate(xml => xml.replace('r="C4"', `r="${coordinate}"`)));
     await refuse(await mutate(xml => xml.replace('<sheetData>', '<cols><col min="1" max="16384" width="10"/></cols><sheetData>')));
+    const replaceColumn = (xml, attributes) => xml.replace('<sheetData>', `<cols><col ${attributes} width="10"/></cols><sheetData>`);
+    for (const attributes of [
+      'min="1" data-max="20" max="21"',
+      'min="1" max="21" data-max="20"',
+      "min='1' data-max='20' max='21'",
+      'min="1" other:max="20" max="21"',
+      'min="1" data-note="max=\'20\'" max="21"',
+      'min="1" data-note=\'max="20">\' max="21"',
+      'data-min="1" min="21" max="20"',
+      'min="1" data-max="20" max="&#50;&#49;"',
+    ]) await refuse(await mutate(xml => replaceColumn(xml, attributes)));
+    for (const attributes of [
+      'min="1" data-max="21" max="1"',
+      'min="1" max="1" data-max="21"',
+      "min='1' data-max='21' max='1'",
+      'min="1" other:max="21" max="1"',
+      'min="1" data-note="max=\'21\'" max="1"',
+      'min="1" max="&#49;"',
+    ]) assert.deepEqual(await api.parsePreviousWorkbook(await mutate(xml => replaceColumn(xml, attributes)), plan), []);
+    await refuse(await mutate(xml => xml.replace('r="C4"', 'data-r="C4" r="U4"')));
+    await refuse(await mutate(xml => xml.replace('<row r="4"', '<row data-r="4" r="100001"')));
+    await refuse(await mutate(xml => xml.replace(/<dimension\s[^>]*>/, '<dimension data-ref="A1" ref="U1"/>')));
     await refuse(await mutate(xml => xml.replace('</sheetData>', '<row r="4">' + '<c r="A4"/>'.repeat(200001) + '</row></sheetData>')));
     const inflated = await JSZip.loadAsync(normal); inflated.file('oversized.xml', ' '.repeat(9 * 1024 * 1024));
     const bomb = await inflated.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });

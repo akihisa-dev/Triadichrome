@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import { SaxesParser } from "saxes";
 const MiB = 1024 * 1024;
 export const previousWorkbookLimits = { entries: 2048, entryBytes: 8 * MiB, expandedBytes: 32 * MiB, rows: 100000, columns: 20, cells: 200000, tags: 1000000 };
 const refuse = () => { throw new Error("前年入力フォーマットの処理量が上限を超えているか、不要な結合・構成が含まれています。フォーマットを出力し直してください。"); };
@@ -52,7 +53,6 @@ async function boundedEntry(entry: JSZip.JSZipObject, budget: { bytes: number })
     }).resume();
   });
 }
-const attribute = (tag: string, name: string) => tag.match(new RegExp(`\\b${name}\\s*=\\s*(["'])([^"']*)\\1`))?.[2];
 function coordinate(value: string): void {
   const match = value.match(/^([A-Z]{1,2})([1-9]\d{0,5})$/);
   if (!match) refuse();
@@ -68,18 +68,23 @@ export async function inspectPreviousWorkbook(bytes: Uint8Array): Promise<void> 
     const expanded = await boundedEntry(entry, budget);
     if (!/\.(?:xml|rels)$/.test(entry.name)) continue;
     const xml = new TextDecoder("utf-8", { fatal: true }).decode(expanded);
-    if (/<!DOCTYPE|<!ENTITY/i.test(xml)) refuse();
-    for (const _tag of xml.matchAll(/<(?![!?/])[\w:.-]+(?:\s|\/?>)/g)) if (++tags > previousWorkbookLimits.tags) refuse();
-    if (!/^xl\/worksheets\/[^/]+\.xml$/.test(entry.name)) continue;
-    // The exported previous format has no merged cells, including its metadata sheet.
-    if (/<(?:[\w.-]+:)?mergeCell\b/.test(xml)) refuse();
-    for (const match of xml.matchAll(/<(?:[\w.-]+:)?(?:c|row|col|dimension)\b[^>]*>/g)) {
-      const tag = match[0], name = tag.match(/^<(?:[\w.-]+:)?(\w+)/)![1];
-      if (name === "c") { if (++cells > previousWorkbookLimits.cells) refuse(); coordinate(attribute(tag, "r") ?? ""); }
-      else if (name === "row") { const row = attribute(tag, "r"); if (!row || !/^[1-9]\d{0,5}$/.test(row) || Number(row) > previousWorkbookLimits.rows) refuse(); }
+    const worksheet = /^xl\/worksheets\/[^/]+\.xml$/.test(entry.name);
+    // Use the same XML parser and exact attribute names as ExcelJS, without building its model.
+    const parser = new SaxesParser({ xmlns: false });
+    parser.on("doctype", refuse);
+    parser.on("error", refuse);
+    parser.on("opentag", tag => {
+      if (++tags > previousWorkbookLimits.tags) refuse();
+      if (!worksheet) return;
+      const name = tag.name.split(":").pop();
+      // The exported previous format has no merged cells, including its metadata sheet.
+      if (name === "mergeCell") refuse();
+      if (name === "c") { if (++cells > previousWorkbookLimits.cells) refuse(); coordinate(tag.attributes.r ?? ""); }
+      else if (name === "row") { const row = tag.attributes.r; if (!row || !/^[1-9]\d{0,5}$/.test(row) || Number(row) > previousWorkbookLimits.rows) refuse(); }
       else if (name === "col") {
-        for (const key of ["min", "max"]) { const column = attribute(tag, key); if (!column || !/^[1-9]\d*$/.test(column) || Number(column) > previousWorkbookLimits.columns) refuse(); }
-      } else { const range = attribute(tag, "ref"); if (range) range.split(":").forEach(coordinate); }
-    }
+        for (const key of ["min", "max"]) { const column = tag.attributes[key]; if (!column || !/^[1-9]\d*$/.test(column) || Number(column) > previousWorkbookLimits.columns) refuse(); }
+      } else if (name === "dimension") { const range = tag.attributes.ref; if (range) range.split(":").forEach(coordinate); }
+    });
+    parser.write(xml).close();
   }
 }
