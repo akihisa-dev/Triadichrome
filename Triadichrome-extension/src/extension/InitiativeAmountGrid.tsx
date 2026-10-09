@@ -13,9 +13,10 @@ import { normalizeGridAmount, type GridCell } from "../core/tables/previousGrid"
 import { StatusNotice } from "./StatusNotice";
 import "./InitiativeAmountGrid.css";
 
-export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRows, onDraftChange }: {
+export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRows, rowOperationsDisabled = false, onDraftChange }: {
   draft: InitiativeEntryDraft; kind: KindId; accounts: Account[];
   savedRows?: InitiativeEntryDraft["rows"] | undefined;
+  rowOperationsDisabled?: boolean;
   isSaving: boolean; onDraftChange: (draft: InitiativeEntryDraft) => void;
 }) {
   const readOnly = useHistoryReadOnly();
@@ -67,12 +68,12 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
                 <th scope="row">
                   <div className="initiative-account-cell">
                   <AccountRowSelect label={`${index + 1}行目の勘定科目`} value={row.accountId} accounts={accounts} account={accountsById.get(row.accountId!)}
-                    disabled={readOnly || isSaving || accounts.length === 0 || !canChangeAccountRow(row, savedById.get(row.id))}
+                    disabled={readOnly || isSaving || rowOperationsDisabled || accounts.length === 0 || !canChangeAccountRow(row, savedById.get(row.id))}
                     active={activeAccount === rowKey} onActivate={() => setActiveAccount(rowKey)}
                     onDeactivate={() => setActiveAccount(current => current === rowKey ? null : current)}
                     onChange={accountId => onDraftChange({ ...draft, rows: draft.rows.map((current, currentIndex) => currentIndex === index
                       ? { ...current, accountId } : current) })} />
-                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || !canChangeAccountRow(row, savedById.get(row.id))} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
+                  <button type="button" className="text-button" aria-label={`${index + 1}行目を削除`} disabled={readOnly || isSaving || rowOperationsDisabled || !canChangeAccountRow(row, savedById.get(row.id))} onClick={() => onDraftChange({ ...draft, rows: draft.rows.filter((_, position) => position !== index) })}>削除</button>
                   </div>
                 </th>
                 {months.map((month, column) => {

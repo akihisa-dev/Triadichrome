@@ -208,3 +208,81 @@ test("合計エラーと保存失敗が重ならず入力を取り消せる", as
   await expect(app.getByRole("alert")).toHaveCount(0);
   await expect(amount).toHaveValue("1.125");
 });
+
+for (const [kind, operation, failure] of [
+  ["一次予算", "削除", false], ["一次予算", "科目変更", true],
+  ["確定予算", "削除", true], ["確定予算", "科目変更", false],
+] as const) {
+  test(`非0の保存確定前に0へ戻しても${kind}の${operation}を待機し、${failure ? "失敗後の再試行" : "連続入力"}を保持する`, async ({ page, app }) => {
+    await page.getByLabel("テストデータ", { exact: true }).selectOption("full");
+    await expect(page.getByRole("status")).toHaveText("操作できます");
+    await app.locator("body").evaluate(() => {
+      const target = window as Window & {
+        showOpenFilePicker?: () => Promise<FileSystemFileHandle[]>;
+        saveStarted?: boolean; releaseSave?: (fail: boolean) => void;
+      };
+      const picker = target.showOpenFilePicker!;
+      Object.defineProperty(target, "showOpenFilePicker", { value: async () => {
+        const handles = await picker();
+        const handle = handles[0]!;
+        const create = handle.createWritable.bind(handle);
+        let hold = true;
+        Object.defineProperty(handle, "createWritable", { value: async () => {
+          const writable = await create();
+          const close = writable.close.bind(writable);
+          writable.close = async () => {
+            if (hold) {
+              hold = false;
+              target.saveStarted = true;
+              await new Promise<void>((resolve, reject) => {
+                target.releaseSave = fail => fail ? reject(new Error("制御した保存失敗")) : resolve();
+              });
+            }
+            await close();
+          };
+          return writable;
+        } });
+        return handles;
+      } });
+    });
+    await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+    await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
+    await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "施策一覧", exact: true }).click();
+    await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
+    await app.getByRole("tab", { name: kind, exact: true }).click();
+    const amount = app.getByRole("spinbutton", { name: "未所属費用 4月の金額", exact: true });
+    const account = app.getByRole("combobox", { name: "1行目の勘定科目", exact: true });
+    const remove = app.getByRole("button", { name: "1行目を削除", exact: true });
+    const back = app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true });
+    await amount.fill("100");
+    await expect.poll(() => app.locator("body").evaluate(() => Boolean(Reflect.get(window, "saveStarted")))).toBe(true);
+    await amount.fill("0");
+    await expect(account).toBeDisabled();
+    await expect(remove).toBeDisabled();
+    const extra = app.getByRole("spinbutton", { name: "売上高 5月の金額", exact: true });
+    await extra.fill("8");
+    await extra.fill("9");
+    await app.getByRole("textbox", { name: "備考", exact: true }).fill("確定待ちの最新入力");
+    await app.locator("body").evaluate((_node, fail) => Reflect.get(window, "releaseSave")(fail), failure);
+    if (failure) {
+      await expect(app.getByRole("alert")).toContainText("制御した保存失敗");
+      await expect(amount).toHaveValue("0");
+      await expect(extra).toHaveValue("9");
+      await app.getByRole("button", { name: "保存を再試行", exact: true }).click();
+    }
+    await expect(back).toBeEnabled();
+    await expect(account).toBeEnabled();
+    await expect(remove).toBeEnabled();
+    if (operation === "削除") await remove.click();
+    else { await account.focus(); await account.selectOption({ label: "537 旅費" }); }
+    await expect(back).toBeEnabled();
+    await expect(app.getByRole("alert")).toHaveCount(0);
+    await back.click();
+    await app.getByRole("button", { name: "科目変更と削除の確認", exact: true }).click();
+    await app.getByRole("tab", { name: kind, exact: true }).click();
+    await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("確定待ちの最新入力");
+    await expect(extra).toHaveValue("9");
+    if (operation === "削除") await expect(app.getByRole("button", { name: "2行目を削除", exact: true })).toHaveCount(0);
+    else await expect(app.getByRole("spinbutton", { name: "旅費 4月の金額", exact: true })).toHaveValue("0");
+  });
+}

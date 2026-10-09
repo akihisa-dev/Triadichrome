@@ -32,7 +32,7 @@ export function InitiativeDetailPage({ initiative, accounts, expansions, departm
   if (!draft) return null;
   return <InitiativeEntryPage draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}
     isSaving={false} onOpenMaster={onOpenMaster} onRegister={() => {}} editing={{
-      savedRows: initiative.rows, pending: autoSave.pending, onCompositionStart: () => controller.pause(), onCompositionEnd: () => controller.resume(),
+      savedRows: initiative.rows, saving: autoSave.saving, pending: autoSave.pending, onCompositionStart: () => controller.pause(), onCompositionEnd: () => controller.resume(),
       before: <button className="text-button master-back" type="button" disabled={autoSave.pending} onClick={onBack}>← {backLabel}へ戻る</button>,
       status: <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />,
     }} />;

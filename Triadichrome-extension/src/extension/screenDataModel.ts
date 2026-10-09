@@ -56,7 +56,7 @@ export const screenData: ScreenData[] = [
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,
     calculated: ["登録前の入力は画面内で保持し、登録時に施策・科目行・月別金額へ保存します。", resolved, reflectPrimary, attributeTotals, "開始年月は期間の算出規則と種別ごとの月別増減から求め、施策へ保存します。", rounded] },
   { page: "initiative-detail", name: "施策詳細", tables: initiativeTables,
-    calculated: [resolved, reflectPrimary, attributeTotals, "登録済み行の科目変更と削除は入力中と保存済みの両方が全種別・全月0のときに許可します。0化の保存成功まで待ち、金額入力は続けられます。全種別・全月0の既存行を、金額も手修正も空欄・科目未選択に戻すと保存時に削除します。入力値のある未選択行は拒否します。", "開始年月は期間の算出規則と種別ごとの月別増減から再算出し、施策へ保存します。", rounded] },
+    calculated: [resolved, reflectPrimary, attributeTotals, "登録済み行の科目変更と削除は入力中と保存済みの両方が全種別・全月0のときに許可します。自動保存の実行中は科目変更と行削除を待ちます。非0の保存中に0へ戻した場合も、最新の0化の保存成功まで待ち、金額入力は続けられます。全種別・全月0の既存行を、金額も手修正も空欄・科目未選択に戻すと保存時に削除します。入力値のある未選択行は拒否します。", "開始年月は期間の算出規則と種別ごとの月別増減から再算出し、施策へ保存します。", rounded] },
   { page: "previous-input", name: "前年入力", tables: [plan, previous, accounts, groups, members, classifications[1]!, classifications[2]!],
     calculated: ["選択した業種・部署の組み合わせを科目・月ごとに合算します。未選択は全件、複数選択の合計は参照専用です。業種・部署を一つずつ選ぶと、その組み合わせの前年実額を更新します。分類の選択は保存しません。分類合計が計算上限を超えたときは計算セルを空欄にして通知し、分類を絞って元の金額を確認・修正できます。", "小計・合計は aggregation_groups の表示名・並び順と aggregation_members の科目・子集計の所属・加減算から求めます。売上集計の役割は固定見出しの範囲を決め、利益率は経常利益集計÷売上集計×100で計算します。未設定の集計や売上が0の場合の利益率は空欄です。保存する前年実額は previous_amounts だけで、小計・合計・利益率は保存しません。", rounded] },
   { page: "cost-table", name: "総原価表", tables: [plan, previous, use("initiatives", "施策ごとの科目行と業種・部署への所属", "id", "industry_id", "department_id"), rows, primary, overrides, accounts, groups, members, classifications[1]!, classifications[2]!, selection],
