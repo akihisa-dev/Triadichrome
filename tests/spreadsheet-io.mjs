@@ -8,6 +8,19 @@ async function roundtrip(wb) {
 }
 export async function verifySpreadsheetIO(api) {
   const bytes = await api.createSamplePlan(2026), plan = await api.readPlanContents(bytes);
+  const pairsForIndex = plan.industries.slice(0, 2).flatMap(i => plan.departments.map(d => ({ industryId: i.id, departmentId: d.id })));
+  const sparse = { ...plan, previousAmounts: pairsForIndex.flatMap((pair, i) => plan.accounts.slice(0, 2).map((a, n) => ({ ...pair, accountId: a.id, month: 4, amount: String(i * 10 + n) + ".001", id: i * 2 + n, revision: 0 }))) };
+  sparse.previousAmounts.find = () => { throw new Error("前年金額の繰り返し全件検索は禁止"); };
+  const indexed = api.createPreviousWorkbook(sparse, pairsForIndex);
+  indexed.worksheets.filter(ws => ws.state === "visible").forEach((ws, i) => {
+    assert.equal(ws.getCell("C4").value, i * 10 + 0.001);
+    assert.equal(ws.getCell("D4").value, 0, "欠損月は0");
+  });
+  assert.deepEqual(api.readPreviousWorkbook(indexed, sparse), []);
+  indexed.worksheets[0].getCell("C4").value = null;
+  indexed.worksheets[0].getCell("C5").value = 0;
+  const indexedPatches = api.readPreviousWorkbook(indexed, sparse);
+  assert.equal(indexedPatches.length, 1); assert.equal(indexedPatches[0].before, "1.001"); assert.equal(indexedPatches[0].after, "0");
   await verifyPreviousWorkbookBoundary(api, plan);
   await verifyPreviousWorkbookProcessing();
   await verifyReportWorkbooks(api, plan);

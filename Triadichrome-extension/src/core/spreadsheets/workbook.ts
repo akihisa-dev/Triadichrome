@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { indexPreviousAmounts, previousAmountKey } from "../domain/previousAmounts";
 import { inspectPreviousWorkbook } from "./previousWorkbookBoundary";
 import { excelAmount } from "./excelAmounts";
 import { initiativeMonths } from "../domain/calendar";
@@ -45,6 +46,7 @@ function workbook() {
 const metaName = "_triadichrome";
 export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPair[]): ExcelJS.Workbook {
   if (!pairs.length || new Set(pairs.map(p => `${p.industryId}:${p.departmentId}`)).size !== pairs.length) throw new Error("業種・部署の組み合わせを選択してください。");
+  const amountsByKey = indexPreviousAmounts(contents.previousAmounts);
   const wb = workbook();
   const meta = wb.addWorksheet(metaName, { state: "veryHidden" });
   meta.addRow(["Triadichrome previous v2", contents.fiscalYear]);
@@ -59,7 +61,7 @@ export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPa
     ws.getCell("A2").value = `${contents.fiscalYear}年度 · ${industry.industryName} · ${department.departmentName} · 単位：千円`;
     ws.addRow(["科目コード", "科目名", ...initiativeMonths.map(m => `${m}月`)]);
     contents.accounts.forEach(account => {
-      const amounts = initiativeMonths.map(m => contents.previousAmounts.find(p => p.industryId === pair.industryId && p.departmentId === pair.departmentId && p.accountId === account.id && p.month === m)?.amount ?? "0");
+      const amounts = initiativeMonths.map(m => amountsByKey.get(previousAmountKey(pair.industryId, pair.departmentId, account.id, m)) ?? "0");
       ws.addRow([account.accountCode, account.accountName, ...amounts.map(excelAmount)]);
       meta.addRow([name, pair.industryId, pair.departmentId, account.id, account.accountCode, account.accountName, ...amounts, industry.identity ?? "legacy", department.identity ?? "legacy"]);
     });
@@ -84,6 +86,7 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
   const meta = wb.getWorksheet(metaName);
   if (!meta || meta.getCell("A1").value !== "Triadichrome previous v2" || meta.getCell("B1").value !== contents.fiscalYear) throw new Error("この年度の最新の前年入力フォーマットを出力し直してください。");
   if (meta.rowCount > 100000) throw new Error("取り込み件数が多すぎます。");
+  const amountsByKey = indexPreviousAmounts(contents.previousAmounts);
   const patches: PreviousPatch[] = [];
   const keys = new Set<string>();
   const sheets = new Map<string, { pair: PreviousPair; count: number }>();
@@ -121,7 +124,7 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
       let after: string;
       try { after = yenToAmount(amountToYen(String(value))); } catch { return fail(`${name} ${ws!.getCell(row, mi + 3).address}：千円単位・小数点以下3桁までの金額を入力してください。`); }
       const original = String(meta.getCell(r, mi + 7).value);
-      const before = contents.previousAmounts.find(p => p.industryId === industryId && p.departmentId === departmentId && p.accountId === accountId && p.month === month)?.amount ?? "0";
+      const before = amountsByKey.get(key) ?? "0";
       if (amountToYen(before) !== amountToYen(original)) fail("出力後に前年金額が変更されています。最新のフォーマットを出力し直してください。");
       if (amountToYen(before) !== amountToYen(after)) patches.push({ ...pair, industryIdentity: industryIdentity as string, departmentIdentity: departmentIdentity as string, accountId: accountId as number, month, before, after });
     });
