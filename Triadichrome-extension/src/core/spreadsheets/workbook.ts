@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import { excelAmount } from "./excelAmounts";
 import { initiativeMonths } from "../domain/calendar";
 import { amountToYen, yenToAmount } from "../domain/amounts";
 export type { PreviousPatch } from "../domain/kinds";
@@ -40,16 +41,6 @@ function workbook() {
   return wb;
 }
 
-// Excel keeps 15 significant decimal digits. Keep larger precise amounts as text.
-function previousCellAmount(amount: string): number | string {
-  const yen = amountToYen(amount);
-  const normalized = yenToAmount(yen);
-  const digits = String(Math.abs(yen)).replace(/0+$/, "");
-  const numeric = Number(normalized);
-  if (digits.length <= 15 && amountToYen(String(numeric)) === yen) return numeric;
-  return normalized;
-}
-
 const metaName = "_triadichrome";
 export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPair[]): ExcelJS.Workbook {
   if (!pairs.length || new Set(pairs.map(p => `${p.industryId}:${p.departmentId}`)).size !== pairs.length) throw new Error("業種・部署の組み合わせを選択してください。");
@@ -68,7 +59,7 @@ export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPa
     ws.addRow(["科目コード", "科目名", ...initiativeMonths.map(m => `${m}月`)]);
     contents.accounts.forEach(account => {
       const amounts = initiativeMonths.map(m => contents.previousAmounts.find(p => p.industryId === pair.industryId && p.departmentId === pair.departmentId && p.accountId === account.id && p.month === m)?.amount ?? "0");
-      ws.addRow([account.accountCode, account.accountName, ...amounts.map(previousCellAmount)]);
+      ws.addRow([account.accountCode, account.accountName, ...amounts.map(excelAmount)]);
       meta.addRow([name, pair.industryId, pair.departmentId, account.id, account.accountCode, account.accountName, ...amounts, industry.identity ?? "legacy", department.identity ?? "legacy"]);
     });
     finish(ws, 3);

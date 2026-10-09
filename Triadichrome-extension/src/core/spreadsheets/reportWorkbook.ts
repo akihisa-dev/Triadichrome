@@ -1,4 +1,6 @@
 import ExcelJS from "exceljs";
+import { excelAmount } from "./excelAmounts";
+import { installPreciseCalculations, type MonetaryCell } from "./reportPrecision";
 import { initiativeMonths } from "../domain/calendar";
 import { resolvedAmount, type KindSelections } from "../domain/kinds";
 import type { PlanContents } from "../domain/plan";
@@ -15,11 +17,6 @@ const amountFormat = '[>=0.5]#,##0;[<=-0.5]-#,##0;""';
 const font = { name: "Yu Gothic", size: 10, color: { argb: "FF202020" } };
 const fill = { type: "pattern" as const, pattern: "solid" as const, fgColor: { argb: "FFF3F3F3" } };
 const border = { style: "thin" as const, color: { argb: "FFE0E0E0" } };
-const thousands = (yen: number | null | undefined) => yen == null ? yen : yen / 1000;
-function formula(cell: ExcelJS.Cell, expression: string, result: number | string | undefined | null) {
-  if (result === undefined) { cell.value = null; return; }
-  cell.value = { formula: expression, result: result ?? "属性未設定" };
-}
 function sheet(workbook: ExcelJS.Workbook, name: string, widths: number[], headers: number, frozen: number) {
   const ws = workbook.addWorksheet(name, { views: [{ state: "frozen", xSplit: frozen, ySplit: headers + 2 }] });
   widths.forEach((width, index) => { ws.getColumn(index + 1).width = width; });
@@ -78,7 +75,7 @@ function sources(wb: ExcelJS.Workbook, contents: PlanContents, filter: Classific
     ws.addRow(["前年", contents.industries.find(i => i.id === value.industryId)?.industryName,
       contents.departments.find(d => d.id === value.departmentId)?.departmentName, "", "前年",
       account?.accountCode, account?.accountName, account?.accountType,
-      ...initiativeMonths.map(m => Number(records.find(v => v.month === m)?.amount ?? "0")),
+      ...initiativeMonths.map(m => excelAmount(records.find(v => v.month === m)?.amount ?? "0")),
       value.accountId, 0, 0, included(value.industryId, value.departmentId) ? 1 : 0]);
   }
   for (const item of contents.initiatives.filter(i => i.fiscalYear === contents.fiscalYear)) {
@@ -87,11 +84,18 @@ function sources(wb: ExcelJS.Workbook, contents: PlanContents, filter: Classific
       ws.addRow(["施策", contents.industries.find(i => i.id === item.industryId)?.industryName,
         contents.departments.find(d => d.id === item.departmentId)?.departmentName, item.name, contents.kinds.find(k => k.id === kind)?.kindName,
         account?.accountCode, account?.accountName, account?.accountType,
-        ...initiativeMonths.map(m => Number(resolvedAmount(input, kind, m))), input.accountId, item.id, kind,
+        ...initiativeMonths.map(m => excelAmount(resolvedAmount(input, kind, m))), input.accountId, item.id, kind,
         included(item.industryId ?? null, item.departmentId ?? null) ? 1 : 0]);
     }
   }
   ws.columns.forEach((column, index) => { column.width = index < 8 ? 20 : 14; if (index >= 8 && index < 20) column.numFmt = '#,##0.###'; if (index >= 20) column.hidden = true; });
+  ws.eachRow((row, index) => {
+    if (index === 1) return;
+    for (let column = 9; column <= 20; column++) {
+      const cell = row.getCell(column);
+      if (typeof cell.value === "string") cell.numFmt = "@";
+    }
+  });
   ws.views = [{ state: "frozen", xSplit: 8, ySplit: 1 }];
   ws.getRow(1).font = { ...font, bold: true }; ws.getRow(1).fill = fill;
   ws.autoFilter = { from: { row: 1, column: 1 }, to: { row: Math.max(2, ws.rowCount), column: 20 } };
@@ -127,6 +131,12 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
     if (!selected.length || selected.length > (name === "initiative-list" ? 1 : 2) || new Set(selected).size !== selected.length || selected.some(k => k !== 1 && k !== 2)) throw new Error("出力する種別が正しくありません。");
   }
   const wb = workbook();
+  const monetary: MonetaryCell[] = [];
+  const formula = (cell: ExcelJS.Cell, expression: string, result: number | string | undefined | null, money = false) => {
+    if (result === undefined) { cell.value = null; return; }
+    cell.value = { formula: expression, result: result ?? "属性未設定" };
+    if (money) monetary.push({ cell, expression, yen: result as number | null });
+  };
   const filtered = filterPlan(contents, options.costFilter);
   const expansionTable = options.tables.includes("expansion-table") ? buildKindExpansionTable(contents, options.selections["expansion-table"], "registered") : null;
   const unfiltered = sources(wb, contents, options.costFilter);
@@ -179,7 +189,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
           expression = vi === 0 ? prior : `${prior}+${conditionalSum(period.months[0]!, [[21, row.id], [23, selected[vi - 1]!], [24, 1]])}`;
         }
         if (row.kind === "ratio" && vi > selected.length) expression = `IF(OR(${at(r, selected.length)}="",${at(r, vi === selected.length + 1 ? 0 : 1)}=""),"",${expression})`;
-        formula(cell, expression, row.kind === "ratio" ? row.configured ? value ?? "" : value : thousands(value));
+        formula(cell, expression, row.kind === "ratio" && row.configured ? value ?? "" : value, row.kind !== "ratio");
         if (row.kind === "ratio") cell.numFmt = vi > selected.length ? '[>=0.05]0.0"pt";[<=-0.05]-0.0"pt";""' : '[>=0.05]0.0"%";[<=-0.05]-0.0"%";""';
       }));
     });
@@ -213,7 +223,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
       ws.getCell(r, 3).value = item.name; ws.getCell(r, 4).value = item.startYearMonths[kind];
       initiativeMonths.forEach((m, mi) => (["sales", "expense", "profit"] as const).forEach((metric, i) => {
         const cell = ws.getCell(r, 5 + mi * 3 + i);
-        formula(cell, effectFormula(item.id, kind, m, metric), thousands(item.months[m]?.[metric])); cell.numFmt = '#,##0;-#,##0;0';
+        formula(cell, effectFormula(item.id, kind, m, metric), item.months[m]?.[metric], true); cell.numFmt = '#,##0;-#,##0;0';
       }));
     });
     const total = initiativeTotals(items);
@@ -222,7 +232,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
     ws.getCell(totalRow, 1).value = "合計";
     initiativeMonths.forEach((m, mi) => (["sales", "expense", "profit"] as const).forEach((metric, i) => {
       const cell = ws.getCell(totalRow, 5 + mi * 3 + i);
-      formula(cell, effectFormula(null, kind, m, metric), thousands(total[m]?.[metric]));
+      formula(cell, effectFormula(null, kind, m, metric), total[m]?.[metric], true);
       cell.numFmt = '#,##0;-#,##0;0';
     }));
     finish(ws, 4, new Set([totalRow]));
@@ -257,7 +267,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
           expr = sum(tablePeriods.flatMap((t, index) => t.months.length === size && t.months.every(m => p.months.includes(m)) ? [ws.getCell(r, 4 + index * width + ki * 2 + mi).address] : []));
         }
         else expr = monthly(ki, metric, p.months[0]!, col);
-        formula(ws.getCell(r, col), expr, thousands(expansionPeriodAmount(value, p, metric)));
+        formula(ws.getCell(r, col), expr, expansionPeriodAmount(value, p, metric), true);
       })));
     };
     for (const group of table.groups) {
@@ -287,6 +297,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
     finish(ws, 5, shaded);
     periodStyles(ws, 4, width);
   }
+  installPreciseCalculations(wb, monetary);
   // ExcelJS exposes orderNo for workbook tab ordering.
   (unfiltered.ws as ExcelJS.Worksheet & { orderNo: number }).orderNo = wb.worksheets.length;
   wb.worksheets.filter(s => s !== unfiltered.ws).forEach((s, i) => { (s as ExcelJS.Worksheet & { orderNo: number }).orderNo = i; });
