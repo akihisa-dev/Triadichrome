@@ -40,7 +40,7 @@ const classifications = [use("expansions", "展開名", "id", "name"), use("indu
   use("departments", "部署名", "id", "name"), use("period_types", "期間名と開始年月の規則", "id", "name", "start_month_rule")];
 const identities = use("triadic_metadata", "業種・部署の作成識別子（既存分類はlegacy）", "key", "value");
 const presentation = use("triadic_metadata", "科目・集計共通の並び順（master_order）と科目の表示名（account_display_names）", "key", "value");
-const masterDisplay = "科目と集計を区分で分け、同じ一覧で管理します。集計列は所属先、加減列はその所属への符号です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。表示設定のない既存ファイルは従来の総原価表の並びと名称を使い、統合マスタの変更時に保存します。";
+const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。表示設定のない既存ファイルは従来の総原価表の並びと名称を使い、統合マスタの変更時に保存します。";
 const selection = use("kind_selections", "この画面の種別選択を復元", "screen", "first_kind", "second_kind");
 const resolved = "確定予算の増減は、手修正がある月だけ amount_overrides を使い、それ以外は initiative_amounts を引き継ぎます。手修正の0も有効です。";
 const reflectPrimary = "確定予算タブの一次予算を反映する操作は、表示中の施策の全科目・全月の手修正を解除して一次予算への追従へ戻します。登録前は入力に反映し、登録済みは自動保存します。";
@@ -66,7 +66,7 @@ export const screenData: ScreenData[] = [
     calculated: [masterDisplay, resolved, "業種・部署マスタの全候補から複数選択し、選択した組み合わせの科目別の施策増減と前年実額を合算して予算を求めます。分類の未選択は全件で、表示選択は保存しません。集計行は所属と加減算から求め、総原価表専用の保存テーブルはありません。前年差は表示する予算−前年（両方なら確定予算−前年）、一次予算差は確定予算−一次予算です。利益率の差はポイントで表示し、差の値は保存しません。四半期・上期・下期・年間の計は丸める前の月額を合算し、利益率は期間の経常利益合計÷売上集計合計で再計算します。", rounded, blankZero, calculationFailure] },
   { page: "expansion-table", name: "展開表", tables: [plan, use("initiatives", "施策名・展開と期間への所属・並び順", "id", "name", "expansion_id", "period_type_id", "sort_order"), rows, primary, overrides, previous, accounts, classifications[0]!, use("period_types", "期間名と表示順", "id", "name"), selection],
     calculated: [resolved, "各展開内を期間マスタ順・未選択は最後にまとめ、同じ期間名を縦結合します。同じ期間内は登録順で、表示順は保存しません。施策の売上・利益の増減を展開ごとにまとめ、前年から予算への積み上げを表示します。2種比較は確定予算−一次予算です。四半期・上期・下期・年間の計は丸める前の売上・利益を期間内で合算し、属性未設定も引き継ぎます。展開表専用の保存テーブルはありません。", largeDisplay, rounded, blankZero, calculationFailure] },
-  { page: "account-master", name: "勘定科目マスタ", tables: [plan, accounts, groups, members, presentation], calculated: [masterDisplay, "科目行だけが金額の入力対象です。集計行には科目コード・科目属性を設定せず、内訳列や計算対象の編集欄は設けません。科目・集計の並べ替えは所属を変えず、一回の保存で共通順を確定します。件数は保存しません。"] },
+  { page: "account-master", name: "勘定科目マスタ", tables: [plan, accounts, groups, members, presentation], calculated: [masterDisplay, "科目行だけが金額の入力対象です。集計行は科目属性を集計と表示し、科目コードを設定せず、内訳列や計算対象の編集欄は設けません。科目・集計の並べ替えは所属を変えず、一回の保存で共通順を確定します。件数は保存しません。"] },
   ...classifications.map((item, index) => ({ page: (["expansion-master", "industry-master", "department-master", "period-master"] as const)[index]!,
     name: ["展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ"][index]!,
     tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataMapSchema.find(table => table.name === item.table)!.columns.map(column => column.name)), ...(index === 1 || index === 2 ? [identities] : [])], calculated: ["一覧の件数は登録済みの分類から求め、保存しません。業種・部署の追加時はtriadic_metadataに作成識別子を保存し、改名では維持、削除では除去します。"] })),

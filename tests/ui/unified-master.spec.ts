@@ -9,12 +9,13 @@ test('科目・集計の共通順と表示名を総原価表へ反映する', as
   await app.getByRole('button',{name:/^勘定科目マスタ/}).click();
   if(testInfo.project.name === 'narrow') await app.getByRole('button',{name:'サイドバーを閉じる',exact:true}).first().click();
   const list=app.getByRole('table',{name:'科目・集計一覧',exact:true});
-  await expect(list.getByRole('columnheader')).toHaveText(['順序','区分','科目コード','名称','表示名','科目属性','集計','加減','操作']);
+  await expect(list.getByRole('columnheader')).toHaveText(['順序','科目コード','名称','表示名','科目属性','集計','加減','操作']);
   await expect(list.locator('tbody tr')).toHaveCount(72);
+  await expect(app.getByRole('combobox',{name:'区分',exact:true})).toHaveCount(0);
   await expect(list.locator('tbody tr').nth(2)).toContainText('社外売上小計');
   const subtotal=list.getByRole('row').filter({has:app.getByRole('button',{name:'社外売上小計を編集',exact:true})});
-  await expect(subtotal.locator('td').nth(2)).toBeEmpty();
-  await expect(subtotal.locator('td').nth(4)).toBeEmpty();
+  await expect(subtotal.locator('td').nth(1)).toBeEmpty();
+  await expect(subtotal.locator('td').nth(3)).toHaveText('集計');
   await list.getByRole('button',{name:'社外売上小計を並べ替え',exact:true}).press('ArrowUp');
   await expect(list.locator('tbody tr').nth(1)).toContainText('社外売上小計');
   await list.getByRole('button',{name:'売上高を編集',exact:true}).click();

@@ -41,10 +41,11 @@ test("科目と集計の所属・加減を同じ列で変更し、循環防止�
 test("集計の登録・表示名編集の保存失敗で入力と必須集計を保持する",async({app,page})=>{
   await page.getByRole("combobox",{name:"ファイル操作",exact:true}).selectOption("save-failure");
   await app.getByRole("button",{name:"ファイルを開く",exact:true}).click();await app.getByRole("button",{name:"サイドバーを開く",exact:true}).click();await master(app);
-  await app.getByRole("combobox",{name:"区分",exact:true}).selectOption("group");
+  await app.getByRole("combobox",{name:"科目属性",exact:true}).selectOption("group");
   await app.getByRole("textbox",{name:"名称",exact:true}).fill("保存待ち");
   await expect(app.getByRole("textbox",{name:"科目コード",exact:true})).toBeDisabled();
-  await expect(app.getByRole("combobox",{name:"科目属性",exact:true})).toBeDisabled();
+  await expect(app.getByRole("combobox",{name:"科目属性",exact:true})).toBeEnabled();
+  await expect(app.getByRole("combobox",{name:"科目属性",exact:true})).toHaveValue("group");
   await app.getByRole("button",{name:"登録",exact:true}).click();
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");await expect(app.getByRole("textbox",{name:"名称",exact:true})).toHaveValue("保存待ち");
   await expect(app.locator(".account-master-table tbody tr")).toHaveCount(4);
@@ -65,4 +66,25 @@ test("所属変更の保存失敗では元の所属と並び順を保持する",
   const owner=app.getByRole("combobox",{name:"売上集計の集計",exact:true});await owner.selectOption({label:"営業利益"});
   await expect(app.getByRole("alert")).toHaveText("テスト用の保存失敗です。");await expect(owner).toHaveValue("");await expect(owner).toBeEnabled();
   await expect(app.getByRole("combobox",{name:"売上集計の加減",exact:true})).toBeDisabled();await expect(table.getByRole("rowheader")).toHaveText(before);
+});
+
+test("科目属性だけで科目と集計を選び、コードなしの集計を保存して再読込する",async({app})=>{
+  await app.getByRole("button",{name:"ファイルを開く",exact:true}).click();
+  await app.getByRole("button",{name:"サイドバーを開く",exact:true}).click();await master(app);
+  const attribute=app.getByRole("combobox",{name:"科目属性",exact:true});
+  const code=app.getByRole("textbox",{name:"科目コード",exact:true});
+  const register=app.getByRole("button",{name:"登録",exact:true});
+  await app.getByRole("textbox",{name:"名称",exact:true}).fill("属性から登録する集計");
+  await attribute.selectOption("group");await expect(code).toBeDisabled();await expect(register).toBeEnabled();
+  await attribute.selectOption("expense");await expect(code).toBeEnabled();await expect(register).toBeDisabled();
+  await attribute.selectOption("group");await register.click();
+  const row=app.getByRole("table",{name:"科目・集計一覧",exact:true}).getByRole("row").filter({has:app.getByRole("combobox",{name:"属性から登録する集計の集計",exact:true})});
+  await expect(row.locator("td").nth(1)).toBeEmpty();await expect(row.locator("td").nth(3)).toHaveText("集計");
+  await app.getByRole("button",{name:"属性から登録する集計を編集",exact:true}).click();
+  await expect(row.getByRole("combobox",{name:"属性から登録する集計の科目属性",exact:true})).toHaveCount(0);
+  await expect(row.locator("td").nth(3)).toHaveText("集計");await app.getByRole("button",{name:"完了",exact:true}).click();
+  await app.getByRole("button",{name:"ファイルを閉じる",exact:true}).click();
+  await app.getByRole("alertdialog",{name:"ファイルを閉じる",exact:true}).getByRole("button",{name:"閉じる",exact:true}).click();
+  await app.getByRole("button",{name:"ファイルを開く",exact:true}).click();await app.getByRole("button",{name:"サイドバーを開く",exact:true}).click();await master(app);
+  await expect(row.locator("td").nth(3)).toHaveText("集計");await expect(row.locator("td").nth(1)).toBeEmpty();
 });

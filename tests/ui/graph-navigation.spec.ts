@@ -8,7 +8,7 @@ test("勘定科目マスタの表は見出しを固定し、狭い画面では�
   await app.getByRole("button", { name: /^勘定科目マスタ/ }).click();
   await settleMotion(app.locator("body"));
   const table = app.getByRole("table", { name: "科目・集計一覧", exact: true });
-  await expect(table.getByRole("columnheader")).toHaveText(["順序", "区分", "科目コード", "名称", "表示名", "科目属性", "集計", "加減", "操作"]);
+  await expect(table.getByRole("columnheader")).toHaveText(["順序", "科目コード", "名称", "表示名", "科目属性", "集計", "加減", "操作"]);
   const region = app.getByRole("region", { name: "科目・集計一覧", exact: true });
   const header = table.getByRole("columnheader").first();
   const top = (await header.boundingBox())!.y;

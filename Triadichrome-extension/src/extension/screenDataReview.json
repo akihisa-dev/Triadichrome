@@ -5,7 +5,7 @@
   },
   "previous-input": {
     "implementation": "f4ad10d353a20f424f4171264faeef7bb073c23ce1b803da2ef02502536bf045",
-    "description": "a2c5c24d717b70ede590b053273c37a8a2ea94dc8995213242245f200bb830ea"
+    "description": "53c2c346244e1d6c06938b450e8b09cd1281446b5b1ff2820443af2529e0622e"
   },
   "initiative-entry": {
     "implementation": "0545c6c063a2145e70997abb35dc3197fec8155398cb167af2c89ea1f56e34d7",
@@ -21,7 +21,7 @@
   },
   "cost-table": {
     "implementation": "3a3fb08f72d0fc206f00678f42d5121a3fca1aaa6b612911794a94b09bd57bac",
-    "description": "8fc2c4c8b405771c3a270e3ed2bcd268a520bfabf0838ed916ff22b660d3e664"
+    "description": "0aaaecf49c775a7426e3f109c7fc0f2088d89b2a3705bd3821b92c4dc88e9fc9"
   },
   "expansion-table": {
     "implementation": "8f23e8bd4502aeebaea3283720b423fe4fdb93308e3a5dea1713baa9c45064f9",
@@ -48,8 +48,8 @@
     "description": "f8bd1c7134f19d08b62ad893f303935ee816d4055db3714576c102107061f690"
   },
   "account-master": {
-    "implementation": "17fa16c076ba2dc90bca41290fc22dcfc8990fbcc5ed8c693186a03f76a96bfc",
-    "description": "1e99c8951c82217ddeb4d4da0f11365e6e2a1ad03092595103e44813b9ad88ae"
+    "implementation": "7c7857b9c3ff511145138c0999c07264c596c26f18197827a627f22e7f62ef30",
+    "description": "f5d948601999a955ccf81814b6bb11b903e724153f34f18d89bad4d8292ffce1"
   },
   "spreadsheet-io": {
     "implementation": "72cef0a984b3ebdd3109089a17daf8753f6fa65817b4f508620d24b4e856e77b",

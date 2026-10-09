@@ -101,18 +101,17 @@
 .master-data-page.unified-master-page .account-master-form,
 .master-data-page.unified-master-page .account-master-list { max-width: none; }
 .master-data-page.unified-master-page .account-master-list { flex: 1; }
-.master-data-page.unified-master-page .account-master-table { min-width: 1100px; }
+.master-data-page.unified-master-page .account-master-table { min-width: 1036px; }
 .master-data-page.unified-master-page .account-master-table th,
 .master-data-page.unified-master-page .account-master-table td { padding: 4px 8px; }
 .master-data-page.unified-master-page .account-master-table thead th:nth-child(1) { width: 44px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(2) { width: 64px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(3) { width: 94px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(4),
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(5) { width: auto; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(6) { width: 100px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(7) { width: 185px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(8) { width: 70px; }
-.master-data-page.unified-master-page .account-master-table thead th:nth-child(9) { width: 130px; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(2) { width: 94px; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(3),
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(4) { width: auto; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(5) { width: 100px; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(6) { width: 185px; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(7) { width: 70px; }
+.master-data-page.unified-master-page .account-master-table thead th:nth-child(8) { width: 130px; }
 .master-data-page.unified-master-page .account-master-table tbody tr:nth-child(even) > * { background: #fafafa; }
 .master-data-page.unified-master-page .account-master-table tbody tr.master-row-editing > * { background: #f0f0f0; }
 
