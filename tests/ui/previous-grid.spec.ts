@@ -185,3 +185,37 @@ test("前年のチップは複数選択・個別解除でき、合計表示か�
   await expect(sales).toHaveText("12,600");
   await expect(industry.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
 });
+
+
+test("前年の分類合計が上限を超えても分類変更と金額修正を続けられる", async ({ page, app }) => {
+  const failures: string[] = [];
+  page.on("pageerror", error => failures.push(error.message));
+  await page.goto("/tests/ui/preview.html?data=overflow-previous-input");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const nav = app.getByRole("navigation", { name: "メインナビゲーション" });
+  await nav.getByRole("button", { name: "前年入力", exact: true }).click();
+  await expect(app.getByRole("alert")).toContainText("範囲を超えています");
+  const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
+  await expect(sales).toHaveText("");
+  const industry = app.getByRole("group", { name: "業種名", exact: true });
+  const department = app.getByRole("group", { name: "部署名", exact: true });
+  await selectClassification(industry, "直営自動車");
+  await expect(app.getByRole("alert")).toContainText("範囲を超えています");
+  await selectClassification(department, "部署A");
+  const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
+  await expect(april).toHaveValue("5000000000000");
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await department.getByRole("button", { name: "部署B", exact: true }).click();
+  await expect(app.getByRole("alert")).toContainText("範囲を超えています");
+  await department.getByRole("button", { name: "部署B", exact: true }).click();
+  await april.fill("1"); await april.press("Tab");
+  await expect(nav.getByRole("button", { name: "総原価表", exact: true })).toBeEnabled();
+  await nav.getByRole("button", { name: "総原価表", exact: true }).click();
+  await nav.getByRole("button", { name: "前年入力", exact: true }).click();
+  await expect(app.getByRole("alert")).toHaveCount(0);
+  await selectClassification(industry, "直営自動車");
+  await selectClassification(department, "部署A");
+  await expect(april).toHaveValue("1");
+  expect(failures).toEqual([]);
+});

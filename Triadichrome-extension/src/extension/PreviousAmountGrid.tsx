@@ -15,12 +15,16 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
   const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
   const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
-  const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
-    isValidAmount(row.amounts[month] ?? "0") ? amountToYen(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
   let rows;
   let calculationFailed = invalid;
-  try { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous); }
-  catch { rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear); calculationFailed = true; }
+  try {
+    const previous = draft ? new Map(draft.rows.map(row => [row.accountId, Object.fromEntries(initiativeMonths.map(month => [month,
+      isValidAmount(row.amounts[month] ?? "0") ? amountToYen(row.amounts[month] ?? "0") : 0]))])) : previousByAccount(contents);
+    rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear, previous);
+  } catch {
+    rows = buildCostTable(contents.accounts, contents.aggregations, [], contents.fiscalYear);
+    calculationFailed = true;
+  }
   const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const rowIds = rows.map(row => row.kind === "account" ? row.id : null);
@@ -88,7 +92,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
           })}
         </tr>;
   return <>
-    <StatusNotice message={error} error onDismiss={() => setError("")} />
+    <StatusNotice message={error || (calculationFailed ? "金額の合計が正確に計算できる範囲を超えています。分類を絞るか金額を修正してください。" : "")} error onDismiss={() => setError("")} />
     <div className="previous-grid-container" role="region" aria-label="前年の月別金額" tabIndex={0}>
       <table ref={table} className="initiative-list-table cost-table previous-grid" aria-label="前年入力の月別金額">
         <thead>

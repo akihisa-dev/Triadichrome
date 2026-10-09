@@ -4,7 +4,7 @@ import { registerInitiative } from "../../Triadichrome-extension/src/core/storag
 import { saveKindSelection, savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { createInitiativeDraft } from "../../Triadichrome-extension/src/core/domain/initiativeRules";
 
-export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal" | "initiative";
+export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal" | "initiative" | "previous-input";
 
 /** Real, accepted SQLite data; only file I/O is replaced by memory-files. */
 export async function createOverflowPlan(scenario: OverflowScenario) {
@@ -12,6 +12,11 @@ export async function createOverflowPlan(scenario: OverflowScenario) {
   const plan = await readPlanContents(bytes);
   const accountId = plan.accounts.find(account => account.accountType === "sales")!.id;
   const huge = "5000000000000";
+  if (scenario === "previous-input") {
+    for (const departmentId of [1, 2]) bytes = await savePreviousAmounts(bytes, { industryId: 1, departmentId,
+      rows: [{ accountId, amounts: { 4: huge } }] });
+    return bytes;
+  }
   const draft = { ...createInitiativeDraft("2026"), name: "上限確認A", expansionId: 1, industryId: 1, departmentId: 1,
     rows: [{ accountId, amounts: { 4: scenario === "normal" ? "10" : scenario === "difference" ? `-${huge}` : huge,
       ...(scenario === "period" ? { 5: huge } : {}) },
