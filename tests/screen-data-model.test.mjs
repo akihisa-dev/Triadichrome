@@ -34,6 +34,15 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       for (const name of ["expansions", "period_types"]) assert.ok(list.tables.some(item => item.table === name), "施策一覧の展開名と期間名の参照先を説明する");
       for (const field of ["expansion_id", "period_type_id"]) assert.ok(list.tables.find(item => item.table === "initiatives").fields.includes(field), "施策の分類への所属を説明する");
       assert.ok(!list.tables.some(item => ["aggregation_groups", "aggregation_members", "industries", "departments"].includes(item.table)), "施策一覧に表示しない分類や使わない集計を構成テーブルへ混ぜない");
+      const previous = screenData.find(item => item.page === "previous-input");
+      for (const [table, fields] of [["aggregation_groups", ["display_name", "required_key", "sort_order"]],
+        ["aggregation_members", ["parent_id", "account_id", "group_id", "sign", "position"]]]) {
+        const usage = previous.tables.find(item => item.table === table);
+        assert.ok(usage, `前年入力に${table}の保存元を示す`);
+        for (const field of fields) assert.ok(usage.fields.includes(field));
+      }
+      for (const explanation of ["小計・合計", "利益率", "加減算", "保存しません", "previous_amounts"])
+        assert.ok(previous.calculated.some(text => text.includes(explanation)), explanation);
       const kind = screenData.find(item => item.page === "kind-master");
       assert.deepEqual(kind.tables.map(item => item.table), ["plan"], "共通ヘッダーの年度だけを参照し、種別マスタの保存表を捏造しない");
       assert.ok(kind.calculated.some(text => text.includes("固定定義")));
