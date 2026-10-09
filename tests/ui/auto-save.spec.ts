@@ -65,7 +65,12 @@ test("更新を自動保存して再読込でき、失敗・入力不備で入�
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await app.getByRole("complementary", { name: "メニュー" }).getByRole("button", { name: "施策一覧", exact: true }).click();
-  await expect(app.getByRole("row").filter({ has: app.getByRole("button", { name: "保存する施策", exact: true }) }).getByRole("cell").first()).toHaveText("126");
+  const list = app.getByRole("table", { name: "施策一覧", exact: true });
+  await expect(list.locator('thead th[scope="colgroup"]').first()).toHaveText("4月");
+  await expect(list.locator("thead tr").nth(1).getByRole("columnheader").first()).toHaveText("売上");
+  const savedRow = list.getByRole("row").filter({ has: app.getByRole("button", { name: "保存する施策", exact: true }) });
+  await expect(savedRow.locator(".initiative-list-expansion")).toHaveText("コスト");
+  await expect(savedRow.locator("td:not(.initiative-list-fixed)").first()).toHaveText("126");
   await app.getByRole("button", { name: "保存する施策", exact: true }).click();
   await expect(app.getByRole("textbox", { name: "備考", exact: true })).toHaveValue("失敗しても残す備考");
   await settleMotion(app.locator("body"));
