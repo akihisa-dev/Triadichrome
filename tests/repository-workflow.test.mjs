@@ -158,17 +158,23 @@ test("pre-pushはブラウザ不要の検証を呼び出し、成功・失敗を
 });
 
 
-test("distの拡張機能と配布ZIPを通常追加でき、一時ファイルは除外する", async t => {
+test("distの拡張機能を通常追加でき、配布ZIPと一時ファイルは除外する", async t => {
   const repo = await repository(t);
   await cp(path.join(projectRoot, ".gitignore"), path.join(repo.root, ".gitignore"));
-  const artifacts = ["dist/extension/manifest.json", "dist/extension/assets/app.js", "dist/extension/src/extension/background.js", "dist/Triadichrome-1.2.0.zip"];
+  const artifacts = ["dist/extension/manifest.json", "dist/extension/assets/app.js", "dist/extension/src/extension/background.js"];
+  const archives = ["dist/Triadichrome-1.1.0.zip", "dist/Triadichrome-1.2.0.zip", "dist/Triadichrome-2.0.0.zip"];
   const temporaryFiles = ["dist/.triadichrome-build-test/index.html", "dist/.node-bundle-test/bundle.js", "dist/home-commit-base.txt"];
-  for (const file of [...artifacts, ...temporaryFiles]) {
+  for (const file of [...artifacts, ...archives, ...temporaryFiles]) {
     await mkdir(path.dirname(path.join(repo.root, file)), { recursive: true });
     await writeFile(path.join(repo.root, file), "fixture");
   }
   repo.git("add", "--", ...artifacts);
   assert.deepEqual(repo.git("diff", "--cached", "--name-only").split("\n").sort(), [...artifacts].sort());
+  for (const file of archives) {
+    succeeds(repo.run("git", ["check-ignore", "--quiet", "--", file]));
+    fails(repo.run("git", ["add", "--", file]), /ignored/);
+    assert.equal(await readFile(path.join(repo.root, file), "utf8"), "fixture", "配布ZIPはローカルに保持する");
+  }
   for (const file of temporaryFiles) succeeds(repo.run("git", ["check-ignore", "--quiet", "--", file]));
 });
 
