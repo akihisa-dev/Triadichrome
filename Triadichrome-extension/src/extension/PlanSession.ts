@@ -38,8 +38,8 @@ export class PlanSession {
     this.publish({ contents: this.contents(plan), name: plan.name, history, historyError: "" });
   }
   private contents(plan: OpenPlan): PlanContents {
-    const { bytes, handle, name, destinationBytes, ...contents } = plan;
-    void bytes; void handle; void name; void destinationBytes;
+    const { bytes, handle, name, destinationBytes, savedHistory, ...contents } = plan;
+    void bytes; void handle; void name; void destinationBytes; void savedHistory;
     return contents;
   }
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -100,7 +100,7 @@ export class PlanSession {
         if (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted") throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
       }
       const saved = await operation(current, destination);
-      const history = await readDataHistory(saved.bytes);
+      const history = saved.savedHistory ?? this.snapshot.history;
       this.plan = saved;
       committed?.();
       const contents = this.contents(saved);
@@ -145,7 +145,7 @@ export class PlanSession {
     if (!handle || (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted")) throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
     const bytes = await recordDataHistory(current.bytes, new Date().toISOString(), true);
     const saved = await writePlanChange(current, handle, bytes, { historyPrepared: true });
-    const history = await readDataHistory(saved.bytes);
+    const history = saved.savedHistory ?? this.snapshot.history;
     this.plan = saved;
     this.publish({ contents: this.contents(saved), history, historyError: "" });
     return saved;

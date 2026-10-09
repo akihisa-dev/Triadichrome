@@ -42,6 +42,29 @@ export async function verifyPlanSession(api) {
   assert.deepEqual(destination.bytes, priorBytes);
   destination.fail(false);
   await session.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [2] } }, noPicker);
+  const readHistory = api.processingTasks.readDataHistory;
+  const closeWritable = destination.handle.createWritable;
+  destination.handle.createWritable = async () => {
+    const writable = await closeWritable();
+    const close = writable.close;
+    writable.close = async () => {
+      await close();
+      api.processingTasks.readDataHistory = async () => { throw new Error("確定後の読み取り障害"); };
+    };
+    return writable;
+  };
+  try {
+    await session.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1] } }, noPicker);
+    assert.deepEqual(session.getSnapshot().contents.kindSelections["cost-table"], [1]);
+    assert.equal(session.getSnapshot().canUndo, true);
+    assert.equal("savedHistory" in session.getSnapshot().contents, false);
+  } finally {
+    api.processingTasks.readDataHistory = readHistory;
+    destination.handle.createWritable = closeWritable;
+  }
+  assert.deepEqual((await api.readPlanContents(destination.bytes)).kindSelections, session.getSnapshot().contents.kindSelections);
+  await session.travelOperation(-1, noPicker);
+  await session.travelOperation(1, noPicker);
   const permission = deferred();
   destination.handle.requestPermission = () => permission.promise;
   const prepared = session.prepareSave(noPicker);
