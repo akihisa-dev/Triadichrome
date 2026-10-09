@@ -1,14 +1,14 @@
 import { AccountRowSelect } from "./AccountRowSelect";
 import { useGridInteraction } from "./useGridInteraction";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/domain/kinds";
 import { accountTypes } from "../core/domain/accountTypes";
 import { formatYen, isValidAmount } from "../core/domain/amounts";
 import { initiativeMonths as months } from "../core/domain/calendar";
 import { type InitiativeEntryDraft } from "../core/domain/plan";
 import { type Account } from "../core/domain/accountMaster";
-import { canEditInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid, initiativeAttributeTotals } from "../core/tables/initiativeGrid";
+import { canEditInitiativeCell, cancelInitiativeCell, changeInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid, initiativeAttributeTotals } from "../core/tables/initiativeGrid";
 import { normalizeGridAmount, type GridCell } from "../core/tables/previousGrid";
 import { StatusNotice } from "./StatusNotice";
 import "./InitiativeAmountGrid.css";
@@ -23,6 +23,7 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
   const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
   const [activeAccount, setActiveAccount] = useState<string | null>(null);
+  const originalInherited = useRef(false);
   const accountsById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts]);
   const savedById = useMemo(() => new Map(savedRows?.map(row => [row.id, row])), [savedRows]);
   const totals = initiativeAttributeTotals(draft, kind, accounts);
@@ -35,21 +36,13 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
   const apply = (operation: () => InitiativeEntryDraft) => {
     if (readOnly || isSaving) return;
     try {
-      const next = operation();
-      const invalidNumbers = [...table.current!.querySelectorAll<HTMLInputElement>("input")].some(input => {
-        const cell = { row: Number(input.dataset.row), column: Number(input.dataset.column) };
-        return input.validity.badInput && valueAt(cell) === valueAt(cell, next);
-      });
-      onDraftChange({ ...next, invalidNumbers }); setError(""); setEditing(false);
+      onDraftChange(operation()); setError(""); setEditing(false);
     }
     catch (failure) { setError(failure instanceof Error ? failure.message : "入力できませんでした。"); }
   };
-  const changeCell = (cell: GridCell, value: string, invalidNumbers = draft.invalidNumbers ?? false) => {
+  const changeCell = (cell: GridCell, value: string, badInput = false) => {
     if (isSaving || !canEditInitiativeCell(draft, kind, cell)) return;
-    const month = months[cell.column]!;
-    onDraftChange({ ...draft, invalidNumbers, rows: draft.rows.map((row, index) => index !== cell.row ? row
-      : kind === 1 ? { ...row, amounts: { ...row.amounts, [month]: value } }
-      : { ...row, overrides: { ...row.overrides, [kind]: { ...row.overrides?.[kind], [month]: value } } }) });
+    onDraftChange(changeInitiativeCell(draft, kind, cell, value, badInput ? { original: original.current, inherited: originalInherited.current } : undefined));
   };
   return <>
     <StatusNotice message={error || totals.error} error {...(error ? { onDismiss: () => setError("") } : {})} />
@@ -79,6 +72,11 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
                 {months.map((month, column) => {
                   const cell = { row: index, column };
                   const value = valueAt(cell);
+                  const invalidInput = row.invalidAmounts?.[kind]?.[month];
+                  const captureOriginal = () => {
+                    original.current = invalidInput?.original ?? value;
+                    originalInherited.current = invalidInput?.inherited ?? (kind === 2 && row.overrides?.[2]?.[month] === undefined);
+                  };
                   const selected = bounds && index >= bounds.top && index <= bounds.bottom && column >= bounds.left && column <= bounds.right;
                   return <td key={month} className={selected ? "initiative-cell-selected" : undefined}
                     onPointerEnter={() => { if (dragging.current) setSelection(current => current ? { ...current, end: cell } : null); }}
@@ -88,22 +86,22 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
                       event.preventDefault(); dragging.current = true; focus(cell, event.shiftKey);
                     }}>
                     <input type="number" step="0.001" inputMode="decimal" data-row={index} data-column={column}
-                      ref={input => { if (input) input.setCustomValidity(input.value === "" || isValidAmount(input.value)
-                        ? "" : "金額は千円単位・小数点以下3桁までで入力してください。"); }}
+                      ref={input => { if (input) input.setCustomValidity(invalidInput ? "金額に有効な数値を入力してください。"
+                        : input.value === "" || isValidAmount(input.value) ? "" : "金額は千円単位・小数点以下3桁までで入力してください。"); }}
                       aria-label={`${accountName} ${month}月の金額`}
-                      aria-invalid={value !== "" && !isValidAmount(value)}
+                      aria-invalid={Boolean(invalidInput) || value !== "" && !isValidAmount(value)}
                       disabled={readOnly || isSaving || !canEditInitiativeCell(draft, kind, cell)} value={value}
                       onFocus={event => {
-                        original.current = value; event.currentTarget.select();
+                        captureOriginal(); event.currentTarget.select();
                         setSelection(current => current && (current.anchor.row === index && current.anchor.column === column
                           || current.end.row === index && current.end.column === column) ? current : { anchor: cell, end: cell });
                       }}
                       onBlur={() => setEditing(false)}
-                      onDoubleClick={() => { setEditing(true); original.current = value; }}
+                      onDoubleClick={() => { setEditing(true); captureOriginal(); }}
                       onChange={event => {
-                        if (!editing) original.current = value;
+                        if (!editing) captureOriginal();
                         setEditing(true);
-                        changeCell(cell, event.target.value, [...table.current!.querySelectorAll("input")].some(input => input.validity.badInput));
+                        changeCell(cell, event.target.value, event.target.validity.badInput);
                       }}
                       onCopy={event => {
                         if (editing || !bounds) return;
@@ -122,24 +120,23 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
                         if (event.nativeEvent.isComposing || isSaving) return;
                         if (!editing && event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) event.currentTarget.select();
                         if (event.key === "Escape") {
-                          event.preventDefault(); if (editing) changeCell(cell, original.current,
-                            [...table.current!.querySelectorAll("input")].some(input => input !== event.currentTarget && input.validity.badInput));
+                          event.preventDefault(); if (editing || invalidInput) onDraftChange(cancelInitiativeCell(draft, kind, cell, { original: original.current, inherited: originalInherited.current }));
                           setEditing(false); setSelection({ anchor: cell, end: cell }); setError(""); return;
                         }
                         if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && selection) {
                           event.preventDefault();
-                          if (event.currentTarget.validity.badInput) { setError("金額に有効な数値を入力してください。"); return; }
+                          if (invalidInput || event.currentTarget.validity.badInput) { setError("金額に有効な数値を入力してください。"); return; }
                           apply(() => fillInitiativeGrid(draft, kind, selection, value)); return;
                         }
                         if (["Delete", "Backspace"].includes(event.key) && !editing && selection) {
                           event.preventDefault(); apply(() => fillInitiativeGrid(draft, kind, selection, "0")); return;
                         }
-                        if (event.key === "F2") { event.preventDefault(); original.current = value; setEditing(true); return; }
+                        if (event.key === "F2") { event.preventDefault(); captureOriginal(); setEditing(true); return; }
                         if (editing && !["Enter", "Tab"].includes(event.key)) return;
                         if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Tab"].includes(event.key)) return;
                         event.preventDefault();
                         if (editing) {
-                          if (event.currentTarget.validity.badInput) { setError("金額に有効な数値を入力してください。"); return; }
+                          if (invalidInput || event.currentTarget.validity.badInput) { setError("金額に有効な数値を入力してください。"); return; }
                           try { changeCell(cell, normalizeGridAmount(value)); setError(""); }
                           catch (failure) { setError((failure as Error).message); return; }
                         }

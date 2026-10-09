@@ -1,5 +1,5 @@
 import type { InitiativeMonth } from "./calendar";
-import type { KindOverrides, PlanSettings, Kind } from "./kinds";
+import type { KindOverrides, KindInvalidAmounts, PlanSettings, Kind } from "./kinds";
 import type { Account } from "./accountMaster";
 import type { Aggregation } from "./aggregations";
 import type { Expansion } from "./expansionMaster";
@@ -8,7 +8,7 @@ import type { Department } from "./departmentMaster";
 import type { PeriodType } from "./periodMaster";
 import type { DetailRecord } from "./details";
 import type { InitiativeStartMonths } from "./initiativeStartMonth";
-export type InitiativeRow = { id?: string; accountId: number | null; revision?: number; amountRevisions?: Partial<Record<number, number>>; overrideRevisions?: Partial<Record<number, number>>; amounts: Partial<Record<InitiativeMonth, string>>; overrides?: KindOverrides };
+export type InitiativeRow = { id?: string; accountId: number | null; revision?: number; amountRevisions?: Partial<Record<number, number>>; overrideRevisions?: Partial<Record<number, number>>; amounts: Partial<Record<InitiativeMonth, string>>; overrides?: KindOverrides; invalidAmounts?: KindInvalidAmounts };
 export type InitiativeEntryDraft = { name: string; note: string; expansionId: number | null; departmentId?: number | null; periodTypeId?: number | null; industryId?: number | null; fiscalYear: string; rows: InitiativeRow[]; invalidNumbers?: boolean };
 export type Initiative = {
   id: number;

@@ -88,6 +88,44 @@ export function verifyInitiativeGrid(api) {
   assert.equal(overflow.rows[0].amounts[4], undefined);
   assert.match(overflow.error, /範囲/);
   assert.equal(api.initiativeAttributeTotals({ ...summaryDraft, invalidNumbers: true }, 1, accounts).rows[0].amounts[4], undefined);
+  const april = { row: 0, column: 0 }, may = { row: 0, column: 1 };
+  const badPrimary = api.changeInitiativeCell(draft, 1, april, "", { original: "7", inherited: false });
+  assert.equal(api.hasInvalidAmountInput(badPrimary.rows[0]), true);
+  assert.equal(api.canChangeAccountRow({ amounts: {}, invalidAmounts: { 1: { 4: { original: "0", inherited: false } } } }), false, "不正な空欄の行は削除・科目変更できない");
+  for (const changed of [
+    api.changeInitiativeCell(badPrimary, 2, may, "8"),
+    api.pasteInitiativeGrid(badPrimary, 2, may, "8\t9"),
+    api.fillInitiativeGrid(badPrimary, 2, { anchor: april, end: may }, "0"),
+    api.reflectPrimaryBudget(badPrimary),
+  ]) {
+    assert.equal(api.hasInvalidAmountInput(changed.rows[0]), true, "別種別の入力・貼付・消去・反映で不正状態を解除しない");
+    assert.throws(() => api.validateInitiative(changed, [], [], []), /有効な数値/);
+  }
+  const badMay = api.changeInitiativeCell(badPrimary, 1, may, "", { original: "8", inherited: false });
+  const correctedApril = api.changeInitiativeCell(badMay, 1, april, "0");
+  assert.equal(correctedApril.rows[0].invalidAmounts[1][4], undefined);
+  assert.equal(correctedApril.rows[0].invalidAmounts[1][5].original, "8", "訂正したセル以外の不正状態を保持");
+  assert.equal(api.initiativeAttributeTotals(correctedApril, 2, accounts).rows[0].amounts[4], undefined);
+  const cancelled = api.cancelInitiativeCell(badMay, 1, april, { original: "0", inherited: false });
+  assert.equal(cancelled.rows[0].amounts[4], "7", "再表示後も保存しておいた入力開始時の値へ戻る");
+  assert.equal(api.hasInvalidAmountInput(cancelled.rows[0]), true, "別セルの不正入力は残す");
+  const restored = api.cancelInitiativeCell(cancelled, 1, may, { original: "0", inherited: false });
+  assert.equal(restored.rows[0].amounts[5], "8"); assert.equal(api.hasInvalidAmountInput(restored.rows[0]), false);
+  const pastedCorrection = api.pasteInitiativeGrid(badMay, 1, april, "0\t");
+  assert.equal(pastedCorrection.rows[0].amounts[4], "0"); assert.equal(pastedCorrection.rows[0].amounts[5], "0");
+  assert.equal(api.hasInvalidAmountInput(pastedCorrection.rows[0]), false, "明示した貼付範囲だけ不正状態を解除");
+  const badConfirmed = api.changeInitiativeCell(badPrimary, 2, april, "", { original: "7", inherited: true });
+  const primaryOnly = api.reflectPrimaryBudget(badConfirmed);
+  assert.equal(primaryOnly.rows[0].invalidAmounts[2], undefined); assert.equal(api.hasInvalidAmountInput(primaryOnly.rows[0]), true);
+  const inherited = api.changeInitiativeCell(draft, 2, april, "", { original: "7", inherited: true });
+  const inheritedCancel = api.cancelInitiativeCell(inherited, 2, april, { original: "0", inherited: false });
+  assert.equal(inheritedCancel.rows[0].overrides[2][4], undefined, "取消後も一次予算への追従を維持");
+  assert.equal(api.resolvedAmount(api.changeInitiativeCell(inheritedCancel, 1, april, "9").rows[0], 2, 4), "9");
+  const badZero = api.changeInitiativeCell(filled, 2, april, "", { original: "0", inherited: false });
+  assert.equal(api.cancelInitiativeCell(badZero, 2, april, { original: "7", inherited: true }).rows[0].overrides[2][4], "0", "取消後も手修正0を保持");
+  const twoRows = api.changeInitiativeCell(badPrimary, 1, { row: 1, column: 0 }, "", { original: "12", inherited: false });
+  const oneRow = api.changeInitiativeCell(twoRows, 1, april, "7");
+  assert.equal(api.hasInvalidAmountInput(oneRow.rows[0]), false); assert.equal(api.hasInvalidAmountInput(oneRow.rows[1]), true, "同じ科目の別行は独立して保持");
   assert.deepEqual(api.initiativeAttributeTotals(blank, 1, accounts).rows, []);
   assert.deepEqual(draft, before, "成功・失敗とも入力元を変更しない");
   console.log("PASS: 施策の範囲入力、複数行の貼り付け、手修正0、精度と編集禁止セルの保護");

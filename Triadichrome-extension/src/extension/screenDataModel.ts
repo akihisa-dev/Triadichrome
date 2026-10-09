@@ -43,6 +43,7 @@ const selection = use("kind_selections", "この画面の種別選択を復元",
 const resolved = "確定予算の増減は、手修正がある月だけ amount_overrides を使い、それ以外は initiative_amounts を引き継ぎます。手修正の0も有効です。";
 const reflectPrimary = "確定予算タブの一次予算を反映する操作は、表示中の施策の全科目・全月の手修正を解除して一次予算への追従へ戻します。登録前は入力に反映し、登録済みは自動保存します。";
 const attributeTotals = "入力行に存在する科目属性ごとの月別合計を金額表の最下部に表示します。選択種別の有効金額を符号を変えず円の整数で合算し、表示時だけ丸めます。全月0の属性も表示し、科目未選択・属性未設定・存在しない属性は表示しません。合計は入力に追従し、保存しません。不正入力や計算範囲超過では該当合計を空白にします。";
+const invalidAmountInput = "数値として扱えない施策の入力は、種別・科目行・月ごとに不正状態と入力開始時の値を画面内で保持します。種別を切り替えて別セルを編集しても保存せず、元セルの訂正・消去・取消でそのセルだけ解除します。セルの取消後も引き継ぎと手修正0を維持します。この一時情報は計画ファイルへ保存しません。";
 const rounded = "金額は保存と集計の途中も円の整数で保持し、画面では千円に換算して整数へ丸めます。編集欄では小数点以下3桁まで表示します。";
 const blankZero = "丸めた表示が0になる金額・差額は空白にします。総原価表の利益率・利益率の差も同様です。保存値と計算には元の値を使います。";
 const calculationFailure = "総原価表・展開表の計算範囲を超えた場合は表の部分に理由を表示し、画面移動・表示条件の変更を維持します。金額や条件の変更後に再計算し、表示失敗では保存値を書き換えません。";
@@ -54,9 +55,9 @@ export const screenData: ScreenData[] = [
   { page: "initiative-list", name: "施策一覧", tables: [plan, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・種別ごとの開始年月・並び順", "id", "name", "note", "expansion_id", "period_type_id", "primary_start_year_month", "confirmed_start_year_month", "sort_order"), rows, primary, overrides, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、表全体の上限超過は合計部分で通知します。施策内の上限超過はその行の金額欄で通知し、正常な施策の金額と施策名からの修正を維持します。この場合は合計を表示しません。一覧用の計算は一覧表示時だけ行い、ホームや施策編集を妨げません。合計行は並べ替えず、集計結果の保存テーブルはありません。", largeDisplay, rounded] },
   { page: "initiative-entry", name: "施策入力", tables: initiativeTables,
-    calculated: ["登録前の入力は画面内で保持し、登録時に施策・科目行・月別金額へ保存します。", resolved, reflectPrimary, attributeTotals, "開始年月は期間の算出規則と種別ごとの月別増減から求め、施策へ保存します。", rounded] },
+    calculated: ["登録前の入力は画面内で保持し、登録時に施策・科目行・月別金額へ保存します。", invalidAmountInput, resolved, reflectPrimary, attributeTotals, "開始年月は期間の算出規則と種別ごとの月別増減から求め、施策へ保存します。", rounded] },
   { page: "initiative-detail", name: "施策詳細", tables: initiativeTables,
-    calculated: [resolved, reflectPrimary, attributeTotals, "登録済み行の科目変更と削除は入力中と保存済みの両方が全種別・全月0のときに許可します。自動保存の実行中は科目変更と行削除を待ちます。非0の保存中に0へ戻した場合も、最新の0化の保存成功まで待ち、金額入力は続けられます。全種別・全月0の既存行を、金額も手修正も空欄・科目未選択に戻すと保存時に削除します。入力値のある未選択行は拒否します。", "開始年月は期間の算出規則と種別ごとの月別増減から再算出し、施策へ保存します。", rounded] },
+    calculated: [invalidAmountInput, resolved, reflectPrimary, attributeTotals, "登録済み行の科目変更と削除は入力中と保存済みの両方が全種別・全月0のときに許可します。自動保存の実行中は科目変更と行削除を待ちます。非0の保存中に0へ戻した場合も、最新の0化の保存成功まで待ち、金額入力は続けられます。全種別・全月0の既存行を、金額も手修正も空欄・科目未選択に戻すと保存時に削除します。入力値のある未選択行は拒否します。", "開始年月は期間の算出規則と種別ごとの月別増減から再算出し、施策へ保存します。", rounded] },
   { page: "previous-input", name: "前年入力", tables: [plan, previous, accounts, groups, members, classifications[1]!, classifications[2]!],
     calculated: ["選択した業種・部署の組み合わせを科目・月ごとに合算します。未選択は全件、複数選択の合計は参照専用です。業種・部署を一つずつ選ぶと、その組み合わせの前年実額を更新します。分類の選択は保存しません。分類合計が計算上限を超えたときは計算セルを空欄にして通知し、分類を絞って元の金額を確認・修正できます。", "小計・合計は aggregation_groups の表示名・並び順と aggregation_members の科目・子集計の所属・加減算から求めます。売上集計の役割は固定見出しの範囲を決め、利益率は経常利益集計÷売上集計×100で計算します。未設定の集計や売上が0の場合の利益率は空欄です。保存する前年実額は previous_amounts だけで、小計・合計・利益率は保存しません。", rounded] },
   { page: "cost-table", name: "総原価表", tables: [plan, previous, use("initiatives", "施策ごとの科目行と業種・部署への所属", "id", "industry_id", "department_id"), rows, primary, overrides, accounts, groups, members, classifications[1]!, classifications[2]!, selection],

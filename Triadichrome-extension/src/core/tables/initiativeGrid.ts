@@ -2,14 +2,54 @@ import { type Account } from "../domain/accountMaster";
 import { accountTypes, type AccountType } from "../domain/accountTypes";
 import { amountToYen, checkedYen } from "../domain/amounts";
 import { initiativeMonths } from "../domain/calendar";
-import { type InitiativeEntryDraft } from "../domain/plan";
-import { isKindId, resolvedAmount, type KindId } from "../domain/kinds";
+import { type InitiativeEntryDraft, type InitiativeRow } from "../domain/plan";
+import { hasInvalidAmountInput, isKindId, resolvedAmount, type InvalidAmountInput, type KindId, type MonthAmounts } from "../domain/kinds";
 import { gridBounds, normalizeGridAmount, type GridCell, type GridSelection } from "./previousGrid";
 
 export function canEditInitiativeCell(draft: InitiativeEntryDraft, kind: KindId, cell: GridCell): boolean {
   return isKindId(kind) && Number.isInteger(cell.row) && Number.isInteger(cell.column) && cell.row >= 0 && cell.column >= 0
     && cell.column < initiativeMonths.length && draft.rows[cell.row]?.accountId != null
 ;
+}
+
+function updateInputErrors(row: InitiativeRow, kind: KindId, months: number[], invalidInput?: InvalidAmountInput): InitiativeRow {
+  const invalidAmounts = { ...row.invalidAmounts }, errors = { ...invalidAmounts[kind] };
+  for (const month of months) {
+    if (invalidInput) errors[month] ??= invalidInput;
+    else delete errors[month];
+  }
+  if (Object.keys(errors).length) invalidAmounts[kind] = errors;
+  else delete invalidAmounts[kind];
+  const { invalidAmounts: _previous, ...source } = row;
+  return { ...source, ...(Object.keys(invalidAmounts).length ? { invalidAmounts } : {}) };
+}
+function updateRowAmounts(row: InitiativeRow, kind: KindId, amounts: MonthAmounts, invalidInput?: InvalidAmountInput): InitiativeRow {
+  return { ...updateInputErrors(row, kind, Object.keys(amounts).map(Number), invalidInput),
+    ...(kind === 1 ? { amounts: { ...row.amounts, ...amounts } }
+      : { overrides: { ...row.overrides, [kind]: { ...row.overrides?.[kind], ...amounts } } }) };
+}
+
+export function changeInitiativeCell(draft: InitiativeEntryDraft, kind: KindId, cell: GridCell, value: string, invalidInput?: InvalidAmountInput): InitiativeEntryDraft {
+  if (!canEditInitiativeCell(draft, kind, cell)) return draft;
+  const month = initiativeMonths[cell.column]!;
+  return { ...draft, rows: draft.rows.map((row, index) => index === cell.row ? updateRowAmounts(row, kind, { [month]: value }, invalidInput) : row) };
+}
+
+/** Cancel only this cell, including after a budget-tab remount, without freezing an inherited value. */
+export function cancelInitiativeCell(draft: InitiativeEntryDraft, kind: KindId, cell: GridCell, fallback: InvalidAmountInput): InitiativeEntryDraft {
+  if (!canEditInitiativeCell(draft, kind, cell)) return draft;
+  const month = initiativeMonths[cell.column]!, source = draft.rows[cell.row]!;
+  const original = source.invalidAmounts?.[kind]?.[month] ?? fallback;
+  const next = changeInitiativeCell(draft, kind, cell, original.original);
+  if (kind !== 2 || !original.inherited) return next;
+  return { ...next, rows: next.rows.map((row, index) => {
+    if (index !== cell.row) return row;
+    const overrides = { ...row.overrides }, amounts = { ...overrides[2] };
+    delete amounts[month];
+    if (Object.keys(amounts).length) overrides[2] = amounts;
+    else delete overrides[2];
+    return { ...row, overrides };
+  }) };
 }
 
 function applyRectangle(draft: InitiativeEntryDraft, kind: KindId, start: GridCell, values: string[][]): InitiativeEntryDraft {
@@ -29,8 +69,7 @@ function applyRectangle(draft: InitiativeEntryDraft, kind: KindId, start: GridCe
   return { ...draft, rows: draft.rows.map((row, index) => {
     const amounts = updates[index - start.row];
     if (!amounts) return row;
-    return kind === 1 ? { ...row, amounts: { ...row.amounts, ...amounts } }
-      : { ...row, overrides: { ...row.overrides, [kind]: { ...row.overrides?.[kind], ...amounts } } };
+    return updateRowAmounts(row, kind, amounts);
   }) };
 }
 
@@ -53,7 +92,7 @@ export function reflectPrimaryBudget(draft: InitiativeEntryDraft): InitiativeEnt
   return { ...draft, rows: draft.rows.map(row => {
     const overrides = { ...row.overrides };
     delete overrides[2];
-    return { ...row, overrides };
+    return { ...updateInputErrors(row, 2, [...initiativeMonths]), overrides };
   }) };
 }
 
@@ -61,11 +100,12 @@ export function reflectPrimaryBudget(draft: InitiativeEntryDraft): InitiativeEnt
 export function initiativeAttributeTotals(draft: InitiativeEntryDraft, kind: KindId, accounts: Account[]) {
   const accountById = new Map(accounts.map(account => [account.id, account]));
   let error = "";
+  const invalidNumbers = draft.invalidNumbers || draft.rows.some(hasInvalidAmountInput);
   const rows = (Object.keys(accountTypes) as AccountType[]).flatMap(attribute => {
     const sources = draft.rows.filter(row => row.accountId !== null && accountById.get(row.accountId)?.accountType === attribute);
     if (sources.length === 0) return [];
     const amounts = Object.fromEntries(initiativeMonths.map(month => {
-      if (draft.invalidNumbers) return [month, undefined];
+      if (invalidNumbers) return [month, undefined];
       try {
         const total = sources.reduce((sum, row) => sum + BigInt(amountToYen(resolvedAmount(row, kind, month))), 0n);
         return [month, checkedYen(total)];

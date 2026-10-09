@@ -51,6 +51,23 @@ export async function verifyAutoSave(api) {
   assert.deepEqual(await readPlanContents(bytes), before);
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2026, { ...edited, name: "別施策" }), /同じ施策名/);
   await assert.rejects(updateInitiative(updatedBytes, original.id, 2026, { ...edited, invalidNumbers: true }), /有効な数値/);
+  for (const kind of [1, 2]) {
+    const cell = { row: 0, column: 0 };
+    const bad = api.changeInitiativeCell({ ...edited, invalidNumbers: false }, kind, cell, "", { original: "200", inherited: kind === 2 });
+    await assert.rejects(registerInitiative(updatedBytes, { ...bad, name: "不正な新規入力" }), /有効な数値/);
+    let storedBytes = updatedBytes;
+    const inputQueue = new AutoSave(async value => { storedBytes = await updateInitiative(storedBytes, original.id, 2026, value); }, 10000);
+    inputQueue.begin(edited); inputQueue.change(bad); await inputQueue.flush();
+    assert.match(inputQueue.getSnapshot().error, /有効な数値/);
+    const other = api.pasteInitiativeGrid(bad, kind === 1 ? 2 : 1, { row: 1, column: 1 }, "8");
+    inputQueue.change(other); await inputQueue.flush();
+    assert.equal(inputQueue.getSnapshot().pending, true); assert.match(inputQueue.getSnapshot().error, /有効な数値/);
+    assert.deepEqual(storedBytes, updatedBytes, "別種別の正常入力で不正な空欄を0として保存しない");
+    inputQueue.change(api.cancelInitiativeCell(other, kind, cell, { original: "0", inherited: false })); await inputQueue.flush();
+    assert.equal(inputQueue.getSnapshot().pending, false);
+    assert.equal((await readPlanContents(storedBytes)).initiatives[0].rows[0].amounts[4], "200");
+    inputQueue.end();
+  }
   const zeroed = await updateInitiative(updatedBytes, original.id, 2026, { ...edited, rows: [{ ...edited.rows[0], amounts: {} }, edited.rows[1]] });
   assert.equal((await readPlanContents(zeroed)).initiatives[0].rows[0].amounts[4], "0");
   const extended = { ...edited, rows: [...edited.rows, { id: "追加行の識別子", accountId: 1, amounts: {} }] };
