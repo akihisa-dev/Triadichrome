@@ -83,6 +83,11 @@ export function ExtensionPage() {
       if (!handle) throw new Error("ファイル履歴を消去できませんでした。");
     }
   };
+  const rememberSavedFile = useRef<(handle: FileSystemFileHandle) => Promise<void>>(async () => {});
+  rememberSavedFile.current = async handle => {
+    if (handle !== recentFile) await remember(handle);
+  };
+  useEffect(() => session.subscribeFileSave(handle => rememberSavedFile.current(handle)), [session]);
   useEffect(() => {
     if (snapshot.name) setDisplayName(snapshot.name);
   }, [snapshot.name]);
@@ -136,10 +141,7 @@ export function ExtensionPage() {
   });
   const prepareSave = () => session.prepareSave(chooseDestination);
   const dispatch = async (command: PlanCommand) => {
-    const contents = await session.dispatch(command, chooseDestination);
-    const handle = session.getHandle();
-    if (handle && handle !== recentFile) await remember(handle);
-    return contents;
+    return session.dispatch(command, chooseDestination);
   };
   const changePlan = (change: PlanChange) => dispatch({ type: "settings", change });
   const changeMaster = (change: AccountChange) => dispatch({ type: "account", change });

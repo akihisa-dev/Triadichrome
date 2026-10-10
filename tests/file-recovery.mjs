@@ -66,5 +66,47 @@ export async function verifyFileRecovery(api) {
   assert.deepEqual(session.getSnapshot().contents.kindSelections["initiative-list"], [1]);
   assert.deepEqual(session.getSnapshot().contents.kindSelections["cost-table"], [1, 2]);
   assert.equal(session.getSnapshot().canUndo, false, "外部変更前の全体取消は残さない");
+  for (const action of ["dispatch", "preview", "checkpoint", "restore", "delete", "undo", "close"]) {
+    const source = file(`${action}-元.triadic`), destination = file(`${action}-コピー.triadic`, new Uint8Array());
+    const active = new api.PlanSession();
+    await active.open({ ...await api.readPlanContents(bytes), bytes, name: source.handle.name, handle: source.handle });
+    const notifications = [];
+    active.subscribeFileSave(async handle => { notifications.push(handle); });
+    await active.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1, 2] } }, async () => source.handle);
+    const historyId = active.getSnapshot().history.entries[0].id;
+    source.replace(overlap);
+    stop = api.registerFileConflictRecovery(async () => destination.handle);
+    try {
+      if (action === "dispatch") await active.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1] } }, async () => source.handle);
+      if (action === "preview") await active.preview(historyId, async () => source.handle);
+      if (action === "checkpoint") await active.checkpoint(true, async () => source.handle);
+      if (action === "restore") await active.restore(historyId, async () => source.handle);
+      if (action === "delete") await active.deleteHistory({ ids: [historyId] }, async () => source.handle);
+      if (action === "undo") await active.travelOperation(-1, async () => source.handle);
+      if (action === "close") await active.close(async () => source.handle);
+      assert.equal(notifications.at(-1), destination.handle, `${action}: 成功した保存先を通知する`);
+      assert.equal(active.getSnapshot().name, action === "close" ? "" : destination.handle.name);
+      assert.equal(active.getHandle(), action === "close" ? undefined : destination.handle);
+      assert.deepEqual(source.bytes, overlap, `${action}: 元の外部変更を保護する`);
+      await api.validateTriadicDatabase(destination.bytes);
+    } finally { stop(); }
+  }
+  for (const recovery of [null, failed.handle]) {
+    const active = new api.PlanSession(), source = file("取消・失敗元.triadic");
+    await active.open({ ...await api.readPlanContents(bytes), bytes, name: source.handle.name, handle: source.handle });
+    await active.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1, 2] } }, async () => source.handle);
+    const before = active.getSnapshot();
+    let notifications = 0;
+    active.subscribeFileSave(async () => { notifications++; });
+    source.replace(overlap);
+    stop = api.registerFileConflictRecovery(async () => recovery);
+    try { await assert.rejects(active.preview(before.history.entries[0].id, async () => source.handle)); }
+    finally { stop(); }
+    assert.equal(notifications, 0, "取消・失敗では保存成功を通知しない");
+    assert.equal(active.getSnapshot().name, source.handle.name);
+    assert.equal(active.getHandle(), source.handle);
+    assert.deepEqual(active.getSnapshot().contents, before.contents, "保存失敗でも入力内容を保持する");
+    assert.deepEqual(source.bytes, overlap);
+  }
   console.log("PASS: ファイル更新の自動統合、取消での外部変更保護、別ファイル保存、キャンセル・失敗時の入力と元ファイル保護");
 }

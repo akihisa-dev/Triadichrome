@@ -2,10 +2,10 @@ import { readFile } from "node:fs/promises";
 import { test, expect, type Page } from "@playwright/test";
 import { settleMotion } from "./fixtures";
 
-const sample = Array.from(await readFile(new URL("../../samples/全機能確認用.triadic", import.meta.url)));
+const sample = await readFile(new URL("../../samples/全機能確認用.triadic", import.meta.url));
 
 // Real structured-cloneable handles, confined to this test browser's storage.
-async function filePicker(page: Page, name = "再開テスト.triadic", bytes = sample) {
+async function filePicker(page: Page, name = "再開テスト.triadic", bytes = Array.from(sample)) {
   await page.evaluate(async ({ name, bytes }) => {
     const root = await navigator.storage.getDirectory();
     const handle = await root.getFileHandle(name, { create: true });
@@ -158,3 +158,59 @@ test("記憶の保存に失敗しても開けて、その画面内では再開�
   await page.getByRole("button", { name: "続きから", exact: true }).click();
   await expect(page.locator(".home-file-name")).toHaveText("再開テスト.triadic");
 });
+
+for (const action of ["preview", "close"] as const) {
+  test(`履歴の${action}で競合から別ファイルに保存すると続きからも保存成功先を開く`, async ({ page }, testInfo) => {
+    await page.goto("/tests/ui/preview.html?data=defaults");
+    await expect(page.locator("#status")).toHaveText("操作できます");
+    const seed = await page.evaluate(async () => {
+      const url = "/tests/ui/preview.ts";
+      const fixture = await import(url);
+      return Array.from(fixture.fixtureBytes as number[]);
+    });
+    await page.goto("/");
+    await filePicker(page, "再開テスト.triadic", seed);
+    await page.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+    await page.getByRole("button", { name: "マスタ", exact: true }).click();
+    await page.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+    await page.getByRole("button", { name: "売上高を編集", exact: true }).click();
+    await page.getByRole("textbox", { name: "売上高の名称", exact: true }).fill("保存成功先の売上");
+    await expect(page.getByRole("button", { name: "完了", exact: true })).toBeEnabled();
+    await page.getByRole("button", { name: "完了", exact: true }).click();
+    // An external write differs from the session's saved bytes. Both files are
+    // synthetic OPFS entries confined to the fresh browser context.
+    await filePicker(page, "再開テスト.triadic", seed);
+    await page.evaluate(async () => {
+      const copy = await (await navigator.storage.getDirectory()).getFileHandle("保存成功先.triadic", { create: true });
+      Object.defineProperty(window, "showSaveFilePicker", { configurable: true, value: async () => copy });
+    });
+    if (action === "preview") {
+      await page.getByRole("button", { name: "履歴", exact: true }).click();
+      await page.locator(".history-date").last().click();
+    } else {
+      await page.getByRole("button", { name: "ファイルを閉じる", exact: true }).click();
+      await page.getByRole("alertdialog", { name: "ファイルを閉じる", exact: true }).getByRole("button", { name: "閉じる", exact: true }).click();
+    }
+    const recovery = page.getByRole("alertdialog", { name: "入力を保持しています", exact: true });
+    await expect(recovery).toBeVisible();
+    await recovery.getByRole("button", { name: "別のファイルに保存して続ける", exact: true }).click();
+    if (action === "preview") {
+      await expect(page.getByLabel("過去のデータを閲覧中")).toBeVisible();
+      await expect(page.locator(".home-file-name")).toHaveText("保存成功先.triadic");
+      await page.getByRole("button", { name: "現在に戻る", exact: true }).click();
+      await closeFile(page);
+    }
+    await expect(page.locator("#recent-file-name")).toHaveText("保存成功先.triadic");
+    await testInfo.attach(`競合回復-${action}`, { body: await page.screenshot(), contentType: "image/png" });
+    await page.reload();
+    await expect(page.locator("#recent-file-name")).toHaveText("保存成功先.triadic");
+    await page.getByRole("button", { name: "続きから", exact: true }).click();
+    await page.getByRole("button", { name: "マスタ", exact: true }).click();
+    await page.getByRole("button", { name: /^勘定科目マスタ/ }).click();
+    await expect(page.getByRole("button", { name: "保存成功先の売上を編集", exact: true })).toBeVisible();
+    expect(await page.evaluate(async () => {
+      const handle = await (await navigator.storage.getDirectory()).getFileHandle("再開テスト.triadic");
+      return Array.from(new Uint8Array(await (await handle.getFile()).arrayBuffer()));
+    })).toEqual(seed);
+  });
+}

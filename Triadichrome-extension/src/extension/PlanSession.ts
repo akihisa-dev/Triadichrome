@@ -20,10 +20,15 @@ export class PlanSession {
   private redoStack: SavedOperation[] = [];
   private operationRevision = 0;
   private listeners = new Set<() => void>();
+  private savedFileListeners = new Set<(handle: FileSystemFileHandle) => Promise<void>>();
   private tail: Promise<void> = Promise.resolve();
   private pending = 0;
   getSnapshot = () => this.snapshot;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
+  subscribeFileSave = (listener: (handle: FileSystemFileHandle) => Promise<void>) => {
+    this.savedFileListeners.add(listener);
+    return () => { this.savedFileListeners.delete(listener); };
+  };
   private publish(patch: Partial<SessionSnapshot>) {
     this.snapshot = { ...this.snapshot, ...patch, canUndo: this.undoStack.length > 0, canRedo: this.redoStack.length > 0, operationRevision: this.operationRevision };
     this.listeners.forEach(listener => listener());
@@ -40,6 +45,14 @@ export class PlanSession {
   private contents(plan: OpenPlan): PlanContents {
     const { bytes, handle, name, destinationBytes, savedHistory, rebasedOperation, ...contents } = plan;
     void bytes; void handle; void name; void destinationBytes; void savedHistory; void rebasedOperation;
+    return contents;
+  }
+  /** Publish and remember only the file whose write has successfully committed. */
+  private async acceptSaved(saved: OpenPlan): Promise<PlanContents> {
+    this.plan = saved;
+    const contents = this.contents(saved);
+    this.publish({ contents, name: saved.name, history: saved.savedHistory ?? this.snapshot.history, historyError: "" });
+    if (saved.handle) await Promise.all([...this.savedFileListeners].map(listener => listener(saved.handle!)));
     return contents;
   }
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -114,14 +127,10 @@ export class PlanSession {
         if (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted") throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
       }
       const saved = await operation(current, destination);
-      const history = saved.savedHistory ?? this.snapshot.history;
       const { rebasedOperation, ...persisted } = saved;
-      this.plan = persisted;
       if (rebasedOperation !== undefined) this.resetOperations();
       committed?.(saved);
-      const contents = this.contents(saved);
-      this.publish({ contents, name: saved.name, history, historyError: "" });
-      return contents;
+      return this.acceptSaved(persisted);
     });
   }
   travelOperation(direction: -1 | 1, destination: Destination): Promise<PlanContents> {
@@ -161,9 +170,7 @@ export class PlanSession {
     if (!handle || (handle.queryPermission && await handle.queryPermission({ mode: "readwrite" }) !== "granted")) throw new Error("「保存を再試行」からファイルへの保存を許可してください。");
     const bytes = await recordDataHistory(current.bytes, new Date().toISOString(), true);
     const saved = await writePlanChange(current, handle, bytes, { historyPrepared: true });
-    const history = saved.savedHistory ?? this.snapshot.history;
-    this.plan = saved;
-    this.publish({ contents: this.contents(saved), history, historyError: "" });
+    await this.acceptSaved(saved);
     return saved;
   }
   restore(id: number, destination: Destination) { return this.historyChange(bytes => restoreDataHistory(bytes, id), destination, () => this.resetOperations()); }
