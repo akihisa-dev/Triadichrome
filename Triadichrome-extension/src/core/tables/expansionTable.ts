@@ -1,4 +1,4 @@
-import { addYen } from "../domain/amounts";
+import { sumYen } from "../domain/amounts";
 import { initiativeMonths } from "../domain/calendar";
 import { type Initiative, type PlanContents } from "../domain/plan";
 
@@ -10,7 +10,7 @@ export function totalInitiatives(initiatives: Initiative[]): ExpansionTotals {
   return Object.fromEntries(initiativeMonths.map(month => {
     const values = initiatives.map(item => item.months[month]);
     const sum = (key: "sales" | "profit") => values.some(value => value?.[key] === null) ? null
-      : values.reduce((total, value) => addYen(total, value?.[key] ?? 0), 0);
+      : sumYen(values.map(value => value?.[key] ?? 0));
     return [month, { sales: sum("sales"), profit: sum("profit") }];
   }));
 }

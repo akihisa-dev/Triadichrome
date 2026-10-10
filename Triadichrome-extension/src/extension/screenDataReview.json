@@ -4,7 +4,7 @@
     "description": "5e0af9fa1e2622799eb8df5c534acbbec00aabd6c02fff4c867568168680a219"
   },
   "previous-input": {
-    "implementation": "299a0121563b477b192c7ad23edbe71b0fe095754e57a00c4fe5dd4ee393a44e",
+    "implementation": "8e84abc8df3378b29428dbf1faf05a57b46cfdd760f5b55d4bd119f69847d257",
     "description": "2c0c94f05e58f69534675b05df948b7930fd37c9474c4636c6b159495edeebc3"
   },
   "initiative-entry": {
@@ -20,12 +20,12 @@
     "description": "ca83d230287844ca87e57406268d2d197d0eb6ed28d31944fd17880c25440548"
   },
   "cost-table": {
-    "implementation": "a156c0f0394a4ebe8df1c5e3411d22a18f508884a77c41e881d5b31a58108ee8",
+    "implementation": "2ae28bfc77cb356bc4f3ae60e6020bfdc223b55592e5cb9c81c5b560ee536e26",
     "description": "235ae5db0d47968bfbd8a1820001e26fa392223239c62d41bfdd7beec81c50c0"
   },
   "expansion-table": {
-    "implementation": "5fb0d2badeb431b2910395cf37e13ef8d62d933c1e0c6eb81f3eede293712b93",
-    "description": "b770124d19dc1e4b37ecd555c738bfcbfd5a7925e14e5e42de370a9631580338"
+    "implementation": "5de4d65d38f60d9461d21bd3c3186cb40cc438829f1bf66f18d718664e9ca5bd",
+    "description": "209dae4b391b25135c20e218c428f120f9893f7d0fc6f023f84a90fb1d5cd2fc"
   },
   "kind-master": {
     "implementation": "9ba1349a6c16447bb15eec06084debc7a3de35b6bc8dfe9d6b2a4efad3349555",
@@ -52,7 +52,7 @@
     "description": "bb88804d9ef1d3341e34322edf6897b8d28f9b5e2b43f22482b70e784039440e"
   },
   "spreadsheet-io": {
-    "implementation": "1144aafd12a8fbd19bcdc83347fe2c9a18fac94adce5c03745e22f4b4dd81170",
+    "implementation": "10bce998e8ea731512e260b9127a36cf3fe8261aed0cc867ce876fe98027716c",
     "description": "90ac994a8a30b8223a6d959515887bfc136747b725cad039bd18181aabc9422e"
   },
   "account-type-master": {

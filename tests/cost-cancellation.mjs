@@ -26,6 +26,15 @@ export async function verifyCostCancellation(api) {
     const both = api.buildCostComparison(plan, [1, 2]).rows.find(row => row.id === sales.id && row.kind === "account");
     assert.deepEqual(both.values.map(values => values[4]), [0, expected, expected - Math.sign(expected), expected - Math.sign(expected), -Math.sign(expected)]);
     const separate = { ...plan, initiatives: plan.initiatives[0].rows.map((row, index) => ({ ...plan.initiatives[0], id: index + 1, rows: [row] })) };
+    for (const attribute of ["sales", "cost"]) for (const kind of [1, 2]) {
+      const attributed = { ...separate, accounts: separate.accounts.map(account => account.id === sales.id ? { ...account, accountType: attribute } : account) };
+      const table = api.buildKindExpansionTable(attributed, [kind], "registered");
+      const target = (kind === 1 ? expected : expected - Math.sign(expected)) * (attribute === "cost" ? -1 : 1);
+      assert.equal(table.total[0][4].sales, target);
+      assert.equal(table.total[0][4].profit, target);
+      assert.equal(table.groups[0].values[0][4].sales, target);
+      assert.equal(table.groups[0].values[0][4].profit, target);
+    }
     assert.deepEqual(api.buildCostComparison(separate, [1, 2]), api.buildCostComparison(plan, [1, 2]), "施策を分けても同じ科目合計になる");
     const prior = { ...defaults, previousAmounts: signs.map((sign, index) => ({ accountId: sales.id, industryId: index + 1, departmentId: 1, month: 4, amount: api.yenToAmount(sign * maximum) })) };
     assert.equal(api.previousByAccount(prior).get(sales.id)[4], expected);

@@ -49,6 +49,12 @@ export async function verifyExpansionTable(api) {
   assert.equal(fractionalTable.total[4].profit, 600, "表示で丸めず1円精度で合算する");
   const overflow = { ...contents.initiatives[0], months: { 4: { sales: 9007199254740991, profit: 9007199254740991 } } };
   assert.throws(() => buildExpansionTable({ ...contents, initiatives: [overflow, { ...overflow, months: { 4: { sales: 1, profit: 1 } } }] }, 2026, "registered"), /範囲/);
+  assert.deepEqual(api.totalInitiatives([{ months: { 4: { sales: null, profit: 1 } } }, { months: { 4: { sales: 2, profit: null } } }])[4], { sales: null, profit: null });
+  assert.deepEqual(api.totalInitiatives([])[4], { sales: 0, profit: 0 });
+  for (const sign of [1, -1]) {
+    const tooLarge = [Number.MAX_SAFE_INTEGER, 1].map(value => ({ ...overflow, months: { 4: { sales: sign * value, profit: sign * value } } }));
+    assert.throws(() => buildExpansionTable({ ...contents, initiatives: tooLarge }, 2026, "registered"), /範囲/);
+  }
   const periodRows = [
     { id: 1, periodTypeId: 2, amount: 10 }, { id: 2, periodTypeId: null, amount: 20 },
     { id: 3, periodTypeId: 1, amount: 30 }, { id: 4, periodTypeId: 2, amount: 40 },

@@ -182,11 +182,11 @@ export async function createCostCancellationPlan(fiscalYear = 2026) {
   const plan = await readPlanContents(bytes);
   const accountId = plan.accounts.find(account => account.accountType === "sales")!.id;
   const maximum = "9007199254740.991";
-  bytes = await registerInitiative(bytes, {
-    name: "相殺後の上限確認", note: "行順を変えても総原価表・施策一覧・展開表の金額は同じです。4月・5月・6月の年間計も相殺後の上限内です。",
+  for (const [index, sign] of [1, 1, -1].entries()) bytes = await registerInitiative(bytes, {
+    name: `相殺後の上限確認${index + 1}`, note: "別施策の順を変えても総原価表・施策一覧・展開表の金額は同じです。4月・5月・6月の年間計も相殺後の上限内です。",
     fiscalYear: String(fiscalYear), expansionId: 1, industryId: 1, departmentId: 1,
-    rows: [1, 1, -1].map(sign => ({ accountId, amounts: { 4: sign === 1 ? maximum : `-${maximum}`,
-      5: sign === 1 ? `-${maximum}` : maximum, 6: sign === 1 ? maximum : `-${maximum}` } })),
+    rows: [{ accountId, amounts: { 4: sign === 1 ? maximum : `-${maximum}`,
+      5: sign === 1 ? `-${maximum}` : maximum, 6: sign === 1 ? maximum : `-${maximum}` } }],
   });
   return bytes;
 }

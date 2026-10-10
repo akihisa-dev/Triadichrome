@@ -77,7 +77,7 @@ test("相殺後が上限内なら三表・施策入力・期間計を表示す�
     await expect(table.getByText("9,007,199,254,741", { exact: true }).first()).toBeVisible();
     await expect(app.getByRole("alert")).toHaveCount(0);
   }
-  await app.getByRole("button", { name: "相殺後の上限確認", exact: true }).click();
+  await app.getByRole("button", { name: "相殺後の上限確認1", exact: true }).click();
   const input = app.getByRole("table", { name: "月別計画金額", exact: true });
   for (const kind of ["一次予算", "確定予算"]) {
     await app.getByRole("tab", { name: kind, exact: true }).click();
