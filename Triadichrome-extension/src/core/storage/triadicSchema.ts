@@ -6,7 +6,7 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 20;
+export const TRIADIC_FORMAT_VERSION = 21;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
@@ -27,6 +27,7 @@ CREATE TABLE accounts (
  code TEXT NOT NULL UNIQUE CHECK (code GLOB '[0-9][0-9][0-9]'),
  attribute TEXT NOT NULL CHECK (attribute IN ('sales', 'cost', 'expense', 'profit')),
  name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0),
+ display_name TEXT CHECK (display_name IS NULL OR (typeof(display_name) = 'text' AND length(trim(display_name)) > 0)),
  sort_order INTEGER NOT NULL CHECK (typeof(sort_order) = 'integer' AND sort_order >= 0)
 );
 ${PERIOD_MASTER_SQL}

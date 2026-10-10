@@ -40,6 +40,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
     throw new TriadicFileError("このファイルの形式には許可されていない保存構造が含まれています。元のファイルは変更していません。");
   }
   const metadata = new Map((db.exec("SELECT key, value FROM triadic_metadata")[0]?.values ?? []).map(([key, value]) => [String(key), String(value)]));
+  if (metadata.has("account_display_names")) invalid();
   if (metadata.get("format_id") !== TRIADIC_FORMAT_ID || metadata.get("format_version") !== String(TRIADIC_FORMAT_VERSION)
     || metadata.get("container") !== "sqlite") invalid();
   const tables = new Set((db.exec("SELECT name FROM sqlite_master WHERE type = 'table'")[0]?.values ?? []).map(([name]) => String(name)));
@@ -54,7 +55,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
   const documentInfo = db.exec("SELECT id, fiscal_year, created_at, updated_at FROM document_info")[0]?.values ?? [];
   if (documentInfo.length !== 1 || documentInfo[0]?.[0] !== 1 || !Number.isInteger(documentInfo[0]?.[1]) || Number(documentInfo[0]?.[1]) < 1 || Number(documentInfo[0]?.[1]) > 9998) invalid();
   if (db.exec("PRAGMA integrity_check")[0]?.values[0]?.[0] !== "ok" || db.exec("PRAGMA foreign_key_check").length) invalid();
-  if (db.exec(`SELECT id FROM accounts WHERE typeof(code) != 'text' OR code NOT GLOB '[0-9][0-9][0-9]' OR attribute NOT IN ('sales','cost','expense','profit') OR trim(name) = ''
+  if (db.exec(`SELECT id FROM accounts WHERE typeof(code) != 'text' OR code NOT GLOB '[0-9][0-9][0-9]' OR attribute NOT IN ('sales','cost','expense','profit') OR trim(name) = '' OR (display_name IS NOT NULL AND (typeof(display_name) != 'text' OR trim(display_name) = ''))
     UNION ALL SELECT id FROM expansions WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR trim(name) = ''
     UNION ALL SELECT id FROM industries WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR trim(name) = ''
     UNION ALL SELECT id FROM departments WHERE trim(name) = '' UNION ALL SELECT id FROM period_types WHERE trim(name) = ''`).length) invalid();

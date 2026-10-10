@@ -16,6 +16,9 @@ export const dataMapSchema = [
         "name": "name"
       },
       {
+        "name": "display_name"
+      },
+      {
         "name": "sort_order"
       }
     ]

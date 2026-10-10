@@ -1,4 +1,4 @@
-import { readMasterPresentation, reconcileMasterOrder, saveAccountDisplayNames } from "./masterPresentation";
+import { readMasterPresentation, reconcileMasterOrder } from "./masterPresentation";
 import { orderedMasterRows, validateMasterOrder } from "../domain/masterRows";
 import { listAggregations } from "./aggregations";
 import type { Database } from "./sqliteRuntime";
@@ -7,13 +7,13 @@ import { validateAccountChange, type Account, type AccountChange } from "../doma
 import { openTriadicDatabase } from "./triadicDatabase";
 import { isAccountType } from "../domain/accountTypes";
 export function listAccounts(database: Database): Account[] {
-  const {names,ranks} = readMasterPresentation(database);
-  return (database.exec(`SELECT id, code, name, attribute,
+  const {ranks} = readMasterPresentation(database);
+  return (database.exec(`SELECT id, code, name, attribute, display_name,
     EXISTS(SELECT 1 FROM initiative_rows WHERE account_id = accounts.id)
     OR EXISTS(SELECT 1 FROM aggregation_members WHERE account_id = accounts.id)
     OR EXISTS(SELECT 1 FROM previous_amounts WHERE account_id = accounts.id)
-    FROM accounts ORDER BY sort_order, id`)[0]?.values ?? []).map(([id, code, name, attribute, inUse]) =>
-      ({ ...(names[String(id)] ? {displayName:names[String(id)]} : {}), ...(ranks.has(`account:${id}`) ? {masterOrder:ranks.get(`account:${id}`)!} : {}), id: Number(id), accountCode: String(code), accountName: String(name), accountType: isAccountType(attribute) ? attribute : null, inUse: Boolean(inUse) }));
+    FROM accounts ORDER BY sort_order, id`)[0]?.values ?? []).map(([id, code, name, attribute, displayName, inUse]) =>
+      ({ ...(displayName === null ? {} : {displayName:String(displayName)}), ...(ranks.has(`account:${id}`) ? {masterOrder:ranks.get(`account:${id}`)!} : {}), id: Number(id), accountCode: String(code), accountName: String(name), accountType: isAccountType(attribute) ? attribute : null, inUse: Boolean(inUse) }));
 }
 
 export async function readAccountMaster(bytes: Uint8Array): Promise<Account[]> {
@@ -43,14 +43,12 @@ export async function changeAccountMaster(bytes: Uint8Array, change: AccountChan
         database.run("UPDATE accounts SET code = ?, name = ?, attribute = ? WHERE id = ?", [code, name, change.accountType, change.id]);
       }
     }
-    if (change.type === "delete") delete presentation.names[String(change.id)];
-    else if (change.type !== "reorder") {
+    if (change.type === "add" || change.type === "update") {
       const current = change.type === "update" ? before.find(item => item.id === change.id) : undefined;
       const id = current?.id ?? Number(database.exec("SELECT last_insert_rowid()")[0]?.values[0]?.[0]);
       const display = change.displayName?.trim() ?? (current?.displayName && current.displayName !== current.accountName ? current.displayName : change.accountName.trim());
-      if (display === change.accountName.trim()) delete presentation.names[String(id)]; else presentation.names[String(id)] = display;
+      database.run("UPDATE accounts SET display_name = ? WHERE id = ?", [display === change.accountName.trim() ? null : display, id]);
     }
-    saveAccountDisplayNames(database,presentation.names);
     if ((presentation.order || change.presentationOrder) && change.type === "reorder") { let cursor=0; reconcileMasterOrder(database,order.map(row => row.kind === "account" ? {...row,id:change.ids[cursor++]!} : row)); }
     else if (presentation.order || change.presentationOrder) reconcileMasterOrder(database,order);
     return listAccounts(database);

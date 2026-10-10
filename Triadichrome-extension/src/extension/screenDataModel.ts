@@ -30,7 +30,7 @@ const documentInfo = use("document_info", "共通ヘッダーの基準年度・�
 const initiative = use("initiatives", "施策名・備考・分類", "name", "note", "expansion_id", "industry_id", "department_id", "period_type_id", "sort_order");
 const rows = use("initiative_rows", "施策と科目の対応・科目行の並び", "id", "initiative_id", "account_id", "sort_order");
 const amounts = use("initiative_amounts", "一次12か月と確定の明示手修正月の増減", "row_id", "kind_id", "month", "amount_yen");
-const accounts = use("accounts", "科目名・科目属性・並び順", "id", "code", "name", "attribute", "sort_order");
+const accounts = use("accounts", "科目名・表示名・科目属性・並び順", "id", "code", "name", "display_name", "attribute", "sort_order");
 const previous = use("previous_amounts", "科目・業種・部署ごとの前年実額", "account_id", "industry_id", "department_id", "month", "amount_yen");
 const groups = use("aggregation_groups", "売上・費用・利益などの集計と表示名", "id", "name", "display_name", "required_key", "sort_order");
 const members = use("aggregation_members", "科目・子集計の所属と加減算", "parent_id", "account_id", "group_id", "sign", "position");
@@ -39,8 +39,8 @@ const classifications = [use("expansions", "展開名", "id", "name"), use("indu
 const departmentIndustries = use("department_industries", "部署に設定した複数の業種", "department_id", "industry_id");
 const departmentIndustryRule = "部署の所属業種をdepartment_industriesに保存します。施策の業種候補を選択部署の所属へ絞り、一つなら自動選択します。所属変更の保存成功後は保持中の新規施策にも単一業種を反映し、他の入力を保持します。保存失敗では保持中の施策を変更しません。前年入力とExcelの出力・取り込みも所属する組み合わせだけを使います。施策・前年入力で使用中の所属は解除できず、部署に設定中の業種は削除できません。所属の変更で金額を移動・合算しません。";
 const identities = use("triadic_metadata", "業種・部署の作成識別子（既存分類はlegacy）", "key", "value");
-const presentation = use("triadic_metadata", "科目・集計共通の並び順（master_order）と科目の表示名（account_display_names）", "key", "value");
-const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号を＋／−のボタンで設定します。選択背景は0.4秒で滑り、左右キーにも対応します。クリック直後に仮の選択を表示し、保存中は追加変更を止めます。未所属は無効、保存失敗時は保存済みの符号へ戻します。符号だけの変更では所属内の順序を保ち、共通順が同じなら書き直しません。集計の変更と履歴・表示の準備は作業用データベースを共有し、変更前後と取消用データの全体検証を維持します。背景の位置・幅は画面内だけの情報です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。表示設定のない既存ファイルは従来の総原価表の並びと名称を使い、統合マスタの変更時に保存します。";
+const presentation = use("triadic_metadata", "科目・集計共通の並び順（master_order）", "key", "value");
+const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号を＋／−のボタンで設定します。選択背景は0.4秒で滑り、左右キーにも対応します。クリック直後に仮の選択を表示し、保存中は追加変更を止めます。未所属は無効、保存失敗時は保存済みの符号へ戻します。符号だけの変更では所属内の順序を保ち、共通順が同じなら書き直しません。集計の変更と履歴・表示の準備は作業用データベースを共有し、変更前後と取消用データの全体検証を維持します。背景の位置・幅は画面内だけの情報です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。科目の独自表示名はaccounts.display_nameに保持し、正式名と同じ場合はNULLで省略します。";
 const selection = use("kind_selections", "この画面の種別選択を復元", "screen", "first_kind", "second_kind");
 const selectionSave = "種別選択の変更では、取消用の前後データと時点履歴を一つの作業用データベースで準備し、金額・施策・マスタの読み直しを省きます。保存成功後に選択を反映し、失敗時は保存済みの選択と表示を維持します。";
 const resolved = "initiative_amountsの種別1を一次予算、種別2のレコードを確定予算の明示手修正として使います。種別2がない月だけ一次を引き継ぎ、明示0と同額の手修正も固定します。";
@@ -53,7 +53,7 @@ const calculationFailure = "総原価表・展開表の計算範囲を超えた�
 const largeDisplay = "行数が多い表は画面周辺の行だけを描画します。合計と並べ替えは全件を対象とし、スクロールで全行を確認できます。表示を省いた行も保存内容から削除しません。";
 const initiativeTables = [documentInfo, initiative, rows, amounts, accounts, ...classifications];
 export const screenData: ScreenData[] = [
-  { page: "spreadsheet-io", name: "入出力", tables: [documentInfo, departmentIndustries, initiative, rows, amounts, accounts, previous, groups, members, use("triadic_metadata", "科目・集計の共通順・科目表示名と業種・部署の作成識別子", "key", "value"), ...classifications],
+  { page: "spreadsheet-io", name: "入出力", tables: [documentInfo, departmentIndustries, initiative, rows, amounts, accounts, previous, groups, members, use("triadic_metadata", "科目・集計の共通順と業種・部署の作成識別子", "key", "value"), ...classifications],
     calculated: [departmentIndustryRule, "出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。Excelの施策一覧も最下部に月別売上・費用・利益の合計行を出力し、全施策の元金額の編集と行のコピー追加に追従します。施策0件は0です。金額はExcelでも円精度を保つため、大きい元金額を文字列として保持し、非表示列で上位の千円整数・下位6桁の千円整数・1円部分へ分けます。各部分をSUMIFS・SUMIF・SUMで合算し、期間計・比較差・利益率は丸める前の部分を参照します。表示セルだけ整数千円へ丸めます。計算元の文字列金額は千円単位・小数点以下3桁までの文字列として編集し、行を追加する場合は非表示列を含む行全体をコピーしてください。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。離れた小計の合計は各SUMを255引数以内に分け、対象の小計だけを合算します。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。生成前の件数と生成後の実際の処理量を取り込みと共通の上限で確認し、上限内だけを提供します。超える場合は組み合わせを減らして別ファイルに分ける案内を表示します。Excelの有効15桁または数値変換で1円精度を保てない金額は文字列セルとして出力し、文字列のまま編集します。ファイル選択または前年入力領域への単一の.xlsxファイルのドロップで取り込みます。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。作成識別子を読込時と保存時に照合し、同じ番号・名称でも作り直した分類への取り込みは拒否します。改名は許可します。識別子のない旧Excelは再出力が必要です。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [documentInfo, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・並び順", "id", "name", "note", "expansion_id", "period_type_id", "sort_order"), rows, amounts, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [selectionSave, "開始年月は期間の算出規則と種別ごとの月額から読み込み時に導出し、保存しません。正負の相殺前の科目行で非0の月を判定し、確定の手修正0も反映します。", "金額・科目・年度が同じ間は種別ごとの月別金額・計算エラー・全件合計を画面内で再利用します。元の金額・科目・年度や履歴の状態が変わると作り直します。", resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、表全体の上限超過は合計部分で通知します。施策内の上限超過はその行の金額欄で通知し、正常な施策の金額と施策名からの修正を維持します。この場合は合計を表示しません。一覧用の計算は一覧表示時だけ行い、ホームや施策編集を妨げません。合計行は並べ替えず、集計結果の保存テーブルはありません。", largeDisplay, rounded] },

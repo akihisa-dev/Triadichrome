@@ -29,6 +29,19 @@ export async function verifyUnifiedMaster(api) {
   bytes=(await api.changeAccountMaster(bytes,{...change,accountName:'再改名した売上'})).bytes;
   contents=await api.readPlanContents(bytes);
   assert.equal(contents.accounts.find(item=>item.id===account.id).displayName,'売上表示','独自表示名を名称変更でも保持');
+  const namedSnapshot = await api.createBusinessSnapshot(bytes);
+  const resetName = (await api.changeAccountMaster(bytes,{...change,accountName:'再改名した売上',displayName:'再改名した売上'})).bytes;
+  assert.equal((await api.readPlanContents(resetName)).accounts.find(item=>item.id===account.id).displayName, undefined, '正式名と同じ場合は属性を省略する');
+  const resetDb = await api.openTriadicDatabase(resetName);
+  try {
+    assert.equal(resetDb.exec('SELECT display_name FROM accounts WHERE id = ?',[account.id])[0].values[0][0], null);
+    resetDb.run("INSERT INTO triadic_metadata(key,value) VALUES('account_display_names','{}')");
+    const invalid = resetDb.export(); const before = invalid.slice();
+    await assert.rejects(api.openTriadicDatabase(invalid), /形式/,'旧表示名辞書を新形式へ混在させない');
+    assert.deepEqual(invalid,before);
+  } finally { resetDb.close(); }
+  bytes = await api.applyOperationSnapshot(resetName,namedSnapshot);
+  assert.equal((await api.readPlanContents(bytes)).accounts.find(item=>item.id===account.id).displayName,'売上表示','履歴の元データから独自表示名を復元する');
   const ordinary=contents.aggregations.find(item=>item.required==='ordinary');
   bytes=await api.changeAggregationMaster(bytes,{type:'update',id:group.id,name:'集計の改名',members:group.members});
   contents=await api.readPlanContents(bytes);
@@ -43,7 +56,12 @@ export async function verifyUnifiedMaster(api) {
   bytes=(await api.changeAccountMaster(bytes,{type:'delete',id:added.id})).bytes;
   await api.validateTriadicDatabase(bytes);
   const db=await api.openTriadicDatabase(bytes);
-  try { assert.ok(!db.exec("SELECT value FROM triadic_metadata WHERE key='account_display_names'")[0].values[0][0].includes(String(added.id))); } finally {db.close();}
+  try {
+    assert.equal(db.exec("SELECT value FROM triadic_metadata WHERE key='account_display_names'").length, 0, '表示名のJSON辞書を保存しない');
+    assert.equal(db.exec("SELECT display_name FROM accounts WHERE id = ?", [added.id]).length, 0, '科目の削除と表示名の削除が同じ行で完結する');
+    assert.equal(db.exec("SELECT display_name FROM accounts WHERE id = ?", [account.id])[0].values[0][0], '売上表示');
+    assert.throws(() => db.run("UPDATE accounts SET display_name = ' ' WHERE id = ?", [account.id]), /CHECK/);
+  } finally {db.close();}
   contents=await api.readPlanContents(bytes);
   for (const kind of ['account','group']) {
     const parent=contents.aggregations.find(item=>item.members.some(member=>member.kind===kind));
