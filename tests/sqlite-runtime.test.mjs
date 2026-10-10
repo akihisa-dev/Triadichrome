@@ -7,6 +7,22 @@ import { createHash } from "node:crypto";
 import { readFile, readdir } from "node:fs/promises";
 import { withNodeBundle } from "../scripts/node-bundle.mjs";
 import { oldPlan, oldSnapshot } from "./fixtures/sqlite-349-normal.mjs";
+import { build } from "esbuild";
+
+test("計画処理workerは画面と実ファイル保存へ依存しない", async () => {
+  const result = await build({
+    entryPoints: ["Triadichrome-extension/src/extension/planProcessing.worker.ts"],
+    bundle: true, write: false, metafile: true, format: "esm", platform: "browser",
+    packages: "external", external: ["*.wasm?url"],
+  });
+  const inputs = Object.keys(result.metafile.inputs);
+  const adapters = inputs.filter(file => file.includes("/extension/"));
+  assert.deepEqual(adapters.sort(), [
+    "Triadichrome-extension/src/extension/planProcessing.worker.ts",
+    "Triadichrome-extension/src/extension/planProcessingTasks.ts",
+  ]);
+  assert.ok(inputs.includes("Triadichrome-extension/src/core/storage/planCommands.ts"));
+});
 
 test("同梱本体の版・配布WASMと検索・複数文・保存メモリの境界を確認する", async () => {
   await withNodeBundle("Triadichrome-extension/src/core/storage/sqliteRuntime.ts", async ({ initializeSqlite }) => {

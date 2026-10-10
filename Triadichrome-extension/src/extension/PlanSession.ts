@@ -2,7 +2,7 @@ import { emptyDataHistory, type DataHistoryStatus, type HistoryDeletion } from "
 import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand, prepareAggregationSave, prepareKindSelectionSave } from "./planProcessing";
 import type { PlanContents } from "../core/domain/plan";
 import { writePlanChange, writePreparedPlanChange, type OpenPlan } from "./planFile";
-import { isAutomatic, validatePlanCommand, type PlanCommand } from "./planCommands";
+import { isAutomatic, validatePlanCommand, type PlanCommand } from "../core/domain/planCommands";
 export const OPERATION_HISTORY_LIMIT = 100;
 type SavedOperation = { before: Uint8Array; after: Uint8Array };
 export type SessionSnapshot = { contents: PlanContents | null; name: string; history: DataHistoryStatus; busy: boolean; historyError: string; canUndo: boolean; canRedo: boolean; operationRevision: number };
