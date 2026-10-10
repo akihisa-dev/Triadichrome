@@ -40,7 +40,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
     throw new TriadicFileError("このファイルの形式には許可されていない保存構造が含まれています。元のファイルは変更していません。");
   }
   const metadata = new Map((db.exec("SELECT key, value FROM triadic_metadata")[0]?.values ?? []).map(([key, value]) => [String(key), String(value)]));
-  if (metadata.has("account_display_names") || [...metadata.keys()].some(key => /^(industries|departments)_identity:/.test(key))) invalid();
+  if (metadata.size !== 4 || [...metadata.keys()].some(key => !["format_id", "format_version", "container", "document_type"].includes(key))) invalid();
   if (metadata.get("format_id") !== TRIADIC_FORMAT_ID || metadata.get("format_version") !== String(TRIADIC_FORMAT_VERSION)
     || metadata.get("container") !== "sqlite") invalid();
   const tables = new Set((db.exec("SELECT name FROM sqlite_master WHERE type = 'table'")[0]?.values ?? []).map(([name]) => String(name)));

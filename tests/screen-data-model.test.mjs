@@ -37,7 +37,7 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       for (const field of ["expansion_id", "period_type_id"]) assert.ok(list.tables.find(item => item.table === "initiatives").fields.includes(field), "施策の分類への所属を説明する");
       assert.ok(!list.tables.some(item => ["aggregation_groups", "aggregation_members", "industries", "departments"].includes(item.table)), "施策一覧に表示しない分類や使わない集計を構成テーブルへ混ぜない");
       const previous = screenData.find(item => item.page === "previous-input");
-      for (const [table, fields] of [["aggregation_groups", ["display_name", "required_key", "sort_order"]],
+      for (const [table, fields] of [["aggregation_groups", ["display_name", "required_key"]],
         ["aggregation_members", ["parent_id", "account_id", "group_id", "sign", "position"]]]) {
         const usage = previous.tables.find(item => item.table === table);
         assert.ok(usage, `前年入力に${table}の保存元を示す`);

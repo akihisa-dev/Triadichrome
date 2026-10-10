@@ -8,7 +8,12 @@ export async function createPreviousExportPlan(): Promise<Uint8Array> {
   let bytes: Uint8Array;
   try {
     db.exec("BEGIN");
-    for (let index = 0; index < 330; index++) db.run("INSERT INTO accounts (id, code, name, attribute, sort_order) VALUES (?, ?, ?, 'expense', ?)", [index + 1, String(100 + index), `確認科目${index + 1}`, index]);
+    db.run("DELETE FROM master_order");
+    for (let index = 0; index < 330; index++) {
+      db.run("INSERT INTO accounts (id, code, name, attribute) VALUES (?, ?, ?, 'expense')", [index + 1, String(100 + index), `確認科目${index + 1}`]);
+      db.run("INSERT INTO master_order(position,account_id) VALUES (?,?)",[index,index+1]);
+    }
+    db.run("INSERT INTO master_order(position,aggregation_group_id) SELECT id + 329,id FROM aggregation_groups");
     db.exec("COMMIT");
     bytes = db.export();
   } finally { db.close(); }

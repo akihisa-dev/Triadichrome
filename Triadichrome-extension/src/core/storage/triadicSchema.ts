@@ -6,11 +6,11 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 22;
+export const TRIADIC_FORMAT_VERSION = 23;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
-export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "previous_amounts", "kind_selections"] as const;
+export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "master_order", "initiatives", "initiative_rows", "initiative_amounts", "previous_amounts", "kind_selections"] as const;
 export const TRIADIC_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
@@ -27,8 +27,7 @@ CREATE TABLE accounts (
  code TEXT NOT NULL UNIQUE CHECK (code GLOB '[0-9][0-9][0-9]'),
  attribute TEXT NOT NULL CHECK (attribute IN ('sales', 'cost', 'expense', 'profit')),
  name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0),
- display_name TEXT CHECK (display_name IS NULL OR (typeof(display_name) = 'text' AND length(trim(display_name)) > 0)),
- sort_order INTEGER NOT NULL CHECK (typeof(sort_order) = 'integer' AND sort_order >= 0)
+ display_name TEXT CHECK (display_name IS NULL OR (typeof(display_name) = 'text' AND length(trim(display_name)) > 0))
 );
 ${PERIOD_MASTER_SQL}
 ${DEPARTMENT_SQL}
@@ -41,6 +40,12 @@ CREATE TABLE department_industries (
 INSERT INTO department_industries SELECT departments.id, industries.id FROM departments CROSS JOIN industries;
 ${EXPANSION_SQL}
 ${AGGREGATION_SQL}
+CREATE TABLE master_order (
+ position INTEGER PRIMARY KEY CHECK (typeof(position) = 'integer' AND position >= 0),
+ account_id INTEGER UNIQUE REFERENCES accounts(id) ON DELETE CASCADE,
+ aggregation_group_id INTEGER UNIQUE REFERENCES aggregation_groups(id) ON DELETE CASCADE,
+ CHECK ((account_id IS NULL) != (aggregation_group_id IS NULL))
+);
 CREATE TABLE initiatives (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0), note TEXT NOT NULL DEFAULT '',

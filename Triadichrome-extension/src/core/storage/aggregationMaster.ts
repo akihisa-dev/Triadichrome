@@ -1,5 +1,5 @@
 import { orderedMasterRows, validateMasterOrder } from "../domain/masterRows";
-import { readMasterPresentation, reconcileMasterOrder, saveMasterOrder } from "./masterPresentation";
+import { reconcileMasterOrder, saveMasterOrder } from "./masterPresentation";
 import { listAccounts } from "./accountMaster";
 import { listAggregations } from "./aggregations";
 import { changedAggregations, type AggregationChange } from "../domain/aggregationMaster";
@@ -17,7 +17,7 @@ export function applyAggregationChange(database: Database, change: AggregationCh
     if (change.type === "reorder") { saveMasterOrder(database,change.order); return; }
     if (change.type === "add") {
       const added = next[next.length - 1]!;
-      database.run("INSERT INTO aggregation_groups (id, name, display_name, sort_order) VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM aggregation_groups))", [added.id, added.name, added.displayName ?? null]);
+      database.run("INSERT INTO aggregation_groups (id, name, display_name) VALUES (?, ?, ?)", [added.id, added.name, added.displayName ?? null]);
     } else if (change.type === "delete") database.run("DELETE FROM aggregation_groups WHERE id = ?", [change.id]);
     else if (change.type === "move") {
       const { member, parentId, sign } = change;
@@ -36,5 +36,5 @@ export function applyAggregationChange(database: Database, change: AggregationCh
       change.members.forEach((member, position) => database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, ?)",
         [change.id, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, member.sign, position]));
     }
-    if (readMasterPresentation(database).order || change.presentationOrder) reconcileMasterOrder(database,order);
+    reconcileMasterOrder(database,order);
 }

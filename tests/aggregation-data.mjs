@@ -88,6 +88,16 @@ export async function verifyAggregationData(api) {
     ["施策B", "2026", [{ accountId: salesAccount.id, amounts: { 4: "-5.5", 3: "-0.25" } }]],
   ]) bytes = await registerInitiative(bytes, { name, note: "", expansionId: 1, industryId: 1, departmentId: 1, fiscalYear: year, rows });
   contents = await readPlanContents(bytes);
+  assert.deepEqual(api.orderedMasterRows(contents.accounts,contents.aggregations), [
+    ...[1,2,3,4].map(id => ({kind:"group",id})),
+    ...[salesAccount,costAccount,expenseAccount,profitAccount].map(item => ({kind:"account",id:item.id})),
+    {kind:"group",id:custom.id},
+  ], "集計定義・所属・金額の変更では保存済みの表示順を動かさない");
+  bytes = await changeAggregationMaster(bytes, {type:"reorder",order:[
+    {kind:"account",id:salesAccount.id},{kind:"group",id:custom.id},{kind:"account",id:costAccount.id},{kind:"group",id:1},
+    {kind:"account",id:expenseAccount.id},{kind:"group",id:2},{kind:"group",id:3},{kind:"account",id:profitAccount.id},{kind:"group",id:4},
+  ]});
+  contents = await readPlanContents(bytes);
   const build = (year = 2026, previous) => buildCostTable(contents.accounts, contents.aggregations, contents.initiatives, year, previous);
   const table = build();
   assert.deepEqual(table.map(row => row.name), ["売上", "売上小計", "原価", "売上集計", "費用", "費用集計", "営業利益", "利益", "経常利益", "利益率"]);

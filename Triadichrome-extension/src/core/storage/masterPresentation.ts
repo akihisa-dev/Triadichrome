@@ -2,28 +2,30 @@ import type { Database } from "./sqliteRuntime";
 import type { MasterRow } from "../domain/masterRows";
 import { masterRowKey } from "../domain/masterRows";
 export function readMasterPresentation(db: Database) {
-  const metadata = new Map((db.exec("SELECT key, value FROM triadic_metadata WHERE key = 'master_order'")[0]?.values ?? []).map(([key,value]) => [String(key),String(value)]));
-  const order: MasterRow[] | undefined = metadata.has("master_order") ? JSON.parse(metadata.get("master_order")!) : undefined;
-  return {order, ranks:new Map(order?.map((row,index) => [masterRowKey(row),index]))};
+  const order: MasterRow[] = (db.exec("SELECT account_id, aggregation_group_id FROM master_order ORDER BY position")[0]?.values ?? [])
+    .map(([account, group]) => ({kind: account === null ? "group" : "account", id:Number(account ?? group)}));
+  return {order, ranks:new Map(order.map((row,index) => [masterRowKey(row),index]))};
 }
 export function saveMasterOrder(db: Database, order: MasterRow[]) {
-  const serialized = JSON.stringify(order);
-  if (db.exec("SELECT value FROM triadic_metadata WHERE key = 'master_order'")[0]?.values[0]?.[0] === serialized) return;
-  db.run("INSERT OR REPLACE INTO triadic_metadata (key,value) VALUES ('master_order', ?)", [serialized]);
-  // Existing account-only consumers use the account subsequence of the same master.
-  let accountIndex=0, groupIndex=0;
-  for (const row of order) db.run(`UPDATE ${row.kind === "account" ? "accounts" : "aggregation_groups"} SET sort_order = ? WHERE id = ?`, [row.kind === "account" ? accountIndex++ : groupIndex++, row.id]);
+  const positions = db.exec("SELECT position FROM master_order ORDER BY position")[0]?.values ?? [];
+  if (JSON.stringify(readMasterPresentation(db).order) === JSON.stringify(order)
+    && positions.every(([position], index) => position === index)) return;
+  db.run("DELETE FROM master_order");
+  order.forEach((row,position) => db.run("INSERT INTO master_order(position,account_id,aggregation_group_id) VALUES (?,?,?)",
+    [position,row.kind === "account" ? row.id : null,row.kind === "group" ? row.id : null]));
 }
 export function reconcileMasterOrder(db: Database, before: MasterRow[]) {
-  const all: MasterRow[] = [...(db.exec("SELECT id FROM accounts ORDER BY sort_order,id")[0]?.values ?? []).map(([id]) => ({kind:"account" as const,id:Number(id)})), ...(db.exec("SELECT id FROM aggregation_groups ORDER BY sort_order,id")[0]?.values ?? []).map(([id]) => ({kind:"group" as const,id:Number(id)}))];
-  const existing = new Set(all.map(masterRowKey));
-  const order = before.filter(row => existing.delete(masterRowKey(row)));
-  saveMasterOrder(db,[...order,...all.filter(row => existing.has(masterRowKey(row)))]);
+  const all: MasterRow[] = [...(db.exec("SELECT id FROM accounts ORDER BY id")[0]?.values ?? []).map(([id]) => ({kind:"account" as const,id:Number(id)})),
+    ...(db.exec("SELECT id FROM aggregation_groups ORDER BY id")[0]?.values ?? []).map(([id]) => ({kind:"group" as const,id:Number(id)}))];
+  const remaining = new Set(all.map(masterRowKey));
+  const order = before.filter(row => remaining.delete(masterRowKey(row)));
+  saveMasterOrder(db,[...order,...all.filter(row => remaining.has(masterRowKey(row)))]);
 }
 export function validateMasterPresentation(db: Database) {
   const {order} = readMasterPresentation(db);
-  const accounts = new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id)));
-  const keys = new Set([...accounts].map(id => `account:${id}`));
+  const keys = new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => `account:${id}`));
   for (const [id] of db.exec("SELECT id FROM aggregation_groups")[0]?.values ?? []) keys.add(`group:${id}`);
-  if (order !== undefined && (!Array.isArray(order) || order.length !== keys.size || order.some(row => !row || !Number.isSafeInteger(row.id) || !keys.delete(masterRowKey(row))) || keys.size)) throw new Error("科目・集計の並び順が正しくありません。");
+  const positions = db.exec("SELECT position FROM master_order ORDER BY position")[0]?.values ?? [];
+  if (order.length !== keys.size || positions.some(([position], index) => position !== index)
+    || order.some(row => !Number.isSafeInteger(row.id) || !keys.delete(masterRowKey(row))) || keys.size) throw new Error("科目・集計の並び順が正しくありません。");
 }

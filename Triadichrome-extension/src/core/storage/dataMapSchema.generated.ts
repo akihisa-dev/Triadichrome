@@ -17,9 +17,6 @@ export const dataMapSchema = [
       },
       {
         "name": "display_name"
-      },
-      {
-        "name": "sort_order"
       }
     ]
   },
@@ -37,9 +34,6 @@ export const dataMapSchema = [
       },
       {
         "name": "required_key"
-      },
-      {
-        "name": "sort_order"
       }
     ]
   },
@@ -265,6 +259,22 @@ export const dataMapSchema = [
       },
       {
         "name": "second_kind"
+      }
+    ]
+  },
+  {
+    "name": "master_order",
+    "columns": [
+      {
+        "name": "position"
+      },
+      {
+        "name": "account_id",
+        "reference": "accounts.id"
+      },
+      {
+        "name": "aggregation_group_id",
+        "reference": "aggregation_groups.id"
       }
     ]
   },

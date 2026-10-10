@@ -7,7 +7,7 @@ export function validateMasterOrder(order: MasterRow[], accounts: Account[], gro
   const keys = new Set([...accounts.map(item => `account:${item.id}`), ...groups.map(item => `group:${item.id}`)]);
   if (order.length !== keys.size || order.some(row => !keys.delete(masterRowKey(row))) || keys.size) throw new Error("並べ替える科目・集計が一致しません。");
 }
-/** Legacy documents start with their existing cost-table order. Persisted order is authoritative. */
+/** Saved masters use their sole persisted order. New in-memory definitions derive their initial placement from members. */
 export function orderedMasterRows(accounts: Account[], groups: Aggregation[]): MasterRow[] {
   const all = [...accounts.map(item => ({ kind: "account" as const, id: item.id, rank: item.masterOrder })), ...groups.map(item => ({ kind: "group" as const, id: item.id, rank: item.masterOrder }))];
   if (all.every(item => item.rank !== undefined)) return all.sort((a,b) => a.rank! - b.rank!).map(({kind,id}) => ({kind,id}));

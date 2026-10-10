@@ -7,7 +7,7 @@ type ColumnName<T extends TableName> = Extract<typeof dataMapSchema[number], { n
 const tableLabels: Partial<Record<TableName, string>> = {
   document_info: "基本情報", initiatives: "施策", initiative_rows: "施策の科目行", initiative_amounts: "施策の種別別金額", previous_amounts: "前年の実額", accounts: "勘定科目", aggregation_groups: "集計",
   aggregation_members: "集計の所属・加減算", expansions: "展開", industries: "業種", departments: "部署", department_industries: "部署の所属業種", period_types: "期間",
-  kind_selections: "画面ごとの種別選択", data_history: "時点履歴", data_history_state: "履歴の記録状態", triadic_metadata: "形式・分類・マスタの表示情報",
+  kind_selections: "画面ごとの種別選択", data_history: "時点履歴", data_history_state: "履歴の記録状態", master_order: "科目・集計の表示順", triadic_metadata: "保存形式の識別情報",
 };
 // Labels explain meaning; table names, columns and references come from the saved schema.
 const columnLabels: Record<string, string> = {
@@ -15,10 +15,10 @@ const columnLabels: Record<string, string> = {
   fiscal_year: "基準年度", created_at: "作成日時", updated_at: "更新日時", note: "備考", expansion_id: "展開", industry_id: "業種",
   department_id: "部署", period_type_id: "期間",
   initiative_id: "施策", account_id: "勘定科目", row_id: "施策の科目行", attribute: "科目属性", display_name: "表示名", required_key: "必須集計の役割",
-  parent_id: "所属先の集計", group_id: "子集計", sign: "加算・減算", position: "所属内の並び順", start_month_rule: "開始年月の算出規則",
+  aggregation_group_id: "集計", parent_id: "所属先の集計", group_id: "子集計", sign: "加算・減算", position: "所属内の並び順", start_month_rule: "開始年月の算出規則",
   screen: "画面", first_kind: "比較対象1・表示種別", second_kind: "比較対象2", recorded_at: "記録日時", snapshot: "計画全体の保存内容",
   version: "履歴管理の版", next_id: "次の履歴識別子", dirty_since: "未記録の変更の開始日時", saved_at: "最新の保存日時", key: "情報名", value: "値",
-  "initiatives.name": "施策名", "initiative_rows.id": "科目行の識別子", "accounts.name": "科目名", "accounts.code": "科目コード",
+  "master_order.position": "表示位置", "initiatives.name": "施策名", "initiative_rows.id": "科目行の識別子", "accounts.name": "科目名", "accounts.code": "科目コード",
   "aggregation_groups.name": "集計名", "expansions.code": "展開コード", "expansions.name": "展開名", "industries.code": "業種コード",
   "industries.name": "業種名", "departments.name": "部署名", "period_types.name": "期間名",
 };
@@ -30,16 +30,16 @@ const documentInfo = use("document_info", "共通ヘッダーの基準年度・�
 const initiative = use("initiatives", "施策名・備考・分類", "name", "note", "expansion_id", "industry_id", "department_id", "period_type_id", "sort_order");
 const rows = use("initiative_rows", "施策と科目の対応・科目行の並び", "id", "initiative_id", "account_id", "sort_order");
 const amounts = use("initiative_amounts", "一次12か月と確定の明示手修正月の増減", "row_id", "kind_id", "month", "amount_yen");
-const accounts = use("accounts", "科目名・表示名・科目属性・並び順", "id", "code", "name", "display_name", "attribute", "sort_order");
+const accounts = use("accounts", "科目名・表示名・科目属性", "id", "code", "name", "display_name", "attribute");
 const previous = use("previous_amounts", "科目・業種・部署ごとの前年実額", "account_id", "industry_id", "department_id", "month", "amount_yen");
-const groups = use("aggregation_groups", "売上・費用・利益などの集計と表示名", "id", "name", "display_name", "required_key", "sort_order");
+const groups = use("aggregation_groups", "売上・費用・利益などの集計と表示名", "id", "name", "display_name", "required_key");
 const members = use("aggregation_members", "科目・子集計の所属と加減算", "parent_id", "account_id", "group_id", "sign", "position");
 const classifications = [use("expansions", "展開名", "id", "name"), use("industries", "業種名と作成識別子", "id", "name", "identity"),
   use("departments", "部署名と作成識別子", "id", "name", "identity"), use("period_types", "期間名と開始年月の規則", "id", "name", "start_month_rule")];
 const departmentIndustries = use("department_industries", "部署に設定した複数の業種", "department_id", "industry_id");
 const departmentIndustryRule = "部署の所属業種をdepartment_industriesに保存します。施策の業種候補を選択部署の所属へ絞り、一つなら自動選択します。所属変更の保存成功後は保持中の新規施策にも単一業種を反映し、他の入力を保持します。保存失敗では保持中の施策を変更しません。前年入力とExcelの出力・取り込みも所属する組み合わせだけを使います。施策・前年入力で使用中の所属は解除できず、部署に設定中の業種は削除できません。所属の変更で金額を移動・合算しません。";
-const presentation = use("triadic_metadata", "科目・集計共通の並び順（master_order）", "key", "value");
-const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号を＋／−のボタンで設定します。選択背景は0.4秒で滑り、左右キーにも対応します。クリック直後に仮の選択を表示し、保存中は追加変更を止めます。未所属は無効、保存失敗時は保存済みの符号へ戻します。符号だけの変更では所属内の順序を保ち、共通順が同じなら書き直しません。集計の変更と履歴・表示の準備は作業用データベースを共有し、変更前後と取消用データの全体検証を維持します。背景の位置・幅は画面内だけの情報です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。科目の独自表示名はaccounts.display_nameに保持し、正式名と同じ場合はNULLで省略します。";
+const presentation = use("master_order", "科目・集計共通の唯一の表示順", "position", "account_id", "aggregation_group_id");
+const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号を＋／−のボタンで設定します。選択背景は0.4秒で滑り、左右キーにも対応します。クリック直後に仮の選択を表示し、保存中は追加変更を止めます。未所属は無効、保存失敗時は保存済みの符号へ戻します。符号だけの変更では所属内の順序を保ち、共通順が同じなら書き直しません。集計の変更と履歴・表示の準備は作業用データベースを共有し、変更前後と取消用データの全体検証を維持します。背景の位置・幅は画面内だけの情報です。科目・集計を参照するmaster_orderの位置を唯一の順序として保存し、種類別の順序はその部分列から求めます。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。科目の独自表示名はaccounts.display_nameに保持し、正式名と同じ場合はNULLで省略します。";
 const selection = use("kind_selections", "この画面の種別選択を復元", "screen", "first_kind", "second_kind");
 const selectionSave = "種別選択の変更では、取消用の前後データと時点履歴を一つの作業用データベースで準備し、金額・施策・マスタの読み直しを省きます。保存成功後に選択を反映し、失敗時は保存済みの選択と表示を維持します。";
 const resolved = "initiative_amountsの種別1を一次予算、種別2のレコードを確定予算の明示手修正として使います。種別2がない月だけ一次を引き継ぎ、明示0と同額の手修正も固定します。";
@@ -52,13 +52,13 @@ const calculationFailure = "総原価表・展開表の計算範囲を超えた�
 const largeDisplay = "行数が多い表は画面周辺の行だけを描画します。合計と並べ替えは全件を対象とし、スクロールで全行を確認できます。表示を省いた行も保存内容から削除しません。";
 const initiativeTables = [documentInfo, initiative, rows, amounts, accounts, ...classifications];
 export const screenData: ScreenData[] = [
-  { page: "spreadsheet-io", name: "入出力", tables: [documentInfo, departmentIndustries, initiative, rows, amounts, accounts, previous, groups, members, use("triadic_metadata", "科目・集計の共通順", "key", "value"), ...classifications],
+  { page: "spreadsheet-io", name: "入出力", tables: [documentInfo, departmentIndustries, initiative, rows, amounts, accounts, previous, groups, members, presentation, ...classifications],
     calculated: [departmentIndustryRule, "出力する表・種別・比較対象・総原価表の分類は入出力画面内で選び、通常画面の表示設定と計画には保存しません。選択した三表と従来の計算元を出力します。Excelの施策一覧も最下部に月別売上・費用・利益の合計行を出力し、全施策の元金額の編集と行のコピー追加に追従します。施策0件は0です。金額はExcelでも円精度を保つため、大きい元金額を文字列として保持し、非表示列で上位の千円整数・下位6桁の千円整数・1円部分へ分けます。各部分をSUMIFS・SUMIF・SUMで合算し、期間計・比較差・利益率は丸める前の部分を参照します。表示セルだけ整数千円へ丸めます。計算元の文字列金額は千円単位・小数点以下3桁までの文字列として編集し、行を追加する場合は非表示列を含む行全体をコピーしてください。計算元には全計画の前年実額と一次・確定の解決済み金額を入れ、SUMIFSによる科目・施策・種別・分類の条件集計とSUMIF・SUMの期間計を使います。離れた小計の合計は各SUMを255引数以内に分け、対象の小計だけを合算します。金額の編集と既存元データ行のコピー追加を計算へ反映します。表示行・名称・所属は出力時点の内容を維持します。", "前年入力フォーマットは選んだ業種・部署の組み合わせごとに別シートです。生成前の件数と生成後の実際の処理量を取り込みと共通の上限で確認し、上限内だけを提供します。超える場合は組み合わせを減らして別ファイルに分ける案内を表示します。Excelの有効15桁または数値変換で1円精度を保てない金額は文字列セルとして出力し、文字列のまま編集します。ファイル選択または前年入力領域への単一の.xlsxファイルのドロップで取り込みます。空欄は更新せず、0を含む入力金額を検証し、変更内容を確認後、一回の保存で previous_amounts へ反映します。作成識別子を読込時と保存時に照合し、同じ番号・名称でも作り直した分類への取り込みは拒否します。改名は許可します。識別子のない旧Excelは再出力が必要です。不正値・競合・保存失敗では部分更新しません。", rounded] },
   { page: "initiative-list", name: "施策一覧", tables: [documentInfo, use("initiatives", "施策名・備考の吹き出し・展開と期間への所属・並び順", "id", "name", "note", "expansion_id", "period_type_id", "sort_order"), rows, amounts, accounts, classifications[0]!, classifications[3]!, use("kind_selections", "施策一覧の表示種別", "screen", "first_kind")],
     calculated: [selectionSave, "開始年月は期間の算出規則と種別ごとの月額から読み込み時に導出し、保存しません。正負の相殺前の科目行で非0の月を判定し、確定の手修正0も反映します。", "金額・科目・年度が同じ間は種別ごとの月別金額・計算エラー・全件合計を画面内で再利用します。元の金額・科目・年度や履歴の状態が変わると作り直します。", resolved, "展開名・期間名・施策名・表示種別の開始年月で昇順・降順に並べ替えます。空欄は最後、同値は登録順です。表示順だけを変え、保存せず、画面を離れると登録順へ戻します。", "月別の売上・費用・利益は科目行の有効金額と科目属性から求めます。表の最下部で表示領域の下端に追従する合計行は表示種別の全施策を1円単位で合算します。空の月は0、属性未設定を含む売上・利益は属性未設定、表全体の上限超過は合計部分で通知します。施策内の上限超過はその行の金額欄で通知し、正常な施策の金額と施策名からの修正を維持します。この場合は合計を表示しません。一覧用の計算は一覧表示時だけ行い、ホームや施策編集を妨げません。合計行は並べ替えず、集計結果の保存テーブルはありません。", largeDisplay, rounded] },
-  { page: "initiative-entry", name: "施策入力", tables: [...initiativeTables, departmentIndustries],
+  { page: "initiative-entry", name: "施策入力", tables: [...initiativeTables, departmentIndustries, presentation],
     calculated: [departmentIndustryRule, "登録前の入力は画面内で保持し、登録時に施策・科目行・月別金額へ保存します。", invalidAmountInput, resolved, reflectPrimary, amountTotals, "開始年月は期間の算出規則と種別ごとの月別増減から読み込み時に導出し、保存しません。", rounded] },
-  { page: "initiative-detail", name: "施策詳細", tables: [...initiativeTables, departmentIndustries],
+  { page: "initiative-detail", name: "施策詳細", tables: [...initiativeTables, departmentIndustries, presentation],
     calculated: [departmentIndustryRule, invalidAmountInput, resolved, reflectPrimary, amountTotals, "登録済み行の科目変更と削除は入力中と保存済みの両方が全種別・全月0のときに許可します。自動保存の実行中は科目変更と行削除を待ちます。非0の保存中に0へ戻した場合も、最新の0化の保存成功まで待ち、金額入力は続けられます。全種別・全月0の既存行を、金額も手修正も空欄・科目未選択に戻すと保存時に削除します。入力値のある未選択行は拒否します。", "開始年月は期間の算出規則と種別ごとの月別増減から読み込み時に導出し、保存しません。", rounded] },
   { page: "previous-input", name: "前年入力", tables: [documentInfo, departmentIndustries, previous, accounts, groups, members, presentation, classifications[1]!, classifications[2]!],
     calculated: [departmentIndustryRule, masterDisplay, "選択した業種・部署の組み合わせを科目・月ごとに合算します。未選択は全件、複数選択の合計は参照専用です。業種・部署を一つずつ選ぶと、その組み合わせの前年実額を更新します。分類の選択は保存しません。所属変更や操作の取消・やり直し後は存在と所属を再確認し、無効な選択を解除して編集を止めます。未保存入力は選択補正で破棄しません。直接入力のエラーは科目・月ごとに扱い、訂正・編集取消・保存失敗後の入力取消で解消した通知を解除します。他セルの不正入力や集計超過、保存失敗は引き続き通知します。分類合計が計算上限を超えたときは計算セルを空欄にして通知し、分類を絞って元の金額を確認・修正できます。", "小計・合計は aggregation_groups の表示名・並び順と aggregation_members の科目・子集計の所属・加減算から求めます。売上集計の役割は固定見出しの範囲を決め、利益率は経常利益集計÷売上集計×100で計算します。未設定の集計や売上が0の場合の利益率は空欄です。保存する前年実額は previous_amounts だけで、小計・合計・利益率は保存しません。", rounded] },

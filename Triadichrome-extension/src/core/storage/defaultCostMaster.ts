@@ -1,3 +1,5 @@
+import { orderedMasterRows } from "../domain/masterRows";
+import { saveMasterOrder } from "./masterPresentation";
 import { type Database } from "./sqliteRuntime";
 import { type AccountType } from "../domain/accountTypes";
 
@@ -36,9 +38,9 @@ export const DEFAULT_ACCOUNTS: readonly (readonly [string, string, AccountType])
 
 /** Only new files receive defaults; migration must never replace user masters. */
 export function seedDefaultCostMaster(database: Database): void {
-  DEFAULT_ACCOUNTS.forEach(([code, name, attribute], index) => database.run(
-    "INSERT INTO accounts (code, name, attribute, sort_order) VALUES (?, ?, ?, ?)",
-    [code, name, attribute, index],
+  DEFAULT_ACCOUNTS.forEach(([code, name, attribute]) => database.run(
+    "INSERT INTO accounts (code, name, attribute) VALUES (?, ?, ?)",
+    [code, name, attribute],
   ));
   const ids = new Map((database.exec("SELECT code, id FROM accounts")[0]?.values ?? []).map(([code, id]) => [String(code), Number(id)]));
   const definitions: [number, string, string, (readonly ["account" | "group", number, 1 | -1])[]][] = [];
@@ -65,11 +67,15 @@ export function seedDefaultCostMaster(database: Database): void {
     [15, "営業外収益計", "営業外収益計", [["account", ids.get("713")!, 1], ["account", ids.get("731")!, -1]]],
     [4, "経常利益", "経常利益", groups([3, 1], [15, 1])],
   );
-  for (const [order, [id, name, displayName, members]] of definitions.entries()) {
-    database.run("INSERT INTO aggregation_groups (id, name, display_name, sort_order) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name, sort_order = excluded.sort_order", [id, name, displayName, order]);
+  for (const [id, name, displayName, members] of definitions) {
+    database.run("INSERT INTO aggregation_groups (id, name, display_name) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET display_name = excluded.display_name", [id, name, displayName]);
     members.forEach(([kind, memberId, sign], position) => database.run(
       "INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, ?)",
       [id, kind === "account" ? memberId : null, kind === "group" ? memberId : null, sign, position],
     ));
   }
+  const accountsForOrder = DEFAULT_ACCOUNTS.map(([accountCode, accountName, accountType]) => ({id:ids.get(accountCode)!, accountCode, accountName, accountType, inUse:false}));
+  const groupsForOrder = definitions.map(([id,name,displayName,members]) => ({id,name,displayName,required:null,
+    members:members.map(([kind,id,sign]) => ({kind,id,sign}))}));
+  saveMasterOrder(database,orderedMasterRows(accountsForOrder,groupsForOrder));
 }
