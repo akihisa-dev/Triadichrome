@@ -9,6 +9,7 @@ import { buildKindExpansionTable, filterPlan, type ClassificationFilter } from "
 import { groupExpansionPeriods } from "../tables/expansionTable";
 import { initiativeTotals } from "../tables/initiativeTotals";
 import { initiativesForKind } from "../tables/initiatives";
+import { amountItems } from "../domain/amountItems";
 import { accountEffectsYen } from "../domain/accountEffects";
 
 export type ExportTable = "cost-table" | "expansion-table" | "initiative-list";
@@ -214,14 +215,14 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
     const ws = sheet(wb, "施策一覧", [17, 17, 34, 14, ...initiativeMonths.flatMap(() => [14, 14, 14])], 2, 4);
     ws.getCell("A2").value = `${contents.fiscalYear}年度 · 単位：千円 · ${contents.kinds.find(k => k.id === kind)!.kindName}`;
     for (const [col, name] of [[1, "展開名"], [2, "期間名"], [3, "施策名"], [4, "開始年月"]] as const) { ws.mergeCells(3, col, 4, col); ws.getCell(3, col).value = name; }
-    initiativeMonths.forEach((m, mi) => { ws.mergeCells(3, 5 + mi * 3, 3, 7 + mi * 3); ws.getCell(3, 5 + mi * 3).value = `${m}月`; ["売上", "費用", "利益"].forEach((s, i) => { ws.getCell(4, 5 + mi * 3 + i).value = s; }); });
+    initiativeMonths.forEach((m, mi) => { ws.mergeCells(3, 5 + mi * 3, 3, 7 + mi * 3); ws.getCell(3, 5 + mi * 3).value = `${m}月`; amountItems.map(item => item.name).forEach((s, i) => { ws.getCell(4, 5 + mi * 3 + i).value = s; }); });
     const items = initiativesForKind(contents.initiatives, contents.accounts, kind).filter(i => i.fiscalYear === contents.fiscalYear);
     items.forEach((item, index) => {
       const r = index + 5;
       ws.getCell(r, 1).value = contents.expansions.find(e => e.id === item.expansionId)?.expansionName ?? "";
       ws.getCell(r, 2).value = contents.periodTypes.find(p => p.id === item.periodTypeId)?.periodName ?? "";
       ws.getCell(r, 3).value = item.name; ws.getCell(r, 4).value = item.startYearMonths[kind];
-      initiativeMonths.forEach((m, mi) => (["sales", "expense", "profit"] as const).forEach((metric, i) => {
+      initiativeMonths.forEach((m, mi) => amountItems.map(item => item.id).forEach((metric, i) => {
         const cell = ws.getCell(r, 5 + mi * 3 + i);
         formula(cell, effectFormula(item.id, kind, m, metric), item.months[m]?.[metric], true); cell.numFmt = '#,##0;-#,##0;0';
       }));
@@ -230,7 +231,7 @@ export function createReportWorkbook(contents: PlanContents, options: ExportOpti
     const totalRow = items.length + 5;
     ws.mergeCells(totalRow, 1, totalRow, 4);
     ws.getCell(totalRow, 1).value = "合計";
-    initiativeMonths.forEach((m, mi) => (["sales", "expense", "profit"] as const).forEach((metric, i) => {
+    initiativeMonths.forEach((m, mi) => amountItems.map(item => item.id).forEach((metric, i) => {
       const cell = ws.getCell(totalRow, 5 + mi * 3 + i);
       formula(cell, effectFormula(null, kind, m, metric), total[m]?.[metric], true);
       cell.numFmt = '#,##0;-#,##0;0';

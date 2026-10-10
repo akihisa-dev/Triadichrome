@@ -15,6 +15,7 @@ import { readPlanContents } from "../../Triadichrome-extension/src/core/storage/
 import { registerInitiative, updateInitiative } from "../../Triadichrome-extension/src/core/storage/initiatives";
 import { type InitiativeEntryDraft, type InitiativeRow } from "../../Triadichrome-extension/src/core/domain/plan";
 
+import { amountItems, amountItemComposition } from "../../Triadichrome-extension/src/core/domain/amountItems";
 import { accountTypes } from "../../Triadichrome-extension/src/core/domain/accountTypes";
 
 // All amount literals are in thousands of yen; 0.001 represents one yen.
@@ -25,6 +26,7 @@ export const LARGE_SAMPLE_INITIATIVES = 1000;
 export async function createSamplePlan(fiscalYear = currentFiscalYear(), large = false): Promise<Uint8Array> {
   let bytes = await createTriadicDatabase(fiscalYear);
   if (Object.values(accountTypes).join("・") !== "売上・売上原価・費用・利益") throw new Error("科目属性マスタの固定4件が一致しません。");
+  if (amountItems.map(item => item.name).join("・") !== "売上・費用・利益" || amountItems.map(amountItemComposition).join(";") !== "売上 − 売上原価;費用;売上 − 売上原価 − 費用 ＋ 利益") throw new Error("金額項目マスタの固定項目・構成が一致しません。");
   const kinds = (await readPlanContents(bytes)).kinds;
   if (kinds.length !== INITIAL_KINDS.length || kinds.some((item, index) => item.kindName !== INITIAL_KINDS[index]!.kindName)) throw new Error("種別マスタの初期データが一致しません。");
   if (kinds.length !== 2) throw new Error("予算の2種別を確認できません。");

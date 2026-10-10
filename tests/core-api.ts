@@ -5,6 +5,8 @@ export * from "../Triadichrome-extension/src/core/autoSave";
 export * from "../Triadichrome-extension/src/core/domain/accountEffects";
 export * from "../Triadichrome-extension/src/core/domain/accountMaster";
 export * from "../Triadichrome-extension/src/core/domain/accountTypes";
+export * from "../Triadichrome-extension/src/core/domain/amountItems";
+export * from "../Triadichrome-extension/src/extension/AmountItemMasterPage";
 export * from "../Triadichrome-extension/src/core/domain/aggregationMaster";
 export * from "../Triadichrome-extension/src/core/domain/aggregations";
 export * from "../Triadichrome-extension/src/core/domain/amounts";

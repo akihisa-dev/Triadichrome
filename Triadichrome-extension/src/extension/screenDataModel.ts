@@ -70,6 +70,7 @@ export const screenData: ScreenData[] = [
   ...classifications.map((item, index) => ({ page: (["expansion-master", "industry-master", "department-master", "period-master"] as const)[index]!,
     name: ["展開マスタ", "業種マスタ", "部署マスタ", "期間マスタ"][index]!,
     tables: [plan, use(item.table, dataTables.find(table => table.name === item.table)!.label + "の登録情報", ...dataMapSchema.find(table => table.name === item.table)!.columns.map(column => column.name)), ...(index === 1 || index === 2 ? [identities] : [])], calculated: ["一覧の件数は登録済みの分類から求め、保存しません。業種・部署の追加時はtriadic_metadataに作成識別子を保存し、改名では維持、削除では除去します。"] })),
+  { page: "amount-item-master", name: "金額項目マスタ", tables: [plan], calculated: ["売上・費用・利益の3件と表示順、構成する科目属性の加減算はアプリの固定定義です。追加・改名・並べ替え・構成変更・削除は行いません。売上＝売上属性−売上原価属性、費用＝費用属性、利益＝売上属性−売上原価属性−費用属性＋利益属性。表示と実際の計算は同じ定義を使います。専用の保存テーブルはなく、閲覧でファイルや金額を書き換えません。"] },
   { page: "account-type-master", name: "科目属性マスタ", tables: [plan], calculated: ["売上・売上原価・費用・利益はアプリの固定定義です。名称・件数・並び順は勘定科目マスタの選択候補と同じ定義を使い、追加・改名・削除は行いません。科目属性マスタの保存テーブルはありません。科目ごとの選択は accounts.attribute に保存します。集計は科目属性マスタに含めず、勘定科目マスタの集計行として管理します。閲覧や画面移動でファイルを書き換えません。"] },
   { page: "kind-master", name: "種別マスタ", tables: [plan], calculated: ["前年・一次予算・確定予算はアプリの固定定義です。種別マスタの保存テーブルはありません。前年実額は previous_amounts、一次予算は initiative_amounts、確定予算の手修正は amount_overrides に保存します。"] },
   { page: "data-history", name: "履歴", tables: [plan, use("data_history", "記録日時と計画全体の保存内容", "id", "recorded_at", "snapshot"),

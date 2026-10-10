@@ -5,6 +5,7 @@ import type { Account } from "../core/domain/accountMaster";
 import { initiativeTotals } from "../core/tables/initiativeTotals";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
+import { amountItems } from "../core/domain/amountItems";
 import { initiativeMonths } from "../core/domain/calendar";
 import { type Initiative } from "../core/domain/plan";
 import type { Expansion } from "../core/domain/expansionMaster";
@@ -87,7 +88,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
             {initiativeMonths.map(month => <th key={month} colSpan={3} scope="colgroup">{month}月</th>)}
           </tr>
           <tr>{initiativeMonths.map(month => <Fragment key={month}>
-            <th scope="col">売上</th><th scope="col">費用</th><th scope="col" className="initiative-month-end">利益</th>
+            {amountItems.map((metric, index) => <th key={metric.id} scope="col" className={index === amountItems.length - 1 ? "initiative-month-end" : undefined}>{metric.name}</th>)}
           </Fragment>)}</tr>
         </thead>
         <tbody><WindowRows items={displayed.slice(window.start, window.end).map((item, offset) => ({ item, index: window.start + offset }))} count={displayed.length} height={28} columns={40} render={(item, index) => <tr key={item.id} aria-rowindex={index + 3}>
@@ -98,9 +99,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
           </th>
           <td className="initiative-list-fixed initiative-list-start">{item.startYearMonths[selectedKind]}</td>
           {errors.has(item.id) ? <td colSpan={36} role="alert" style={{ textAlign: "left" }}>{errors.get(item.id)} 施策を開いて金額を修正してください。</td> : initiativeMonths.map(month => <Fragment key={month}>
-            <td>{amountText(item.months[month]?.sales)}</td>
-            <td>{amountText(item.months[month]?.expense)}</td>
-            <td className="initiative-month-end">{amountText(item.months[month]?.profit)}</td>
+            {amountItems.map((metric, index) => <td key={metric.id} className={index === amountItems.length - 1 ? "initiative-month-end" : undefined}>{amountText(item.months[month]?.[metric.id])}</td>)}
           </Fragment>)}
         </tr>} /></tbody>
         <tfoot>{errors.size ? <tr className="initiative-total-row"><th colSpan={40} scope="row" style={{ textAlign: "left" }}>計算できない施策があるため、合計を表示できません。</th></tr> : <InitiativeTotalRow initiatives={source} />}</tfoot>
@@ -121,9 +120,7 @@ function InitiativeTotalRow({ initiatives }: { initiatives: Initiative[] }) {
   return <tr className="initiative-total-row">
     <th colSpan={4} scope="row" className="initiative-total-label">合計</th>
     {initiativeMonths.map(month => <Fragment key={month}>
-      <td>{amountText(totals[month]?.sales)}</td>
-      <td>{amountText(totals[month]?.expense)}</td>
-      <td className="initiative-month-end">{amountText(totals[month]?.profit)}</td>
+      {amountItems.map((metric, index) => <td key={metric.id} className={index === amountItems.length - 1 ? "initiative-month-end" : undefined}>{amountText(totals[month]?.[metric.id])}</td>)}
     </Fragment>)}
   </tr>;
 }

@@ -50,6 +50,10 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       assert.deepEqual(attributes.tables.map(item => item.table), ["plan"], "科目属性の固定定義に保存テーブルを作らない");
       for (const text of ["固定定義", "追加・改名・削除", "accounts.attribute", "書き換えません"])
         assert.ok(attributes.calculated.some(explanation => explanation.includes(text)), text);
+      const amounts = screenData.find(item => item.page === "amount-item-master");
+      assert.deepEqual(amounts.tables.map(item => item.table), ["plan"]);
+      for (const text of ["構成", "固定定義", "同じ定義", "書き換えません"])
+        assert.ok(amounts.calculated.some(explanation => explanation.includes(text)), text);
     } finally { database.close(); }
   });
 });
