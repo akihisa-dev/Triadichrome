@@ -14,7 +14,12 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
 }) {
   const { selection, setSelection, editing, setEditing, table, dragging, original, bounds, focus } = useGridInteraction();
   const [error, setError] = useState("");
+  const [cellErrors, setCellErrors] = useState<Record<string, { accountId: number; month: number; message: string }>>({});
+  const clearCellError = (accountId: number, month: number) => setCellErrors(current => {
+    const next = { ...current }; delete next[`${accountId}:${month}`]; return next;
+  });
   const inputsByAccount = useMemo(() => new Map(draft?.rows.map(row => [row.accountId, row])), [draft?.rows]);
+  const cellError = Object.values(cellErrors).find(item => !isValidAmount(inputsByAccount.get(item.accountId)?.amounts[item.month] || "0"))?.message;
   const { rows, calculationFailed } = useMemo(() => {
     const invalid = draft?.rows.some(row => Object.values(row.amounts).some(value => value !== undefined && value !== "" && !isValidAmount(value))) ?? false;
     try {
@@ -68,14 +73,14 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
                   }}
                   onKeyDown={event => {
                     if (event.nativeEvent.isComposing) return;
-                    if (event.key === "Escape") { event.preventDefault(); if (editing) changeCell(row.id, month, original.current); setEditing(false); setSelection({ anchor: cell, end: cell }); return; }
+                    if (event.key === "Escape") { event.preventDefault(); if (editing) { changeCell(row.id, month, original.current); if (isValidAmount(original.current || "0")) clearCellError(row.id, month); } setEditing(false); setSelection({ anchor: cell, end: cell }); return; }
                     if (event.key === "Enter" && (event.ctrlKey || event.metaKey) && selection) { event.preventDefault(); apply(() => fillPreviousGrid(draft, rowIds, selection, value)); return; }
                     if ((event.key === "Delete" || event.key === "Backspace") && !editing && selection) { event.preventDefault(); apply(() => fillPreviousGrid(draft, rowIds, selection, "0")); return; }
                     if (event.key === "F2") { event.preventDefault(); original.current = value; setEditing(true); return; }
                     if (editing && event.key !== "Enter" && event.key !== "Tab") return;
                     if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Enter", "Tab"].includes(event.key)) return;
                     event.preventDefault();
-                    if (editing) { try { changeCell(row.id, month, normalizeGridAmount(value)); } catch (failure) { setError((failure as Error).message); return; } }
+                    if (editing) { try { changeCell(row.id, month, normalizeGridAmount(value)); clearCellError(row.id, month); } catch (failure) { setCellErrors(current => ({ ...current, [`${row.id}:${month}`]: { accountId: row.id, month, message: (failure as Error).message } })); return; } }
                     const from = event.shiftKey && !editing && selection ? selection.end : cell;
                     let nextRow = from.row, nextColumn = from.column;
                     if (event.key === "ArrowLeft") nextColumn--;
@@ -92,7 +97,7 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
           })}
         </tr>;
   return <>
-    <StatusNotice message={error || (calculationFailed ? "金額の合計が正確に計算できる範囲を超えています。分類を絞るか金額を修正してください。" : "")} error onDismiss={() => setError("")} />
+    <StatusNotice message={error || cellError || (calculationFailed ? "金額の合計が正確に計算できる範囲を超えています。分類を絞るか金額を修正してください。" : "")} error onDismiss={() => { setError(""); setCellErrors({}); }} />
     <div className="previous-grid-container" role="region" aria-label="前年の月別金額" tabIndex={0}>
       <table ref={table} className="initiative-list-table cost-table previous-grid" aria-label="前年入力の月別金額">
         <thead>
