@@ -98,7 +98,7 @@ export async function verifyPlanSession(api) {
   await session.open({ ...await api.readPlanContents(destination.bytes), bytes: destination.bytes, handle: destination.handle, name: destination.handle.name });
   destination.replace(await api.saveKindSelection(destination.bytes, "cost-table", [2]));
   const beforeConflict = session.getSnapshot().contents;
-  await assert.rejects(session.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1] } }, noPicker), /別の操作で更新/);
+  await assert.rejects(session.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1] } }, noPicker), /保存先のファイルが更新/);
   assert.equal(session.getSnapshot().contents, beforeConflict);
   const retry = new api.PlanSession();
   await retry.open(original);

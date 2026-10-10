@@ -2,21 +2,20 @@
 export async function writeTriadicFile(
   handle: Pick<FileSystemFileHandle, "createWritable">,
   data: Uint8Array,
-  checkCurrent: () => Promise<void> = async () => undefined,
+  checkCurrent: () => Promise<Uint8Array | void> = async () => undefined,
 ): Promise<void> {
   // Copy only this view, including when it refers to part of a larger buffer.
-  const buffer = Uint8Array.from(data).buffer;
   let writable: FileSystemWritableFileStream;
   try {
     writable = await handle.createWritable({ mode: "exclusive" } as FileSystemCreateWritableOptions);
   } catch (error) {
-    if (error instanceof DOMException && error.name === "NoModificationAllowedError") throw new Error("別の操作がファイルを保存中です。入力を保持したまま、保存を再試行してください。");
+    if (error instanceof DOMException && error.name === "NoModificationAllowedError") throw new Error("同じファイルへの保存が進行中です。入力は保持しています。「保存を再試行」で再度保存できます。");
     throw error;
   }
   try {
     // Hold the writer lock through the comparison and commit.
-    await checkCurrent();
-    await writable.write(buffer);
+    const checked = await checkCurrent();
+    await writable.write(Uint8Array.from(checked ?? data).buffer);
     await writable.close();
   } catch (error) {
     await writable.abort().catch(() => undefined);

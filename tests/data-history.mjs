@@ -108,7 +108,7 @@ export async function verifyDataHistory(api) {
   const saved = await writePlanChange(plan, handle, restored, { historyPrepared: true });
   assert.deepEqual(saved.bytes, stored);
   assert.deepEqual(await readPlanContents(stored), fiveMinutes, "復元成功は実ファイル境界で確定");
-  await assert.rejects(writePlanChange(plan, handle, deleted, { historyPrepared: true }), /別の操作で更新/);
+  await assert.rejects(writePlanChange(plan, handle, deleted, { historyPrepared: true }), /保存先のファイルが更新/);
   assert.deepEqual(stored, restored);
   console.log("PASS: データ時点履歴の記録期限、入れ子防止、全体復元、復元取消、削除、破損拒否、失敗・競合時の保護");
 }

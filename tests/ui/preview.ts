@@ -1,3 +1,4 @@
+import { saveKindSelection } from "../../Triadichrome-extension/src/core/storage/settings";
 import { createOverflowPlan, type OverflowScenario } from "./overflow-plan";
 import { createEmptyTestPlan, createCurrentEmptyTestPlan } from "./empty-plan";
 import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
@@ -21,9 +22,10 @@ const requested = new URLSearchParams(location.search).get("data");
 dataset.value = [...dataset.options].some(option => option.value === requested) ? requested! : "full";
 export let fixtureBytes: number[] | Uint8Array = dataset.value === "legacy" ? legacyBytes : dataset.value === "empty" ? emptyBytes : dataset.value === "defaults" ? defaultBytes : sampleBytes;
 
-frame.addEventListener("load", () => {
+frame.addEventListener("load", async () => {
   const target = frame.contentWindow as Window & typeof globalThis;
-  installMemoryFiles({ bytes: fixtureBytes, scenario: scenario.value as FileScenario }, target);
+  const externalBytes = scenario.value === "file-conflict" ? await saveKindSelection(new Uint8Array(fixtureBytes), "cost-table", [2]) : undefined;
+  installMemoryFiles({ bytes: fixtureBytes, scenario: scenario.value as FileScenario, ...(externalBytes ? { externalBytes } : {}) }, target);
   // Use the real application entry point, without a test-only copy of its UI.
   status.textContent = "操作できます";
   frame.inert = false;

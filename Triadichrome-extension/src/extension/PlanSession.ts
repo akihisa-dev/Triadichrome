@@ -38,8 +38,8 @@ export class PlanSession {
     this.publish({ contents: this.contents(plan), name: plan.name, history, historyError: "" });
   }
   private contents(plan: OpenPlan): PlanContents {
-    const { bytes, handle, name, destinationBytes, savedHistory, ...contents } = plan;
-    void bytes; void handle; void name; void destinationBytes; void savedHistory;
+    const { bytes, handle, name, destinationBytes, savedHistory, rebasedOperation, ...contents } = plan;
+    void bytes; void handle; void name; void destinationBytes; void savedHistory; void rebasedOperation;
     return contents;
   }
   private serialize<T>(operation: () => Promise<T>): Promise<T> {
@@ -85,26 +85,27 @@ export class PlanSession {
         entry = prepared.operation ?? undefined;
         // These references remain valid: only kind_selections and timestamps changed.
         const contents = { ...this.contents(target), kindSelections: { ...target.kindSelections, [screen]: [...selected] } };
-        return writePreparedPlanChange(target, target.handle!, { ...prepared, contents });
+        return writePreparedPlanChange(target, target.handle!, { ...prepared, contents }, true);
       }
       if (command.type === "aggregation") {
         const prepared = await prepareAggregationSave(target.bytes, command.change);
         entry = prepared.operation ?? undefined;
-        return writePreparedPlanChange(target, target.handle!, prepared);
+        return writePreparedPlanChange(target, target.handle!, prepared, true);
       }
       const bytes = await applyPlanCommand(target.bytes, command, target.fiscalYear);
       if (operationContents(this.contents(plan)) !== operationContents(await readPlanContents(bytes))) {
         entry = { before: await createBusinessSnapshot(plan.bytes), after: await createBusinessSnapshot(bytes) };
       }
-      return writePlanChange(target, target.handle!, bytes);
-    }, destination, isAutomatic(command), () => {
+      return writePlanChange(target, target.handle!, bytes, { allowRebase: true });
+    }, destination, isAutomatic(command), saved => {
+      if (saved.rebasedOperation !== undefined) entry = saved.rebasedOperation ?? undefined;
       if (!entry) return;
       this.undoStack.push(entry);
       if (this.undoStack.length > OPERATION_HISTORY_LIMIT) this.undoStack.shift();
       this.redoStack = [];
     });
   }
-  private save(operation: (current: OpenPlan, destination: Destination) => Promise<OpenPlan>, destination: Destination, automatic = false, committed?: () => void): Promise<PlanContents> {
+  private save(operation: (current: OpenPlan, destination: Destination) => Promise<OpenPlan>, destination: Destination, automatic = false, committed?: (saved: OpenPlan) => void): Promise<PlanContents> {
     return this.serialize(async () => {
       const current = this.current();
       if (automatic) {
@@ -114,8 +115,10 @@ export class PlanSession {
       }
       const saved = await operation(current, destination);
       const history = saved.savedHistory ?? this.snapshot.history;
-      this.plan = saved;
-      committed?.();
+      const { rebasedOperation, ...persisted } = saved;
+      this.plan = persisted;
+      if (rebasedOperation !== undefined) this.resetOperations();
+      committed?.(saved);
       const contents = this.contents(saved);
       this.publish({ contents, name: saved.name, history, historyError: "" });
       return contents;
@@ -134,7 +137,7 @@ export class PlanSession {
       source.pop(); target.push(entry); this.operationRevision++;
     });
   }
-  private historyChange(operation: (bytes: Uint8Array) => Promise<Uint8Array>, destination: Destination, committed?: () => void): Promise<PlanContents> {
+  private historyChange(operation: (bytes: Uint8Array) => Promise<Uint8Array>, destination: Destination, committed?: (saved: OpenPlan) => void): Promise<PlanContents> {
     return this.save(async current => {
       const bytes = await operation(current.bytes);
       return bytes === current.bytes ? current : writePlanChange(current, current.handle!, bytes, { historyPrepared: true });

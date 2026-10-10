@@ -39,7 +39,7 @@ export async function verifyDepartmentData(api) {
   const noPicker = () => { throw new Error("不要な保存先選択"); };
   const saved = await saveDepartmentMaster(plan, { type: "add", departmentName: "保存確認", industryIds: [1] }, noPicker);
   assert.deepEqual((await readPlanContents(stored)).departments, saved.departments);
-  await assert.rejects(saveDepartmentMaster(plan, { type: "add", departmentName: "競合確認", industryIds: [1] }, noPicker), /別の操作で更新/);
+  await assert.rejects(saveDepartmentMaster(plan, { type: "add", departmentName: "競合確認", industryIds: [1] }, noPicker), /保存先のファイルが更新/);
   const before = stored.slice();
   const failing = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };
   await assert.rejects(saveDepartmentMaster({ ...saved, handle: failing }, { type: "delete", id: 1 }, noPicker), /保存失敗/);

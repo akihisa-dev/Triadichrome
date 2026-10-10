@@ -84,7 +84,7 @@ export async function verifyAutoSave(api) {
   const plan = { ...before, bytes, name: handle.name, handle };
   const saved = await saveInitiativeUpdate(plan, original.id, 2026, edited);
   assert.deepEqual(saved.bytes, stored);
-  await assert.rejects(saveInitiativeUpdate(plan, original.id, 2026, edited), /別の操作で更新/);
+  await assert.rejects(saveInitiativeUpdate(plan, original.id, 2026, edited), /保存先のファイルが更新/);
   shouldFail = true;
   await assert.rejects(saveInitiativeUpdate(saved, original.id, 2026, { ...edited, note: "失敗" }), /書込失敗/);
   assert.deepEqual(saved.bytes, stored);

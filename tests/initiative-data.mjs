@@ -73,7 +73,7 @@ export async function verifyInitiativeData(api, root) {
   const noPicker = () => { throw new Error("保存先を再選択しない"); };
   const saved = await saveInitiative(plan, draft, noPicker);
   assert.deepEqual((await readPlanContents(stored)).initiatives, saved.initiatives);
-  await assert.rejects(saveInitiative(plan, draft, noPicker), /別の操作で更新/);
+  await assert.rejects(saveInitiative(plan, draft, noPicker), /保存先のファイルが更新/);
   assert.equal(writes, 1);
   const beforeFailure = stored.slice();
   const failedDraft = { ...draft, name: "失敗する施策" };

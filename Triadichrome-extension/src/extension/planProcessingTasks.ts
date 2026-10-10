@@ -1,3 +1,4 @@
+import { rebasePlan } from "../core/storage/rebasePlan";
 import * as history from "../core/storage/dataHistory";
 import { applyOperationSnapshot } from "../core/storage/operationSnapshot";
 import { readPlanContents, readSnapshotContents } from "../core/storage/readPlan";
@@ -6,6 +7,7 @@ import { applyPlanCommand } from "./planCommands";
 import { prepareAggregationSave } from "../core/storage/prepareAggregationSave";
 import { prepareKindSelectionSave } from "../core/storage/prepareKindSelectionSave";
 export const processingTasks = {
+  rebasePlan,
   prepareKindSelectionSave,
   prepareAggregationSave,
   bytesEqual: async (current: Uint8Array, expected: Uint8Array) => {

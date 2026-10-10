@@ -126,7 +126,7 @@ export async function verifyAggregationData(api) {
   const add = { type: "add", name: "追加集計" };
   const saved = await saveAggregationMaster(plan, add, noPicker);
   assert.deepEqual((await readPlanContents(stored)).aggregations, saved.aggregations);
-  await assert.rejects(saveAggregationMaster(plan, add, noPicker), /別の操作で更新/);
+  await assert.rejects(saveAggregationMaster(plan, add, noPicker), /保存先のファイルが更新/);
   assert.equal(writes, 1);
   const beforeFailure = stored.slice();
   for (const stage of ["write", "close"]) {

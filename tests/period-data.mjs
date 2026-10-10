@@ -44,7 +44,7 @@ export async function verifyPeriodData(api) {
   const noPicker = () => { throw new Error("不要な保存先選択"); };
   const saved = await savePeriodMaster(plan, { type: "add", periodName: "保存確認" }, noPicker);
   assert.deepEqual((await readPlanContents(stored)).periodTypes, saved.periodTypes);
-  await assert.rejects(savePeriodMaster(plan, { type: "add", periodName: "競合確認" }, noPicker), /別の操作で更新/);
+  await assert.rejects(savePeriodMaster(plan, { type: "add", periodName: "競合確認" }, noPicker), /保存先のファイルが更新/);
   const before = stored.slice();
   const failing = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };
   await assert.rejects(savePeriodMaster({ ...saved, handle: failing }, { type: "delete", id: 1 }, noPicker), /保存失敗/);

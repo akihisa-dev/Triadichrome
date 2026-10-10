@@ -1,3 +1,4 @@
+import { verifyFileRecovery } from "../tests/file-recovery.mjs";
 import { verifyUnifiedMaster } from "../tests/unified-master.mjs";
 import { verifyInitiativeListRendering } from '../tests/initiative-list-rendering.mjs';
 import { verifyPerformanceData } from '../tests/performance-data.mjs';
@@ -35,6 +36,7 @@ import { withNodeBundle } from "./node-bundle.mjs";
 import { projectRoot as root } from "./paths.mjs";
 await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
+  await verifyFileRecovery(api);
   await verifyUnifiedMaster(api);
   await verifySchemaBoundary(api);
   await verifyYenPrecision(api);

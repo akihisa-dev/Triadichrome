@@ -15,7 +15,7 @@ function getWorker(): Worker {
     else request.resolve(unchanged ? request.original : value);
   };
   worker.onerror = () => {
-    for (const request of pending.values()) request.reject(new Error("データの処理を続けられませんでした。入力は保持しています。ファイルを開き直してください。"));
+    for (const request of pending.values()) request.reject(new Error("データの処理を続けられませんでした。入力は保持しています。「保存を再試行」で処理を再開できます。"));
     pending.clear(); worker?.terminate(); worker = undefined;
   };
   return worker;

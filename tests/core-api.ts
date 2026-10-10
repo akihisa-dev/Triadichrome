@@ -98,3 +98,6 @@ export { visibleRows } from '../Triadichrome-extension/src/core/tables/visibleRo
 export { scheduleHistoryCheckpoint } from "../Triadichrome-extension/src/extension/usePlanSession";
 
 export * from "../Triadichrome-extension/src/core/domain/previousAmounts";
+
+export * from "../Triadichrome-extension/src/core/storage/rebasePlan";
+export * from "../Triadichrome-extension/src/extension/fileConflict";

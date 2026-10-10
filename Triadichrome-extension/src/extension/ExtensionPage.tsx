@@ -1,3 +1,4 @@
+import { FileConflictDialog } from "./FileConflictDialog";
 import { version as appVersion } from "../../../package.json";
 import type { PlanChange } from "../core/domain/kinds";
 import type { PlanCommand } from "./planCommands";
@@ -235,5 +236,6 @@ export function ExtensionPage() {
           } catch (failure) { setCloseError(failure instanceof Error ? failure.message : "履歴を記録できませんでした。ファイルは開いたままです。"); }
         })();
       }} />
+    <FileConflictDialog />
   </div>;
 }

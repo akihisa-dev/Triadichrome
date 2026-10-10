@@ -58,7 +58,7 @@ export async function verifyFileBoundaries(api) {
   const changed = await api.saveKindSelection(stored, "initiative-list", [1]);
   const saved = await api.writePlanChange(plan, handle, changed);
   assert.deepEqual((await api.readPlanContents(stored)).kindSelections["initiative-list"], [1]);
-  await assert.rejects(api.writePlanChange(plan, handle, changed), /別の操作で更新/);
+  await assert.rejects(api.writePlanChange(plan, handle, changed), /保存先のファイルが更新/);
   assert.equal(writes, 1);
   const beforeFailure = stored.slice();
   const failing = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };
@@ -95,11 +95,11 @@ export async function verifyFileBoundaries(api) {
   const firstWrite = api.writePlanChange(base, firstHandle, changed);
   await entered;
   const otherChange = await api.saveKindSelection(base.bytes, "cost-table", [1, 2]);
-  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /保存中/);
+  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /保存が進行中/);
   releaseRead();
   const winner = await firstWrite;
   assert.deepEqual(stored, winner.bytes);
-  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /別の操作で更新/);
+  await assert.rejects(api.writePlanChange({ ...base, handle: secondHandle }, secondHandle, otherChange), /保存先のファイルが更新/);
   assert.equal(locked, false, "照合失敗でも排他を解放");
   const retried = await api.writePlanChange({ ...winner, handle: secondHandle }, secondHandle, await api.saveKindSelection(winner.bytes, "cost-table", [1, 2]));
   assert.deepEqual(stored, retried.bytes);

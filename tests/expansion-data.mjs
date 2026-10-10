@@ -42,7 +42,7 @@ export async function verifyExpansionData(api) {
   const add = { type: "add", expansionCode: "6", expansionName: "保存確認" };
   const saved = await saveExpansionMaster(plan, add, noPicker);
   assert.deepEqual((await readPlanContents(stored)).expansions, saved.expansions);
-  await assert.rejects(saveExpansionMaster(plan, { ...add, expansionCode: "7" }, noPicker), /別の操作で更新/);
+  await assert.rejects(saveExpansionMaster(plan, { ...add, expansionCode: "7" }, noPicker), /保存先のファイルが更新/);
   assert.equal(writes, 1);
   const before = stored.slice();
   const fail = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };

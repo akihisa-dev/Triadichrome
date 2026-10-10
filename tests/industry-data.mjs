@@ -61,7 +61,7 @@ export async function verifyIndustryData(api) {
   const add = { type: "add", industryCode: "10", industryName: "保存確認" };
   const saved = await saveIndustryMaster(plan, add, noPicker);
   assert.deepEqual((await readPlanContents(stored)).industries, saved.industries);
-  await assert.rejects(saveIndustryMaster(plan, { ...add, industryCode: "11" }, noPicker), /別の操作で更新/);
+  await assert.rejects(saveIndustryMaster(plan, { ...add, industryCode: "11" }, noPicker), /保存先のファイルが更新/);
   assert.equal(writes, 1);
   const before = stored.slice();
   const fail = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };

@@ -97,7 +97,7 @@ export async function verifySavedOperations(api) {
   const external = await api.saveKindSelection(bytes, "cost-table", [1]);
   const beforeConflict = contents();
   bytes = external;
-  await assert.rejects(travel(-1), /別の操作で更新/);
+  await assert.rejects(travel(-1), /保存先のファイルが更新/);
   assert.equal(contents(), beforeConflict);
   assert.deepEqual(bytes, external);
   await open();
