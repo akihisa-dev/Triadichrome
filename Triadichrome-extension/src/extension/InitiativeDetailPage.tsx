@@ -1,3 +1,4 @@
+import type { ExpansionCategory } from "../core/domain/expansionCategoryMaster";
 import { type Industry } from "../core/domain/industryMaster";
 import { type PeriodType } from "../core/domain/periodMaster";
 import { type Department } from "../core/domain/departmentMaster";
@@ -13,6 +14,7 @@ type Props = AutoSaveProps & {
   initiative: Initiative;
   accounts: Account[];
   expansions: Expansion[];
+  expansionCategories: ExpansionCategory[];
   departments: Department[];
   periodTypes: PeriodType[];
   industries: Industry[];
@@ -22,15 +24,15 @@ type Props = AutoSaveProps & {
   onOpenMaster: () => void;
 };
 
-export function InitiativeDetailPage({ initiative, accounts, expansions, departments, periodTypes, industries, backLabel = "施策一覧", onUpdate, onBack, onOpenMaster, onPendingChange, onPrepareSave }: Props) {
+export function InitiativeDetailPage({ initiative, accounts, expansions, expansionCategories, departments, periodTypes, industries, backLabel = "施策一覧", onUpdate, onBack, onOpenMaster, onPendingChange, onPrepareSave }: Props) {
   const autoSave = useAutoSave(onUpdate, onPendingChange);
   const { controller, draft, revision } = autoSave;
   useLayoutEffect(() => {
-    if (!controller.getSnapshot().draft) controller.begin({ name: initiative.name, note: initiative.note, expansionId: initiative.expansionId, departmentId: initiative.departmentId ?? null, periodTypeId: initiative.periodTypeId ?? null, industryId: initiative.industryId ?? null,
+    if (!controller.getSnapshot().draft) controller.begin({ name: initiative.name, note: initiative.note, expansionId: initiative.expansionId, expansionCategoryId: initiative.expansionCategoryId ?? null, departmentId: initiative.departmentId ?? null, periodTypeId: initiative.periodTypeId ?? null, industryId: initiative.industryId ?? null,
       fiscalYear: initiative.fiscalYear === null ? "" : String(initiative.fiscalYear), rows: initiative.rows.length ? initiative.rows : [{ id: crypto.randomUUID(), accountId: null, amounts: {} }] });
   }, [controller, initiative, revision]);
   if (!draft) return null;
-  return <InitiativeEntryPage draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} departments={departments} periodTypes={periodTypes} industries={industries}
+  return <InitiativeEntryPage draft={draft} onDraftChange={value => controller.change(value)} accounts={accounts} expansions={expansions} expansionCategories={expansionCategories} departments={departments} periodTypes={periodTypes} industries={industries}
     isSaving={false} onOpenMaster={onOpenMaster} onRegister={() => {}} editing={{
       savedRows: initiative.rows, saving: autoSave.saving, pending: autoSave.pending, onCompositionStart: () => controller.pause(), onCompositionEnd: () => controller.resume(),
       before: <button className="text-button master-back" type="button" disabled={autoSave.pending} onClick={onBack}>← {backLabel}へ戻る</button>,

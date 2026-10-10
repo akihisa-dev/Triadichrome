@@ -58,8 +58,9 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
   if (db.exec(`SELECT id FROM accounts WHERE typeof(code) != 'text' OR code NOT GLOB '[0-9][0-9][0-9]' OR attribute NOT IN ('sales','cost','expense','profit') OR trim(name) = '' OR (display_name IS NOT NULL AND (typeof(display_name) != 'text' OR trim(display_name) = ''))
     UNION ALL SELECT id FROM expansions WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR trim(name) = ''
     UNION ALL SELECT id FROM industries WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR trim(name) = ''
+    UNION ALL SELECT id FROM expansion_categories WHERE typeof(name) != 'text' OR trim(name) = ''
     UNION ALL SELECT id FROM departments WHERE trim(name) = '' UNION ALL SELECT id FROM period_types WHERE trim(name) = ''`).length) invalid();
-  for (const table of ["accounts", "expansions", "industries", "departments", "period_types", "initiatives"]) {
+  for (const table of ["accounts", "expansions", "industries", "departments", "period_types", "expansion_categories", "initiatives"]) {
     if (db.exec(`SELECT name FROM ${table} GROUP BY name HAVING COUNT(*) > 1`).length) invalid();
   }
   for (const table of ["accounts", "expansions", "industries"]) {

@@ -1,3 +1,5 @@
+export * from "../Triadichrome-extension/src/core/storage/expansionCategoryMaster";
+export * from "../Triadichrome-extension/src/core/domain/expansionCategoryMaster";
 export * from "../Triadichrome-extension/src/core/domain/masterRows";
 export * from "../Triadichrome-extension/src/core/tables/costComparison";
 export * from "../Triadichrome-extension/src/core/domain/details";

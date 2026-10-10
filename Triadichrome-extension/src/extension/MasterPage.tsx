@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-type MasterPageProps = { onOpenAmountItems: () => void; onOpenAccountTypes: () => void; onOpenAccounts: () => void; onOpenExpansions: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void; onOpenKinds: () => void };
+type MasterPageProps = { onOpenAmountItems: () => void; onOpenAccountTypes: () => void; onOpenAccounts: () => void; onOpenExpansions: () => void; onOpenExpansionCategories: () => void; onOpenIndustries: () => void; onOpenDepartments: () => void; onOpenPeriods: () => void; onOpenKinds: () => void };
 
 const icons: ReactNode[] = [
   <><rect x="5" y="3" width="14" height="18" rx="2" /><path d="M9 7h6M9 11h6M9 15h2m3 0h1M9 18h2m3 0h1" /></>,
@@ -14,10 +14,11 @@ const icons: ReactNode[] = [
   <><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M7 8h10M7 12h10M7 16h6" /></>,
 ];
 
-export function MasterPage({ onOpenAmountItems, onOpenAccountTypes, onOpenAccounts, onOpenExpansions, onOpenIndustries, onOpenDepartments, onOpenPeriods, onOpenKinds }: MasterPageProps) {
+export function MasterPage({ onOpenAmountItems, onOpenAccountTypes, onOpenAccounts, onOpenExpansions, onOpenExpansionCategories, onOpenIndustries, onOpenDepartments, onOpenPeriods, onOpenKinds }: MasterPageProps) {
   const items = [
     { name: "勘定科目マスタ", description: "科目・集計の名称、表示順、所属と加減", open: onOpenAccounts },
-    { name: "展開マスタ", description: "展開コード・展開名", open: onOpenExpansions },
+    { name: "展開マスタ", description: "展開コード・展開名・展開区分", open: onOpenExpansions },
+    { name: "展開区分マスタ", description: "展開区分名", open: onOpenExpansionCategories },
     { name: "業種マスタ", description: "業種コード・業種名", open: onOpenIndustries },
     { name: "部署マスタ", description: "部署名・所属業種", open: onOpenDepartments },
     { name: "期間マスタ", description: "期間名", open: onOpenPeriods },
@@ -30,7 +31,7 @@ export function MasterPage({ onOpenAmountItems, onOpenAccountTypes, onOpenAccoun
     <div className="master-menu">
       {items.map((item, index) => <button key={item.name} className="master-menu-item" type="button" onClick={item.open}>
         <span className="master-menu-icon" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{icons[index === 0 ? 0 : index + 1]}</svg>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">{icons[item.name === "展開区分マスタ" ? 7 : index === 0 ? 0 : index < 2 ? index + 1 : index]}</svg>
         </span>
         <span className="master-menu-label"><strong>{item.name}</strong><span>{item.description}</span></span>
         <svg className="master-menu-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5" /></svg>

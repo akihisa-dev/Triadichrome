@@ -19,8 +19,8 @@ export async function registerInitiative(bytes: Uint8Array, draft: InitiativeEnt
   return (await editDatabase(bytes, database => {
     validateInitiative(draft, listAccounts(database), listNames(database), listExpansions(database), listDepartments(database), listPeriodTypes(database), listIndustries(database));
     if (Number(draft.fiscalYear) !== readPlanSettings(database).fiscalYear) throw new Error("年度はファイルの基準年度と同じにしてください。");
-    database.run(`INSERT INTO initiatives (name, note, expansion_id, department_id, period_type_id, industry_id, sort_order)
-      VALUES (?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM initiatives))`, [draft.name.trim(), draft.note, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null]);
+    database.run(`INSERT INTO initiatives (name, note, expansion_id, expansion_category_id, department_id, period_type_id, industry_id, sort_order)
+      VALUES (?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(sort_order), -1) + 1 FROM initiatives))`, [draft.name.trim(), draft.note, draft.expansionId, draft.expansionCategoryId ?? null, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null]);
     const id = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
     for (const [index, row] of draft.rows.entries()) {
       if (row.accountId === null) continue;
@@ -63,7 +63,7 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
       const next = draftRowsById.get(row.id);
       if ((!next || next.accountId !== row.accountId) && !canChangeAccountRow(row)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更・削除できます。");
     }
-    database.run("UPDATE initiatives SET name = ?, note = ?, expansion_id = ?, department_id = ?, period_type_id = ?, industry_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null, id]);
+    database.run("UPDATE initiatives SET name = ?, note = ?, expansion_id = ?, expansion_category_id = ?, department_id = ?, period_type_id = ?, industry_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, draft.expansionId, draft.expansionCategoryId ?? null, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null, id]);
     for (const row of original.rows) if (!draftRowsById.has(row.id) || draftRowsById.get(row.id)!.accountId === null) {
       database.run("DELETE FROM initiative_amounts WHERE row_id = ?", [row.id!]);
       database.run("DELETE FROM initiative_rows WHERE id = ?", [row.id!]);

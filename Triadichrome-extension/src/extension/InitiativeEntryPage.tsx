@@ -1,3 +1,4 @@
+import type { ExpansionCategory } from "../core/domain/expansionCategoryMaster";
 import { reflectPrimaryBudget } from "../core/tables/initiativeGrid";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
@@ -19,6 +20,7 @@ type InitiativeEntryPageProps = {
   onDraftChange: (draft: InitiativeEntryDraft) => void;
   accounts: Account[];
   expansions: Expansion[];
+  expansionCategories: ExpansionCategory[];
   departments: Department[];
   periodTypes: PeriodType[];
   industries: Industry[];
@@ -29,9 +31,10 @@ type InitiativeEntryPageProps = {
   editing?: { savedRows: InitiativeEntryDraft["rows"]; saving: boolean; pending: boolean; before: ReactNode; status: ReactNode; onCompositionStart: () => void; onCompositionEnd: () => void };
 };
 
-export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, onBack, editing }: InitiativeEntryPageProps) {
+export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions, expansionCategories, departments, periodTypes, industries, onOpenMaster, isSaving, onRegister, onBack, editing }: InitiativeEntryPageProps) {
   const readOnly = useHistoryReadOnly();
   const [kind, setKind] = useState<KindId>(1);
+  const allowedCategories = expansions.find(item => item.id === draft.expansionId)?.categoryIds ?? [];
   const allowedIndustries = departments.find(item => item.id === draft.departmentId)?.industryIds ?? [];
   return (
     <main className={editing ? "initiative-entry-page" : "initiative-entry-page initiative-entry-compact"} aria-labelledby="initiative-entry-title" aria-busy={isSaving} onCompositionStart={editing?.onCompositionStart} onCompositionEnd={editing?.onCompositionEnd}>
@@ -76,7 +79,14 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
       <div className="initiative-classification-fields">
         <ClassificationSelect id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={readOnly || isSaving} required
           options={expansions.map(item => ({ id: item.id, name: item.expansionName }))}
-          onChange={expansionId => onDraftChange({ ...draft, expansionId })} />
+          onChange={expansionId => {
+            const ids = expansions.find(item => item.id === expansionId)?.categoryIds ?? [];
+            onDraftChange({ ...draft, expansionId, expansionCategoryId: ids.includes(draft.expansionCategoryId!) ? draft.expansionCategoryId ?? null : null });
+          }} />
+        <ClassificationSelect id="initiative-expansion-category" label="展開区分" value={draft.expansionCategoryId}
+          disabled={readOnly || isSaving || draft.expansionId == null || allowedCategories.length === 0}
+          options={expansionCategories.filter(item => allowedCategories.includes(item.id)).map(item => ({ id: item.id, name: item.categoryName }))}
+          onChange={expansionCategoryId => onDraftChange({ ...draft, expansionCategoryId })} />
         <ClassificationSelect id="initiative-department" label="部署名" value={draft.departmentId} disabled={readOnly || isSaving} required
           options={departments.map(item => ({ id: item.id, name: item.departmentName }))}
           onChange={departmentId => {

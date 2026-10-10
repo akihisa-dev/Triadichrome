@@ -1,3 +1,4 @@
+import { listExpansionCategories } from "./expansionCategoryMaster";
 import type { Database } from "./sqliteRuntime";
 import { openTriadicDatabase, openBusinessSnapshot } from "./triadicDatabase";
 import { deriveStartYearMonth } from "../domain/initiativeStartMonth";
@@ -36,11 +37,11 @@ export function listInitiatives(db: Database, fiscalYear: number, initiativeId?:
     }
   }
   const rules = new Map(listPeriodTypes(db).map(period => [period.id, period.startMonthRule]));
-  return (db.exec(`SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
-    .map(([id, name, note, expansion, department, period, industry, revision]) => {
+  return (db.exec(`SELECT id, name, note, expansion_id, expansion_category_id, department_id, period_type_id, industry_id, revision FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
+    .map(([id, name, note, expansion, category, department, period, industry, revision]) => {
       const rows = rowsByOwner.get(Number(id)) ?? [];
       const rule = period === null ? null : rules.get(Number(period)) ?? null;
-      return { id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision),
+      return { id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), expansionCategoryId: category === null ? null : Number(category), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision),
         startYearMonths: { 1: deriveStartYearMonth(fiscalYear, rule, rows, 1), 2: deriveStartYearMonth(fiscalYear, rule, rows, 2) }, rows, months: {} };
     });
 }
@@ -48,7 +49,7 @@ export function readContents(db: Database, includeDetails = true): PlanContents 
   const settings = readPlanSettings(db);
   const accounts = listAccounts(db);
   const contents: PlanContents = { ...settings, accounts, initiatives: initiativesForKind(listInitiatives(db, settings.fiscalYear), accounts, 1),
-    aggregations: listAggregations(db), expansions: listExpansions(db), industries: listIndustries(db), departments: listDepartments(db), periodTypes: listPeriodTypes(db), kinds: INITIAL_KINDS.map(kind => ({ ...kind })) };
+    aggregations: listAggregations(db), expansions: listExpansions(db), expansionCategories: listExpansionCategories(db), industries: listIndustries(db), departments: listDepartments(db), periodTypes: listPeriodTypes(db), kinds: INITIAL_KINDS.map(kind => ({ ...kind })) };
   return includeDetails ? { ...contents, details: buildDetails(contents) } : contents;
 }
 async function read(bytes: Uint8Array, open: typeof openTriadicDatabase, includeDetails: boolean): Promise<PlanContents> {

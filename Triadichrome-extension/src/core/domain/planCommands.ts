@@ -1,3 +1,4 @@
+import { validateExpansionCategoryChange, type ExpansionCategoryChange } from "./expansionCategoryMaster";
 import { validateAccountChange, type AccountChange } from "./accountMaster";
 import { changedAggregations, type AggregationChange } from "./aggregationMaster";
 import { validateExpansionChange, type ExpansionChange } from "./expansionMaster";
@@ -9,6 +10,7 @@ import type { InitiativeEntryDraft, PlanContents } from "./plan";
 import type { PlanChange } from "./kinds";
 export type PlanCommand =
   | { type: "account"; change: AccountChange } | { type: "aggregation"; change: AggregationChange }
+  | { type: "expansion-category"; change: ExpansionCategoryChange }
   | { type: "expansion"; change: ExpansionChange } | { type: "industry"; change: IndustryChange }
   | { type: "department"; change: DepartmentChange } | { type: "period"; change: PeriodTypeChange }
   | { type: "settings"; change: PlanChange }
@@ -25,6 +27,7 @@ export function validatePlanCommand(plan: PlanContents, command: PlanCommand): v
   switch (command.type) {
     case "account": return validateAccountChange(plan.accounts, command.change);
     case "aggregation": void changedAggregations(plan.aggregations, plan.accounts, command.change); return;
+    case "expansion-category": return validateExpansionCategoryChange(plan.expansionCategories, command.change);
     case "expansion": return validateExpansionChange(plan.expansions, command.change);
     case "industry": return validateIndustryChange(plan.industries, command.change);
     case "department": return validateDepartmentChange(plan.departments, command.change);

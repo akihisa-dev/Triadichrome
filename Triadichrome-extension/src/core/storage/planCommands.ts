@@ -1,3 +1,4 @@
+import { changeExpansionCategoryMaster } from "./expansionCategoryMaster";
 import type { PlanCommand } from "../domain/planCommands";
 import { changeAccountMaster } from "./accountMaster";
 import { changeAggregationMaster } from "./aggregationMaster";
@@ -11,6 +12,7 @@ export async function applyPlanCommand(bytes: Uint8Array, command: PlanCommand, 
   switch (command.type) {
     case "account": return (await changeAccountMaster(bytes, command.change)).bytes;
     case "aggregation": return changeAggregationMaster(bytes, command.change);
+    case "expansion-category": return changeExpansionCategoryMaster(bytes, command.change);
     case "expansion": return changeExpansionMaster(bytes, command.change);
     case "industry": return changeIndustryMaster(bytes, command.change);
     case "department": return changeDepartmentMaster(bytes, command.change);

@@ -11,7 +11,7 @@ test("分類をドロップダウンで選択し、登録・自動保存後も�
   const industry = app.getByRole("combobox", { name: "業種名", exact: true });
   const register = app.getByRole("button", { name: "登録", exact: true });
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("分類選択確認");
-  await expect(app.locator(".classification-field select")).toHaveCount(4);
+  await expect(app.locator(".classification-field select")).toHaveCount(5);
   for (const field of [expansion, department, period, industry]) await expect(field).toHaveValue("");
   await expect(industry).toBeDisabled();
   await expect(register).toBeDisabled();
@@ -27,7 +27,7 @@ test("分類をドロップダウンで選択し、登録・自動保存後も�
     const text = (await app.locator(".initiative-text-fields").boundingBox())!;
     const fields = (await app.locator(".initiative-classification-fields").boundingBox())!;
     expect(fields.x).toBe(text.x);
-    expect(fields.width).toBeLessThanOrEqual(440);
+    expect(fields.width).toBeLessThanOrEqual(552);
     expect(fields.y).toBeGreaterThanOrEqual(text.y + text.height);
     expect((await expansion.boundingBox())!.height).toBe(36);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);

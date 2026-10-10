@@ -34,7 +34,7 @@
 .initiative-text-fields { width: 100%; min-width: 0; }
 .initiative-text-fields .initiative-name-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
 .initiative-text-fields .initiative-field { flex: 0 1 20rem; width: min(100%, 20rem); min-width: 0; }
-.initiative-classification-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); width: min(100%, 440px); gap: 8px; min-width: 0; }
+.initiative-classification-fields { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: min(100%, 552px); gap: 8px; min-width: 0; }
 /* 新規施策入力の上部だけを詰め、分類選択欄の高さを揃える。 */
 .initiative-entry-compact { padding-top: clamp(16px, 2vw, 20px); }
 .initiative-entry-compact h1 { font-size: 22px; }

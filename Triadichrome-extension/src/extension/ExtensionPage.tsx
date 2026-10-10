@@ -1,3 +1,4 @@
+import type { ExpansionCategoryChange } from "../core/domain/expansionCategoryMaster";
 import { FileConflictDialog } from "./FileConflictDialog";
 import { version as appVersion } from "../../../package.json";
 import type { PlanChange } from "../core/domain/kinds";
@@ -148,6 +149,7 @@ export function ExtensionPage() {
   const changePeriodTypes = (change: PeriodTypeChange) => dispatch({ type: "period", change });
   const changeDepartments = (change: DepartmentChange) => dispatch({ type: "department", change });
   const changeIndustries = (change: IndustryChange) => dispatch({ type: "industry", change });
+  const changeExpansionCategories = (change: ExpansionCategoryChange) => dispatch({ type: "expansion-category", change });
   const changeExpansions = (change: ExpansionChange) => dispatch({ type: "expansion", change });
   const changeAggregations = (change: AggregationChange) => dispatch({ type: "aggregation", change });
   const register = (draft: InitiativeEntryDraft) => dispatch({ type: "initiative.register", draft });
@@ -162,7 +164,7 @@ export function ExtensionPage() {
     if (!busy.current) setDragging(true);
   };
   return <div className="app-shell"><FadeSwap value={fileName} className="app-switch">{displayedFile => displayedFile
-    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={displayedContents.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
+    ? <HomePage onChangePlan={changePlan} fileName={displayName} initialContents={displayedContents.current!} onChangeMaster={changeMaster} onChangeAggregations={changeAggregations} onChangeExpansions={changeExpansions} onChangeExpansionCategories={changeExpansionCategories} onChangeIndustries={changeIndustries} onChangeDepartments={changeDepartments} onChangePeriodTypes={changePeriodTypes} onRegisterInitiative={register} onUpdateInitiative={update} onPrepareSave={prepareSave}
       dataHistory={dataHistory} historyError={historyError} historyBusy={isBusy || snapshot.busy} onPreviewHistory={previewHistory} onRestoreHistory={restoreHistory} onDeleteHistory={deleteHistory}
       canUndo={snapshot.canUndo} canRedo={snapshot.canRedo} operationRevision={snapshot.operationRevision} onTravelOperation={direction => session.travelOperation(direction, chooseDestination)}
       onRetryHistory={async () => { await prepareSave(); await session.checkpoint(true, chooseDestination); }}

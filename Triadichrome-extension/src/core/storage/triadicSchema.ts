@@ -6,11 +6,11 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 24;
+export const TRIADIC_FORMAT_VERSION = 25;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
-export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "master_order", "initiatives", "initiative_rows", "initiative_amounts", "previous_amounts", "kind_selections"] as const;
+export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "expansion_categories", "expansion_category_assignments", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "master_order", "initiatives", "initiative_rows", "initiative_amounts", "previous_amounts", "kind_selections"] as const;
 export const TRIADIC_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
@@ -39,6 +39,15 @@ CREATE TABLE department_industries (
 );
 INSERT INTO department_industries SELECT departments.id, industries.id FROM departments CROSS JOIN industries;
 ${EXPANSION_SQL}
+CREATE TABLE expansion_categories (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
+);
+CREATE TABLE expansion_category_assignments (
+ expansion_id INTEGER NOT NULL REFERENCES expansions(id) ON DELETE CASCADE,
+ category_id INTEGER NOT NULL REFERENCES expansion_categories(id),
+ PRIMARY KEY (expansion_id, category_id)
+);
 ${AGGREGATION_SQL}
 CREATE TABLE master_order (
  position INTEGER PRIMARY KEY CHECK (typeof(position) = 'integer' AND position >= 0),
@@ -50,11 +59,13 @@ CREATE TABLE initiatives (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0), note TEXT NOT NULL DEFAULT '',
  expansion_id INTEGER NOT NULL REFERENCES expansions(id),
+ expansion_category_id INTEGER REFERENCES expansion_categories(id),
  industry_id INTEGER NOT NULL REFERENCES industries(id),
  department_id INTEGER NOT NULL REFERENCES departments(id),
  period_type_id INTEGER REFERENCES period_types(id),
  sort_order INTEGER NOT NULL CHECK (typeof(sort_order) = 'integer' AND sort_order >= 0), revision ${revision},
- FOREIGN KEY (department_id, industry_id) REFERENCES department_industries(department_id, industry_id)
+ FOREIGN KEY (department_id, industry_id) REFERENCES department_industries(department_id, industry_id),
+ FOREIGN KEY (expansion_id, expansion_category_id) REFERENCES expansion_category_assignments(expansion_id, category_id)
 );
 CREATE TABLE initiative_rows (
  id TEXT PRIMARY KEY NOT NULL CHECK (length(id) > 0),

@@ -1,6 +1,6 @@
 # 全機能確認用の計画
 
-`npm run samples:generate`でローカルに生成する`全機能確認用.triadic`は現在の実装に対応した、基準年度2026・保存形式24の確認用データです。生成元は[tests/ui/sample-plan.ts](../tests/ui/sample-plan.ts)、再生成・一致確認は[README](../README.md#確認用のtriadicファイル)を参照してください。生成ファイルはGit管理せず、GitHubへアップロードしません。実ファイルの上書きを避けるため、試す際はコピーを使用します。
+`npm run samples:generate`でローカルに生成する`全機能確認用.triadic`は現在の実装に対応した、基準年度2026・保存形式25の確認用データです。生成元は[tests/ui/sample-plan.ts](../tests/ui/sample-plan.ts)、再生成・一致確認は[README](../README.md#確認用のtriadicファイル)を参照してください。生成ファイルはGit管理せず、GitHubへアップロードしません。実ファイルの上書きを避けるため、試す際はコピーを使用します。
 
 1,014施策・12,032科目行・両予算と前年で289,704件分の月別金額を含む大規模サンプルです。元の14施策に「大規模確認施策0001」から「大規模確認施策1000」を追加しています。各追加施策は12科目行を持ち、一次予算の金額と確定予算の手修正を正負の対で相殺します。全展開・業種と部署A・部署Bに分散し、両種別の開始年月は2026-04です。既存の確認用金額と未使用科目は維持します。3時点の履歴にも1,014施策を保持します。
 
@@ -15,6 +15,7 @@
 | 大規模データ | [tests/ui/sample-plan.ts](../tests/ui/sample-plan.ts) | 1,014施策を読込。施策一覧の末尾・施策詳細・種別切替・履歴を確認 | 追加施策の月別売上・費用・利益は両種別とも0。元の合計と手修正を保持 | 通常テスト・Codex内のブラウザ | 実ファイルの形式・件数・分類・全月計算・過去履歴を自動検証。ブラウザで追加1,000施策、末尾の12科目行・144月額欄と種別切替を確認。実ファイル保存・性能測定は対象外 |
 | 年度 | [core/storage/initiatives.ts](../Triadichrome-extension/src/core/storage/initiatives.ts) | 2026年度の1,014施策と前年実額を開く | 共通ヘッダーは2026年度、対象月は4月から翌3月 | 通常テスト | DB・計算を確認。画面は操作手順として準備 |
 | 施策の共通情報 | [core/storage/initiatives.ts](../Triadichrome-extension/src/core/storage/initiatives.ts) | 各施策の展開・業種・部署・任意の期間・備考 | タブを切り替えても共通情報は同じ | 通常テスト | DB・計算を確認。画面は操作手順として準備 |
+| 展開区分 | [core/storage/expansionCategoryMaster.ts](../Triadichrome-extension/src/core/storage/expansionCategoryMaster.ts) | 確認用区分4件。コストに3件、料改・拡販に共通区分を割当。販売拡大は共通区分を選択 | 展開による候補の絞り込み、共通区分の保持、対象外の解除、任意未選択、マスタの登録・割当を確認 | 通常テスト・画面テスト・Codex内のブラウザ | 保存・復元・使用中保護と金額不変、通常幅と狭い画面を確認。新規計画のマスタは0件 |
 | 種別 | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 前年表示と固定の一次・確定 | 施策タブは一次・確定のみ、種別マスタは前年・一次・確定の閲覧のみ | 通常テスト・固定の業務定義と種別選択制約 | 固定2種と前年表示、無効な種別選択の拒否を確認 |
 | 自動引き継ぎ | [core/domain/kinds.ts](../Triadichrome-extension/src/core/domain/kinds.ts) | 「確定予算の下期調整」の一次4月100を120へ変更 | 手修正のない確定は120に追従 | 通常テスト・sample-plan画面テスト | 計算確認、引き継ぎ・解除の画面操作を確認 |
 | 金額項目の月別合計 | [core/tables/initiativeGrid.ts](../Triadichrome-extension/src/core/tables/initiativeGrid.ts) | 「既存商品の販売拡大」と「科目変更と削除の確認」の最下部、種別切替と金額編集 | 前者の一次4月は売上90・費用11・利益79、確定の売上100。後者も3行を表示し全月0 | 通常テスト・Codex内のブラウザ | 重複科目、符号、円精度、手修正0、合計範囲超過を自動検証。3行の表示、種別切替、入力への追従をブラウザで確認 |

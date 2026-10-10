@@ -1,3 +1,4 @@
+import { verifyExpansionCategories } from "../tests/expansion-categories.mjs";
 import { verifyAggregationPositions } from "../tests/aggregation-positions.mjs";
 import { verifyAggregationRebase } from "../tests/aggregation-rebase.mjs";
 import { verifyMasterOrderStorage } from "../tests/master-order-storage.mjs";
@@ -74,6 +75,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   await verifyPeriodData(api);
   await verifyIndustryData(api);
   await verifyExpansionData(api);
+  await verifyExpansionCategories(api);
   await verifyDefaultCostData(api);
   await verifyExpansionTable(api);
   await verifyAggregationData({ ...api, createTriadicDatabase: () => api.createCurrentEmptyTestPlan(2026) });

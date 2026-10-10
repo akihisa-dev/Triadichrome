@@ -139,6 +139,30 @@ export const dataMapSchema = [
     ]
   },
   {
+    "name": "expansion_categories",
+    "columns": [
+      {
+        "name": "id"
+      },
+      {
+        "name": "name"
+      }
+    ]
+  },
+  {
+    "name": "expansion_category_assignments",
+    "columns": [
+      {
+        "name": "expansion_id",
+        "reference": "expansions.id"
+      },
+      {
+        "name": "category_id",
+        "reference": "expansion_categories.id"
+      }
+    ]
+  },
+  {
     "name": "expansions",
     "columns": [
       {
@@ -226,7 +250,11 @@ export const dataMapSchema = [
       },
       {
         "name": "expansion_id",
-        "reference": "expansions.id"
+        "reference": "expansion_category_assignments.expansion_id, expansions.id"
+      },
+      {
+        "name": "expansion_category_id",
+        "reference": "expansion_category_assignments.category_id, expansion_categories.id"
       },
       {
         "name": "industry_id",
