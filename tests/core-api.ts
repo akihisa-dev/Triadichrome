@@ -50,6 +50,7 @@ export * from "../Triadichrome-extension/src/core/tables/planTables";
 export * from "../Triadichrome-extension/src/core/tables/previousGrid";
 export * from "../Triadichrome-extension/src/core/tables/tableView";
 export * from "../Triadichrome-extension/src/extension/MasterPage";
+export * from "../Triadichrome-extension/src/extension/AccountTypeMasterPage";
 export * from "../Triadichrome-extension/src/extension/HomeRelationsPage";
 export * from "../Triadichrome-extension/src/extension/PlanSession";
 export * from "./ui/sample-plan";

@@ -5,6 +5,7 @@ import { KindSelectionSlots } from "./KindSelectionSlots";
 import { type KindId, type KindScreen, type PlanChange } from "../core/domain/kinds";
 import { SpreadsheetIOPage } from "./SpreadsheetIOPage";
 import { PreviousInputPage } from "./PreviousInputPage";
+import { AccountTypeMasterPage } from "./AccountTypeMasterPage";
 import { KindMasterPage } from "./KindMasterPage";
 import { HomeRelationsPage, type RelationView } from "./HomeRelationsPage";
 import { type PeriodTypeChange } from "../core/domain/periodMaster";
@@ -39,7 +40,7 @@ import type { DataHistoryEntry, DataHistoryStatus, HistoryDeletion } from "../co
 import "./ScreenHistory.css";
 import appIcon from "../../../branding/logo-512.png?no-inline";
 
-export type Page = "spreadsheet-io" | "data-history" | "previous-input" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master";
+export type Page = "spreadsheet-io" | "data-history" | "previous-input" | "home" | "initiative-entry" | "initiative-list" | "initiative-detail" | "cost-table" | "expansion-table" | "master" | "account-master" | "expansion-master" | "industry-master" | "department-master" | "period-master" | "kind-master" | "account-type-master";
 
 type Screen = {
   page: Page;
@@ -348,7 +349,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
               <SidebarIcon name="previous" /><span className="sidebar-label">前年入力</span>
             </button>
             <button className="sidebar-item" type="button" aria-label="入出力" disabled={navigationBlocked} aria-current={page === "spreadsheet-io" ? "page" : undefined} onClick={() => setPage("spreadsheet-io")}><SidebarIcon name="io" /><span className="sidebar-label">入出力</span></button>
-            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" ? "page" : undefined} onClick={() => setPage("master")}>
+            <button className="sidebar-item" type="button" aria-label="マスタ" disabled={navigationBlocked} aria-current={page === "master" || page === "account-master" || page === "expansion-master" || page === "industry-master" || page === "department-master" || page === "period-master" || page === "kind-master" || page === "account-type-master" ? "page" : undefined} onClick={() => setPage("master")}>
               <SidebarIcon name="master" />
               <span className="sidebar-label">マスタ</span>
             </button>
@@ -379,7 +380,8 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "initiative-list": return <InitiativeListPage expansions={contents.expansions} periodTypes={contents.periodTypes} onAddInitiative={startInitiative} selectedKind={contents.kindSelections["initiative-list"][0]!} selection={kindSelection("initiative-list")} initiatives={initiatives} accounts={accounts} fiscalYear={String(contents.fiscalYear)} onOpenInitiative={openInitiative} navigationBlocked={navigationBlocked} />;
                 case "cost-table": return <CostTablePage selection={kindSelection("cost-table")} contents={contents} selected={contents.kindSelections["cost-table"]} onOpenMaster={() => setPage("account-master")} />;
                 case "expansion-table": return <ExpansionTablePage selection={kindSelection("expansion-table")} contents={contents} selected={contents.kindSelections["expansion-table"]} onOpenInitiative={openInitiative} />;
-                case "master": return <MasterPage onOpenAccounts={() => setPage("account-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
+                case "master": return <MasterPage onOpenAccountTypes={() => setPage("account-type-master")} onOpenAccounts={() => setPage("account-master")} onOpenExpansions={() => setPage("expansion-master")} onOpenIndustries={() => setPage("industry-master")} onOpenDepartments={() => setPage("department-master")} onOpenPeriods={() => setPage("period-master")} onOpenKinds={() => setPage("kind-master")} />;
+                case "account-type-master": return <AccountTypeMasterPage isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;
                 case "department-master": return <DepartmentMasterPage departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;

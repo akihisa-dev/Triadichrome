@@ -46,6 +46,10 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       const kind = screenData.find(item => item.page === "kind-master");
       assert.deepEqual(kind.tables.map(item => item.table), ["plan"], "共通ヘッダーの年度だけを参照し、種別マスタの保存表を捏造しない");
       assert.ok(kind.calculated.some(text => text.includes("固定定義")));
+      const attributes = screenData.find(item => item.page === "account-type-master");
+      assert.deepEqual(attributes.tables.map(item => item.table), ["plan"], "科目属性の固定定義に保存テーブルを作らない");
+      for (const text of ["固定定義", "追加・改名・削除", "accounts.attribute", "書き換えません"])
+        assert.ok(attributes.calculated.some(explanation => explanation.includes(text)), text);
     } finally { database.close(); }
   });
 });
