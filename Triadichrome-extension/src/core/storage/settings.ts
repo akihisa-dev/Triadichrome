@@ -22,11 +22,14 @@ export function readRowOverrides(db: Database, rowId: string): KindOverrides {
   return result;
 }
 
-export async function saveKindSelection(bytes: Uint8Array, screen: KindScreen, selected: KindId[]): Promise<Uint8Array> {
+export function applyKindSelection(db: Database, screen: KindScreen, selected: KindId[]): void {
   if (!["initiative-list", "cost-table", "expansion-table"].includes(screen)) throw new Error("表示対象が正しくありません。");
   const maximum = screen === "initiative-list" ? 1 : 2;
   if (selected.length < 1 || selected.length > maximum || new Set(selected).size !== selected.length || selected.some(id => !isKindId(id))) throw new Error("種別の選択が正しくありません。");
-  return (await editDatabase(bytes, db => db.run("UPDATE kind_selections SET first_kind = ?, second_kind = ? WHERE screen = ?", [selected[0]!, selected[1] ?? null, screen]))).bytes;
+  db.run("UPDATE kind_selections SET first_kind = ?, second_kind = ? WHERE screen = ?", [selected[0]!, selected[1] ?? null, screen]);
+}
+export async function saveKindSelection(bytes: Uint8Array, screen: KindScreen, selected: KindId[]): Promise<Uint8Array> {
+  return (await editDatabase(bytes, db => applyKindSelection(db, screen, selected))).bytes;
 }
 export async function changePlanSettings(bytes: Uint8Array, change: PlanChange): Promise<Uint8Array> {
   if (change.type === "previous") return savePreviousAmounts(bytes, change.input);

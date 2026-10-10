@@ -29,9 +29,19 @@ export async function verifyPlanSession(api) {
   choose.resolve(destination.handle); await first;
   assert.equal(pickers, 1);
   assert.ok(session.getSnapshot().contents.departments.some(item => item.departmentName === "追加部署"));
+  const beforeSelection = session.getSnapshot().contents;
+  const fullRead = api.processingTasks.readPlanContents;
+  api.processingTasks.readPlanContents = async () => { throw new Error("表示設定だけの変更で全計画を読み直さない"); };
   const one = session.dispatch({ type: "settings", change: { type: "selection", screen: "cost-table", selected: [1, 2] } }, noPicker);
   const two = session.dispatch({ type: "settings", change: { type: "selection", screen: "initiative-list", selected: [1] } }, noPicker);
-  await Promise.all([one, two]);
+  try { await Promise.all([one, two]); }
+  finally { api.processingTasks.readPlanContents = fullRead; }
+  for (const key of ["accounts", "aggregations", "initiatives", "previousAmounts", "kinds", "details"]) {
+    assert.equal(session.getSnapshot().contents[key], beforeSelection[key], "表示設定以外の計算元を再利用する");
+  }
+  for (const [screen, selected] of [["cost-table", []], ["cost-table", [1, 1]], ["initiative-list", [1, 2]], ["missing", [1]]]) {
+    await assert.rejects(api.processingTasks.prepareKindSelectionSave(destination.bytes, screen, selected), /正しくありません/);
+  }
   assert.deepEqual((await api.readPlanContents(destination.bytes)).kindSelections, session.getSnapshot().contents.kindSelections);
   assert.deepEqual(session.getSnapshot().contents.kindSelections["cost-table"], [1, 2]);
   assert.deepEqual(session.getSnapshot().contents.kindSelections["initiative-list"], [1]);

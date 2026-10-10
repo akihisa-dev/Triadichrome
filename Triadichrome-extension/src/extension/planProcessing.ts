@@ -48,3 +48,5 @@ export const trackHistoryChange: Tasks["trackHistoryChange"] = (...args) => proc
 export const recordDataHistory: Tasks["recordDataHistory"] = (...args) => processPlan("recordDataHistory", ...args);
 export const restoreDataHistory: Tasks["restoreDataHistory"] = (...args) => processPlan("restoreDataHistory", ...args);
 export const deleteDataHistory: Tasks["deleteDataHistory"] = (...args) => processPlan("deleteDataHistory", ...args);
+
+export const prepareKindSelectionSave: Tasks["prepareKindSelectionSave"] = (...args) => processPlan("prepareKindSelectionSave", ...args);

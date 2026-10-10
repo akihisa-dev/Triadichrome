@@ -1,7 +1,7 @@
 import { TableCalculationBoundary } from "./TableCalculationBoundary";
 import { periodCellClass } from "./periodCellStyle";
 import type { ReactNode } from "react";
-import { Fragment, useState, useLayoutEffect } from "react";
+import { Fragment, memo, useMemo, useState, useLayoutEffect } from "react";
 import { buildPeriodCostComparison, tablePeriods } from "../core/tables/periodTables";
 import { filterPlan } from "../core/tables/planTables";
 import { ChoiceChips } from "./ChoiceChips";
@@ -23,6 +23,15 @@ export function CostTablePage({ contents, selected, selection }: Props) {
     if (industries.length !== industryIds.length) setIndustries(industries);
     if (departments.length !== departmentIds.length) setDepartments(departments);
   }, [available, industryIds, departmentIds]);
+  const filtered = useMemo(() => {
+    const industries = industryIds.filter(id => contents.industries.some(item => item.id === id));
+    const departments = departmentIds.filter(id => contents.departments.some(item => item.id === id));
+    return filterPlan(contents, {
+      industries: industries.length ? industries : null,
+      departments: departments.length ? departments : null,
+    });
+  }, [contents.accounts, contents.aggregations, contents.initiatives, contents.previousAmounts, contents.fiscalYear,
+    contents.kinds, contents.industries, contents.departments, industryIds, departmentIds]);
   return <main className="initiative-list-page cost-table-page" aria-labelledby="cost-table-title">
     <div className="initiative-list-heading">
       <h1 id="cost-table-title">総原価表</h1>
@@ -37,16 +46,20 @@ export function CostTablePage({ contents, selected, selection }: Props) {
         disabled={false} onChange={setDepartments} />
     </div>
     <TableCalculationBoundary resetKeys={[contents, selected, industryIds, departmentIds]}>
-      <CostTableContents contents={filterPlan(contents, {
-        industries: industries.length ? industries : null,
-        departments: departments.length ? departments : null,
-      })} selected={selected} />
+      <CostTableContents contents={filtered} selected={selected} />
     </TableCalculationBoundary>
   </main>;
 }
 
-function CostTableContents({ contents, selected }: Pick<Props, "contents" | "selected">) {
-  const { labels, rows } = buildPeriodCostComparison(contents, selected);
+const CostTableContents = memo(function CostTableContents({ contents, selected }: Pick<Props, "contents" | "selected">) {
+  const comparisons = useMemo(() => new Map<string, ReturnType<typeof buildPeriodCostComparison>>(), [contents]);
+  const key = [...selected].sort().join(",");
+  let table = comparisons.get(key);
+  if (!table) {
+    table = buildPeriodCostComparison(contents, selected);
+    comparisons.set(key, table);
+  }
+  const { labels, rows } = table;
   const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const renderRow = (row: (typeof rows)[number]) => <tr key={`${row.kind}:${row.id}`} className={`cost-data-row${row.kind !== "account" ? ` cost-subtotal${row.required ? " cost-required" : ""}` : ""}${row.kind === "group" && row.id === salesGroupId ? " cost-sales-anchor" : ""}`}>
@@ -69,4 +82,4 @@ function CostTableContents({ contents, selected }: Pick<Props, "contents" | "sel
         <tbody>{rows.slice(salesIndex + 1).map(renderRow)}</tbody>
       </table>
     </div>;
-}
+});

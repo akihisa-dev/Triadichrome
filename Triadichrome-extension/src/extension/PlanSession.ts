@@ -1,5 +1,5 @@
 import { emptyDataHistory, type DataHistoryStatus, type HistoryDeletion } from "../core/storage/dataHistory";
-import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand, prepareAggregationSave } from "./planProcessing";
+import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand, prepareAggregationSave, prepareKindSelectionSave } from "./planProcessing";
 import type { PlanContents } from "../core/domain/plan";
 import { writePlanChange, writePreparedPlanChange, type OpenPlan } from "./planFile";
 import { isAutomatic, validatePlanCommand, type PlanCommand } from "./planCommands";
@@ -79,6 +79,14 @@ export class PlanSession {
       const destinationPlan = await selected;
       const target = destinationPlan && !plan.handle ? { ...plan, ...destinationPlan } : plan;
       validatePlanCommand(target, command);
+      if (command.type === "settings" && command.change.type === "selection") {
+        const { screen, selected } = command.change;
+        const prepared = await prepareKindSelectionSave(target.bytes, screen, selected);
+        entry = prepared.operation ?? undefined;
+        // These references remain valid: only kind_selections and timestamps changed.
+        const contents = { ...this.contents(target), kindSelections: { ...target.kindSelections, [screen]: [...selected] } };
+        return writePreparedPlanChange(target, target.handle!, { ...prepared, contents });
+      }
       if (command.type === "aggregation") {
         const prepared = await prepareAggregationSave(target.bytes, command.change);
         entry = prepared.operation ?? undefined;
