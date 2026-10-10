@@ -1,3 +1,4 @@
+import { verifyClassificationStorage } from "../tests/classification-storage.mjs";
 import { verifyKindAmountStorage } from "../tests/kind-amount-storage.mjs";
 import { verifyCostCancellation } from "../tests/cost-cancellation.mjs";
 import { verifyAggregationOrder } from "../tests/aggregation-order.mjs";
@@ -55,6 +56,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   verifyHomeMasterCoverage(api);
   await verifySingleYearPlan(api);
   await verifyKindAmountStorage(api);
+  await verifyClassificationStorage(api);
   await verifyStartMonths(api);
   verifyInitiativeSort(api);
   verifyTableSort(api);

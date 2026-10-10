@@ -1,4 +1,3 @@
-import { classificationIdentity, identifyNewClassification } from "./classificationIdentity";
 import type { Database } from "./sqliteRuntime";
 import { editDatabase } from "./transaction";
 import { validateDepartmentChange, type Department, type DepartmentChange } from "../domain/departmentMaster";
@@ -7,8 +6,8 @@ export function listDepartments(database: Database): Department[] {
   for (const [department, industry] of database.exec("SELECT department_id, industry_id FROM department_industries ORDER BY industry_id")[0]?.values ?? []) {
     const ids = memberships.get(Number(department)) ?? []; ids.push(Number(industry)); memberships.set(Number(department), ids);
   }
-  return (database.exec("SELECT id, name FROM departments ORDER BY id")[0]?.values ?? [])
-    .map(([id, name]) => ({ id: Number(id), identity: classificationIdentity(database, "departments", Number(id)), departmentName: String(name), industryIds: memberships.get(Number(id)) ?? [] }));
+  return (database.exec("SELECT id, name, identity FROM departments ORDER BY id")[0]?.values ?? [])
+    .map(([id, name, identity]) => ({ id: Number(id), identity: String(identity), departmentName: String(name), industryIds: memberships.get(Number(id)) ?? [] }));
 }
 
 export async function changeDepartmentMaster(bytes: Uint8Array, change: DepartmentChange): Promise<Uint8Array> {
@@ -24,8 +23,8 @@ export async function changeDepartmentMaster(bytes: Uint8Array, change: Departme
         if (used.some(([id]) => !ids.includes(Number(id)))) throw new Error("施策・前年入力で使用中の業種は部署から外せません。");
       }
     }
-    if (change.type === "delete") { database.run("DELETE FROM departments WHERE id = ?", [change.id]); database.run("DELETE FROM triadic_metadata WHERE key = ?", [`departments_identity:${change.id}`]); }
-    else if (change.type === "add") { database.run("INSERT INTO departments (name) VALUES (?)", [change.departmentName.trim()]); identifyNewClassification(database, "departments"); }
+    if (change.type === "delete") { database.run("DELETE FROM departments WHERE id = ?", [change.id]); }
+    else if (change.type === "add") { database.run("INSERT INTO departments (name) VALUES (?)", [change.departmentName.trim()]); }
     else database.run("UPDATE departments SET name = ? WHERE id = ?", [change.departmentName.trim(), change.id]);
     if (change.type !== "delete" && change.industryIds !== undefined) {
       const id = change.type === "update" ? change.id : Number(database.exec("SELECT id FROM departments WHERE name = ?", [change.departmentName.trim()])[0]!.values[0]![0]);

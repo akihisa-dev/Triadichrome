@@ -120,6 +120,9 @@ export const dataMapSchema = [
         "name": "id"
       },
       {
+        "name": "identity"
+      },
+      {
         "name": "name"
       }
     ]
@@ -160,6 +163,9 @@ export const dataMapSchema = [
     "columns": [
       {
         "name": "id"
+      },
+      {
+        "name": "identity"
       },
       {
         "name": "code"

@@ -149,15 +149,13 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
   const stable = async (input: Uint8Array) => {
     const database = await openTriadicDatabase(input);
     try {
-      // Normalize both current and embedded snapshot metadata for deterministic fixtures.
+      // Normalize timestamps and classification attributes for deterministic fixtures.
       database.run("UPDATE document_info SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
       database.run("UPDATE data_history_state SET saved_at = ?", [timestamp]);
-      if (large) for (const [name, identity] of [
-        ["複数業種確認部署", "00000000-0000-4000-8000-000000000003"],
-        ["単一業種確認部署", "00000000-0000-4000-8000-000000000004"],
-      ]) {
-        const id = Number(database.exec("SELECT id FROM departments WHERE name = ?", [name!])[0]!.values[0]![0]);
-        database.run("UPDATE triadic_metadata SET value = ? WHERE key = ?", [identity!, `departments_identity:${id}`]);
+      for (const [table, prefix] of [["industries", "1"], ["departments", "2"]]) {
+        for (const [id] of database.exec(`SELECT id FROM ${table}`)[0]?.values ?? []) {
+          database.run(`UPDATE ${table} SET identity = ? WHERE id = ?`, [prefix + Number(id).toString(16).padStart(31, "0"), Number(id)]);
+        }
       }
       return database.export();
     } finally { database.close(); }

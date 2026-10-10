@@ -40,7 +40,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
     throw new TriadicFileError("このファイルの形式には許可されていない保存構造が含まれています。元のファイルは変更していません。");
   }
   const metadata = new Map((db.exec("SELECT key, value FROM triadic_metadata")[0]?.values ?? []).map(([key, value]) => [String(key), String(value)]));
-  if (metadata.has("account_display_names")) invalid();
+  if (metadata.has("account_display_names") || [...metadata.keys()].some(key => /^(industries|departments)_identity:/.test(key))) invalid();
   if (metadata.get("format_id") !== TRIADIC_FORMAT_ID || metadata.get("format_version") !== String(TRIADIC_FORMAT_VERSION)
     || metadata.get("container") !== "sqlite") invalid();
   const tables = new Set((db.exec("SELECT name FROM sqlite_master WHERE type = 'table'")[0]?.values ?? []).map(([name]) => String(name)));
@@ -80,6 +80,10 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
     !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1,2].includes(Number(first))
     || (second !== null && (![1,2].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null))) invalid();
   if (db.exec("SELECT id FROM departments WHERE NOT EXISTS (SELECT 1 FROM department_industries WHERE department_id = departments.id)").length) invalid();
+  for (const table of ["industries", "departments"]) {
+    if (db.exec(`SELECT identity FROM ${table} WHERE typeof(identity) != 'text' OR length(identity) != 32 OR identity GLOB '*[^0-9a-f]*'`).length
+      || db.exec(`SELECT identity FROM ${table} GROUP BY identity HAVING COUNT(*) > 1`).length) invalid();
+  }
   validateMasterPresentation(db);
   validateAggregations(listAggregations(db), new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id))));
   if (db.exec("SELECT id FROM period_types WHERE start_month_rule IS NOT NULL AND start_month_rule NOT IN ('new', 'period_gap')").length) invalid();

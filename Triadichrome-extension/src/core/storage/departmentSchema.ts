@@ -5,6 +5,7 @@ export const INITIAL_DEPARTMENTS = [
 
 export const DEPARTMENT_SQL = `CREATE TABLE departments (
   id INTEGER PRIMARY KEY,
+  identity TEXT NOT NULL UNIQUE DEFAULT (lower(hex(randomblob(16)))) CHECK (typeof(identity) = 'text' AND length(identity) = 32 AND identity NOT GLOB '*[^0-9a-f]*'),
   name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
 );
 INSERT INTO departments (id, name) VALUES

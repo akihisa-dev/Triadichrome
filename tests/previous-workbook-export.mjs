@@ -34,12 +34,13 @@ export async function verifyPreviousWorkbookExport(api) {
   assert.deepEqual(patches.map(p => [p.month, p.before, p.after]), [[4, "123.456", "0"], [5, "0", "-0.001"]]);
   assert.equal(patches[0].industryIdentity, plan.industries[0].identity);
   const legacy = { ...plan, industries: plan.industries.map(({ identity, ...i }) => i), departments: plan.departments.map(({ identity, ...d }) => d) };
-  const oldOutput = await api.createPreviousWorkbookBytes(legacy, pairs.slice(0, 1));
-  assert.deepEqual(await api.parsePreviousWorkbook(oldOutput, legacy), []);
-  const oldWorkbook = new ExcelJS.Workbook(); await oldWorkbook.xlsx.load(oldOutput);
-  oldWorkbook.worksheets[0].getCell("C4").value = 0;
-  const oldPatches = await api.parsePreviousWorkbook(await api.serializeWorkbook(oldWorkbook), legacy);
-  assert.equal(oldPatches[0].industryIdentity, "legacy"); assert.equal(oldPatches[0].departmentIdentity, "legacy");
+  await assert.rejects(api.createPreviousWorkbookBytes(legacy, pairs.slice(0, 1)), /作成識別子/);
+  const oldWorkbook = new ExcelJS.Workbook(); await oldWorkbook.xlsx.load(output);
+  const oldMeta = oldWorkbook.getWorksheet("_triadichrome");
+  for (let row = 3; row <= oldMeta.rowCount; row++) { oldMeta.getCell(row,19).value = "legacy"; oldMeta.getCell(row,20).value = "legacy"; }
+  const oldBytes = await api.serializeWorkbook(oldWorkbook); const oldBefore = oldBytes.slice();
+  await assert.rejects(api.parsePreviousWorkbook(oldBytes,plan), /作り直|識別子/);
+  assert.deepEqual(oldBytes,oldBefore);
   assert.throws(() => api.createPreviousWorkbook({ ...plan, accounts: [] }, pairs.slice(0, 1)), /勘定科目を登録/);
   const manyPairs = Array.from({ length: 2033 }, (_, index) => ({ industryId: index + 1, departmentId: 1 }));
   assert.throws(() => api.createPreviousWorkbook({ ...plan, accounts: plan.accounts.slice(0, 1) }, manyPairs), /取り込み上限/, "ZIP項目数も生成前に制限");

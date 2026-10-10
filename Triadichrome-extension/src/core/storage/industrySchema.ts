@@ -12,6 +12,7 @@ export const INITIAL_INDUSTRIES = [
 
 export const INDUSTRY_SQL = `CREATE TABLE industries (
   id INTEGER PRIMARY KEY,
+  identity TEXT NOT NULL UNIQUE DEFAULT (lower(hex(randomblob(16)))) CHECK (typeof(identity) = 'text' AND length(identity) = 32 AND identity NOT GLOB '*[^0-9a-f]*'),
   code TEXT NOT NULL UNIQUE CHECK (length(code) > 0 AND code NOT GLOB '*[^0-9]*'),
   name TEXT NOT NULL UNIQUE CHECK (length(trim(name)) > 0)
 );
