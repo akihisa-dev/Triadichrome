@@ -75,6 +75,29 @@ export async function verifyAutoSave(api) {
   extended.rows[2].amounts[4] = "10";
   const again = await updateInitiative(extendedBytes, original.id, 2026, extended);
   assert.equal((await readPlanContents(again)).initiatives[0].rows.length, 3, "保存直後の新しい行を重複作成しない");
+  // #44: indexed row matching retains ownership, zero-only mutation, order and revisions.
+  const subjectPlan = await readPlanContents(again);
+  const subject = subjectPlan.initiatives[0];
+  const stableDraft = { ...subject, fiscalYear: "2026" };
+  const duplicate = { ...stableDraft, rows: [subject.rows[0], subject.rows[0]] };
+  await assert.rejects(updateInitiative(again, subject.id, 2026, duplicate), /識別子/);
+  await assert.rejects(updateInitiative(again, subject.id, 2026, { ...stableDraft, rows: [...subject.rows, before.initiatives[1].rows[0]] }), /識別子/);
+  await assert.rejects(updateInitiative(again, subject.id, 2026, { ...stableDraft, rows: subject.rows.slice(1) }), /全種別/);
+  const zeroDraft = { ...stableDraft, rows: subject.rows.map(row => ({ ...row, amounts: {}, overrides: { 2: { 4: "0" } } })) };
+  const zeroBytes = await updateInitiative(again, subject.id, 2026, zeroDraft);
+  const zeroContents = await readPlanContents(zeroBytes);
+  const nextDraft = { ...zeroDraft, rows: [zeroDraft.rows[2], { ...zeroDraft.rows[0], accountId: null, overrides: {} }, { id: "索引追加", accountId: 1, amounts: { 4: "1" } }, zeroDraft.rows[1]] };
+  const changed = await updateInitiative(zeroBytes, subject.id, 2026, nextDraft);
+  const changedPlan = await readPlanContents(changed);
+  assert.deepEqual(changedPlan.initiatives[0].rows.map(row => row.id), [subject.rows[2].id, "索引追加", subject.rows[1].id]);
+  const database = await openTriadicDatabase(changed);
+  const rows = database.exec("SELECT id, sort_order, revision FROM initiative_rows WHERE initiative_id = ? ORDER BY sort_order", [subject.id])[0].values;
+  assert.deepEqual(rows.map(row => row.slice(0, 2)), [[subject.rows[2].id, 0], ["索引追加", 2], [subject.rows[1].id, 3]]);
+  assert.equal(rows[1][2], 0, "新規行のrevisionは0");
+  assert.deepEqual(database.exec("SELECT amount_yen, revision FROM initiative_amounts WHERE row_id = ? AND month = 4", ["索引追加"])[0].values, [[1000, 1]]);
+  database.close();
+  assert.deepEqual(changedPlan.initiatives[1], zeroContents.initiatives[1]);
+  assert.deepEqual(await readPlanContents(again), subjectPlan, "拒否と成功のどちらでも元bytesを変更しない");
   let stored = bytes;
   let shouldFail = false;
   const handle = { name: "test.triadic", async getFile() { return new File([stored], this.name); }, async createWritable() {

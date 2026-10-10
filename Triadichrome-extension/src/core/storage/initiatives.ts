@@ -58,19 +58,21 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
     validateInitiative(draft, listAccounts(database), listNames(database, id), listExpansions(database), listDepartments(database), listPeriodTypes(database), listIndustries(database), true);
     const ids = draft.rows.flatMap(row => row.id === undefined ? [] : [row.id]);
     if (new Set(ids).size !== ids.length || ids.some(rowId => { const owner = database.exec("SELECT initiative_id FROM initiative_rows WHERE id = ?", [rowId])[0]?.values[0]?.[0]; return owner !== undefined && owner !== id; })) throw new Error("勘定科目行の識別子が正しくありません。");
+    const originalRowsById = new Map(original.rows.map(row => [row.id, row]));
+    const draftRowsById = new Map(draft.rows.filter(row => row.id !== undefined).map(row => [row.id, row]));
     for (const row of original.rows) {
-      const next = draft.rows.find(item => item.id === row.id);
+      const next = draftRowsById.get(row.id);
       if ((!next || next.accountId !== row.accountId) && !canChangeAccountRow(row)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更・削除できます。");
     }
     database.run("UPDATE initiatives SET name = ?, note = ?, expansion_id = ?, department_id = ?, period_type_id = ?, industry_id = ?, revision = revision + 1 WHERE id = ?", [draft.name.trim(), draft.note, draft.expansionId, draft.departmentId ?? null, draft.periodTypeId ?? null, draft.industryId ?? null, id]);
-    for (const row of original.rows) if (!draft.rows.some(item => item.id === row.id && item.accountId !== null)) {
+    for (const row of original.rows) if (!draftRowsById.has(row.id) || draftRowsById.get(row.id)!.accountId === null) {
       database.run("DELETE FROM initiative_amounts WHERE row_id = ?", [row.id!]);
       database.run("DELETE FROM initiative_rows WHERE id = ?", [row.id!]);
     }
     for (const [index, row] of draft.rows.entries()) {
       if (row.accountId === null) continue;
       let rowId = row.id;
-      if (rowId === undefined || !original.rows.some(saved => saved.id === rowId)) {
+      if (rowId === undefined || !originalRowsById.has(rowId)) {
         rowId ??= crypto.randomUUID();
         database.run("INSERT INTO initiative_rows (id, initiative_id, account_id, sort_order) VALUES (?, ?, ?, ?)", [rowId, id, row.accountId, index]);
         for (const month of initiativeMonths) database.run("INSERT INTO initiative_amounts (row_id, month) VALUES (?, ?)", [rowId, month]);
