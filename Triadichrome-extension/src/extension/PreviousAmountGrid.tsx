@@ -7,6 +7,8 @@ import { initiativeMonths } from "../core/domain/calendar";
 import { type PlanContents } from "../core/domain/plan";
 import type { PreviousInput } from "../core/domain/kinds";
 import { fillPreviousGrid, normalizeGridAmount, pastePreviousGrid } from "../core/tables/previousGrid";
+import { previousPeriods, previousPeriodAmount } from "../core/tables/previousPeriods";
+import { periodCellClass } from "./periodCellStyle";
 import { StatusNotice } from "./StatusNotice";
 
 export function PreviousAmountGrid({ contents, draft, onChange }: {
@@ -31,6 +33,16 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
     }
   }, [contents, draft]);
   const salesGroupId = contents.aggregations.find(group => group.required === "sales")?.id;
+  const periodAmounts = useMemo(() => {
+    const sales = rows.find(row => row.kind === "group" && row.id === salesGroupId);
+    const profit = rows.find(row => row.kind === "group" && row.id === contents.aggregations.find(group => group.required === "ordinary")?.id);
+    let failed = false;
+    const values = rows.map(row => previousPeriods.map(period => {
+      try { return previousPeriodAmount(row, period, sales, profit); }
+      catch { failed = true; return undefined; }
+    }));
+    return { values, failed };
+  }, [rows, salesGroupId, contents.aggregations]);
   const salesIndex = rows.findIndex(row => row.kind === "group" && row.id === salesGroupId);
   const rowIds = rows.map(row => row.kind === "account" ? row.id : null);
   const apply = (operation: () => PreviousInput) => {
@@ -95,13 +107,16 @@ export function PreviousAmountGrid({ contents, draft, onChange }: {
                   }} />}
             </td>;
           })}
+          {previousPeriods.map((period, index) => <td key={period.id} className={periodCellClass(period, true)}>
+            {calculationFailed ? "" : row.kind === "ratio" ? formatRate(periodAmounts.values[rowIndex]?.[index]) : formatYen(periodAmounts.values[rowIndex]?.[index])}
+          </td>)}
         </tr>;
   return <>
-    <StatusNotice message={error || cellError || (calculationFailed ? "金額の合計が正確に計算できる範囲を超えています。分類を絞るか金額を修正してください。" : "")} error onDismiss={() => { setError(""); setCellErrors({}); }} />
+    <StatusNotice message={error || cellError || (calculationFailed || periodAmounts.failed ? "金額の合計が正確に計算できる範囲を超えています。分類を絞るか金額を修正してください。" : "")} error onDismiss={() => { setError(""); setCellErrors({}); }} />
     <div className="previous-grid-container" role="region" aria-label="前年の月別金額" tabIndex={0}>
       <table ref={table} className="initiative-list-table cost-table previous-grid" aria-label="前年入力の月別金額">
         <thead>
-          <tr><th scope="col" className="initiative-list-name">科目・集計</th>{initiativeMonths.map(month => <th scope="col" key={month}>{month}月</th>)}</tr>
+          <tr><th scope="col" className="initiative-list-name">科目・集計</th>{initiativeMonths.map(month => <th scope="col" key={month}>{month}月</th>)}{previousPeriods.map(period => <th scope="col" key={period.id} className={periodCellClass(period, true)}>{period.label}</th>)}</tr>
           {rows.slice(0, salesIndex + 1).map(renderRow)}
         </thead>
         <tbody>{rows.slice(salesIndex + 1).map((row, index) => renderRow(row, salesIndex + 1 + index))}</tbody>

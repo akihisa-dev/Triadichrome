@@ -5,11 +5,9 @@ import { type PlanContents } from "../core/domain/plan";
 import { filterPlan } from "../core/tables/planTables";
 import { PreviousAmountGrid } from "./PreviousAmountGrid";
 import "./PreviousInputPage.css";
-import "./KindSelectionSlots.css";
 import type { PreviousInput } from "../core/domain/kinds";
 import { useAutoSave, type AutoSaveProps } from "./useAutoSave";
 import { AutoSaveStatus } from "./AutoSaveStatus";
-import { ChoiceChips } from "./ChoiceChips";
 
 type Props = AutoSaveProps & { contents: PlanContents; onSave: (input: PreviousInput) => Promise<void> };
 export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepareSave }: Props) {
@@ -40,12 +38,27 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
     <div className="initiative-list-heading">
       <h1 id="previous-input-title">前年入力</h1>
       <div className="initiative-classification-row">
-        <ChoiceChips id="previous-industry" label="業種名" value={industryIds} emptyLabel="全業種の合計"
-          options={contents.industries.filter(item => allowedIndustries.includes(item.id)).map(item => ({ id: item.id, name: item.industryName }))} disabled={autoSave.pending}
-          onChange={value => { controller.end(); setIndustries(value); }} />
-        <ChoiceChips id="previous-department" label="部署名" value={departmentIds} emptyLabel="全部署の合計"
-          options={contents.departments.map(item => ({ id: item.id, name: item.departmentName }))} disabled={autoSave.pending}
-          onChange={value => { controller.end(); setDepartments(value); const ids = contents.departments.filter(item => !value.length || value.includes(item.id)).flatMap(item => item.industryIds); setIndustries(current => value.length === 1 && ids.length === 1 ? ids : current.filter(id => ids.includes(id))); }} />
+        <div className="classification-field">
+          <label htmlFor="previous-department">部署名</label>
+          <select id="previous-department" value={departmentId ?? ""} disabled={autoSave.pending}
+            onChange={event => {
+              const value = event.target.value === "" ? [] : [Number(event.target.value)];
+              controller.end(); setDepartments(value);
+              const ids = contents.departments.filter(item => !value.length || value.includes(item.id)).flatMap(item => item.industryIds);
+              setIndustries(current => value.length === 1 && ids.length === 1 ? ids : current.filter(id => ids.includes(id)));
+            }}>
+            <option value="">全部署の合計</option>
+            {contents.departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
+          </select>
+        </div>
+        <div className="classification-field">
+          <label htmlFor="previous-industry">業種名</label>
+          <select id="previous-industry" value={industryId ?? ""} disabled={autoSave.pending}
+            onChange={event => { controller.end(); setIndustries(event.target.value === "" ? [] : [Number(event.target.value)]); }}>
+            <option value="">全業種の合計</option>
+            {contents.industries.filter(item => allowedIndustries.includes(item.id)).map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
+          </select>
+        </div>
       </div>
       <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     </div>

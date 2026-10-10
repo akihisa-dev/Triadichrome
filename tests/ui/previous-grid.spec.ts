@@ -11,8 +11,8 @@ test("前年は列見出しから社内控除後売上まで縦横スクロー�
   const region = app.getByRole("region", { name: "前年の月別金額", exact: true });
   for (const editable of [false, true]) {
     if (editable) {
-      await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
-      await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
+      await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
+      await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
     }
     await region.evaluate(node => { node.scrollTop = 0; });
     const sales = region.getByRole("rowheader", { name: "社内控除後売上", exact: true });
@@ -55,13 +55,13 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
-  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
-  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
   await settleMotion(app.locator(".home-layout"));
   const cell = (name: string, month: number) => app.getByRole("textbox", { name: `${name} ${month}月の前年金額`, exact: true });
   const april = cell("売上高", 4);
-  await expect(app.locator(".previous-grid thead tr:first-child th")).toHaveText(["科目・集計", ...[4,5,6,7,8,9,10,11,12,1,2,3].map(m => `${m}月`)]);
+  await expect(app.locator(".previous-grid thead tr:first-child th")).toHaveText(["科目・集計", ...[4,5,6,7,8,9,10,11,12,1,2,3].map(m => `${m}月`), "上期", "下期", "通期"]);
   // A browser paste event exercises the same handler as Excel's tab/newline clipboard text.
   const paste = async (text: string) => april.evaluate((node, value) => {
     const clipboardData = new DataTransfer(); clipboardData.setData("text/plain", value);
@@ -91,8 +91,8 @@ test("前年セルの範囲入力・集計・無効な貼り付け・保存後�
   await expect(app.getByRole("button", { name: "総原価表", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "総原価表", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
-  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
   await expect(april).toHaveValue("0");
   await page.mouse.move(page.viewportSize()!.width - 10, 200);
   await settleMotion(app.locator(".home-layout"));
@@ -107,12 +107,12 @@ test("前年の初期合計・片側の分類・全件への切り替え", async
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "前年入力", exact: true }).first().click();
-  const industry = app.getByRole("group", { name: "業種名", exact: true });
-  const department = app.getByRole("group", { name: "部署名", exact: true });
+  const industry = app.getByRole("combobox", { name: "業種名", exact: true });
+  const department = app.getByRole("combobox", { name: "部署名", exact: true });
   const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
-  await expect(industry.getByRole("button", { name: "全業種の合計", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(department.getByRole("button", { name: "全部署の合計", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(app.locator(".previous-input-page select")).toHaveCount(0);
+  await expect(industry).toHaveValue("");
+  await expect(department).toHaveValue("");
+  await expect(app.locator(".previous-input-page select")).toHaveCount(2);
   await expect(sales).toHaveText("25,290");
   await expect(app.locator(".previous-grid input")).toHaveCount(0);
   await selectClassification(industry, "直営自動車");
@@ -127,63 +127,30 @@ test("前年の初期合計・片側の分類・全件への切り替え", async
 });
 
 
-test("前年入力の横並び分類で末尾の候補を選び、合計と入力の切り替えを保持する", async ({ page, app }) => {
-  await page.goto("/tests/ui/preview.html");
-  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
-  await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "前年入力", exact: true }).click();
-  await app.getByRole("heading", { name: "前年入力", exact: true }).click();
-  const industry = app.getByRole("group", { name: "業種名", exact: true });
-  const department = app.getByRole("group", { name: "部署名", exact: true });
-  await expect.poll(() => industry.evaluate(node => {
-    const style = getComputedStyle(node);
-    const tops = Array.from(node.querySelectorAll("button")).map(button => button.getBoundingClientRect().top);
-    return { scrollbar: style.scrollbarWidth, webkitScrollbar: getComputedStyle(node, "::-webkit-scrollbar").display,
-      oneRow: Math.max(...tops) - Math.min(...tops) < 1, scrollable: node.scrollWidth > node.clientWidth };
-  })).toEqual({ scrollbar: "none", webkitScrollbar: "none", oneRow: true, scrollable: false });
-  const last = industry.getByRole("button").last();
-  await last.focus();
-  await last.press("Space");
-  await expect(last).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(() => last.evaluate(node => {
-    const selected = node.getBoundingClientRect();
-    const viewport = node.parentElement!.getBoundingClientRect();
-    return selected.left >= viewport.left && selected.right <= viewport.right && selected.top >= viewport.top && selected.bottom <= viewport.bottom;
-  })).toBe(true);
-  await department.getByRole("button", { name: "部署A", exact: true }).click();
-  await expect(app.locator(".previous-grid input").first()).toBeVisible();
-  await industry.getByRole("button", { name: "全業種の合計", exact: true }).click();
-  await expect(industry.getByRole("button", { name: "全業種の合計", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(app.locator(".previous-grid input")).toHaveCount(0);
-  await expect.poll(() => app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
-});
-
-
-test("前年のチップは複数選択・個別解除でき、合計表示から単一組み合わせの入力へ戻れる", async ({ page, app }) => {
-  await page.goto("/tests/ui/preview.html");
+test("部署・業種の順序、所属候補と期間合計の表示・入力追従", async ({ page, app }) => {
+  await page.goto("/tests/ui/preview.html?data=large");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("navigation").getByRole("button", { name: "前年入力", exact: true }).click();
-  const industry = app.getByRole("group", { name: "業種名", exact: true });
-  const department = app.getByRole("group", { name: "部署名", exact: true });
-  const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
-  const first = industry.getByRole("button", { name: "直営自動車", exact: true });
-  const second = industry.getByRole("button", { name: "自動車取扱", exact: true });
-  await first.click();
-  await second.click();
-  await expect(first).toHaveAttribute("aria-pressed", "true");
-  await expect(second).toHaveAttribute("aria-pressed", "true");
-  await expect(sales).toHaveText("4,220");
-  await department.getByRole("button", { name: "部署A", exact: true }).click();
-  await expect(sales).toHaveText("2,100");
-  await department.getByRole("button", { name: "部署B", exact: true }).click();
-  await expect(sales).toHaveText("4,220");
-  await expect(app.locator(".previous-grid input")).toHaveCount(0);
-  await second.click();
-  await expect(sales).toHaveText("2,010");
-  await department.getByRole("button", { name: "部署B", exact: true }).click();
-  await expect(sales.locator("input")).toHaveValue("1000");
-  await first.click();
-  await expect(sales).toHaveText("12,600");
-  await expect(industry.getByRole("button").first()).toHaveAttribute("aria-pressed", "true");
+  const department = app.getByRole("combobox", { name: "部署名", exact: true });
+  const industry = app.getByRole("combobox", { name: "業種名", exact: true });
+  await expect(app.locator(".previous-input-page .classification-field label")).toHaveText(["部署名", "業種名"]);
+  await department.selectOption({ label: "単一業種確認部署" });
+  await expect(industry.locator("option:checked")).toHaveText("不動産A");
+  await department.selectOption({ label: "複数業種確認部署" });
+  await expect(industry).toHaveValue("");
+  await expect(industry.locator("option")).toHaveText(["全業種の合計", "直営自動車", "自動車取扱"]);
+  await department.selectOption({ label: "部署A" });
+  await industry.selectOption({ label: "直営自動車" });
+  const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) });
+  await expect(sales.locator("td.period-half")).toHaveText(["6,000", "6,000"]);
+  await expect(sales.locator("td.period-annual")).toHaveText("12,000");
+  const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
+  await april.fill("1001.499");
+  await expect(sales.locator("td.period-half")).toHaveText(["6,001", "6,000"]);
+  await expect(sales.locator("td.period-annual")).toHaveText("12,001");
+  await expect(app.locator(".previous-grid .period-half input, .previous-grid .period-annual input")).toHaveCount(0);
+  await expect.poll(() => app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
 });
 
 
@@ -198,17 +165,17 @@ test("前年の分類合計が上限を超えても分類変更と金額修正�
   await expect(app.getByRole("alert")).toContainText("範囲を超えています");
   const sales = app.locator(".previous-grid .cost-data-row").filter({ has: app.getByRole("rowheader", { name: "売上高", exact: true }) }).locator("td").first();
   await expect(sales).toHaveText("");
-  const industry = app.getByRole("group", { name: "業種名", exact: true });
-  const department = app.getByRole("group", { name: "部署名", exact: true });
+  const industry = app.getByRole("combobox", { name: "業種名", exact: true });
+  const department = app.getByRole("combobox", { name: "部署名", exact: true });
   await selectClassification(industry, "直営自動車");
   await expect(app.getByRole("alert")).toContainText("範囲を超えています");
   await selectClassification(department, "部署A");
   const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   await expect(april).toHaveValue("5000000000000");
   await expect(app.getByRole("alert")).toHaveCount(0);
-  await department.getByRole("button", { name: "部署B", exact: true }).click();
+  await department.selectOption("");
   await expect(app.getByRole("alert")).toContainText("範囲を超えています");
-  await department.getByRole("button", { name: "部署B", exact: true }).click();
+  await department.selectOption({ label: "部署A" });
   await april.fill("1"); await april.press("Tab");
   await expect(nav.getByRole("button", { name: "総原価表", exact: true })).toBeEnabled();
   await nav.getByRole("button", { name: "総原価表", exact: true }).click();
@@ -236,8 +203,8 @@ for (const key of ["Enter", "Tab"]) test(`前年の直接入力エラーを${key
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   const may = app.getByRole("textbox", { name: "売上高 5月の前年金額", exact: true });
   await april.fill("0.0001"); await april.press(key);
@@ -266,8 +233,8 @@ test("前年の訂正後も実際の保存失敗と合計超過を通知し、�
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "前年入力", exact: true }).click();
-  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("group", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   const april = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
   await april.fill("0.0001"); await april.press("Enter");
   await april.fill("2"); await april.press("Enter");

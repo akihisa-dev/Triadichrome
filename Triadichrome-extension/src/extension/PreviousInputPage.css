@@ -3,13 +3,13 @@
 .previous-input-page { display: flex; flex-direction: column; height: 100%; max-width: none; min-width: 0; min-height: 0; gap: 8px; }
 .previous-input-page .initiative-list-heading { flex-shrink: 0; gap: 8px 16px; }
 .previous-input-page h1 { font-size: 20px; }
-.previous-input-page .initiative-classification-row { flex: 1 1 600px; flex-wrap: nowrap; min-width: 0; gap: 8px; }
-.previous-input-page .kind-selection-field { min-width: 0; max-width: 100%; }
-.previous-input-page .kind-selection-field:first-child { flex: 3 1 0; }
-.previous-input-page .kind-selection-field:last-child { flex: 1 1 0; }
+.previous-input-page .initiative-classification-row { flex: 0 1 auto; flex-wrap: wrap; min-width: 0; gap: 8px 16px; }
+.previous-input-page .classification-field { display: flex; align-items: center; gap: 8px; }
+.previous-input-page .classification-field label { white-space: nowrap; }
+.previous-input-page .classification-field select { width: 180px; max-width: 100%; }
 .previous-input-page .previous-grid-container { flex: 1; min-height: 0; max-height: none; margin-top: 0; }
 .previous-grid-container { overflow: auto; max-width: 100%; margin-top: 16px; }
-.previous-input-page .previous-grid { min-width: 1480px; }
+.previous-input-page .previous-grid { width: 100%; min-width: 1810px; table-layout: fixed; }
 .previous-input-page .previous-grid thead { z-index: 4; }
 .previous-grid thead tr:first-child th { text-align: center; }
 .previous-grid td { border-right: 1px solid var(--line); height: 40px; }

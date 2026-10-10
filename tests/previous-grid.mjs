@@ -45,4 +45,16 @@ export function verifyPreviousGrid(api) {
   assert.equal(total(null, null).get(2)[4], 0);
   assert.equal(total(null, null).get(1)[3], 0);
 
+  const row = (previous, kind = "account", configured = true) => ({ previous, kind, configured });
+  const [upper, lower, annual] = api.previousPeriods;
+  assert.deepEqual(api.previousPeriods.map(p => p.label), ["上期", "下期", "通期"]);
+  const amounts = row({ 4: 499, 5: 499, 9: -1, 10: 3000, 3: -1000 });
+  assert.equal(api.previousPeriodAmount(amounts, upper), 997, "表示丸め前に合算");
+  assert.equal(api.previousPeriodAmount(amounts, lower), 2000);
+  assert.equal(api.previousPeriodAmount(amounts, annual), 2997);
+  assert.equal(api.previousPeriodAmount(row({}, "group", false), annual), undefined);
+  assert.equal(api.previousPeriodAmount(row({}, "ratio"), upper, row({4:1000,5:3000}), row({4:500,5:0})), 12.5, "月別率の平均にしない");
+  assert.equal(api.previousPeriodAmount(row({}, "ratio"), annual, row({}), row({4:1000})), undefined);
+  assert.throws(() => api.previousPeriodAmount(row({4:Number.MAX_SAFE_INTEGER,5:1}), upper));
+  assert.equal(api.previousPeriodAmount(row({4:Number.MAX_SAFE_INTEGER,5:1,6:-1}), upper), Number.MAX_SAFE_INTEGER, "正負相殺後の範囲確認");
 }
