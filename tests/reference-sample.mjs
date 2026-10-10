@@ -22,6 +22,11 @@ export async function verifyReferenceSample(api, bytes, plan) {
   assert.equal(plan.initiatives.length,140);
   assert.equal(new Set(catalog.map(item=>`${item.expansionId}/${item.industryId}/${item.departmentId}`)).size,126);
   assert.equal(new Set(catalog.map(item=>item.note)).size,126);
+  const amountSignatures=catalog.map(item=>JSON.stringify(item.rows.map(row=>[
+    row.accountId,api.initiativeMonths.map(month=>row.amounts[month]),
+    api.initiativeMonths.map(month=>Object.hasOwn(row.overrides?.[2]??{},month)?row.overrides[2][month]:null),
+  ])));
+  assert.equal(new Set(amountSignatures).size,126,"名称・分類・備考を除いた金額パターンも126件すべて異なる");
   for(const item of catalog) {
     assert.ok(item.note.length>=80 && !item.name.includes("大規模確認"),item.name);
     assert.equal(item.rows.length,6);

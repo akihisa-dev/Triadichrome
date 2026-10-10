@@ -40,7 +40,21 @@ test("予算選択の列構成・重複防止・比較の符号と画面別の�
   await selectClassification(first, "確定予算");
   await selectClassification(second, "一次予算");
   await expect(total.getByRole("cell").nth(4)).toHaveText("20");
-  await expect(app.getByText("比較：確定予算 − 一次予算", { exact: true })).toBeVisible();
+  // Constant comparison captions were intentionally removed; verify the actual table contract.
+  await expect(first).toHaveAttribute("aria-valuetext", "確定予算");
+  await expect(second).toHaveAttribute("aria-valuetext", "一次予算");
+  await expect(expansion.getByRole("columnheader", { name: "比較", exact: true })).toHaveCount(19);
+  const kindHeaders = expansion.locator("thead tr").nth(1).getByRole("columnheader");
+  await expect(kindHeaders.nth(0)).toHaveText("確定予算");
+  await expect(kindHeaders.nth(1)).toHaveText("一次予算");
+  await expect(kindHeaders.nth(2)).toHaveText("比較");
+  // The comparison stays confirmed minus primary even when the displayed kinds are reversed.
+  await expect(total.getByRole("cell").nth(0)).toHaveText("20,777");
+  await expect(total.getByRole("cell").nth(2)).toHaveText("20,757");
+  await expect(total.getByRole("cell").nth(4)).toHaveText("20");
+  await expect(total.getByRole("cell").nth(5)).toHaveText("20");
+  await expect(total.getByRole("cell").nth(10)).toHaveText("-100");
+  await expect(total.getByRole("cell").nth(11)).toHaveText("-100");
   const title = await app.getByRole("heading", { name: "展開表", exact: true }).boundingBox();
   const slots = await app.getByRole("group", { name: "比較対象", exact: true }).boundingBox();
   expect(title).not.toBeNull();
