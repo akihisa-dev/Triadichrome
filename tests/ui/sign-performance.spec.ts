@@ -13,5 +13,7 @@ for (const dataset of ['defaults', 'large']) test(`加減計測 ${dataset}`, asy
   const feedback=Date.now()-start;
   expect(feedback).toBeLessThan(1000);
   await expect(minus).toBeEnabled({timeout:30000});
+  const saved=Date.now()-start;
+  expect(saved).toBeLessThan(dataset==='large'?3500:1500);
   console.log(`SIGN_PERF ${dataset} feedback ${feedback}ms saved ${Date.now()-start}ms`);
 });

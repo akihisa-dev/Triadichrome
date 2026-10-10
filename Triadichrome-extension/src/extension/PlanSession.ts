@@ -1,7 +1,7 @@
 import { emptyDataHistory, type DataHistoryStatus, type HistoryDeletion } from "../core/storage/dataHistory";
-import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand } from "./planProcessing";
+import { createBusinessSnapshot, deleteDataHistory, readDataHistory, readHistorySnapshot, recordDataHistory, restoreDataHistory, applyOperationSnapshot, readPlanContents, readSnapshotContents, applyPlanCommand, prepareAggregationSave } from "./planProcessing";
 import type { PlanContents } from "../core/domain/plan";
-import { writePlanChange, type OpenPlan } from "./planFile";
+import { writePlanChange, writePreparedPlanChange, type OpenPlan } from "./planFile";
 import { isAutomatic, validatePlanCommand, type PlanCommand } from "./planCommands";
 export const OPERATION_HISTORY_LIMIT = 100;
 type SavedOperation = { before: Uint8Array; after: Uint8Array };
@@ -79,6 +79,11 @@ export class PlanSession {
       const destinationPlan = await selected;
       const target = destinationPlan && !plan.handle ? { ...plan, ...destinationPlan } : plan;
       validatePlanCommand(target, command);
+      if (command.type === "aggregation") {
+        const prepared = await prepareAggregationSave(target.bytes, command.change);
+        entry = prepared.operation ?? undefined;
+        return writePreparedPlanChange(target, target.handle!, prepared);
+      }
       const bytes = await applyPlanCommand(target.bytes, command, target.fiscalYear);
       if (operationContents(this.contents(plan)) !== operationContents(await readPlanContents(bytes))) {
         entry = { before: await createBusinessSnapshot(plan.bytes), after: await createBusinessSnapshot(bytes) };

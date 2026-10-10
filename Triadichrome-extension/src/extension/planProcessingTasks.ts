@@ -3,7 +3,9 @@ import { applyOperationSnapshot } from "../core/storage/operationSnapshot";
 import { readPlanContents, readSnapshotContents } from "../core/storage/readPlan";
 import { createTriadicDatabase } from "../core/storage/triadicDatabase";
 import { applyPlanCommand } from "./planCommands";
+import { prepareAggregationSave } from "../core/storage/prepareAggregationSave";
 export const processingTasks = {
+  prepareAggregationSave,
   bytesEqual: async (current: Uint8Array, expected: Uint8Array) => {
     if (current.length !== expected.length) return false;
     for (let index = 0; index < current.length; index++) if (current[index] !== expected[index]) return false;

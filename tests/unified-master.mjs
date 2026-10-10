@@ -60,5 +60,33 @@ export async function verifyUnifiedMaster(api) {
     const afterDb=await api.openTriadicDatabase(bytes);
     try {assert.deepEqual(afterDb.exec("SELECT parent_id,account_id,group_id,position FROM aggregation_members ORDER BY parent_id,position")[0].values,beforePositions);} finally {afterDb.close();}
   }
-  console.log('PASS: unified master persisted order, membership independence, display names, undo, invalid edits');
+  {
+  // The combined preparation must preserve amounts, derived start months, history and undo.
+  const sample=await api.createSamplePlan(2026);
+  const original=await api.readPlanContents(sample);
+  const owner=original.aggregations.find(group=>group.members.some(member=>member.kind==='account'));
+  const child=owner.members.find(member=>member.kind==='account');
+  const change={type:'move',member:{kind:'account',id:child.id},parentId:owner.id,sign:-child.sign,presentationOrder:api.orderedMasterRows(original.accounts,original.aggregations)};
+  const prepare=api.processingTasks.prepareAggregationSave;
+  const prepared=await prepare(sample,change,true,'2026-10-10T00:00:00.000Z');
+  assert.deepEqual(prepared.contents,await api.readPlanContents(prepared.bytes));
+  assert.deepEqual(prepared.contents,await api.readPlanContents(await api.changeAggregationMaster(sample,change)), 'shared preparation has the same business result');
+  assert.deepEqual(prepared.contents.initiatives,original.initiatives);
+  assert.deepEqual(await api.readSnapshotContents(prepared.operation.before),original);
+  assert.deepEqual(await api.readSnapshotContents(prepared.operation.after),prepared.contents);
+  assert.deepEqual(prepared.savedHistory,await api.readDataHistory(prepared.bytes));
+  const oldHistory=await api.readDataHistory(sample);
+  assert.deepEqual(prepared.savedHistory.entries,oldHistory.entries,'existing checkpoints survive preparation');
+  for (const entry of oldHistory.entries) assert.deepEqual(await api.readHistorySnapshot(prepared.bytes,entry.id),await api.readHistorySnapshot(sample,entry.id));
+  const fresh=await api.createTriadicDatabase(2026);
+  const initialSave=await prepare(fresh,{...change,presentationOrder:undefined},true,'2026-10-10T00:00:00.000Z');
+  assert.deepEqual(await api.readSnapshotContents(await api.readHistorySnapshot(initialSave.bytes,initialSave.savedHistory.entries[0].id)),await api.readPlanContents(fresh),'first save preserves the original business state');
+  const unchanged=await prepare(prepared.bytes,change,true,'2026-10-10T00:01:00.000Z');
+  assert.equal(unchanged.operation,null,'same sign must not add an undo operation');
+  assert.deepEqual(unchanged.savedHistory,prepared.savedHistory,'five-minute deadline and history entries remain unchanged');
+  await assert.rejects(prepare(sample,{type:'move',member:{kind:'group',id:owner.id},parentId:owner.id,sign:1}),/自分|循環/);
+  await assert.rejects(prepare(new Uint8Array([1,2,3]),change));
+  assert.deepEqual(await api.readPlanContents(sample),original,'failed preparation cannot mutate original bytes');
+  }
+  console.log('PASS: unified master order, membership, shared save, amount/start-month protection, history, undo and invalid edits');
 }

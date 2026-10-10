@@ -1,4 +1,4 @@
-import type { Database } from "./sqliteRuntime";
+import { initializeSqlite, type Database } from "./sqliteRuntime";
 import { exportTriadicDatabase, openTriadicDatabase, openBusinessSnapshot, exportBusinessSnapshot } from "./triadicDatabase";
 import { DATA_HISTORY_SQL, isHistoryTimestamp } from "./dataHistorySchema";
 
@@ -21,10 +21,20 @@ function state(database: Database) {
 export async function createBusinessSnapshot(bytes: Uint8Array): Promise<Uint8Array> {
   const database = await openTriadicDatabase(bytes);
   try {
-    database.exec("DROP TABLE IF EXISTS data_history; DROP TABLE IF EXISTS data_history_state; VACUUM;");
-    database.run("UPDATE triadic_metadata SET value = 'snapshot' WHERE key = 'document_type'");
-    return exportBusinessSnapshot(database);
+    return snapshot(database);
   } finally { database.close(); }
+}
+
+function snapshot(database: Database): Uint8Array {
+  database.exec("DROP TABLE IF EXISTS data_history; DROP TABLE IF EXISTS data_history_state; VACUUM;");
+  database.run("UPDATE triadic_metadata SET value = 'snapshot' WHERE key = 'document_type'");
+  return exportBusinessSnapshot(database);
+}
+/** Copy an already validated private connection; validate the resulting snapshot before returning. */
+export async function snapshotFromDatabase(database: Database): Promise<Uint8Array> {
+  const sql = await initializeSqlite();
+  const copy = new sql.Database(database.export());
+  try { return snapshot(copy); } finally { copy.close(); }
 }
 
 function initialize(database: Database, now: string): void {
@@ -43,12 +53,21 @@ function append(database: Database, snapshot: Uint8Array, now: string): void {
 export async function readDataHistory(bytes: Uint8Array): Promise<DataHistoryStatus> {
   const database = await openTriadicDatabase(bytes);
   try {
-    return {
-      entries: (database.exec("SELECT id, recorded_at FROM data_history ORDER BY id DESC")[0]?.values ?? [])
-        .map(([id, at]) => ({ id: Number(id), recordedAt: String(at) })),
-      dirtySince: state(database).dirtySince,
-    };
+    return historyFromDatabase(database);
   } finally { database.close(); }
+}
+export function historyFromDatabase(database: Database): DataHistoryStatus {
+  return {
+    entries: (database.exec("SELECT id, recorded_at FROM data_history ORDER BY id DESC")[0]?.values ?? [])
+      .map(([id, at]) => ({ id: Number(id), recordedAt: String(at) })),
+    dirtySince: state(database).dirtySince,
+  };
+}
+/** The snapshot was generated and validated from the unmodified private connection. */
+export function trackHistoryInDatabase(database: Database, original: Uint8Array, now: string): void {
+  timestamp(now);
+  if (state(database).nextId === 1) append(database, original, now);
+  database.run("UPDATE data_history_state SET dirty_since = COALESCE(dirty_since, ?), saved_at = ? WHERE id = 1", [now, now]);
 }
 
 /** Called on the copy before writing; the first successful change also preserves its original. */

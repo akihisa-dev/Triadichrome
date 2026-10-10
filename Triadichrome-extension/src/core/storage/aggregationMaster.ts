@@ -4,8 +4,12 @@ import { listAccounts } from "./accountMaster";
 import { listAggregations } from "./aggregations";
 import { changedAggregations, type AggregationChange } from "../domain/aggregationMaster";
 import { editDatabase } from "./transaction";
+import type { Database } from "./sqliteRuntime";
 export async function changeAggregationMaster(bytes: Uint8Array, change: AggregationChange): Promise<Uint8Array> {
-  return (await editDatabase(bytes, database => {
+  return (await editDatabase(bytes, database => applyAggregationChange(database, change))).bytes;
+}
+/** Operates only on the caller’s private, validated connection. */
+export function applyAggregationChange(database: Database, change: AggregationChange): void {
     const accounts = listAccounts(database), groups = listAggregations(database);
     const order = change.presentationOrder ?? orderedMasterRows(accounts,groups);
     if (change.presentationOrder) validateMasterOrder(change.presentationOrder,accounts,groups);
@@ -33,5 +37,4 @@ export async function changeAggregationMaster(bytes: Uint8Array, change: Aggrega
         [change.id, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, member.sign, position]));
     }
     if (readMasterPresentation(database).order || change.presentationOrder) reconcileMasterOrder(database,order);
-  })).bytes;
 }
