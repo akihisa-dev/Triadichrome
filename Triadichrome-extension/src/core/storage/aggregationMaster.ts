@@ -25,9 +25,11 @@ export function applyAggregationChange(database: Database, change: AggregationCh
       if (parentId !== null && currentParent?.id === parentId) {
         database.run(`UPDATE aggregation_members SET sign = ? WHERE ${member.kind === "account" ? "account_id" : "group_id"} = ?`, [sign, member.id]);
       } else {
+        const maximum = parentId === null ? -1 : Number(database.exec("SELECT COALESCE(MAX(position), -1) FROM aggregation_members WHERE parent_id = ?", [parentId])[0]?.values[0]?.[0]);
+        if (!Number.isSafeInteger(maximum) || maximum < -1 || maximum >= Number.MAX_SAFE_INTEGER) throw new Error("集計の所属順の上限に達しました。");
         database.run(member.kind === "account" ? "DELETE FROM aggregation_members WHERE account_id = ?" : "DELETE FROM aggregation_members WHERE group_id = ?", [member.id]);
-        if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM aggregation_members WHERE parent_id = ?))",
-          [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, parentId]);
+        if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, ?)",
+          [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, maximum + 1]);
       }
     } else {
       const updated = next.find(group => group.id === change.id)!;

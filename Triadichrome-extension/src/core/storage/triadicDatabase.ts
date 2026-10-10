@@ -85,6 +85,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
       || db.exec(`SELECT identity FROM ${table} GROUP BY identity HAVING COUNT(*) > 1`).length) invalid();
   }
   validateMasterPresentation(db);
+  if (db.exec("SELECT position FROM aggregation_members WHERE typeof(position) != 'integer' OR position NOT BETWEEN 0 AND 9007199254740991").length) invalid();
   validateAggregations(listAggregations(db), new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id))));
   if (db.exec("SELECT id FROM period_types WHERE start_month_rule IS NOT NULL AND start_month_rule NOT IN ('new', 'period_gap')").length) invalid();
 }

@@ -10,7 +10,7 @@ CREATE TABLE aggregation_members (
   account_id INTEGER UNIQUE REFERENCES accounts(id),
   group_id INTEGER UNIQUE REFERENCES aggregation_groups(id),
   sign INTEGER NOT NULL CHECK (sign IN (1, -1)),
-  position INTEGER NOT NULL,
+  position INTEGER NOT NULL CHECK (typeof(position) = 'integer' AND position BETWEEN 0 AND 9007199254740991),
   CHECK ((account_id IS NULL) != (group_id IS NULL)),
   CHECK (parent_id != group_id)
 );

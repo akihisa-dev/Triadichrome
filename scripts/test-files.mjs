@@ -1,3 +1,4 @@
+import { verifyAggregationPositions } from "../tests/aggregation-positions.mjs";
 import { verifyAggregationRebase } from "../tests/aggregation-rebase.mjs";
 import { verifyMasterOrderStorage } from "../tests/master-order-storage.mjs";
 import { verifyClassificationStorage } from "../tests/classification-storage.mjs";
@@ -45,6 +46,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   const api = { ...production, createTriadicDatabase: (year = 2026) => production.createTriadicDatabase(year) };
   await verifyFileRecovery(api);
   await verifyAggregationRebase(api);
+  await verifyAggregationPositions(api);
   await verifyUnifiedMaster(api);
   await verifyMasterOrderStorage(api);
   await verifySchemaBoundary(api);

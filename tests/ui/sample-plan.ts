@@ -1,3 +1,4 @@
+// 集計所属順は現行DDLの非負・安全な整数で生成する。不正型・値域・採番境界の拒否は tests/aggregation-positions.mjs の合成DBで確認する。
 // Excel出力では選択した表と条件を保ち、従来の三表と計算元、および基本関数による金額の再計算を確認する。
 import { editDatabase } from "../../Triadichrome-extension/src/core/storage/transaction";
 import { trackHistoryChange, recordDataHistory } from "../../Triadichrome-extension/src/core/storage/dataHistory";
