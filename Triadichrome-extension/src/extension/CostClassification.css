@@ -1,0 +1,4 @@
+.cost-table-page .cost-classification-row { flex-wrap: wrap; gap: 8px 16px; }
+.cost-classification-row .classification-field { display: flex; align-items: center; gap: 8px; }
+.cost-classification-row .classification-field label { white-space: nowrap; }
+.cost-classification-row .classification-field select { width: 180px; max-width: 100%; }

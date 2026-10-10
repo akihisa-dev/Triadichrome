@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Fragment, memo, useMemo, useState, useLayoutEffect } from "react";
 import { buildPeriodCostComparison, tablePeriods } from "../core/tables/periodTables";
 import { filterPlan } from "../core/tables/planTables";
-import { ChoiceChips } from "./ChoiceChips";
+import "./CostClassification.css";
 import "./KindSelectionSlots.css";
 import type { KindId } from "../core/domain/kinds";
 import { type PlanContents } from "../core/domain/plan";
@@ -17,14 +17,15 @@ export function CostTablePage({ contents, selected, selection }: Props) {
   const [industryIds, setIndustries] = useState<number[]>([]);
   const [departmentIds, setDepartments] = useState<number[]>([]);
   const available = contents;
-  const industries = industryIds.filter(id => available.industries.some(item => item.id === id));
   const departments = departmentIds.filter(id => available.departments.some(item => item.id === id));
+  const allowedIndustries = available.departments.filter(item => !departments.length || departments.includes(item.id)).flatMap(item => item.industryIds);
+  const industries = industryIds.filter(id => allowedIndustries.includes(id) && available.industries.some(item => item.id === id));
   useLayoutEffect(() => {
     if (industries.length !== industryIds.length) setIndustries(industries);
     if (departments.length !== departmentIds.length) setDepartments(departments);
   }, [available, industryIds, departmentIds]);
   const filtered = useMemo(() => {
-    const industries = industryIds.filter(id => contents.industries.some(item => item.id === id));
+    const industries = industryIds.filter(id => allowedIndustries.includes(id) && contents.industries.some(item => item.id === id));
     const departments = departmentIds.filter(id => contents.departments.some(item => item.id === id));
     return filterPlan(contents, {
       industries: industries.length ? industries : null,
@@ -38,12 +39,25 @@ export function CostTablePage({ contents, selected, selection }: Props) {
       {selection}
     </div>
     <div className="cost-classification-row">
-      <ChoiceChips id="cost-industry" label="業種名" value={industries} emptyLabel="全業種の合計"
-        options={available.industries.map(item => ({ id: item.id, name: item.industryName }))}
-        disabled={false} onChange={setIndustries} />
-      <ChoiceChips id="cost-department" label="部署名" value={departments} emptyLabel="全部署の合計"
-        options={available.departments.map(item => ({ id: item.id, name: item.departmentName }))}
-        disabled={false} onChange={setDepartments} />
+      <div className="classification-field">
+        <label htmlFor="cost-department">部署名</label>
+        <select id="cost-department" value={departments[0] ?? ""} onChange={event => {
+          const value = event.target.value === "" ? [] : [Number(event.target.value)];
+          setDepartments(value);
+          const ids = available.departments.filter(item => !value.length || value.includes(item.id)).flatMap(item => item.industryIds);
+          setIndustries(current => value.length === 1 && ids.length === 1 ? ids : current.filter(id => ids.includes(id)));
+        }}>
+          <option value="">全部署の合計</option>
+          {available.departments.map(item => <option key={item.id} value={item.id}>{item.departmentName}</option>)}
+        </select>
+      </div>
+      <div className="classification-field">
+        <label htmlFor="cost-industry">業種名</label>
+        <select id="cost-industry" value={industries[0] ?? ""} onChange={event => setIndustries(event.target.value === "" ? [] : [Number(event.target.value)])}>
+          <option value="">全業種の合計</option>
+          {available.industries.filter(item => allowedIndustries.includes(item.id)).map(item => <option key={item.id} value={item.id}>{item.industryName}</option>)}
+        </select>
+      </div>
     </div>
     <TableCalculationBoundary resetKeys={[contents, selected, industryIds, departmentIds]}>
       <CostTableContents contents={filtered} selected={selected} />
