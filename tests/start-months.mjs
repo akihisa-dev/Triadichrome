@@ -35,10 +35,11 @@ export async function verifyStartMonths(api) {
   assert.ok(contents.details.filter(detail => detail.kindId === 2).every(detail => detail.startYearMonth === "2026-08"));
   const db = await api.openTriadicDatabase(bytes);
   try {
-    assert.deepEqual(db.exec("SELECT primary_start_year_month, confirmed_start_year_month FROM initiatives")[0].values, [["2026-07", "2026-08"]]);
-    assert.throws(() => db.run("UPDATE initiatives SET primary_start_year_month = '2026-13'"), /CHECK/);
-    db.run("UPDATE initiatives SET primary_start_year_month = '2026-06'");
-    await assert.rejects(api.validateTriadicDatabase(db.export()), /読み込めません/, "金額から求めた値と異なる年月を拒否");
+    const columns = db.exec("PRAGMA table_info(initiatives)")[0].values.map(row => row[1]);
+    assert.ok(!columns.includes("primary_start_year_month") && !columns.includes("confirmed_start_year_month"), "派生値の保存列を持たない");
+    const revision = db.exec("SELECT revision FROM initiatives")[0].values[0][0];
+    assert.deepEqual((await api.readPlanContents(bytes)).initiatives[0].startYearMonths, item.startYearMonths);
+    assert.equal(db.exec("SELECT revision FROM initiatives")[0].values[0][0], revision, "読み込み時の導出は保存値を更新しない");
   } finally { db.close(); }
   const snapshot = await api.createBusinessSnapshot(bytes);
   assert.deepEqual((await api.readSnapshotContents(snapshot)).initiatives[0].startYearMonths, item.startYearMonths);
@@ -48,6 +49,7 @@ export async function verifyStartMonths(api) {
   bytes = await api.changeDetail(bytes, { target: april, field: "amount", value: "2" });
   contents = await api.readPlanContents(bytes);
   assert.deepEqual(contents.initiatives[0].startYearMonths, { 1: "2026-04", 2: "2026-04" }, "一次の追加月は未修正の確定にも反映");
+  assert.equal(contents.initiatives[0].revision, item.revision, "金額からの導出で施策の更新番号を余分に増やさない");
   await assert.rejects(api.changeDetail(bytes, { target: april, field: "amount", value: "3" }), /変更されています/);
   const confirmedApril = contents.details.find(detail => detail.kindId === 2 && detail.month === 4);
   bytes = await api.changeDetail(bytes, { target: confirmedApril, field: "amount", value: "0" });
@@ -55,6 +57,16 @@ export async function verifyStartMonths(api) {
   assert.deepEqual(contents.initiatives[0].startYearMonths, { 1: "2026-04", 2: "2026-08" }, "確定の手修正0は一次の開始月を消さない");
   const restored = await api.applyOperationSnapshot(bytes, snapshot);
   assert.deepEqual((await api.readPlanContents(restored)).initiatives[0].startYearMonths, item.startYearMonths, "取り消しは2種の年月も復元");
+  const cancellationDraft = { ...draft, name: "相殺する活動月", rows: [
+    { accountId, amounts: { 7: "1" } }, { accountId, amounts: { 7: "-1" } },
+  ] };
+  const cancellation = await api.registerInitiative(restored, cancellationDraft);
+  const cancelling = (await api.readPlanContents(cancellation)).initiatives.find(value => value.name === cancellationDraft.name);
+  assert.deepEqual(cancelling.startYearMonths, { 1: "2026-07", 2: "2026-07" }, "保存・再読込でも相殺前の行で導出する");
+  const zeroed = await api.updateInitiative(cancellation, cancelling.id, 2026, { ...cancellationDraft,
+    rows: cancelling.rows.map(row => ({ ...row, amounts: {}, overrides: {} })),
+  });
+  assert.deepEqual((await api.readPlanContents(zeroed)).initiatives.find(value => value.id === cancelling.id).startYearMonths, { 1: null, 2: null }, "全行0化後には未確定になる");
 
   // Renaming a period never changes the original rule, and reused numeric IDs are not rules.
   bytes = await api.changePeriodMaster(bytes, { type: "update", id: draft.periodTypeId, periodName: "新規改名" });
@@ -93,5 +105,5 @@ export async function verifyStartMonths(api) {
   } };
   await assert.rejects(api.saveDetailChange(plan, { target: plan.details[0], field: "amount", value: "3" }), /保存失敗/);
   assert.deepEqual(plan.initiatives[0].startYearMonths, item.startYearMonths, "保存失敗で元の開始年月を維持");
-  console.log("PASS: 開始年月の種別別保存、期間差、手修正0、相殺、未確定、明細更新、改名、復元、保存失敗");
+  console.log("PASS: 開始年月の読込時導出、期間差、手修正0、相殺、未確定、明細更新、改名、復元、保存失敗");
 }

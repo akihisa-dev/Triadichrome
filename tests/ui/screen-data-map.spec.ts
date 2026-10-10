@@ -12,7 +12,8 @@ test("画面の保存項目と参照先をたどり、関連図の入口へ戻�
   await expect(info.locator(".screen-data-columns")).toContainText("作成日時");
   await expect(info.locator(".screen-data-columns")).toContainText("更新日時");
   await expect(map.locator("#screen-data-plan")).toHaveCount(0);
-  await expect(map.locator("#screen-data-initiatives")).toContainText("primary_start_year_month");
+  await expect(map.locator("#screen-data-initiatives")).not.toContainText("primary_start_year_month");
+  await expect(map).toContainText("読み込み時に導出し、保存しません");
   await map.getByRole("navigation").getByRole("button", { name: "施策詳細", exact: true }).click();
   await map.locator("#screen-data-initiatives .screen-data-table-heading").click();
   await map.getByRole("button", { name: "expansions.id", exact: true }).click();

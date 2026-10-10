@@ -1,5 +1,6 @@
 import type { Database } from "./sqliteRuntime";
 import { openTriadicDatabase, openBusinessSnapshot } from "./triadicDatabase";
+import { deriveStartYearMonth } from "../domain/initiativeStartMonth";
 import { yenToAmount } from "../domain/amounts";
 import { INITIAL_KINDS, type KindOverrides } from "../domain/kinds";
 import type { Initiative, InitiativeRow, PlanContents } from "../domain/plan";
@@ -34,8 +35,14 @@ export function listInitiatives(db: Database, fiscalYear: number, initiativeId?:
       (overrides[2] ??= {})[Number(month)] = yenToAmount(Number(amount)); row.overrideRevisions![Number(month)] = Number(revision);
     }
   }
-  return (db.exec(`SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision, primary_start_year_month, confirmed_start_year_month FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
-    .map(([id, name, note, expansion, department, period, industry, revision, primary, confirmed]) => ({ id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision), startYearMonths: { 1: primary === null ? null : String(primary), 2: confirmed === null ? null : String(confirmed) }, rows: rowsByOwner.get(Number(id)) ?? [], months: {} }));
+  const rules = new Map(listPeriodTypes(db).map(period => [period.id, period.startMonthRule]));
+  return (db.exec(`SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
+    .map(([id, name, note, expansion, department, period, industry, revision]) => {
+      const rows = rowsByOwner.get(Number(id)) ?? [];
+      const rule = rules.get(Number(period)) ?? null;
+      return { id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision),
+        startYearMonths: { 1: deriveStartYearMonth(fiscalYear, rule, rows, 1), 2: deriveStartYearMonth(fiscalYear, rule, rows, 2) }, rows, months: {} };
+    });
 }
 export function readContents(db: Database, includeDetails = true): PlanContents {
   const settings = readPlanSettings(db);

@@ -238,12 +238,6 @@ export const dataMapSchema = [
         "reference": "period_types.id"
       },
       {
-        "name": "primary_start_year_month"
-      },
-      {
-        "name": "confirmed_start_year_month"
-      },
-      {
         "name": "sort_order"
       },
       {

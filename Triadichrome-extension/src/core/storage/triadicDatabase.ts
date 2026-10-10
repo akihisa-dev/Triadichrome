@@ -4,7 +4,6 @@ import { listAggregations } from "./aggregations";
 import { validateAggregations } from "../domain/aggregations";
 import { validateDataHistory, DATA_HISTORY_SQL } from "./dataHistorySchema";
 import { seedDefaultCostMaster } from "./defaultCostMaster";
-import { validateInitiativeStartMonths } from "./initiativeStartMonths";
 import { BUSINESS_TABLES, TRIADIC_FORMAT_ID, TRIADIC_FORMAT_VERSION, TRIADIC_SCHEMA_SQL } from "./triadicSchema";
 export { TRIADIC_FILE_EXTENSION, TRIADIC_MIME_TYPE } from "./triadicSchema";
 const allowedSchemas = new Map<DocumentType, string>();
@@ -83,7 +82,6 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
   validateMasterPresentation(db);
   validateAggregations(listAggregations(db), new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id))));
   if (db.exec("SELECT id FROM period_types WHERE start_month_rule IS NOT NULL AND start_month_rule NOT IN ('new', 'period_gap')").length) invalid();
-  validateInitiativeStartMonths(db);
 }
 export async function createTriadicDatabase(fiscalYear = new Date().getFullYear() - (new Date().getMonth() < 3 ? 1 : 0)): Promise<Uint8Array> {
   if (!Number.isInteger(fiscalYear) || fiscalYear < 1 || fiscalYear > 9998) throw new TriadicFileError("年度は1〜9998の整数で入力してください。");

@@ -1,6 +1,5 @@
 export * from './core-api';
 export { initializeSqlite } from '../Triadichrome-extension/src/core/storage/sqliteRuntime';
-export { syncInitiativeStartMonths, validateInitiativeStartMonths } from '../Triadichrome-extension/src/core/storage/initiativeStartMonths';
 export { visibleRows } from '../Triadichrome-extension/src/core/tables/visibleRows';
 export { processingTasks } from '../Triadichrome-extension/src/extension/planProcessingTasks';
 import { createElement } from 'react';

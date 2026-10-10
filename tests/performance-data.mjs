@@ -9,7 +9,7 @@ export async function verifyPerformanceData(api, root) {
   assert.deepEqual({...compact, details: api.buildDetails(compact)}, complete, '派生表示を省いても全金額と更新番号を保持');
   const rules = new Map(compact.periodTypes.map(item => [item.id, item.startMonthRule]));
   for (const item of compact.initiatives) for (const kind of [1,2]) {
-    assert.equal(item.startYearMonths[kind], api.deriveStartYearMonth(compact.fiscalYear, rules.get(item.periodTypeId) ?? null, item.rows, kind), 'SQLの非0判定と元の各行の判定が一致');
+    assert.equal(item.startYearMonths[kind], api.deriveStartYearMonth(compact.fiscalYear, rules.get(item.periodTypeId) ?? null, item.rows, kind), '読込時の導出と元の各行の判定が一致');
   }
   assert.deepEqual(api.visibleRows(1000,40,0,400,80), {start:0,end:16});
   assert.deepEqual(api.visibleRows(1000,40,40080,400,80), {start:992,end:1000});
