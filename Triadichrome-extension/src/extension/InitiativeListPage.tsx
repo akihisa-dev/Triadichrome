@@ -1,8 +1,7 @@
 import { useRowWindow, WindowRows } from "./VirtualTableRows";
 import { TableCalculationBoundary } from "./TableCalculationBoundary";
-import { initiativesForKind } from "../core/tables/initiatives";
+import { createInitiativeListView, type InitiativeListView } from "../core/tables/initiativeListView";
 import type { Account } from "../core/domain/accountMaster";
-import { initiativeTotals } from "../core/tables/initiativeTotals";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { Fragment, useMemo, useRef, useState, type ReactNode } from "react";
 import { amountItems } from "../core/domain/amountItems";
@@ -34,25 +33,13 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
   const readOnly = useHistoryReadOnly();
   const [sort, setSort] = useState<InitiativeSort | null>(null);
   const container = useRef<HTMLDivElement>(null);
-  const expansionNames = new Map(expansions.map(item => [item.id, item.expansionName]));
-  const periodNames = new Map(periodTypes.map(item => [item.id, item.periodName]));
-  const { source, errors } = useMemo(() => {
-    const current = initiatives.filter(item => (item.fiscalYear === null ? "" : String(item.fiscalYear)) === fiscalYear);
-    const errors = new Map<number, string>();
-    try { return { source: initiativesForKind(current, accounts, selectedKind), errors }; }
-    catch {
-      // Isolate a failed initiative and keep its name available for correction.
-      const source = current.map(item => {
-        try { return initiativesForKind([item], accounts, selectedKind)[0]!; }
-        catch (failure) {
-          errors.set(item.id, failure instanceof Error ? failure.message : "金額を表示できませんでした。");
-          return item;
-        }
-      });
-      return { source, errors };
-    }
-  }, [initiatives, accounts, selectedKind, fiscalYear]);
-  const displayed = sortInitiatives(source, sort, selectedKind, expansionNames, periodNames);
+  const expansionNames = useMemo(() => new Map(expansions.map(item => [item.id, item.expansionName])), [expansions]);
+  const periodNames = useMemo(() => new Map(periodTypes.map(item => [item.id, item.periodName])), [periodTypes]);
+  const viewForKind = useMemo(() => createInitiativeListView(initiatives, accounts, fiscalYear), [initiatives, accounts, fiscalYear]);
+  const view = viewForKind(selectedKind);
+  const { source, errors } = view;
+  const displayed = useMemo(() => sortInitiatives(source, sort, selectedKind, expansionNames, periodNames),
+    [source, sort, selectedKind, expansionNames, periodNames]);
   const window = useRowWindow(container, displayed.length, 28, 200, 56);
   const virtual = displayed.length > 200;
   const sortHeader = (column: InitiativeSort["column"], label: string, className: string) => {
@@ -102,7 +89,7 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
             {amountItems.map((metric, index) => <td key={metric.id} className={index === amountItems.length - 1 ? "initiative-month-end" : undefined}>{amountText(item.months[month]?.[metric.id])}</td>)}
           </Fragment>)}
         </tr>} /></tbody>
-        <tfoot>{errors.size ? <tr className="initiative-total-row"><th colSpan={40} scope="row" style={{ textAlign: "left" }}>計算できない施策があるため、合計を表示できません。</th></tr> : <InitiativeTotalRow initiatives={source} />}</tfoot>
+        <tfoot>{errors.size ? <tr className="initiative-total-row"><th colSpan={40} scope="row" style={{ textAlign: "left" }}>計算できない施策があるため、合計を表示できません。</th></tr> : <InitiativeTotalRow view={view} />}</tfoot>
       </table>
     </div>
     </TableCalculationBoundary>
@@ -110,13 +97,9 @@ export function InitiativeListPage({ selection, selectedKind, initiatives, accou
   </main>;
 }
 
-function InitiativeTotalRow({ initiatives }: { initiatives: Initiative[] }) {
-  const result = useMemo(() => {
-    try { return { totals: initiativeTotals(initiatives), error: null }; }
-    catch (error) { return { totals: null, error: error instanceof Error ? error.message : "合計を表示できませんでした。" }; }
-  }, [initiatives]);
-  if (!result.totals) return <tr className="initiative-total-row"><th colSpan={40} scope="row" role="alert">{result.error} 施策を開いて金額を修正してください。</th></tr>;
-  const totals = result.totals;
+function InitiativeTotalRow({ view }: { view: InitiativeListView }) {
+  if (!view.totals) return <tr className="initiative-total-row"><th colSpan={40} scope="row" role="alert">{view.totalError} 施策を開いて金額を修正してください。</th></tr>;
+  const totals = view.totals;
   return <tr className="initiative-total-row">
     <th colSpan={4} scope="row" className="initiative-total-label">合計</th>
     {initiativeMonths.map(month => <Fragment key={month}>

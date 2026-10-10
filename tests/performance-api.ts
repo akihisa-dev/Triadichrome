@@ -15,3 +15,5 @@ export function renderInitiativeList(contents: PlanContents, selectedKind: KindI
     fiscalYear: String(contents.fiscalYear), onAddInitiative() {}, onOpenInitiative() {}, navigationBlocked: false,
   }));
 }
+
+export { createInitiativeListView } from "../Triadichrome-extension/src/core/tables/initiativeListView";
