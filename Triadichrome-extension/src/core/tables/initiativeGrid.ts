@@ -1,5 +1,5 @@
 import { type Account } from "../domain/accountMaster";
-import { accountTypes, type AccountType } from "../domain/accountTypes";
+import { amountItems } from "../domain/amountItems";
 import { amountToYen, checkedYen } from "../domain/amounts";
 import { initiativeMonths } from "../domain/calendar";
 import { type InitiativeEntryDraft, type InitiativeRow } from "../domain/plan";
@@ -96,25 +96,28 @@ export function reflectPrimaryBudget(draft: InitiativeEntryDraft): InitiativeEnt
   }) };
 }
 
-/** Group entered rows by their own attribute; do not convert costs into sales or profit effects. */
-export function initiativeAttributeTotals(draft: InitiativeEntryDraft, kind: KindId, accounts: Account[]) {
+/** Apply the same fixed composition used by the amount item master, before display rounding. */
+export function initiativeAmountTotals(draft: InitiativeEntryDraft, kind: KindId, accounts: Account[]) {
   const accountById = new Map(accounts.map(account => [account.id, account]));
   let error = "";
   const invalidNumbers = draft.invalidNumbers || draft.rows.some(hasInvalidAmountInput);
-  const rows = (Object.keys(accountTypes) as AccountType[]).flatMap(attribute => {
-    const sources = draft.rows.filter(row => row.accountId !== null && accountById.get(row.accountId)?.accountType === attribute);
-    if (sources.length === 0) return [];
+  const rows = amountItems.map(item => {
+    const sources = draft.rows.flatMap(row => {
+      const attribute = row.accountId === null ? undefined : accountById.get(row.accountId)?.accountType;
+      const component = item.components.find(component => component.attribute === attribute);
+      return component ? [{ row, sign: component.sign }] : [];
+    });
     const amounts = Object.fromEntries(initiativeMonths.map(month => {
       if (invalidNumbers) return [month, undefined];
       try {
-        const total = sources.reduce((sum, row) => sum + BigInt(amountToYen(resolvedAmount(row, kind, month))), 0n);
+        const total = sources.reduce((sum, { row, sign }) => sum + BigInt(amountToYen(resolvedAmount(row, kind, month))) * BigInt(sign), 0n);
         return [month, checkedYen(total)];
       } catch (failure) {
-        error = `科目属性別の合計を計算できません。${failure instanceof Error ? failure.message : "金額を確認してください。"}`;
+        error = `金額項目の合計を計算できません。${failure instanceof Error ? failure.message : "金額を確認してください。"}`;
         return [month, undefined];
       }
     }));
-    return [{ attribute, amounts }];
+    return { id: item.id, name: item.name, amounts };
   });
   return { rows, error };
 }

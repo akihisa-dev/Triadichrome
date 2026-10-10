@@ -159,10 +159,10 @@ test("範囲の自動保存が失敗しても入力と未変更セルを保持�
 });
 
 
-test("科目属性別の合計は存在する属性だけを表示し、入力と種別に追従する", async ({ app }) => {
+test("金額項目の3合計は入力と種別に追従する", async ({ app }) => {
   const table = app.getByRole("table", { name: "月別計画金額", exact: true });
   const footer = table.locator("tfoot");
-  await expect(footer.getByRole("row")).toHaveCount(1);
+  await expect(footer.getByRole("row")).toHaveCount(3);
   const sales = footer.getByRole("row", { name: /^売上合計/ });
   await expect(sales.getByRole("cell").first()).toHaveText("0");
   const april = app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true });
@@ -177,10 +177,10 @@ test("科目属性別の合計は存在する属性だけを表示し、入力�
   await app.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
   await app.getByRole("combobox", { name: "3行目の勘定科目", exact: true }).focus();
   await app.getByRole("combobox", { name: "3行目の勘定科目", exact: true }).selectOption({ label: "537 旅費" });
-  await expect(footer.getByRole("row")).toHaveCount(2);
+  await expect(footer.getByRole("row")).toHaveCount(3);
   await expect(footer.getByRole("row", { name: /^費用合計/ }).getByRole("cell").first()).toHaveText("0");
   await expect(footer.getByRole("rowheader", { name: "売上原価合計", exact: true })).toHaveCount(0);
-  await expect(footer.getByRole("rowheader", { name: "利益合計", exact: true })).toHaveCount(0);
+  await expect(footer.getByRole("rowheader", { name: "利益合計", exact: true })).toHaveCount(1);
   await app.getByRole("button", { name: "3行目を削除", exact: true }).click();
-  await expect(footer.getByRole("row")).toHaveCount(1);
+  await expect(footer.getByRole("row")).toHaveCount(3);
 });

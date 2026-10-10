@@ -3,12 +3,11 @@ import { useGridInteraction } from "./useGridInteraction";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { canChangeAccountRow, resolvedAmount, type KindId } from "../core/domain/kinds";
-import { accountTypes } from "../core/domain/accountTypes";
 import { formatYen, isValidAmount } from "../core/domain/amounts";
 import { initiativeMonths as months } from "../core/domain/calendar";
 import { type InitiativeEntryDraft } from "../core/domain/plan";
 import { type Account } from "../core/domain/accountMaster";
-import { canEditInitiativeCell, cancelInitiativeCell, changeInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid, initiativeAttributeTotals } from "../core/tables/initiativeGrid";
+import { canEditInitiativeCell, cancelInitiativeCell, changeInitiativeCell, fillInitiativeGrid, pasteInitiativeGrid, initiativeAmountTotals } from "../core/tables/initiativeGrid";
 import { normalizeGridAmount, type GridCell } from "../core/tables/previousGrid";
 import { StatusNotice } from "./StatusNotice";
 import "./InitiativeAmountGrid.css";
@@ -26,7 +25,7 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
   const originalInherited = useRef(false);
   const accountsById = useMemo(() => new Map(accounts.map(account => [account.id, account])), [accounts]);
   const savedById = useMemo(() => new Map(savedRows?.map(row => [row.id, row])), [savedRows]);
-  const totals = initiativeAttributeTotals(draft, kind, accounts);
+  const totals = initiativeAmountTotals(draft, kind, accounts);
   useEffect(() => { setSelection(null); setEditing(false); }, [draft.rows.length]);
   const valueAt = (cell: GridCell, source = draft) => {
     const row = source.rows[cell.row]!;
@@ -165,8 +164,8 @@ export function InitiativeAmountGrid({ draft, kind, accounts, isSaving, savedRow
               </tr>;
             })}
           </tbody>
-          {totals.rows.length > 0 && <tfoot>{totals.rows.map(row => <tr key={row.attribute}>
-            <th scope="row">{accountTypes[row.attribute]}合計</th>
+          {totals.rows.length > 0 && <tfoot>{totals.rows.map(row => <tr key={row.id}>
+            <th scope="row">{row.name}合計</th>
             {months.map(month => <td key={month}>{formatYen(row.amounts[month])}</td>)}
           </tr>)}</tfoot>}
         </table>

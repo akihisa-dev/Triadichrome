@@ -69,25 +69,37 @@ export function verifyInitiativeGrid(api) {
     { accountId: 5, amounts: { 4: "900" } },
     { accountId: null, amounts: { 4: "800" } },
   ] };
-  const primaryTotals = api.initiativeAttributeTotals(summaryDraft, 1, accounts);
+  const primaryTotals = api.initiativeAmountTotals(summaryDraft, 1, accounts);
   assert.equal(primaryTotals.error, "");
-  assert.deepEqual(primaryTotals.rows.map(row => row.attribute), ["sales", "cost", "expense"], "入力行にない属性と未設定属性は表示しない");
-  assert.equal(primaryTotals.rows[0].amounts[4], 3500, "重複科目も円の整数で合算し、丸めは表示時だけ行う");
-  assert.equal(primaryTotals.rows[1].amounts[4], -4001, "売上原価も符号を反転せず属性内で合算する");
-  assert.equal(primaryTotals.rows[2].amounts[4], 0, "存在する属性は全月0でも表示する");
-  const confirmedTotals = api.initiativeAttributeTotals(summaryDraft, 2, accounts);
-  assert.equal(confirmedTotals.rows[0].amounts[4], 2375, "確定予算は手修正0と引き継ぎを反映する");
-  const invalid = api.initiativeAttributeTotals({ ...summaryDraft, rows: [{ accountId: 1, amounts: { 4: "不正" } }] }, 1, accounts);
+  assert.deepEqual(primaryTotals.rows.map(row => row.id), ["sales", "expense", "profit"], "マスタ順の3項目を固定表示する");
+  assert.equal(primaryTotals.rows[0].amounts[4], 7501, "重複科目も円の整数で合算し、丸めは表示時だけ行う");
+  assert.equal(primaryTotals.rows[1].amounts[4], 0, "費用属性の金額を合算する");
+  assert.equal(primaryTotals.rows[2].amounts[4], 7501, "利益は売上から原価と費用を差し引く");
+  const example = { ...draft, rows: [
+    { accountId: 1, amounts: { 4: "120" } }, { accountId: 1, amounts: { 4: "30" } },
+    { accountId: 2, amounts: { 4: "60" } }, { accountId: 3, amounts: { 4: "8" } },
+    { accountId: 3, amounts: { 4: "3" } }, { accountId: 4, amounts: { 4: "0.125" } },
+  ] };
+  assert.deepEqual(api.initiativeAmountTotals(example, 1, accounts).rows.map(row => row.amounts[4]), [90000, 11000, 79125]);
+  const crossAttribute = { ...draft, rows: [
+    { accountId: 1, amounts: { 4: "9007199254740.991" } },
+    { accountId: 1, amounts: { 4: "0.001" } },
+    { accountId: 2, amounts: { 4: "0.001" } },
+  ] };
+  assert.equal(api.initiativeAmountTotals(crossAttribute, 1, accounts).rows[0].amounts[4], Number.MAX_SAFE_INTEGER, "属性内の途中超過も構成の相殺後に判定する");
+  const confirmedTotals = api.initiativeAmountTotals(summaryDraft, 2, accounts);
+  assert.equal(confirmedTotals.rows[0].amounts[4], 6376, "確定予算は手修正0と引き継ぎを反映する");
+  const invalid = api.initiativeAmountTotals({ ...summaryDraft, rows: [{ accountId: 1, amounts: { 4: "不正" } }] }, 1, accounts);
   assert.equal(invalid.rows[0].amounts[4], undefined);
   assert.equal(invalid.rows[0].amounts[5], 0);
   assert.ok(invalid.error);
   const max = "9007199254740.991";
   const large = { ...draft, rows: [max, max, `-${max}`].map(amount => ({ accountId: 1, amounts: { 4: amount } })) };
-  assert.equal(api.initiativeAttributeTotals(large, 1, accounts).rows[0].amounts[4], Number.MAX_SAFE_INTEGER, "途中の合計で丸めず相殺後を検証する");
-  const overflow = api.initiativeAttributeTotals({ ...large, rows: large.rows.slice(0, 2) }, 1, accounts);
+  assert.equal(api.initiativeAmountTotals(large, 1, accounts).rows[0].amounts[4], Number.MAX_SAFE_INTEGER, "途中の合計で丸めず相殺後を検証する");
+  const overflow = api.initiativeAmountTotals({ ...large, rows: large.rows.slice(0, 2) }, 1, accounts);
   assert.equal(overflow.rows[0].amounts[4], undefined);
   assert.match(overflow.error, /範囲/);
-  assert.equal(api.initiativeAttributeTotals({ ...summaryDraft, invalidNumbers: true }, 1, accounts).rows[0].amounts[4], undefined);
+  assert.equal(api.initiativeAmountTotals({ ...summaryDraft, invalidNumbers: true }, 1, accounts).rows[0].amounts[4], undefined);
   const april = { row: 0, column: 0 }, may = { row: 0, column: 1 };
   const badPrimary = api.changeInitiativeCell(draft, 1, april, "", { original: "7", inherited: false });
   assert.equal(api.hasInvalidAmountInput(badPrimary.rows[0]), true);
@@ -105,7 +117,7 @@ export function verifyInitiativeGrid(api) {
   const correctedApril = api.changeInitiativeCell(badMay, 1, april, "0");
   assert.equal(correctedApril.rows[0].invalidAmounts[1][4], undefined);
   assert.equal(correctedApril.rows[0].invalidAmounts[1][5].original, "8", "訂正したセル以外の不正状態を保持");
-  assert.equal(api.initiativeAttributeTotals(correctedApril, 2, accounts).rows[0].amounts[4], undefined);
+  assert.equal(api.initiativeAmountTotals(correctedApril, 2, accounts).rows[0].amounts[4], undefined);
   const cancelled = api.cancelInitiativeCell(badMay, 1, april, { original: "0", inherited: false });
   assert.equal(cancelled.rows[0].amounts[4], "7", "再表示後も保存しておいた入力開始時の値へ戻る");
   assert.equal(api.hasInvalidAmountInput(cancelled.rows[0]), true, "別セルの不正入力は残す");
@@ -126,7 +138,7 @@ export function verifyInitiativeGrid(api) {
   const twoRows = api.changeInitiativeCell(badPrimary, 1, { row: 1, column: 0 }, "", { original: "12", inherited: false });
   const oneRow = api.changeInitiativeCell(twoRows, 1, april, "7");
   assert.equal(api.hasInvalidAmountInput(oneRow.rows[0]), false); assert.equal(api.hasInvalidAmountInput(oneRow.rows[1]), true, "同じ科目の別行は独立して保持");
-  assert.deepEqual(api.initiativeAttributeTotals(blank, 1, accounts).rows, []);
+  assert.deepEqual(api.initiativeAmountTotals(blank, 1, accounts).rows.map(row => row.amounts[4]), [0, 0, 0]);
   assert.deepEqual(draft, before, "成功・失敗とも入力元を変更しない");
   console.log("PASS: 施策の範囲入力、複数行の貼り付け、手修正0、精度と編集禁止セルの保護");
 }

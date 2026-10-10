@@ -8,12 +8,12 @@
     "description": "64ea61a1be694fb2d0d2d8d5d9d006acec67232df7d47dbf23ddf2a6da72031c"
   },
   "initiative-entry": {
-    "implementation": "fe030fcc1b5e49f8b2aa58fcc62923216d126cb25286b0b0e3f1b3ea503286e0",
-    "description": "7eb2ac176fedcb371e125d7a1a23374be0adccd068cbfd878b11a9cf70fcc7a9"
+    "implementation": "0f9a348cb379c4ee10805e4080fb5cca4c0c352b1b73a563033e6d607bbfa781",
+    "description": "62a85f49ae6b5b119482dcc976eea962fea0beb7ba997f36801390c6266a8e3b"
   },
   "initiative-detail": {
-    "implementation": "8496884e02bc281817dcb819843c7be351102b55536887fdc53c0eebbfaa1c87",
-    "description": "24ca6bd21f765a799c0a92b7904a06b9aa89d477ddb693101e594f7b8e868061"
+    "implementation": "392d10aa1419738f47856779fee0f14eeed29f23a43d51e3617d0c482f48b238",
+    "description": "4d31b4c025d2b27d4b6e08d61c3ee4947a46311cb0e3bf137aff20194e2b2b75"
   },
   "initiative-list": {
     "implementation": "bed1190d5704e1912249c5cb57d7b032d81e647be497f90e208070a79aa025ca",
