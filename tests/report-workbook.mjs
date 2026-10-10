@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import JSZip from "jszip";
 
 // Evaluate the simple exported formula subset, using original values rather than caches.
-function evaluator(wb) {
+export function evaluator(wb) {
   const rangeCache = new Map(), cache = new Map(), visiting = new Set();
   const value = (sheet, address) => {
     const key = `${sheet.name}:${address}`;

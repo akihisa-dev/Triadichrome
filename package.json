@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "perf:sample": "node scripts/measure-sample-performance.mjs",
     "typecheck": "npm run data-map:generate && tsc --noEmit --pretty false",
-    "test": "npm run data-map:check && node scripts/test-files.mjs && node --test tests/repository-workflow.test.mjs tests/screen-data-model.test.mjs tests/data-map-generation.test.mjs tests/mechanism-map.test.mjs tests/sqlite-runtime.test.mjs && npm run samples:check",
+    "test": "npm run data-map:check && node scripts/test-files.mjs && node tests/report-parity.mjs && node --test tests/repository-workflow.test.mjs tests/screen-data-model.test.mjs tests/data-map-generation.test.mjs tests/mechanism-map.test.mjs tests/sqlite-runtime.test.mjs && npm run samples:check",
     "samples:generate": "node scripts/generate-sample-plan.mjs",
     "samples:check": "node scripts/generate-sample-plan.mjs --check",
     "test:ui": "npm run build && playwright test",
