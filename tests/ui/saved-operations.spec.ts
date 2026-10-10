@@ -151,6 +151,48 @@ test("前年の範囲入力を一操作で取り消し、分類選択と新し�
   await expect(april).toHaveValue("1200.125");
 });
 
+test("所属追加の取消で前年の無効選択を解除し、やり直し後も有効な分類で保存できる", async ({ page, app }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const menu = app.getByRole("navigation", { name: "メインナビゲーション" });
+  await menu.getByRole("button", { name: "マスタ", exact: true }).click();
+  await app.getByRole("button", { name: /^部署マスタ/ }).click();
+  const form = app.getByRole("form", { name: "部署の新規登録", exact: true });
+  await form.getByRole("textbox", { name: "部署名", exact: true }).fill("所属確認部署");
+  await form.getByRole("checkbox", { name: "直営自動車", exact: true }).check();
+  await form.getByRole("button", { name: "登録", exact: true }).click();
+  await app.getByRole("button", { name: "所属確認部署を編集", exact: true }).click();
+  const choices = app.getByRole("group", { name: "所属確認部署の業種名", exact: true });
+  const other = choices.getByRole("checkbox").nth(1);
+  const otherName = (await other.locator("..").innerText()).trim();
+  await other.check();
+  await expect(app.getByRole("button", { name: "完了", exact: true })).toBeEnabled();
+  await app.getByRole("button", { name: "完了", exact: true }).click();
+  await menu.getByRole("button", { name: "前年入力", exact: true }).click();
+  const industries = app.getByRole("group", { name: "業種名", exact: true });
+  await selectClassification(app.getByRole("group", { name: "部署名", exact: true }), "所属確認部署");
+  await selectClassification(industries, otherName);
+  const amount = app.getByRole("textbox", { name: "売上高 4月の前年金額", exact: true });
+  await expect(amount).toBeVisible();
+  const undo = app.getByRole("button", { name: "操作を取り消す", exact: true });
+  await undo.click();
+  await expect(industries.getByRole("button", { name: otherName, exact: true })).toHaveCount(0);
+  await expect(amount).toHaveCount(0);
+  await app.getByRole("button", { name: "操作をやり直す", exact: true }).click();
+  await expect(industries.getByRole("button", { name: otherName, exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(amount).toHaveCount(0);
+  await selectClassification(industries, "直営自動車");
+  await amount.fill("8.25");
+  await amount.press("Enter");
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(amount).toHaveValue("0");
+  await app.getByRole("button", { name: "操作をやり直す", exact: true }).click();
+  await expect(amount).toHaveValue("8.25");
+  await expect(app.getByRole("alert")).toHaveCount(0);
+});
+
 for (const leaveDetail of [false, true]) test(`登録取消後の画面履歴がHomeまで戻れる（一覧へ戻す=${leaveDetail}）`, async ({ app, page }) => {
   await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");

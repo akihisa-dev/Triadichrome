@@ -18,15 +18,21 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
   const [departmentIds, setDepartments] = useState<number[]>([]);
   const industryId = industryIds.length === 1 ? industryIds[0]! : null;
   const departmentId = departmentIds.length === 1 ? departmentIds[0]! : null;
+  const validPair = industryId !== null && departmentId !== null && contents.departments.some(item => item.id === departmentId && item.industryIds.includes(industryId));
   const allowedIndustries = contents.departments.filter(item => !departmentIds.length || departmentIds.includes(item.id)).flatMap(item => item.industryIds);
   const autoSave = useAutoSave(onSave, onPendingChange);
   const { controller, draft, revision } = autoSave;
   useLayoutEffect(() => {
-    if (industryIds.some(id => !contents.industries.some(item => item.id === id))) { controller.end(); setIndustries(ids => ids.filter(id => contents.industries.some(item => item.id === id))); return; }
-    if (departmentIds.some(id => !contents.departments.some(item => item.id === id))) { controller.end(); setDepartments(ids => ids.filter(id => contents.departments.some(item => item.id === id))); return; }
-    if (industryId === null || departmentId === null || controller.getSnapshot().draft) return;
+    if (controller.getSnapshot().pending) return;
+    const departments = departmentIds.filter(id => contents.departments.some(item => item.id === id));
+    const allowed = new Set(contents.departments.filter(item => !departments.length || departments.includes(item.id)).flatMap(item => item.industryIds));
+    const industries = industryIds.filter(id => allowed.has(id) && contents.industries.some(item => item.id === id));
+    if (departments.length !== departmentIds.length || industries.length !== industryIds.length) {
+      controller.end(); setDepartments(departments); setIndustries(industries); return;
+    }
+    if (!validPair || industryId === null || departmentId === null || controller.getSnapshot().draft) return;
     controller.begin(createPreviousInput(contents, industryId, departmentId));
-  }, [controller, contents, industryIds, departmentIds, industryId, departmentId, revision]);
+  }, [controller, contents, industryIds, departmentIds, industryId, departmentId, validPair, revision]);
   const filtered = useMemo(() => filterPlan(contents, {
     industries: industryIds.length ? industryIds : null, departments: departmentIds.length ? departmentIds : null,
   }), [contents, industryIds, departmentIds]);
@@ -43,6 +49,6 @@ export function PreviousInputPage({ contents, onSave, onPendingChange, onPrepare
       </div>
       <AutoSaveStatus state={autoSave} controller={controller} onPrepareSave={onPrepareSave} />
     </div>
-    <PreviousAmountGrid key={`${industryIds.join(",")}:${departmentIds.join(",")}`} contents={filtered} draft={!readOnly && industryId !== null && departmentId !== null ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
+    <PreviousAmountGrid key={`${industryIds.join(",")}:${departmentIds.join(",")}`} contents={filtered} draft={!readOnly && validPair ? draft ?? undefined : undefined} onChange={value => controller.change(value)} />
   </main>;
 }
