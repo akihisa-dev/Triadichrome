@@ -55,8 +55,8 @@ export async function verifySamplePlan(api) {
     }
   }
   const plan = await readPlanContents(bytes);
-  assert.equal(plan.expansionCategories.length, 4);
-  assert.deepEqual(plan.expansions.find(item => item.id === 1).categoryIds, [1, 2, 3]);
+  assert.equal(plan.expansionCategories.length, 6);
+  assert.deepEqual(plan.expansions.find(item => item.id === 1).categoryIds, [1, 2, 3, 4, 5]);
   assert.equal(plan.initiatives.find(item => item.name === "既存商品の販売拡大").expansionCategoryId, 3);
   assert.ok(plan.initiatives.some(item => item.expansionCategoryId === null));
   assert.equal(plan.previousAmounts.length, 9 * 2 * (4 * 12 + 4));

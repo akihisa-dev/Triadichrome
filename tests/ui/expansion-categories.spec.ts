@@ -9,7 +9,7 @@ test("展開区分を展開で絞り、共通区分を保持し、未選択で�
   const category = app.getByRole("combobox", { name: "展開区分", exact: true });
   await expect(category).toBeDisabled();
   await expansion.selectOption("1");
-  await expect(category.locator("option")).toHaveText(["未選択", "確認用：契約見直し", "確認用：作業改善", "確認用：共通区分"]);
+  await expect(category.locator("option")).toHaveText(["未選択", "下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP"]);
   await category.selectOption("3");
   await expansion.selectOption("2");
   await expect(category).toHaveValue("3");
@@ -33,28 +33,33 @@ test("展開区分を展開で絞り、共通区分を保持し、未選択で�
   await expect(category).toHaveValue("3");
 });
 
-test("空の展開区分マスタに登録し、展開へ割り当てる", async ({ page, app }) => {
+test("初期区分5件とコストへの割当を確認し、区分を追加できる", async ({ page, app }) => {
   await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
   await expect(page.getByRole("status")).toHaveText("操作できます");
   await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
   await app.getByRole("button", { name: "サイドバーを開く", exact: true }).click();
   await app.getByRole("navigation", { name: "メインナビゲーション" }).getByRole("button", { name: "マスタ", exact: true }).click();
   await app.getByRole("button", { name: /^展開区分マスタ/ }).click();
-  await expect(app.getByText("展開区分はまだ登録されていません。", { exact: true })).toBeVisible();
+  for (const name of ["下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP"]) {
+    await expect(app.getByRole("button", { name: `${name}を編集`, exact: true })).toBeEnabled();
+    await expect(app.getByRole("button", { name: `${name}を削除`, exact: true })).toBeDisabled();
+  }
   await app.getByRole("textbox", { name: "展開区分名", exact: true }).fill("追加区分");
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await expect(app.getByRole("button", { name: "追加区分を編集", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "← マスタへ戻る", exact: true }).click();
   await app.getByRole("button", { name: /^展開マスタ/ }).click();
   await app.getByRole("button", { name: "コストを編集", exact: true }).click();
-  await app.getByRole("group", { name: "コストの展開区分", exact: true }).getByRole("checkbox", { name: "追加区分", exact: true }).check();
+  const assignments = app.getByRole("group", { name: "コストの展開区分", exact: true });
+  for (const name of ["下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP"]) await expect(assignments.getByRole("checkbox", { name, exact: true })).toBeChecked();
+  await assignments.getByRole("checkbox", { name: "追加区分", exact: true }).check();
   await expect(app.getByRole("button", { name: "完了", exact: true })).toBeEnabled();
   await app.getByRole("button", { name: "完了", exact: true }).click();
   await openInitiativeEntry(app);
   await app.getByRole("combobox", { name: "展開名", exact: true }).selectOption("1");
   const category = app.getByRole("combobox", { name: "展開区分", exact: true });
   await expect(category).toHaveValue("");
-  await expect(category.locator("option")).toHaveText(["未選択", "追加区分"]);
+  await expect(category.locator("option")).toHaveText(["未選択", "下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP", "追加区分"]);
   await category.selectOption({ label: "追加区分" });
   await expect(category.locator("option:checked")).toHaveText("追加区分");
 });

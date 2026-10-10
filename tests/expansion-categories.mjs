@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 export async function verifyExpansionCategories(api) {
   const original = await api.createTriadicDatabase(2026);
-  assert.deepEqual((await api.readPlanContents(original)).expansionCategories, []);
+  const names = ["下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP"];
+  const initial = await api.readPlanContents(original);
+  assert.deepEqual(initial.expansionCategories.map(item => item.categoryName), names);
+  assert.deepEqual(initial.expansions.find(item => item.expansionName === "コスト").categoryIds, [1, 2, 3, 4, 5]);
+  assert.ok(initial.expansions.filter(item => item.expansionName !== "コスト").every(item => item.categoryIds.length === 0));
   let bytes = original;
-  for (const categoryName of ["詳細A", "共通", "未割当"]) bytes = await api.changeExpansionCategoryMaster(bytes, { type: "add", categoryName });
-  await assert.rejects(api.changeExpansionCategoryMaster(bytes, { type: "add", categoryName: "詳細A" }), /同じ/);
+  await assert.rejects(api.changeExpansionCategoryMaster(bytes, { type: "add", categoryName: "下払いUP" }), /同じ/);
   await assert.rejects(api.changeExpansionCategoryMaster(bytes, { type: "add", categoryName: " " }), /展開区分名/);
   const assign = (source, id, categoryIds) => api.changeExpansionMaster(source, { type: "update", id, expansionCode: String(id), expansionName: id === 1 ? "コスト" : "料改", categoryIds });
   bytes = await assign(bytes, 1, [1, 2]); bytes = await assign(bytes, 2, [2]);
@@ -29,6 +32,11 @@ export async function verifyExpansionCategories(api) {
   await api.validateTriadicDatabase(bytes);
   const db = await api.openTriadicDatabase(bytes);
   try { assert.throws(() => db.run("UPDATE initiatives SET expansion_id = 2 WHERE id = ?", [saved.initiatives[0].id]), /FOREIGN KEY/); } finally { db.close(); }
-  assert.deepEqual((await api.readPlanContents(original)).expansionCategories, [], "失敗や変更で元bytesを変更しない");
+  assert.deepEqual((await api.readPlanContents(original)).expansionCategories.map(item => item.categoryName), names, "失敗や変更で元bytesを変更しない");
+  let empty = await assign(original, 1, []);
+  for (const category of initial.expansionCategories) empty = await api.changeExpansionCategoryMaster(empty, { type: "delete", id: category.id });
+  assert.deepEqual((await api.readPlanContents(empty)).expansionCategories, [], "全件削除後の再読込で初期区分を復活させない");
+  empty = await api.changeExpansionCategoryMaster(empty, { type: "add", categoryName: "追加区分" });
+  assert.deepEqual((await api.readPlanContents(empty)).expansionCategories.map(item => item.categoryName), ["追加区分"]);
   console.log("PASS: 展開区分の任意選択、割当制限、使用中保護、改名、復元、金額不変");
 }
