@@ -66,6 +66,9 @@ export async function inspectPreviousWorkbook(bytes: Uint8Array): Promise<void> 
   const budget = { bytes: 0 }; let cells = 0, tags = 0;
   for (const entry of Object.values(archive.files)) {
     if (entry.dir) continue;
+    // ExcelJS matches this pattern anywhere in the decoded ZIP entry name.
+    // Reject aliases before extension filtering so every parsed sheet is inspected.
+    if (/xl\/worksheets\/sheet\d+\.xml/.test(entry.name) && !/^xl\/worksheets\/sheet\d+\.xml$/.test(entry.name)) refuse();
     const expanded = await boundedEntry(entry, budget);
     if (!/\.(?:xml|rels)$/.test(entry.name)) continue;
     const xml = new TextDecoder("utf-8", { fatal: true }).decode(expanded);

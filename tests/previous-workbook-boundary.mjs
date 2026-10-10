@@ -19,6 +19,37 @@ export async function verifyPreviousWorkbookBoundary(api, plan) {
       zip.file(name, transform(await zip.file(name).async('string')));
       return zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
     };
+    // #39: ExcelJS also recognizes worksheet names with a prefix or suffix.
+    for (const renamed of ['xl/worksheets/sheet1.xml.bin', 'xl/worksheets/sheet1.xml.extra.xml', 'xl/worksheets/sheet1.xml/extra.bin', 'prefix/xl/worksheets/sheet1.xml']) {
+      for (const content of ['normal', 'columns', 'merge']) for (const updateTypes of [false, true]) {
+        const zip = await JSZip.loadAsync(normal), original = 'xl/worksheets/sheet1.xml';
+        let xml = await zip.file(original).async('string');
+        if (content === 'columns') xml = xml.replace('<sheetData>', '<cols><col min="1" max="21" width="10"/></cols><sheetData>');
+        if (content === 'merge') xml = xml.replace('</worksheet>', '<mergeCells count="1"><mergeCell ref="A1:B1"/></mergeCells></worksheet>');
+        zip.remove(original); zip.file(renamed, xml);
+        const rels = 'xl/_rels/workbook.xml.rels';
+        zip.file(rels, (await zip.file(rels).async('string')).replace('Target="worksheets/sheet1.xml"', `Target="/${renamed}"`));
+        if (updateTypes) {
+          const types = '[Content_Types].xml';
+          zip.file(types, (await zip.file(types).async('string')).replace(`PartName="/${original}"`, `PartName="/${renamed}"`));
+        }
+        await refuse(await zip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' }));
+      }
+    }
+    // JSZip takes the decoded name from the local header, not just the directory.
+    const headerZip = await JSZip.loadAsync(normal), headerName = 'zz/worksheets/sheet1.xml.bin';
+    headerZip.file(headerName, await headerZip.file('xl/worksheets/sheet1.xml').async('string'));
+    const headerBytes = await headerZip.generateAsync({ type: 'uint8array', compression: 'DEFLATE' });
+    const headerView = new DataView(headerBytes.buffer, headerBytes.byteOffset, headerBytes.byteLength);
+    let altered = false;
+    for (let offset = 0; offset + 30 <= headerBytes.length; offset++) {
+      if (headerView.getUint32(offset, true) !== 0x04034b50) continue;
+      const length = headerView.getUint16(offset + 26, true);
+      if (new TextDecoder().decode(headerBytes.subarray(offset + 30, offset + 30 + length)) !== headerName) continue;
+      headerBytes.set(new TextEncoder().encode('xl'), offset + 30); altered = true; break;
+    }
+    assert.ok(altered, 'ローカルヘッダーだけの名前変更を再現');
+    await refuse(headerBytes);
     for (const range of ['A100:IV355', 'A1:XFD1048576']) {
       await refuse(await mutate(xml => xml.replace('</worksheet>', `<mergeCells count="1"><mergeCell ref="${range}"/></mergeCells></worksheet>`)));
     }
