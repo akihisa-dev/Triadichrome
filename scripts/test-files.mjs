@@ -1,4 +1,5 @@
 import { verifyCostCancellation } from "../tests/cost-cancellation.mjs";
+import { verifyAggregationOrder } from "../tests/aggregation-order.mjs";
 import { verifyFileRecovery } from "../tests/file-recovery.mjs";
 import { verifyExpansionTableView } from "../tests/expansion-table-view.mjs";
 import { verifyUnifiedMaster } from "../tests/unified-master.mjs";
@@ -43,6 +44,7 @@ await withNodeBundle("tests/core-api.ts", async production => {
   await verifySchemaBoundary(api);
   await verifyYenPrecision(api);
   await verifyCostCancellation(api);
+  verifyAggregationOrder(api);
   await verifyCostComparison(api);
   await verifyPeriodTables(api);
   await verifySpreadsheetIO(api);

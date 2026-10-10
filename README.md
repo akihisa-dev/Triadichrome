@@ -390,7 +390,7 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 
 ## 構成
 
-- `Triadichrome-extension/src/core/domain/`：金額・年度・種別・分類・施策・明細の型と規則。SQLやChrome APIへ依存しません。
+- `Triadichrome-extension/src/core/domain/`：金額・年度・種別・分類・施策・明細の型と規則。SQLやChrome APIへ依存しません。`aggregationOrder.ts`が子集計から親集計へたどる順序を管理し、総原価表の計算とマスタの初期表示順で共有します。保存済みの表示順を優先します。
 - `Triadichrome-extension/src/core/tables/`：総原価表・展開表・明細・集計図の表示用計算と入力表の一括操作。
 - `Triadichrome-extension/src/core/storage/`：SQLiteの直接生成・検証・読込・更新・履歴。`transaction.ts`がコピー上の更新と接続解放を担当します。
 - `Triadichrome-extension/src/core/autoSave.ts`：入力待ち、日本語変換、保存中の追加入力、再試行。

@@ -1,5 +1,6 @@
 import type { Account } from "./accountMaster";
 import type { Aggregation } from "./aggregations";
+import { childFirstAggregations } from "./aggregationOrder";
 export type MasterRow = { kind: "account" | "group"; id: number };
 export const masterRowKey = (row: MasterRow) => `${row.kind}:${row.id}`;
 export function validateMasterOrder(order: MasterRow[], accounts: Account[], groups: Aggregation[]): void {
@@ -11,17 +12,11 @@ export function orderedMasterRows(accounts: Account[], groups: Aggregation[]): M
   const all = [...accounts.map(item => ({ kind: "account" as const, id: item.id, rank: item.masterOrder })), ...groups.map(item => ({ kind: "group" as const, id: item.id, rank: item.masterOrder }))];
   if (all.every(item => item.rank !== undefined)) return all.sort((a,b) => a.rank! - b.rank!).map(({kind,id}) => ({kind,id}));
   const positions = new Map(accounts.map((item,index) => [`account:${item.id}`, index]));
-  const pending = new Map(groups.map(group => [group.id, group.members.filter(member => member.kind === "group").length]));
-  const parents = new Map(groups.flatMap(group => group.members.filter(member => member.kind === "group").map(member => [member.id, group] as const)));
-  const queue = groups.filter(group => !pending.get(group.id));
   const sorted: {id: number; position: number}[] = [];
-  for (let index = 0; index < queue.length; index++) {
-    const group = queue[index]!;
+  for (const group of childFirstAggregations(groups)) {
     const position = Math.max(-1, ...group.members.map(member => positions.get(masterRowKey(member)) ?? -1));
     const effective = position < 0 ? accounts.length - 1 : position;
     positions.set(`group:${group.id}`, effective); sorted.push({id:group.id, position:effective});
-    const parent = parents.get(group.id);
-    if (parent) { const left = pending.get(parent.id)! - 1; pending.set(parent.id,left); if (!left) queue.push(parent); }
   }
   sorted.sort((a,b) => a.position - b.position);
   const output: MasterRow[] = []; let cursor = 0;

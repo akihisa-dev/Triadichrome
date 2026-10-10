@@ -1,4 +1,5 @@
 import { orderedMasterRows } from "../domain/masterRows";
+import { childFirstAggregations } from "../domain/aggregationOrder";
 import { addYen, amountToYen, checkedYen } from "../domain/amounts";
 import { type Account } from "../domain/accountMaster";
 import { validateAggregations, type Aggregation } from "../domain/aggregations";
@@ -53,18 +54,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     row.budget = finish(budget);
   }
   const byGroup = new Map<number, CostRow>();
-  const parents = new Map<number, number>();
-  const pending = new Map<number, number>();
-  const definitions = new Map(groups.map(group => [group.id, group]));
-  const queue: Aggregation[] = [];
-  for (const group of groups) {
-    const children = group.members.filter(member => member.kind === "group");
-    pending.set(group.id, children.length);
-    for (const child of children) parents.set(child.id, group.id);
-    if (!children.length) queue.push(group);
-  }
-  for (let index = 0; index < queue.length; index++) {
-    const group = queue[index]!;
+  for (const group of childFirstAggregations(groups)) {
     const row: CostRow = { kind: "group", id: group.id, name: group.displayName ?? group.name, required: group.required !== null,
       configured: group.members.length > 0, previous: {}, changes: {}, budget: {}, comparison: {} };
     const previous: ExactMonthlyAmounts = {}, changes: ExactMonthlyAmounts = {}, budget: ExactMonthlyAmounts = {};
@@ -79,12 +69,6 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
       row.previous = finish(previous); row.changes = finish(changes); row.budget = finish(budget);
     }
     byGroup.set(group.id, row);
-    const parentId = parents.get(group.id);
-    if (parentId !== undefined) {
-      const remaining = pending.get(parentId)! - 1;
-      pending.set(parentId, remaining);
-      if (remaining === 0) queue.push(definitions.get(parentId)!);
-    }
   }
   const output = orderedMasterRows(accounts,groups).map(row => (row.kind === "account" ? byAccount : byGroup).get(row.id)!);
   const sales = byGroup.get(groups.find(group => group.required === "sales")!.id)!;
