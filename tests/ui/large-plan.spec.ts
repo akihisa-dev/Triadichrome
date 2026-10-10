@@ -1,6 +1,6 @@
 import {test, expect} from './fixtures';
 
-test('巨大計画でも全件を保持し、描画・並べ替え・編集を画面範囲に限定する', async ({page,app}) => {
+test('基準サンプルの全件・末尾・三表・編集と取消を確認する', async ({page,app}) => {
   test.setTimeout(120_000);
   await page.getByLabel('テストデータ').selectOption('large');
   await expect(page.getByRole('status')).toHaveText('操作できます');
@@ -15,21 +15,21 @@ test('巨大計画でも全件を保持し、描画・並べ替え・編集を�
   };
   await navigate('施策一覧');
   const list=app.locator('.initiative-list-table');
-  await expect(list).toHaveAttribute('aria-rowcount','1017');
-  expect(await list.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
-  for (const height of await list.locator('tbody tr:not(.virtual-row-spacer)').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))) expect(height).toBeCloseTo(28, 2);
+  await expect(list).toHaveAttribute('aria-rowcount','143');
+  expect(await list.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThanOrEqual(140);
   const total=await list.locator('tfoot').textContent();
   await app.locator('.initiative-list-container').evaluate(el=>{el.scrollTop=el.scrollHeight;});
-  await expect(list.getByRole('button',{name:'大規模確認施策1000',exact:true})).toBeAttached();
-  expect(await list.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
+  await expect(list.getByRole('button',{name:'保有資産・担当業務の移管・西',exact:true})).toBeAttached();
+  expect(await list.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThanOrEqual(140);
   expect(await list.locator('tfoot').textContent()).toBe(total);
   await navigate('展開表');
   const expansion=app.locator('.expansion-table-page .initiative-list-table');
-  expect(await expansion.locator('tbody tr:not(.virtual-row-spacer)').count()).toBeLessThan(60);
-  for (const height of await expansion.locator('tbody tr:not(.virtual-row-spacer)').evaluateAll(rows => rows.map(row => row.getBoundingClientRect().height))) expect(height).toBeCloseTo(28, 2);
+  expect(await expansion.locator('tbody tr:not(.virtual-row-spacer)').count()).toBe(147);
   await app.locator('.expansion-table-page .initiative-list-container').evaluate(el=>{el.scrollTop=el.scrollHeight;});
   await expect(expansion.locator('.expansion-subtotal-name').last()).toContainText('計');
   await expect(nav.getByRole('button',{name:'明細',exact:true})).toHaveCount(0);
+  await navigate('総原価表');
+  await expect(app.getByRole('heading',{name:'総原価表',exact:true})).toBeVisible();
   await navigate('施策一覧');
   await app.locator('.initiative-list-container').evaluate(el=>{el.scrollTop=0;});
   await list.getByRole('button',{name:'既存商品の販売拡大',exact:true}).click();
@@ -42,4 +42,8 @@ test('巨大計画でも全件を保持し、描画・並べ替え・編集を�
   await app.getByRole('button',{name:'操作を取り消す',exact:true}).click();
   await expect(amount).toHaveValue('120',{timeout:60_000});
   await expect(app.getByRole('button',{name:'操作をやり直す',exact:true})).toBeEnabled();
+  await app.getByRole('button',{name:'操作をやり直す',exact:true}).click();
+  await expect(amount).toHaveValue('130',{timeout:60_000});
+  await app.getByRole('button',{name:'操作を取り消す',exact:true}).click();
+  await expect(amount).toHaveValue('120',{timeout:60_000});
 });

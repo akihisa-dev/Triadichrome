@@ -11,7 +11,7 @@ if (args.length > 1 || (args.length === 1 && args[0] !== "--check")) {
 const check = args[0] === "--check";
 const relativeOutput = "samples/全機能確認用.triadic";
 const output = join(projectRoot, relativeOutput);
-await withNodeBundle("tests/sample-api.ts", async ({ createSamplePlan, openTriadicDatabase }, temporary) => {
+await withNodeBundle("tests/sample-api.ts", async ({ createSamplePlan, openTriadicDatabase, SAMPLE_MAX_BYTES }, temporary) => {
   // Compare the full schema and every stored value, not SQLite's internal write counters.
   const contents = async bytes => {
     const database = await openTriadicDatabase(bytes);
@@ -25,12 +25,14 @@ await withNodeBundle("tests/sample-api.ts", async ({ createSamplePlan, openTriad
     } finally { database.close(); }
   };
   const bytes = Buffer.from(await createSamplePlan(undefined, true));
+  if (bytes.length > SAMPLE_MAX_BYTES) throw new Error(`履歴込みサンプルが50,000,000 bytesを超えています: ${bytes.length}`);
   const expected = await contents(bytes);
   const existing = await readFile(output).catch(error => {
     if (error.code === "ENOENT") return undefined;
     throw error;
   });
   const actual = existing ? await contents(existing).catch(() => null) : null;
+  if (check && existing && existing.length > SAMPLE_MAX_BYTES) throw new Error(`実ファイルが50,000,000 bytesを超えています: ${existing.length}`);
   if (actual === expected) {
     console.log(`sample ok: ${relativeOutput}`);
   } else if (check) {
