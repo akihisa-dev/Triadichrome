@@ -96,6 +96,10 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
   if (!meta || meta.getCell("A1").value !== "Triadichrome previous v2" || meta.getCell("B1").value !== contents.fiscalYear) throw new Error("この年度の最新の前年入力フォーマットを出力し直してください。");
   if (meta.rowCount > 100000) throw new Error("取り込み件数が多すぎます。");
   const amountsByKey = indexPreviousAmounts(contents.previousAmounts);
+  const accountsById = new Map(contents.accounts.map(account => [account.id, account]));
+  const industriesById = new Map(contents.industries.map(industry => [industry.id, industry]));
+  const departmentsById = new Map(contents.departments.map(department => [department.id, department]));
+  const memberships = new Map(contents.departments.map(department => [department.id, new Set(department.industryIds)]));
   const patches: PreviousPatch[] = [];
   const keys = new Set<string>();
   const sheets = new Map<string, { pair: PreviousPair; count: number }>();
@@ -107,14 +111,16 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
     const accountId = meta.getCell(r, 4).value;
     if (typeof name !== "string" || typeof industryId !== "number" || typeof departmentId !== "number" || typeof accountId !== "number") fail("管理情報が正しくありません。");
     const pair = { industryId: industryId as number, departmentId: departmentId as number };
+    const industry = industriesById.get(industryId as number);
+    const department = departmentsById.get(departmentId as number);
+    const account = accountsById.get(accountId as number);
     const industryIdentity = meta.getCell(r, 19).value;
     const departmentIdentity = meta.getCell(r, 20).value;
     if (typeof industryIdentity !== "string" || typeof departmentIdentity !== "string" ||
-      (contents.industries.find(i => i.id === industryId)?.identity ?? "legacy") !== industryIdentity ||
-      (contents.departments.find(d => d.id === departmentId)?.identity ?? "legacy") !== departmentIdentity) fail("出力後に業種・部署が作り直されています。フォーマットを出力し直してください。");
-    if (!contents.departments.find(d => d.id === departmentId)?.industryIds.includes(Number(industryId))) fail("部署の業種設定が変更されています。フォーマットを出力し直してください。");
-    const account = contents.accounts.find(a => a.id === accountId);
-    if (!account || account.accountCode !== meta.getCell(r, 5).value || account.accountName !== meta.getCell(r, 6).value || !contents.industries.some(i => i.id === industryId) || !contents.departments.some(d => d.id === departmentId)) fail("出力後にマスタが変更されています。フォーマットを出力し直してください。");
+      (industry?.identity ?? "legacy") !== industryIdentity ||
+      (department?.identity ?? "legacy") !== departmentIdentity) fail("出力後に業種・部署が作り直されています。フォーマットを出力し直してください。");
+    if (!memberships.get(departmentId as number)?.has(industryId as number)) fail("部署の業種設定が変更されています。フォーマットを出力し直してください。");
+    if (!account || account.accountCode !== meta.getCell(r, 5).value || account.accountName !== meta.getCell(r, 6).value || !industry || !department) fail("出力後にマスタが変更されています。フォーマットを出力し直してください。");
     const ws = wb.getWorksheet(name as string);
     if (!ws) fail("前年入力シートが見つかりません。");
     if (ws!.getCell("A1").value !== "前年入力" || ws!.getCell("A3").value !== "科目コード" || ws!.getCell("B3").value !== "科目名") fail("フォーマットの見出しを変更しないでください。");

@@ -52,7 +52,7 @@
     "description": "bb88804d9ef1d3341e34322edf6897b8d28f9b5e2b43f22482b70e784039440e"
   },
   "spreadsheet-io": {
-    "implementation": "3b651efa050dd1b474af3e81a1999fcd56a4a8f790ae6f45c3485796ae6bfb02",
+    "implementation": "1144aafd12a8fbd19bcdc83347fe2c9a18fac94adce5c03745e22f4b4dd81170",
     "description": "90ac994a8a30b8223a6d959515887bfc136747b725cad039bd18181aabc9422e"
   },
   "account-type-master": {

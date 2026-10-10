@@ -17,11 +17,28 @@ export async function verifySpreadsheetIO(api) {
     assert.equal(ws.getCell("C4").value, i * 10 + 0.001);
     assert.equal(ws.getCell("D4").value, 0, "欠損月は0");
   });
+  // Import must index masters once; metadata rows must not rescan their arrays.
+  for (const masters of [sparse.accounts, sparse.industries, sparse.departments]) {
+    masters.find = masters.some = () => { throw new Error("マスタの繰り返し全件検索は禁止"); };
+  }
   assert.deepEqual(api.readPreviousWorkbook(indexed, sparse), []);
   indexed.worksheets[0].getCell("C4").value = null;
   indexed.worksheets[0].getCell("C5").value = 0;
   const indexedPatches = api.readPreviousWorkbook(indexed, sparse);
   assert.equal(indexedPatches.length, 1); assert.equal(indexedPatches[0].before, "1.001"); assert.equal(indexedPatches[0].after, "0");
+  for (const masters of [sparse.accounts, sparse.industries, sparse.departments]) {
+    delete masters.find; delete masters.some;
+  }
+  for (const field of ["accounts", "industries", "departments"]) {
+    assert.throws(() => api.readPreviousWorkbook(indexed, { ...sparse, [field]: sparse[field].slice(1) }));
+  }
+  assert.throws(() => api.readPreviousWorkbook(indexed, { ...sparse, departments: sparse.departments.map(d => ({ ...d, industryIds: [] })) }), /業種設定/);
+  const duplicate = api.createPreviousWorkbook(sparse, pairsForIndex);
+  const metadata = duplicate.getWorksheet("_triadichrome");
+  for (let column = 4; column <= 20; column++) metadata.getCell(4, column).value = metadata.getCell(3, column).value;
+  duplicate.worksheets[0].getCell("A5").value = duplicate.worksheets[0].getCell("A4").value;
+  duplicate.worksheets[0].getCell("B5").value = duplicate.worksheets[0].getCell("B4").value;
+  assert.throws(() => api.readPreviousWorkbook(duplicate, sparse), /重複/);
   await verifyPreviousWorkbookBoundary(api, plan);
   await verifyPreviousWorkbookProcessing();
   await verifyPreviousWorkbookExport(api);
