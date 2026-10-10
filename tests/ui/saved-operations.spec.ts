@@ -86,6 +86,7 @@ test("マスタの編集・削除、保存失敗の再試行、ダイアログ�
   await app.getByRole("button", { name: /^部署マスタ/ }).click();
   const newName = app.getByRole("textbox", { name: "部署名", exact: true });
   await newName.fill("操作用部署");
+  await app.getByRole("form", { name: "部署の新規登録", exact: true }).getByRole("checkbox", { name: "直営自動車", exact: true }).check();
   await app.getByRole("button", { name: "登録", exact: true }).click();
   await app.getByRole("button", { name: "操作用部署を編集", exact: true }).click();
   await app.getByRole("textbox", { name: "操作用部署の部署名", exact: true }).fill("更新済み部署");
