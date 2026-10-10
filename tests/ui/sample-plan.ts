@@ -125,16 +125,14 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
   }
   if (large) {
     // Insert the finite scenario catalog in one production transaction, with final schema/data validation.
-    const initialCategories = ["下払いUP", "ベースアップ", "設備投資", "燃料費UP", "電気料金UP"].map(name => categoryIdsByName.get(name)!);
     const scenarios = expansions.flatMap((expansion, e) => industries.flatMap((industry, i) => departments.map((department, d) => ({
       ...portfolioScenario(e, i, d, accounts), expansion, industry, department,
-      categoryId: e === 0 ? initialCategories[(i * 2 + d) % initialCategories.length]! : e === 1 || e === 4 ? sharedCategory : null,
     }))));
     bytes = (await editDatabase(bytes, database => {
       const firstOrder = Number(database.exec("SELECT MAX(sort_order) + 1 FROM initiatives")[0]!.values[0]![0]);
       scenarios.forEach((scenario, index) => {
         database.run("INSERT INTO initiatives (name,note,expansion_id,expansion_category_id,industry_id,department_id,period_type_id,sort_order) VALUES (?,?,?,?,?,?,?,?)",
-          [scenario.name,scenario.note,scenario.expansion.id,scenario.categoryId,scenario.industry.id,scenario.department.id,periodTypes.find(item => item.periodName === "新規")!.id,firstOrder+index]);
+          [scenario.name,scenario.note,scenario.expansion.id,scenario.categoryName === null ? null : categoryIdsByName.get(scenario.categoryName)!,scenario.industry.id,scenario.department.id,periodTypes.find(item => item.periodName === "新規")!.id,firstOrder+index]);
         const id = Number(database.exec("SELECT last_insert_rowid()")[0]!.values[0]![0]);
         scenario.rows.forEach((row, position) => {
           const rowId = `portfolio:${index}:${position}`;
