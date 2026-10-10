@@ -79,7 +79,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
       </div>)}
       <button type="button" className="primary-button" disabled={disabled || !tables.length} onClick={() => { void operation(async () => {
         const wb = createReportWorkbook(contents, { tables, selections, costFilter: { industries: industries.length ? industries : null, departments: departments.length ? departments : null } });
-        download(await serializeWorkbook(wb), `${contents.fiscalYear}年度_三表.xlsx`); setNotice("表を出力しました。");
+        download(await serializeWorkbook(wb), `${contents.fiscalYear}年度予算.xlsx`); setNotice("表を出力しました。");
       }); }}>選んだ表を出力</button>
     </section>
     <section className={`io-panel io-previous-panel${dragging && !disabled && !readOnly ? " is-drag-active" : ""}`} aria-labelledby="io-previous-title"

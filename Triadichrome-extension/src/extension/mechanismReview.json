@@ -32,7 +32,7 @@
     "description": "9e347cf45a8a9548833fcb66fb1618228003b96525f7912a39e895a2fbeea228"
   },
   "open": {
-    "implementation": "1fff6f1888f718a78a4c8a138f26ec562810382df1df05cfcef22f2e4f53ecdb",
+    "implementation": "bcd5f15d7d7700ed8795ed8cf5590eccd0f77ba5e33c29c3da76a39de8a56b0f",
     "description": "110105133113aa70786ca352790e37c14675b722955fb7ce32be17d08de5f406"
   },
   "save": {
@@ -52,7 +52,7 @@
     "description": "bec96fc1e99f71a0f9c372d32d7aafecba9df1b86b8783a999a5cd7f71acdba1"
   },
   "storage": {
-    "implementation": "f9d699789716ab1351b1fd6d80d23975b9f72523c68e4707bd396ee4ee5122e0",
+    "implementation": "265b9a55031e5a28c824f6b21294f2ba7f26ba561c6b639798712bae9acef86f",
     "description": "7933c51f3ad23ffba7a57979028921bd9956632e8e464b54ef2dd8a54d07ca65"
   },
   "validation": {
@@ -64,7 +64,7 @@
     "description": "aa291492ad6831f72230ce85e0e9ee0827b2384320fb409fb36dcf93b1d2013b"
   },
   "spreadsheet": {
-    "implementation": "0ff86c901293626f920847eb69a591bbecc277285d92b89a7e1f029971d5ccd5",
+    "implementation": "d5deaa85f5b9ebea91ec19252df5e23231e49225c88342b5d0cae920052daaf7",
     "description": "6cea07339cadfb506c789a824fba4ae46ff871773bf13e554dcbfb256dcaf6d5"
   },
   "initiative-sort": {

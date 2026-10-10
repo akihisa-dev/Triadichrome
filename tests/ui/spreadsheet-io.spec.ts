@@ -1,5 +1,6 @@
 import ExcelJS from "exceljs";
 import JSZip from "jszip";
+import { currentFiscalYear } from "../../Triadichrome-extension/src/core/domain/calendar";
 import { readFile } from "node:fs/promises";
 import { test, expect } from "./fixtures";
 
@@ -13,6 +14,7 @@ test("表と前年フォーマットの出力、確認・取消・一括取り�
   const reportPromise = page.waitForEvent("download");
   await app.getByRole("button", { name: "選んだ表を出力", exact: true }).click();
   const report = await reportPromise;
+  expect(report.suggestedFilename()).toBe(`${currentFiscalYear()}年度予算.xlsx`);
   const wb = new ExcelJS.Workbook(); await wb.xlsx.load(await readFile((await report.path())!) as unknown as ExcelJS.Buffer);
   expect(wb.worksheets.map(s => s.name)).toEqual(["総原価表", "施策一覧", "展開表", "計算元"]);
   expect(wb.getWorksheet("総原価表")!.getCell("B5").formula).toBeTruthy();
