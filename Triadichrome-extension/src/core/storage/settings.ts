@@ -15,7 +15,7 @@ export function readPlanSettings(db: Database): PlanSettings {
 }
 export function readRowOverrides(db: Database, rowId: string): KindOverrides {
   const result: KindOverrides = {};
-  for (const [month, amount] of db.exec("SELECT month, amount_yen FROM amount_overrides WHERE row_id = ?", [rowId])[0]?.values ?? []) {
+  for (const [month, amount] of db.exec("SELECT month, amount_yen FROM initiative_amounts WHERE row_id = ? AND kind_id = 2", [rowId])[0]?.values ?? []) {
     const id = 2;
     (result[id] ??= {})[Number(month)] = yenToAmount(Number(amount));
   }

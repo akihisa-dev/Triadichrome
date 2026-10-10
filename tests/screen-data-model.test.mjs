@@ -28,8 +28,8 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       }
       for (const page of ["initiative-list", "initiative-detail", "cost-table", "expansion-table"]) {
         const screen = screenData.find(item => item.page === page);
-        for (const name of ["initiative_rows", "initiative_amounts", "amount_overrides", "accounts"]) assert.ok(screen.tables.some(item => item.table === name));
-        assert.ok(screen.calculated.some(text => text.includes("手修正の0")), "確定予算の0による手修正も説明する");
+        for (const name of ["initiative_rows", "initiative_amounts", "accounts"]) assert.ok(screen.tables.some(item => item.table === name));
+        assert.ok(screen.calculated.some(text => text.includes("明示0") && text.includes("同額の手修正")), "確定予算の0・一次と同額の明示値も説明する");
       }
       assert.ok(!screenData.some(screen => screen.page === "details"), "独立した明細画面を持たない");
       const list = screenData.find(item => item.page === "initiative-list");

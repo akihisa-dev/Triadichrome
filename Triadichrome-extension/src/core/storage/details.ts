@@ -19,14 +19,13 @@ export async function changeDetail(bytes: Uint8Array, change: DetailChange): Pro
       const amount = amountToYen(value || "0");
       if (current.source === "previous") db.run("UPDATE previous_amounts SET amount_yen = ?, revision = revision + 1 WHERE id = ?", [amount, current.previousId]);
       else {
-        if (current.kindId === 1) db.run("UPDATE initiative_amounts SET amount_yen = ?, revision = revision + 1 WHERE row_id = ? AND month = ?", [amount, current.rowId, current.month]);
-        else db.run(`INSERT INTO amount_overrides (row_id, month, amount_yen) VALUES (?, ?, ?)
-          ON CONFLICT (row_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = amount_overrides.revision + 1`, [current.rowId, current.month, amount]);
+        db.run(`INSERT INTO initiative_amounts (row_id, kind_id, month, amount_yen) VALUES (?, ?, ?, ?)
+          ON CONFLICT (row_id, kind_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = initiative_amounts.revision + 1`, [current.rowId, current.kindId, current.month, amount]);
         db.run("UPDATE initiative_rows SET revision = revision + 1 WHERE id = ?", [current.rowId]);
       }
     } else if (field === "accountId") {
       if (current.kindId === 0) throw new Error("前年の科目は前年入力画面で選択してください。");
-      const source: AmountSource = { amounts: Object.fromEntries((db.exec("SELECT month, amount_yen FROM initiative_amounts WHERE row_id = ?", [current.rowId])[0]?.values ?? []).map(([month, yen]) => [Number(month), yenToAmount(Number(yen))])), overrides: readRowOverrides(db, current.rowId) };
+      const source: AmountSource = { amounts: Object.fromEntries((db.exec("SELECT month, amount_yen FROM initiative_amounts WHERE row_id = ? AND kind_id = 1", [current.rowId])[0]?.values ?? []).map(([month, yen]) => [Number(month), yenToAmount(Number(yen))])), overrides: readRowOverrides(db, current.rowId) };
       if (!canChangeAccountRow(source)) throw new Error("全種別・全月の金額が0の行だけ勘定科目を変更できます。");
       const selected = db.exec("SELECT attribute FROM accounts WHERE id = ?", [Number(value)])[0]?.values[0];
       if (!selected?.[0]) throw new Error("属性が設定済みの登録科目を選択してください。");

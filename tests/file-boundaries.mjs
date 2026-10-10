@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 export async function verifyFileBoundaries(api) {
   const bytes = await api.createCurrentEmptyTestPlan(2026);
   await assert.rejects(api.validateTriadicDatabase(new Uint8Array([1, 2, 3])));
-  for (const format of [14, 15, 16, 17, 19]) {
+  for (const format of [...Array.from({ length: api.TRIADIC_FORMAT_VERSION }, (_, index) => index), api.TRIADIC_FORMAT_VERSION + 1]) {
     const old = await api.openTriadicDatabase(bytes);
     old.run(`PRAGMA user_version = ${format}`);
     const unsupported = old.export(); old.close();
@@ -15,7 +15,7 @@ export async function verifyFileBoundaries(api) {
   }
   const schema = await api.openTriadicDatabase(bytes);
   try {
-    assert.equal(schema.exec("PRAGMA user_version")[0].values[0][0], 18);
+    assert.equal(schema.exec("PRAGMA user_version")[0].values[0][0], api.TRIADIC_FORMAT_VERSION);
     for (const table of ["plan", "budgets", "periods", "kind_types", "details"]) assert.equal(schema.exec("SELECT name FROM sqlite_master WHERE name = ?", [table]).length, 0);
     const info = schema.exec("SELECT id, fiscal_year, created_at, updated_at FROM document_info")[0].values;
     assert.equal(info.length, 1);
@@ -24,7 +24,8 @@ export async function verifyFileBoundaries(api) {
     assert.ok(Number.isFinite(Date.parse(info[0][2])));
     assert.throws(() => schema.run("INSERT INTO document_info SELECT * FROM document_info"), /UNIQUE/);
     assert.equal(schema.exec("PRAGMA table_info(initiatives)")[0].values.some(row => row[1] === "fiscal_year" || row[1] === "budget_id"), false);
-    assert.equal(schema.exec("PRAGMA table_info(amount_overrides)")[0].values.some(row => row[1] === "kind_id"), false);
+    assert.equal(schema.exec("PRAGMA table_info(initiative_amounts)")[0].values.some(row => row[1] === "kind_id"), true);
+    assert.equal(schema.exec("SELECT name FROM sqlite_master WHERE name = 'amount_overrides'").length, 0);
   } finally { schema.close(); }
   const db = await api.openTriadicDatabase(bytes);
   db.run("DELETE FROM document_info");

@@ -9,8 +9,8 @@ function derivedStartMonths(db: Database) {
   // Only month activity is needed, not every account's amount in JavaScript.
   for (const [owner, month, primary, confirmed] of db.exec(`SELECT r.initiative_id, m.month,
     MAX(m.amount_yen != 0), MAX(COALESCE(o.amount_yen, m.amount_yen) != 0)
-    FROM initiative_rows r JOIN initiative_amounts m ON m.row_id = r.id
-    LEFT JOIN amount_overrides o ON o.row_id = r.id AND o.month = m.month
+    FROM initiative_rows r JOIN initiative_amounts m ON m.row_id = r.id AND m.kind_id = 1
+    LEFT JOIN initiative_amounts o ON o.row_id = r.id AND o.month = m.month AND o.kind_id = 2
     GROUP BY r.initiative_id, m.month`)[0]?.values ?? []) {
     let source = owners.get(Number(owner));
     if (!source) { source = [{ amounts: {}, overrides: { 2: {} } }]; owners.set(Number(owner), source); }

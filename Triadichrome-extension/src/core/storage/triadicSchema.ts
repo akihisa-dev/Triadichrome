@@ -6,12 +6,12 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 18;
+export const TRIADIC_FORMAT_VERSION = 19;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
 const startYearMonth = (column: string) => `TEXT CHECK (${column} IS NULL OR (typeof(${column}) = 'text' AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(${column}, 1, 4) BETWEEN '0001' AND '9999' AND substr(${column}, 6, 2) BETWEEN '01' AND '12'))`;
-export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "amount_overrides", "previous_amounts", "kind_selections"] as const;
+export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "previous_amounts", "kind_selections"] as const;
 export const TRIADIC_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
@@ -61,10 +61,9 @@ CREATE TABLE initiative_rows (
 CREATE INDEX initiative_rows_owner_idx ON initiative_rows(initiative_id, sort_order);
 CREATE INDEX initiative_rows_account_idx ON initiative_rows(account_id);
 CREATE TABLE initiative_amounts (
- row_id TEXT NOT NULL REFERENCES initiative_rows(id), month ${month}, amount_yen ${amount}, revision ${revision}, PRIMARY KEY(row_id, month)
-);
-CREATE TABLE amount_overrides (
- row_id TEXT NOT NULL REFERENCES initiative_rows(id) ON DELETE CASCADE, month ${month}, amount_yen ${amount}, revision ${revision}, PRIMARY KEY(row_id, month)
+ row_id TEXT NOT NULL REFERENCES initiative_rows(id) ON DELETE CASCADE,
+ kind_id INTEGER NOT NULL CHECK (typeof(kind_id) = 'integer' AND kind_id IN (1,2)),
+ month ${month}, amount_yen ${amount}, revision ${revision}, PRIMARY KEY(row_id, kind_id, month)
 );
 CREATE TABLE previous_amounts (
  id INTEGER PRIMARY KEY AUTOINCREMENT,

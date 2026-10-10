@@ -130,12 +130,9 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
           database.run(`INSERT INTO initiative_rows (id, initiative_id, account_id, sort_order)
             SELECT ? || id, ?, account_id, sort_order * 2 + ? FROM initiative_rows WHERE initiative_id = ?`,
             [prefix, id, sign === 1 ? 0 : 1, sourceId]);
-          database.run(`INSERT INTO initiative_amounts (row_id, month, amount_yen)
-            SELECT ? || m.row_id, m.month, m.amount_yen * ? FROM initiative_amounts m
+          database.run(`INSERT INTO initiative_amounts (row_id, kind_id, month, amount_yen)
+            SELECT ? || m.row_id, m.kind_id, m.month, m.amount_yen * ? FROM initiative_amounts m
             JOIN initiative_rows r ON r.id = m.row_id WHERE r.initiative_id = ?`, [prefix, sign, sourceId]);
-          database.run(`INSERT INTO amount_overrides (row_id, month, amount_yen)
-            SELECT ? || o.row_id, o.month, o.amount_yen * ? FROM amount_overrides o
-            JOIN initiative_rows r ON r.id = o.row_id WHERE r.initiative_id = ?`, [prefix, sign, sourceId]);
         }
       }
     })).bytes;

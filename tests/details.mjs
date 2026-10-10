@@ -40,8 +40,8 @@ export async function verifyDetails(api) {
   assert.equal(api.amountToYen("9007199254740.991"), 9007199254740991);
   assert.equal(api.yenToAmount(9007199254740991), "9007199254740.991");
   const db = await api.openTriadicDatabase(bytes);
-  assert.throws(() => db.run("INSERT INTO initiative_amounts(row_id,month) VALUES (?,4)",[current.rowId]), /UNIQUE/);
-  db.run("DELETE FROM initiative_amounts WHERE row_id = ? AND month = ?",[current.rowId, current.month]);
+  assert.throws(() => db.run("INSERT INTO initiative_amounts(row_id,kind_id,month) VALUES (?,1,4)",[current.rowId]), /UNIQUE/);
+  db.run("DELETE FROM initiative_amounts WHERE row_id = ? AND kind_id = 1 AND month = ?",[current.rowId, current.month]);
   const broken = db.export(); db.close();
   await assert.rejects(api.validateTriadicDatabase(broken), /読み込めません/);
   const amountColumn = { id: "amount", label: "金額", amount: true, numeric: true, value: row => row.amount };

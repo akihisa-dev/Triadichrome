@@ -94,7 +94,7 @@ export async function verifyAutoSave(api) {
   const rows = database.exec("SELECT id, sort_order, revision FROM initiative_rows WHERE initiative_id = ? ORDER BY sort_order", [subject.id])[0].values;
   assert.deepEqual(rows.map(row => row.slice(0, 2)), [[subject.rows[2].id, 0], ["索引追加", 2], [subject.rows[1].id, 3]]);
   assert.equal(rows[1][2], 0, "新規行のrevisionは0");
-  assert.deepEqual(database.exec("SELECT amount_yen, revision FROM initiative_amounts WHERE row_id = ? AND month = 4", ["索引追加"])[0].values, [[1000, 1]]);
+  assert.deepEqual(database.exec("SELECT amount_yen, revision FROM initiative_amounts WHERE row_id = ? AND kind_id = 1 AND month = 4", ["索引追加"])[0].values, [[1000, 1]]);
   database.close();
   assert.deepEqual(changedPlan.initiatives[1], zeroContents.initiatives[1]);
   assert.deepEqual(await readPlanContents(again), subjectPlan, "拒否と成功のどちらでも元bytesを変更しない");

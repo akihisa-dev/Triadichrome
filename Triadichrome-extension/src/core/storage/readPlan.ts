@@ -25,14 +25,14 @@ export function listInitiatives(db: Database, fiscalYear: number, initiativeId?:
     const rows = rowsByOwner.get(ownerId) ?? [];
     rows.push(row); rowsByOwner.set(ownerId, rows); rowsById.set(String(id), row);
   }
-  for (const [id, month, amount, revision] of db.exec(`SELECT row_id, month, amount_yen, revision FROM initiative_amounts${amounts}`, params)[0]?.values ?? []) {
+  for (const [id, kind, month, amount, revision] of db.exec(`SELECT row_id, kind_id, month, amount_yen, revision FROM initiative_amounts${amounts}`, params)[0]?.values ?? []) {
     const row = rowsById.get(String(id))!;
-    row.amounts[Number(month) as keyof typeof row.amounts] = yenToAmount(Number(amount)); row.amountRevisions![Number(month)] = Number(revision);
-  }
-  for (const [id, month, amount, revision] of db.exec(`SELECT row_id, month, amount_yen, revision FROM amount_overrides${amounts}`, params)[0]?.values ?? []) {
-    const row = rowsById.get(String(id))!;
-    const overrides = row.overrides as KindOverrides;
-    (overrides[2] ??= {})[Number(month)] = yenToAmount(Number(amount)); row.overrideRevisions![Number(month)] = Number(revision);
+    if (kind === 1) {
+      row.amounts[Number(month) as keyof typeof row.amounts] = yenToAmount(Number(amount)); row.amountRevisions![Number(month)] = Number(revision);
+    } else {
+      const overrides = row.overrides as KindOverrides;
+      (overrides[2] ??= {})[Number(month)] = yenToAmount(Number(amount)); row.overrideRevisions![Number(month)] = Number(revision);
+    }
   }
   return (db.exec(`SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision, primary_start_year_month, confirmed_start_year_month FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
     .map(([id, name, note, expansion, department, period, industry, revision, primary, confirmed]) => ({ id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision), startYearMonths: { 1: primary === null ? null : String(primary), 2: confirmed === null ? null : String(confirmed) }, rows: rowsByOwner.get(Number(id)) ?? [], months: {} }));

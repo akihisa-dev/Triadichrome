@@ -64,24 +64,6 @@ export const dataMapSchema = [
     ]
   },
   {
-    "name": "amount_overrides",
-    "columns": [
-      {
-        "name": "row_id",
-        "reference": "initiative_rows.id"
-      },
-      {
-        "name": "month"
-      },
-      {
-        "name": "amount_yen"
-      },
-      {
-        "name": "revision"
-      }
-    ]
-  },
-  {
     "name": "data_history",
     "columns": [
       {
@@ -190,6 +172,9 @@ export const dataMapSchema = [
       {
         "name": "row_id",
         "reference": "initiative_rows.id"
+      },
+      {
+        "name": "kind_id"
       },
       {
         "name": "month"

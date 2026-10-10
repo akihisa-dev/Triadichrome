@@ -1,6 +1,6 @@
 import type { Database } from "./sqliteRuntime";
-import { amountToYen } from "../domain/amounts";
-import { canChangeAccountRow, kindIds, type KindOverrides } from "../domain/kinds";
+import { amountToYen, yenToAmount } from "../domain/amounts";
+import { canChangeAccountRow, kindIds, type AmountSource } from "../domain/kinds";
 import { initiativeMonths } from "../domain/calendar";
 import type { InitiativeEntryDraft } from "../domain/plan";
 import { validateInitiative } from "../domain/initiativeRules";
@@ -10,7 +10,7 @@ import { listDepartments } from "./departmentMaster";
 import { listPeriodTypes } from "./periodMaster";
 import { listIndustries } from "./industryMaster";
 import { listInitiatives } from "./readPlan";
-import { readPlanSettings, readRowOverrides } from "./settings";
+import { readPlanSettings } from "./settings";
 import { editDatabase } from "./transaction";
 const listNames = (database: Database, except?: number) => (database.exec("SELECT id, name FROM initiatives")[0]?.values ?? [])
   .filter(([id]) => id !== except).map(([, name]) => ({ name: String(name) }));
@@ -26,24 +26,23 @@ export async function registerInitiative(bytes: Uint8Array, draft: InitiativeEnt
       if (row.accountId === null) continue;
       const rowId = row.id ?? crypto.randomUUID();
       database.run("INSERT INTO initiative_rows (id, initiative_id, account_id, sort_order) VALUES (?, ?, ?, ?)", [rowId, id, row.accountId, index]);
-      for (const month of initiativeMonths) database.run("INSERT INTO initiative_amounts (row_id, month, amount_yen) VALUES (?, ?, ?)", [rowId, month, amountToYen(row.amounts[month] || "0")]);
-      writeOverrides(database, rowId, row.overrides);
+      writeAmounts(database, rowId, row);
     }
   })).bytes;
 }
 
-function writeOverrides(db: Database, rowId: string, overrides: KindOverrides | undefined): void {
-  const previous = readRowOverrides(db, rowId);
-  for (const kind of kindIds.filter(id => id !== 1)) {
-    for (const month of initiativeMonths) {
-      const value = overrides?.[kind]?.[month];
-      const old = previous[kind]?.[month];
-      if (value === undefined) {
-        if (old !== undefined) db.run("DELETE FROM amount_overrides WHERE row_id = ? AND month = ?", [rowId, month]);
-      } else if (old === undefined || amountToYen(value || "0") !== amountToYen(old || "0")) {
-        db.run(`INSERT INTO amount_overrides (row_id, month, amount_yen) VALUES (?, ?, ?)
-          ON CONFLICT (row_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = amount_overrides.revision + 1`, [rowId, month, amountToYen(value || "0")]);
-      }
+/** The absence of a confirmed record means inheritance; explicit zero/same values stay records. */
+function writeAmounts(db: Database, rowId: string, source: AmountSource): void {
+  const previous = new Map((db.exec("SELECT kind_id, month, amount_yen FROM initiative_amounts WHERE row_id = ?", [rowId])[0]?.values ?? [])
+    .map(([kind, month, amount]) => [`${kind}:${month}`, yenToAmount(Number(amount))]));
+  for (const kind of kindIds) for (const month of initiativeMonths) {
+    const value = kind === 1 ? source.amounts[month] || "0" : source.overrides?.[kind]?.[month];
+    const old = previous.get(`${kind}:${month}`);
+    if (value === undefined) {
+      if (old !== undefined) db.run("DELETE FROM initiative_amounts WHERE row_id = ? AND kind_id = ? AND month = ?", [rowId, kind, month]);
+    } else if (old === undefined || amountToYen(value || "0") !== amountToYen(old)) {
+      db.run(`INSERT INTO initiative_amounts (row_id, kind_id, month, amount_yen) VALUES (?, ?, ?, ?)
+        ON CONFLICT (row_id, kind_id, month) DO UPDATE SET amount_yen = excluded.amount_yen, revision = initiative_amounts.revision + 1`, [rowId, kind, month, amountToYen(value || "0")]);
     }
   }
 }
@@ -75,10 +74,9 @@ export async function updateInitiative(bytes: Uint8Array, id: number, previousYe
       if (rowId === undefined || !originalRowsById.has(rowId)) {
         rowId ??= crypto.randomUUID();
         database.run("INSERT INTO initiative_rows (id, initiative_id, account_id, sort_order) VALUES (?, ?, ?, ?)", [rowId, id, row.accountId, index]);
-        for (const month of initiativeMonths) database.run("INSERT INTO initiative_amounts (row_id, month) VALUES (?, ?)", [rowId, month]);
+        writeAmounts(database, rowId, { amounts: {} });
       } else database.run("UPDATE initiative_rows SET account_id = ?, sort_order = ?, revision = revision + 1 WHERE id = ? AND initiative_id = ?", [row.accountId, index, rowId, id]);
-      for (const month of initiativeMonths) database.run("UPDATE initiative_amounts SET amount_yen = ?, revision = revision + 1 WHERE row_id = ? AND month = ? AND amount_yen != ?", [amountToYen(row.amounts[month] || "0"), rowId, month, amountToYen(row.amounts[month] || "0")]);
-      writeOverrides(database, rowId, row.overrides);
+      writeAmounts(database, rowId, row);
     }
   })).bytes;
 }
