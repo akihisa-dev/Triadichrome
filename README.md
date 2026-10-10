@@ -425,3 +425,5 @@ Chrome Web Store用のアイコン・販促画像2種類・スクリーンショ
 前年入力の編集下書きは業種・部署・科目・月のIDで前年金額を索引化し、セルは科目IDの索引で下書き行を参照します。分類・内容が同じときは表示用集計を再利用し、入力変更で再計算します。任意の測定は `node --expose-gc scripts/measure-previous-grid.mjs`（集計・初期化）と `PERF_MODE=previous npx playwright test grid-performance.spec.ts --project desktop`（入力反映・描画回数・DOM・heap）です。
 
 施策の月別入力表は各行に標準の科目選択欄を保持します。操作していない行は選択中の科目だけを候補として保持し、フォーカスまたはクリックで全候補を表示し、標準のポップアップ中は保持、別の入力欄へ移ると縮小します。クリック・キー操作・科目IDによる選択・金額の入力と保存条件は維持します。任意の測定は `PERF_MODE=initiative npx playwright test grid-performance.spec.ts --project desktop` で、100・300・600科目（最大200明細行）の描画・入力反映・DOM・heapを記録します。
+
+部署の所属業種を変更して保存すると、保持中の新規施策でも候補が一つなら自動選択します。施策名・備考・金額・他の分類は保持し、保存失敗時には保存済み所属と施策入力を変更しません。

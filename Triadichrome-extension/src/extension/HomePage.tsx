@@ -186,7 +186,12 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   const changeDepartments = (change: DepartmentChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.departmentId === change.id) throw new Error("施策入力で選択している部署は削除できません。");
     if (change.type === "update" && change.id === initiativeDraft.departmentId && initiativeDraft.industryId != null && change.industryIds && !change.industryIds.includes(initiativeDraft.industryId)) throw new Error("施策入力で選択している業種は部署から外せません。");
-    await onChangeDepartments(change);
+    const saved = await onChangeDepartments(change);
+    setInitiativeDraft(draft => {
+      const ids = saved.departments.find(item => item.id === draft.departmentId)?.industryIds ?? [];
+      return ids.length === 1 && draft.industryId !== ids[0]
+        ? { ...draft, industryId: ids[0]! } : draft;
+    });
   });
   const changeIndustries = (change: IndustryChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.industryId === change.id) throw new Error("施策入力で選択している業種は削除できません。");

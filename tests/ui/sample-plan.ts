@@ -142,6 +142,9 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
   }
   if (large) {
     // Unused departments demonstrate candidate filtering without changing any totals.
+    // Keep a new draft with the multiple-industry department, leave industry unselected,
+    // then save membership [1]: industry 1 must be selected on return, retaining amounts.
+    // A failed membership save must retain the saved membership and draft.
     bytes = await changeDepartmentMaster(bytes, { type: "add", departmentName: "複数業種確認部署", industryIds: [1, 2] });
     bytes = await changeDepartmentMaster(bytes, { type: "add", departmentName: "単一業種確認部署", industryIds: [3] });
   }

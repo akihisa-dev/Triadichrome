@@ -39,7 +39,7 @@ const members = use("aggregation_members", "科目・子集計の所属と加減
 const classifications = [use("expansions", "展開名", "id", "name"), use("industries", "業種名", "id", "name"),
   use("departments", "部署名", "id", "name"), use("period_types", "期間名と開始年月の規則", "id", "name", "start_month_rule")];
 const departmentIndustries = use("department_industries", "部署に設定した複数の業種", "department_id", "industry_id");
-const departmentIndustryRule = "部署の所属業種をdepartment_industriesに保存します。施策の業種候補を選択部署の所属へ絞り、一つなら自動選択します。前年入力とExcelの出力・取り込みも所属する組み合わせだけを使います。施策・前年入力で使用中の所属は解除できず、部署に設定中の業種は削除できません。所属の変更で金額を移動・合算しません。";
+const departmentIndustryRule = "部署の所属業種をdepartment_industriesに保存します。施策の業種候補を選択部署の所属へ絞り、一つなら自動選択します。所属変更の保存成功後は保持中の新規施策にも単一業種を反映し、他の入力を保持します。保存失敗では保持中の施策を変更しません。前年入力とExcelの出力・取り込みも所属する組み合わせだけを使います。施策・前年入力で使用中の所属は解除できず、部署に設定中の業種は削除できません。所属の変更で金額を移動・合算しません。";
 const identities = use("triadic_metadata", "業種・部署の作成識別子（既存分類はlegacy）", "key", "value");
 const presentation = use("triadic_metadata", "科目・集計共通の並び順（master_order）と科目の表示名（account_display_names）", "key", "value");
 const masterDisplay = "科目属性に売上・売上原価・費用・利益・集計を表示し、区分列を設けず同じ一覧で管理します。新規登録は科目属性で種類を選び、集計はコードなしで登録します。集計列は所属先、加減列はその所属への符号を＋／−のボタンで設定します。選択背景は0.4秒で滑り、左右キーにも対応します。クリック直後に仮の選択を表示し、保存中は追加変更を止めます。未所属は無効、保存失敗時は保存済みの符号へ戻します。符号だけの変更では所属内の順序を保ち、共通順が同じなら書き直しません。集計の変更と履歴・表示の準備は作業用データベースを共有し、変更前後と取消用データの全体検証を維持します。背景の位置・幅は画面内だけの情報です。共通の保存順と表示名を総原価表・前年入力・総原価表のExcel出力へ反映します。名称と表示名が同じ間は一緒に更新し、別の表示名は保持します。表示設定のない既存ファイルは従来の総原価表の並びと名称を使い、統合マスタの変更時に保存します。";
