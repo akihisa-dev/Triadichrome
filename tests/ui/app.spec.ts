@@ -19,9 +19,9 @@ async function prepareAccountRows(target: FrameLocator | Page) {
     await target.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
     await target.getByRole("button", { name: "前の画面に戻る", exact: true }).click();
   } else await openInitiativeEntry(target);
-  await selectClassification(target.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
-  await selectClassification(target.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(target.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(target.getByRole("combobox", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(target.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(target.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   for (const [index, name] of ["100 売上高", "501 消耗品費", "600 給与手当"].entries()) {
     if (index > 0) await target.getByRole("button", { name: "＋ 勘定科目を追加", exact: true }).click();
     await target.getByRole("combobox", { name: `${index + 1}行目の勘定科目` }).focus();
@@ -225,10 +225,10 @@ test("金額表の各セルを編集でき、狭い画面でも最後の月に�
   const trigger = app.locator(".home-header").getByRole("button", { name: /サイドバー/ });
   await trigger.click();
   await openInitiativeEntry(app);
-  await expect(app.getByRole("spinbutton", { name: "業種名", exact: true })).toHaveAttribute("aria-disabled", "true");
-  await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await expect(app.getByRole("combobox", { name: "業種名", exact: true })).toBeDisabled();
+  await selectClassification(app.getByRole("combobox", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   await prepareAccountRows(app);
   await trigger.click();
   const table = app.getByRole("table", { name: "月別計画金額", exact: true });
@@ -320,9 +320,9 @@ test("画面幅を変えてもサイドバーとメインが並び、閉じる�
     expect(await app.locator(".home-content").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
     await app.getByRole("heading", { name: "施策入力", exact: true }).click();
-    await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+    await selectClassification(app.getByRole("combobox", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
     await expect(sidebar).toBeVisible();
   }
 

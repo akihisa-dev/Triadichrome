@@ -42,8 +42,14 @@ export async function attachImage(testInfo: TestInfo, name: string, image: Buffe
   await testInfo.attach(name, { body: image, contentType: "image/png" });
 }
 
-// Choose through the same keyboard operation available to slot users.
+// Choose through the native dropdown, chips, or keyboard slot operation.
 export async function selectClassification(slot: Locator, name: string) {
+  if (await slot.evaluate(node => node.tagName === "SELECT")) {
+    await expect(slot).toBeEnabled();
+    await slot.selectOption({ label: name });
+    await expect(slot.locator("option:checked")).toHaveText(name);
+    return;
+  }
   await expect(slot).toHaveAttribute("aria-disabled", "false");
   if (await slot.getAttribute("role") === "group") {
     await slot.getByRole("button").first().click();

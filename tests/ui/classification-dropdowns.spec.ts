@@ -1,0 +1,70 @@
+import { openInitiativeEntry, test, expect, settleMotion } from "./fixtures";
+
+test("分類をドロップダウンで選択し、登録・自動保存後も保持する", async ({ page, app }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await openInitiativeEntry(app);
+  const expansion = app.getByRole("combobox", { name: "展開名", exact: true });
+  const department = app.getByRole("combobox", { name: "部署名", exact: true });
+  const period = app.getByRole("combobox", { name: "期間名", exact: true });
+  const industry = app.getByRole("combobox", { name: "業種名", exact: true });
+  const register = app.getByRole("button", { name: "登録", exact: true });
+  await app.getByRole("textbox", { name: "施策名", exact: true }).fill("分類選択確認");
+  await expect(app.locator(".classification-field select")).toHaveCount(4);
+  for (const field of [expansion, department, period, industry]) await expect(field).toHaveValue("");
+  await expect(industry).toBeDisabled();
+  await expect(register).toBeDisabled();
+  await expansion.selectOption({ label: "料改" });
+  await department.selectOption({ label: "部署A" });
+  await industry.selectOption({ label: "直営自動車" });
+  await expect(register).toBeEnabled();
+  await period.selectOption({ label: "新規" });
+  await period.selectOption("");
+  for (const width of [1280, 375]) {
+    await page.setViewportSize({ width, height: 864 });
+    await settleMotion(app.locator("body"));
+    const text = (await app.locator(".initiative-text-fields").boundingBox())!;
+    const fields = (await app.locator(".initiative-classification-fields").boundingBox())!;
+    expect(fields.x).toBe(text.x);
+    expect(fields.width).toBeLessThanOrEqual(440);
+    expect(fields.y).toBeGreaterThanOrEqual(text.y + text.height);
+    expect((await expansion.boundingBox())!.height).toBe(36);
+    expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+  }
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
+  await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption("1");
+  await register.click();
+  await app.getByRole("button", { name: "分類選択確認", exact: true }).click();
+  await expect(expansion.locator("option:checked")).toHaveText("料改");
+  await expect(department.locator("option:checked")).toHaveText("部署A");
+  await expect(industry.locator("option:checked")).toHaveText("直営自動車");
+  await expect(period).toHaveValue("");
+  await period.selectOption({ label: "新規" });
+  await expect(app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true })).toBeEnabled();
+  await app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true }).click();
+  await app.getByRole("button", { name: "分類選択確認", exact: true }).click();
+  await expect(period.locator("option:checked")).toHaveText("新規");
+});
+
+test("部署の未選択への変更で業種を解除し、再選択できる", async ({ page, app }) => {
+  await page.getByLabel("テストデータ", { exact: true }).selectOption("defaults");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  await openInitiativeEntry(app);
+  const department = app.getByRole("combobox", { name: "部署名", exact: true });
+  const industry = app.getByRole("combobox", { name: "業種名", exact: true });
+  await department.selectOption({ label: "部署A" });
+  await industry.selectOption({ label: "直営自動車" });
+  await department.selectOption({ label: "部署B" });
+  await expect(industry.locator("option:checked")).toHaveText("直営自動車");
+  await department.selectOption("");
+  await expect(industry).toHaveValue("");
+  await expect(industry).toBeDisabled();
+  await expect(industry.locator("option")).toHaveCount(1);
+  await department.selectOption({ label: "部署A" });
+  await expect(industry).toBeEnabled();
+  await expect(industry).toHaveValue("");
+  await industry.selectOption({ label: "自動車取扱" });
+  await expect(industry.locator("option:checked")).toHaveText("自動車取扱");
+});

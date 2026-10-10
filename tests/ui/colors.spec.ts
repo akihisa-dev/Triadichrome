@@ -93,7 +93,7 @@ test("施策の文字・金額・科目・分類に青い編集枠が付き、�
   await expect(app.getByRole("button", { name: "登録", exact: true })).toHaveCSS("background-color", ink);
   await app.getByRole("heading", { name: "施策入力", exact: true }).click();
   await expect(amount).not.toHaveCSS("outline-color", blue);
-  await expect(app.locator(".classification-slot").first()).not.toHaveCSS("outline-color", blue);
+  await expect(app.locator(".classification-field select").first()).not.toHaveCSS("outline-color", blue);
 });
 
 test("前年金額は編集位置だけ青く、範囲選択の背景と罫線はグレーを保つ", async ({ page, app }) => {

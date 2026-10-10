@@ -41,9 +41,9 @@ test("入口を一覧へ統一し、空欄なら確認なしで戻り、登録�
   await openInitiativeEntry(app);
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("一覧からの新規登録");
   await app.getByRole("textbox", { name: "備考", exact: true }).fill("登録後に一覧へ戻る");
-  await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
   await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("123.456");
@@ -64,7 +64,7 @@ for (const exit of ["戻るボタン", "サイドバー", "画面履歴"] as con
     const note = app.getByRole("textbox", { name: "備考", exact: true });
     await name.fill("未登録の施策");
     await note.fill("破棄しない備考");
-    await selectClassification(app.getByRole("spinbutton", { name: "期間名", exact: true }), "新規");
+    await selectClassification(app.getByRole("combobox", { name: "期間名", exact: true }), "新規");
     await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
     await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
     await app.getByRole("spinbutton", { name: "売上高 4月の金額", exact: true }).fill("12.345");
@@ -92,7 +92,7 @@ for (const exit of ["戻るボタン", "サイドバー", "画面履歴"] as con
     await openInitiativeEntry(app);
     await expect(name).toHaveValue("");
     await expect(note).toHaveValue("");
-    await expect(app.getByRole("spinbutton", { name: "期間名", exact: true })).toHaveAttribute("aria-valuetext", "未選択");
+    await expect(app.getByRole("combobox", { name: "期間名", exact: true })).toHaveValue("");
     await expect(app.getByRole("combobox", { name: "1行目の勘定科目" })).toHaveValue("");
   });
 }
@@ -101,7 +101,7 @@ test("備考だけ・分類だけの入力も一覧への帰還で確認する",
   for (const field of ["備考", "期間名"]) {
     await openInitiativeEntry(app);
     if (field === "備考") await app.getByRole("textbox", { name: field, exact: true }).fill("備考のみ");
-    else await selectClassification(app.getByRole("spinbutton", { name: field, exact: true }), "新規");
+    else await selectClassification(app.getByRole("combobox", { name: field, exact: true }), "新規");
     await app.getByRole("button", { name: "← 施策一覧へ戻る", exact: true }).click();
     const dialog = app.getByRole("alertdialog", { name: "入力内容を破棄しますか？", exact: true });
     await expect(dialog).toBeVisible();
@@ -112,9 +112,9 @@ test("備考だけ・分類だけの入力も一覧への帰還で確認する",
 test("登録失敗では入力画面と内容を保ち、再試行成功で一覧へ戻る", async ({ app }) => {
   await openInitiativeEntry(app);
   await app.getByRole("textbox", { name: "施策名", exact: true }).fill("再試行する施策");
-  await selectClassification(app.getByRole("spinbutton", { name: "展開名", exact: true }), "コスト");
-  await selectClassification(app.getByRole("spinbutton", { name: "部署名", exact: true }), "部署A");
-  await selectClassification(app.getByRole("spinbutton", { name: "業種名", exact: true }), "直営自動車");
+  await selectClassification(app.getByRole("combobox", { name: "展開名", exact: true }), "コスト");
+  await selectClassification(app.getByRole("combobox", { name: "部署名", exact: true }), "部署A");
+  await selectClassification(app.getByRole("combobox", { name: "業種名", exact: true }), "直営自動車");
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).focus();
   await app.getByRole("combobox", { name: "1行目の勘定科目" }).selectOption({ label: "401 売上高" });
   await app.getByRole("button", { name: "登録", exact: true }).click();

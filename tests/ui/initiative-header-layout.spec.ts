@@ -31,7 +31,7 @@ for (const editing of [false, true]) {
         } else expect(register.y).toBeGreaterThanOrEqual(noteBox.y);
       }
       const text = (await app.locator(".initiative-text-fields").boundingBox())!;
-      const slots = (await app.locator(".initiative-classification-slots").boundingBox())!;
+      const slots = (await app.locator(".initiative-classification-fields").boundingBox())!;
       expect(slots.x).toBe(text.x);
       expect(slots.y).toBeGreaterThanOrEqual(text.y + text.height);
       expect(await app.locator("html").evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);

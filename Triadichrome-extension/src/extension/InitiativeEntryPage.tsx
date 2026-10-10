@@ -1,7 +1,7 @@
 import { reflectPrimaryBudget } from "../core/tables/initiativeGrid";
 import { useHistoryReadOnly } from "./HistoryReadOnly";
 import { InitiativeAmountGrid } from "./InitiativeAmountGrid";
-import { ClassificationSlot } from "./ClassificationSlot";
+import { ClassificationSelect } from "./ClassificationSelect";
 import { INITIAL_KINDS } from "../core/domain/kinds";
 import { type KindId } from "../core/domain/kinds";
 import { useState } from "react";
@@ -73,20 +73,20 @@ export function InitiativeEntryPage({ draft, onDraftChange, accounts, expansions
         }}>登録</button>}
       </div>
       </div>
-      <div className="initiative-classification-slots">
-        <ClassificationSlot id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={readOnly || isSaving} required
+      <div className="initiative-classification-fields">
+        <ClassificationSelect id="initiative-expansion" label="展開名" value={draft.expansionId} disabled={readOnly || isSaving} required
           options={expansions.map(item => ({ id: item.id, name: item.expansionName }))}
           onChange={expansionId => onDraftChange({ ...draft, expansionId })} />
-        <ClassificationSlot id="initiative-department" label="部署名" value={draft.departmentId} disabled={readOnly || isSaving} required
+        <ClassificationSelect id="initiative-department" label="部署名" value={draft.departmentId} disabled={readOnly || isSaving} required
           options={departments.map(item => ({ id: item.id, name: item.departmentName }))}
           onChange={departmentId => {
             const ids = departments.find(item => item.id === departmentId)?.industryIds ?? [];
             onDraftChange({ ...draft, departmentId, industryId: ids.length === 1 ? ids[0]! : ids.includes(draft.industryId!) ? draft.industryId ?? null : null });
           }} />
-        <ClassificationSlot id="initiative-period" label="期間名" value={draft.periodTypeId} disabled={readOnly || isSaving}
+        <ClassificationSelect id="initiative-period" label="期間名" value={draft.periodTypeId} disabled={readOnly || isSaving}
           options={periodTypes.map(item => ({ id: item.id, name: item.periodName }))}
           onChange={periodTypeId => onDraftChange({ ...draft, periodTypeId })} />
-        <ClassificationSlot id="initiative-industry" label="業種名" value={draft.industryId} disabled={readOnly || isSaving || draft.departmentId == null || allowedIndustries.length === 1} required
+        <ClassificationSelect id="initiative-industry" label="業種名" value={draft.industryId} disabled={readOnly || isSaving || draft.departmentId == null || allowedIndustries.length === 1} required
           options={industries.filter(item => allowedIndustries.includes(item.id)).map(item => ({ id: item.id, name: item.industryName }))}
           onChange={industryId => onDraftChange({ ...draft, industryId })} />
       </div>
