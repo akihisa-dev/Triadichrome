@@ -4,8 +4,25 @@ import { trackHistoryChange, createBusinessSnapshot } from "./dataHistory";
 import type { Database, SqlValue } from "./sqliteRuntime";
 
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-function rows(database: Database, table: string, keys: number[]) {
-  return new Map((database.exec(`SELECT * FROM ${table}`)[0]?.values ?? []).map(row => [JSON.stringify(keys.map(index => row[index])), row]));
+export function readRebaseRows(database: Database, table: string): Map<string, SqlValue[]> {
+  const columns = database.exec(`PRAGMA table_info(${table})`)[0]?.values ?? [];
+  const keys = columns.map((column, index) => ({ index, order: Number(column[5]) })).filter(key => key.order).sort((a,b) => a.order-b.order).map(key => key.index);
+  const account = columns.findIndex(column => column[1] === "account_id"), group = columns.findIndex(column => column[1] === "group_id");
+  const membership = table === "aggregation_members";
+  if (membership ? account < 0 || group < 0 : !keys.length) throw new Error("統合対象の行識別子がありません。");
+  const result = new Map<string, SqlValue[]>();
+  for (const row of database.exec(`SELECT * FROM ${table}`)[0]?.values ?? []) {
+    let values: SqlValue[];
+    if (membership) {
+      if ((row[account] === null) === (row[group] === null)) throw new Error("所属対象の識別子が不正です。");
+      values = row[account] === null ? ["group",row[group]!] : ["account",row[account]!];
+    } else values = keys.map(index => row[index]!);
+    if (values.some(value => typeof value !== "string" && (typeof value !== "number" || !Number.isSafeInteger(value)))) throw new Error("統合対象の行識別子が不正です。");
+    const key = JSON.stringify(values);
+    if (result.has(key)) throw new Error("統合対象の行識別子が重複しています。");
+    result.set(key,row);
+  }
+  return result;
 }
 /** Merge only independent rows. Any ambiguous edit or invalid combined document stays unsaved. */
 export async function rebasePlan(baseBytes: Uint8Array, editedBytes: Uint8Array, currentBytes: Uint8Array) {
@@ -18,9 +35,7 @@ export async function rebasePlan(baseBytes: Uint8Array, editedBytes: Uint8Array,
     const replacements = new Map<string, SqlValue[][]>();
     for (const table of BUSINESS_TABLES) {
       if (table === "document_info") continue;
-      const columns = base.exec(`PRAGMA table_info(${table})`)[0]!.values;
-      const keys = columns.map((column, index) => ({ index, order: Number(column[5]) })).filter(key => key.order).sort((a, b) => a.order - b.order).map(key => key.index);
-      const original = rows(base, table, keys), local = rows(edited, table, keys), latest = rows(current, table, keys);
+      const original = readRebaseRows(base, table), local = readRebaseRows(edited, table), latest = readRebaseRows(current, table);
       let changed = false;
       for (const key of new Set([...original.keys(), ...local.keys()])) {
         const before = original.get(key), after = local.get(key), external = latest.get(key);

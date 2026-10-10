@@ -103,3 +103,5 @@ export * from "../Triadichrome-extension/src/core/storage/rebasePlan";
 export * from "../Triadichrome-extension/src/extension/fileConflict";
 
 export * from "../Triadichrome-extension/src/core/tables/previousPeriods";
+
+export { readRebaseRows } from "../Triadichrome-extension/src/core/storage/rebasePlan";
