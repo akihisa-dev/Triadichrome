@@ -94,7 +94,7 @@ export function SpreadsheetIOPage({ contents, busy, onChangePlan, onPrepareSave,
       }}>
       <div className="io-heading"><h2 id="io-previous-title">{dragging && !disabled && !readOnly ? "ここにドロップして取り込む" : "前年入力"}</h2><span className="field-hint">千円 · 小数点以下3桁まで</span></div>
       <div className="io-pair-list" role="group" aria-label="フォーマットに含める業種・部署">
-        {contents.industries.map(i => <fieldset key={i.id}><legend>{i.industryName}</legend>{contents.departments.map(d => {
+        {contents.industries.map(i => <fieldset key={i.id}><legend>{i.industryName}</legend>{contents.departments.filter(d => d.industryIds.includes(i.id)).map(d => {
           const checked = pairs.some(p => p.industryId === i.id && p.departmentId === d.id);
           return <label className="io-check" key={d.id}><input type="checkbox" aria-label={`${i.industryName}・${d.departmentName}`} checked={checked} disabled={disabled} onChange={event => setPairs(current => event.target.checked ? [...current, { industryId: i.id, departmentId: d.id }] : current.filter(p => p.industryId !== i.id || p.departmentId !== d.id))} />{d.departmentName}</label>;
         })}</fieldset>)}

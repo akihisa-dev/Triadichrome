@@ -27,6 +27,7 @@ export function validateInitiative(draft: InitiativeEntryDraft, accounts: Accoun
   if (!departments.some(item => item.id === draft.departmentId)) throw new Error("部署名を選択してください。");
   if (draft.periodTypeId != null && !periodTypes.some(item => item.id === draft.periodTypeId)) throw new Error("期間名を選択してください。");
   if (!industries.some(item => item.id === draft.industryId)) throw new Error("業種名を選択してください。");
+  if (!departments.find(item => item.id === draft.departmentId)?.industryIds.includes(draft.industryId!)) throw new Error("部署に設定されている業種を選択してください。");
   const year = Number(draft.fiscalYear);
   if (!/^\d{1,4}$/.test(draft.fiscalYear) || !Number.isInteger(year) || year < 1 || year > 9998) throw new Error("年度は1〜9998の整数で入力してください。");
   if (initiatives.some(item => item.name === draft.name.trim())) throw new Error("同じ施策名が登録されています。別の名前を入力してください。");

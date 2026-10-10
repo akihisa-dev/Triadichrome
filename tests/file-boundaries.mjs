@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 export async function verifyFileBoundaries(api) {
   const bytes = await api.createCurrentEmptyTestPlan(2026);
   await assert.rejects(api.validateTriadicDatabase(new Uint8Array([1, 2, 3])));
-  for (const format of [14, 15, 16, 18]) {
+  for (const format of [14, 15, 16, 17, 19]) {
     const old = await api.openTriadicDatabase(bytes);
     old.run(`PRAGMA user_version = ${format}`);
     const unsupported = old.export(); old.close();
@@ -15,7 +15,7 @@ export async function verifyFileBoundaries(api) {
   }
   const schema = await api.openTriadicDatabase(bytes);
   try {
-    assert.equal(schema.exec("PRAGMA user_version")[0].values[0][0], 17);
+    assert.equal(schema.exec("PRAGMA user_version")[0].values[0][0], 18);
     for (const table of ["plan", "budgets", "periods", "kind_types", "details"]) assert.equal(schema.exec("SELECT name FROM sqlite_master WHERE name = ?", [table]).length, 0);
     const info = schema.exec("SELECT id, fiscal_year, created_at, updated_at FROM document_info")[0].values;
     assert.equal(info.length, 1);

@@ -63,6 +63,7 @@ export function createPreviousWorkbook(contents: PlanContents, pairs: PreviousPa
     const industry = contents.industries.find(i => i.id === pair.industryId);
     const department = contents.departments.find(d => d.id === pair.departmentId);
     if (!industry || !department) throw new Error("業種・部署が見つかりません。");
+    if (!department.industryIds.includes(pair.industryId)) throw new Error("部署に設定されている業種を選択してください。");
     const name = `${index + 1}_${industry.industryName}_${department.departmentName}`.replace(/[\\/*?:\[\]]/g, "_").slice(0, 31).replace(/^'|'$/g, "_");
     const ws = sheet(wb, name, [14, 30, ...initiativeMonths.map(() => 14)], 1, 2);
     ws.getCell("A1").value = "前年入力";
@@ -111,6 +112,7 @@ export function readPreviousWorkbook(wb: ExcelJS.Workbook, contents: PlanContent
     if (typeof industryIdentity !== "string" || typeof departmentIdentity !== "string" ||
       (contents.industries.find(i => i.id === industryId)?.identity ?? "legacy") !== industryIdentity ||
       (contents.departments.find(d => d.id === departmentId)?.identity ?? "legacy") !== departmentIdentity) fail("出力後に業種・部署が作り直されています。フォーマットを出力し直してください。");
+    if (!contents.departments.find(d => d.id === departmentId)?.industryIds.includes(Number(industryId))) fail("部署の業種設定が変更されています。フォーマットを出力し直してください。");
     const account = contents.accounts.find(a => a.id === accountId);
     if (!account || account.accountCode !== meta.getCell(r, 5).value || account.accountName !== meta.getCell(r, 6).value || !contents.industries.some(i => i.id === industryId) || !contents.departments.some(d => d.id === departmentId)) fail("出力後にマスタが変更されています。フォーマットを出力し直してください。");
     const ws = wb.getWorksheet(name as string);

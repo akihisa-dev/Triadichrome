@@ -15,6 +15,8 @@ export async function verifyIndustryData(api) {
   await assert.rejects(changeIndustryMaster(bytes, { type: "add", industryCode: "10", industryName: "直営自動車" }), /同じ業種名/);
   changed = await changeIndustryMaster(changed, { type: "update", id: 1, industryCode: "01", industryName: "業種改定" });
   assert.equal((await readPlanContents(changed)).industries.find(item => item.id === 1).industryName, "業種改定");
+  await assert.rejects(changeIndustryMaster(changed, { type: "delete", id: 2 }), /部署に設定/);
+  for (const department of (await readPlanContents(changed)).departments) changed = await api.changeDepartmentMaster(changed, { type: "update", id: department.id, departmentName: department.departmentName, industryIds: department.industryIds.filter(id => id !== 2) });
   changed = await changeIndustryMaster(changed, { type: "delete", id: 2 });
   assert.ok(!(await readPlanContents(changed)).industries.some(item => item.id === 2));
   await assert.rejects(changeIndustryMaster(changed, { type: "delete", id: 999 }), /見つかりません/);
@@ -22,12 +24,13 @@ export async function verifyIndustryData(api) {
   await validateTriadicDatabase(changed);
 
   let empty = bytes;
+  for (const department of (await readPlanContents(empty)).departments) empty = await api.changeDepartmentMaster(empty, { type: "delete", id: department.id });
   for (const item of initial) empty = await changeIndustryMaster(empty, { type: "delete", id: item.id });
   assert.deepEqual((await readPlanContents(empty)).industries, [], "全件削除しても初期データを復活させない");
   const otherChange = await changeAccountMaster(empty, { type: "add", accountCode: "001", accountName: "別マスタ更新", accountType: "expense" });
   assert.deepEqual((await readPlanContents(otherChange.bytes)).industries, []);
   const malformed = await openTriadicDatabase(bytes);
-  malformed.exec("DROP TABLE industries");
+  malformed.exec("PRAGMA foreign_keys = OFF; DROP TABLE industries");
   const malformedBytes = malformed.export(); malformed.close();
   await assert.rejects(validateTriadicDatabase(malformedBytes));
 
@@ -62,7 +65,7 @@ export async function verifyIndustryData(api) {
   assert.equal(writes, 1);
   const before = stored.slice();
   const fail = { ...handle, async createWritable() { return { async write() { throw new Error("保存失敗"); }, async close() {}, async abort() {} }; } };
-  await assert.rejects(saveIndustryMaster({ ...saved, handle: fail }, { type: "delete", id: 1 }, noPicker), /保存失敗/);
+  await assert.rejects(saveIndustryMaster({ ...saved, handle: fail }, { type: "delete", id: saved.industries.at(-1).id }, noPicker), /保存失敗/);
   assert.deepEqual(stored, before);
   await assert.rejects(saveIndustryMaster({ ...plan, handle: undefined }, add, async () => { throw new DOMException("キャンセル", "AbortError"); }), { name: "AbortError" });
   assert.deepEqual((await readPlanContents(bytes)).industries, initial);

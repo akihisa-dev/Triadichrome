@@ -37,6 +37,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
   const departments = (await readPlanContents(bytes)).departments;
   if (departments.length !== INITIAL_DEPARTMENTS.length || departments.some((item, index) => item.departmentName !== INITIAL_DEPARTMENTS[index]!.departmentName)) throw new Error("部署マスタの初期データが一致しません。");
   const industries = (await readPlanContents(bytes)).industries;
+  if (departments.some(item => item.industryIds.length !== INITIAL_INDUSTRIES.length || INITIAL_INDUSTRIES.some(industry => !item.industryIds.includes(industry.id)))) throw new Error("部署の複数業種の対応が一致しません。");
   if (industries.length !== INITIAL_INDUSTRIES.length || industries.some((item, index) => item.industryName !== INITIAL_INDUSTRIES[index]!.industryName)) throw new Error("業種マスタの初期データが一致しません。");
   const accounts = new Map((await readPlanContents(bytes)).accounts.map(account => [account.accountName, account.id]));
   for (const [accountCode, accountName] of [["001", "未所属費用"], ["599", "削除確認用科目"]]) {

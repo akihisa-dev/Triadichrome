@@ -78,6 +78,7 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
   if (selections.length !== 3 || new Set(selections.map(row => row[0])).size !== 3 || selections.some(([screen, first, second]) =>
     !["initiative-list", "cost-table", "expansion-table"].includes(String(screen)) || ![1,2].includes(Number(first))
     || (second !== null && (![1,2].includes(Number(second)) || first === second)) || (screen === "initiative-list" && second !== null))) invalid();
+  if (db.exec("SELECT id FROM departments WHERE NOT EXISTS (SELECT 1 FROM department_industries WHERE department_id = departments.id)").length) invalid();
   validateMasterPresentation(db);
   validateAggregations(listAggregations(db), new Set((db.exec("SELECT id FROM accounts")[0]?.values ?? []).map(([id]) => Number(id))));
   if (db.exec("SELECT id FROM period_types WHERE start_month_rule IS NOT NULL AND start_month_rule NOT IN ('new', 'period_gap')").length) invalid();

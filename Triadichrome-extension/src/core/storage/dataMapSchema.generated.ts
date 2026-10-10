@@ -116,6 +116,19 @@ export const dataMapSchema = [
     ]
   },
   {
+    "name": "department_industries",
+    "columns": [
+      {
+        "name": "department_id",
+        "reference": "departments.id"
+      },
+      {
+        "name": "industry_id",
+        "reference": "industries.id"
+      }
+    ]
+  },
+  {
     "name": "departments",
     "columns": [
       {
@@ -229,11 +242,11 @@ export const dataMapSchema = [
       },
       {
         "name": "industry_id",
-        "reference": "industries.id"
+        "reference": "department_industries.industry_id, industries.id"
       },
       {
         "name": "department_id",
-        "reference": "departments.id"
+        "reference": "department_industries.department_id, departments.id"
       },
       {
         "name": "period_type_id",
@@ -293,11 +306,11 @@ export const dataMapSchema = [
       },
       {
         "name": "industry_id",
-        "reference": "industries.id"
+        "reference": "department_industries.industry_id, industries.id"
       },
       {
         "name": "department_id",
-        "reference": "departments.id"
+        "reference": "department_industries.department_id, departments.id"
       },
       {
         "name": "month"

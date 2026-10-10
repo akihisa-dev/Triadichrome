@@ -1,7 +1,7 @@
-export type Department = { id: number; identity?: string; departmentName: string };
+export type Department = { id: number; identity?: string; departmentName: string; industryIds: number[] };
 export type DepartmentChange =
-  | { type: "add"; departmentName: string }
-  | { type: "update"; id: number; departmentName: string }
+  | { type: "add"; departmentName: string; industryIds: number[] }
+  | { type: "update"; id: number; departmentName: string; industryIds?: number[] }
   | { type: "delete"; id: number };
 
 export function validateDepartmentChange(items: Department[], change: DepartmentChange): void {

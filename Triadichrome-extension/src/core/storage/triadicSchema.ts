@@ -6,12 +6,12 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 17;
+export const TRIADIC_FORMAT_VERSION = 18;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
 const startYearMonth = (column: string) => `TEXT CHECK (${column} IS NULL OR (typeof(${column}) = 'text' AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(${column}, 1, 4) BETWEEN '0001' AND '9999' AND substr(${column}, 6, 2) BETWEEN '01' AND '12'))`;
-export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "amount_overrides", "previous_amounts", "kind_selections"] as const;
+export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "department_industries", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "amount_overrides", "previous_amounts", "kind_selections"] as const;
 export const TRIADIC_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
@@ -33,6 +33,12 @@ CREATE TABLE accounts (
 ${PERIOD_MASTER_SQL}
 ${DEPARTMENT_SQL}
 ${INDUSTRY_SQL}
+CREATE TABLE department_industries (
+ department_id INTEGER NOT NULL REFERENCES departments(id) ON DELETE CASCADE,
+ industry_id INTEGER NOT NULL REFERENCES industries(id),
+ PRIMARY KEY (department_id, industry_id)
+);
+INSERT INTO department_industries SELECT departments.id, industries.id FROM departments CROSS JOIN industries;
 ${EXPANSION_SQL}
 ${AGGREGATION_SQL}
 CREATE TABLE initiatives (
@@ -44,7 +50,8 @@ CREATE TABLE initiatives (
  period_type_id INTEGER REFERENCES period_types(id),
  primary_start_year_month ${startYearMonth("primary_start_year_month")},
  confirmed_start_year_month ${startYearMonth("confirmed_start_year_month")},
- sort_order INTEGER NOT NULL CHECK (typeof(sort_order) = 'integer' AND sort_order >= 0), revision ${revision}
+ sort_order INTEGER NOT NULL CHECK (typeof(sort_order) = 'integer' AND sort_order >= 0), revision ${revision},
+ FOREIGN KEY (department_id, industry_id) REFERENCES department_industries(department_id, industry_id)
 );
 CREATE TABLE initiative_rows (
  id TEXT PRIMARY KEY NOT NULL CHECK (length(id) > 0),
@@ -62,7 +69,8 @@ CREATE TABLE amount_overrides (
 CREATE TABLE previous_amounts (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  account_id INTEGER NOT NULL REFERENCES accounts(id), industry_id INTEGER NOT NULL REFERENCES industries(id), department_id INTEGER NOT NULL REFERENCES departments(id),
- month ${month}, amount_yen ${amount}, revision ${revision}, UNIQUE(account_id, industry_id, department_id, month)
+ month ${month}, amount_yen ${amount}, revision ${revision}, UNIQUE(account_id, industry_id, department_id, month),
+ FOREIGN KEY (department_id, industry_id) REFERENCES department_industries(department_id, industry_id)
 );
 CREATE TABLE kind_selections (
  screen TEXT PRIMARY KEY CHECK (screen IN ('initiative-list', 'cost-table', 'expansion-table')),

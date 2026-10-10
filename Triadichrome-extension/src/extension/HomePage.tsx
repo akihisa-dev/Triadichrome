@@ -185,6 +185,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
   });
   const changeDepartments = (change: DepartmentChange) => mutation.run(async () => {
     if (change.type === "delete" && initiativeDraft.departmentId === change.id) throw new Error("施策入力で選択している部署は削除できません。");
+    if (change.type === "update" && change.id === initiativeDraft.departmentId && initiativeDraft.industryId != null && change.industryIds && !change.industryIds.includes(initiativeDraft.industryId)) throw new Error("施策入力で選択している業種は部署から外せません。");
     await onChangeDepartments(change);
   });
   const changeIndustries = (change: IndustryChange) => mutation.run(async () => {
@@ -386,7 +387,7 @@ export function HomePage({ onChangePlan, fileName, initialContents, onChangeMast
                 case "account-type-master": return <AccountTypeMasterPage isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "kind-master": return <KindMasterPage kinds={contents.kinds} isSaving={isSaving} onBack={() => setPage("master")} />;
                 case "period-master": return <PeriodMasterPage periodTypes={contents.periodTypes} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changePeriodTypes} onBack={() => setPage("master")} />;
-                case "department-master": return <DepartmentMasterPage departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;
+                case "department-master": return <DepartmentMasterPage industries={contents.industries} departments={contents.departments} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeDepartments} onBack={() => setPage("master")} />;
                 case "industry-master": return <IndustryMasterPage industries={contents.industries} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeIndustries} onBack={() => setPage("master")} />;
                 case "expansion-master": return <ExpansionMasterPage usedExpansionIds={new Set([...initiatives.map(item => item.expansionId), initiativeDraft.expansionId].filter((id): id is number => id !== null))} expansions={contents.expansions} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeExpansions} onBack={() => setPage("master")} />;
                 case "account-master": return <AccountMasterPage accounts={accounts} groups={contents.aggregations} onChangeAggregations={changeAggregations} usedAccountIds={usedAccountIds} isSaving={isSaving} onPendingChange={setEditPending} onPrepareSave={onPrepareSave} onChange={changeMaster} onBack={() => setPage("master")} />;

@@ -109,9 +109,12 @@ export async function verifySpreadsheetIO(api) {
   for (const kind of ['department', 'industry']) for (const sameName of [false, true]) {
     const original = kind === 'department' ? initial.departments.find(x => x.id === 2) : initial.industries.find(x => x.id === 9);
     const change = kind === 'department' ? api.changeDepartmentMaster : api.changeIndustryMaster;
-    let replaced = await change(fresh, { type: 'delete', id: original.id });
-    replaced = await change(replaced, kind === 'department' ? { type: 'add', departmentName: sameName ? original.departmentName : '新部署' } :
+    let replaced = fresh;
+    if (kind === 'industry') for (const d of initial.departments) replaced = await api.changeDepartmentMaster(replaced, { type: 'update', id: d.id, departmentName: d.departmentName, industryIds: d.industryIds.filter(id => id !== original.id) });
+    replaced = await change(replaced, { type: 'delete', id: original.id });
+    replaced = await change(replaced, kind === 'department' ? { type: 'add', departmentName: sameName ? original.departmentName : '新部署', industryIds: [9] } :
       { type: 'add', industryCode: original.industryCode, industryName: sameName ? original.industryName : '新業種' });
+    if (kind === 'industry') replaced = await api.changeDepartmentMaster(replaced, { type: 'update', id: 2, departmentName: initial.departments.find(d => d.id === 2).departmentName, industryIds: [9] });
     const current = await api.readPlanContents(replaced);
     const recreated = (kind === 'department' ? current.departments : current.industries).find(x => x.id === original.id);
     assert.ok(recreated, 'SQLiteによる番号再利用を実データで再現');

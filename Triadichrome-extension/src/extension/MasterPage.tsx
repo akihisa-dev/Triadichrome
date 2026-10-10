@@ -19,7 +19,7 @@ export function MasterPage({ onOpenAmountItems, onOpenAccountTypes, onOpenAccoun
     { name: "勘定科目マスタ", description: "科目・集計の名称、表示順、所属と加減", open: onOpenAccounts },
     { name: "展開マスタ", description: "展開コード・展開名", open: onOpenExpansions },
     { name: "業種マスタ", description: "業種コード・業種名", open: onOpenIndustries },
-    { name: "部署マスタ", description: "部署名", open: onOpenDepartments },
+    { name: "部署マスタ", description: "部署名・所属業種", open: onOpenDepartments },
     { name: "期間マスタ", description: "期間名", open: onOpenPeriods },
     { name: "種別マスタ", description: "種別", open: onOpenKinds },
     { name: "科目属性マスタ", description: "科目属性", open: onOpenAccountTypes },

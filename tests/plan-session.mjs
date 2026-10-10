@@ -24,7 +24,7 @@ export async function verifyPlanSession(api) {
   const destination = file(new Uint8Array());
   const choose = deferred();
   let pickers = 0;
-  const first = session.dispatch({ type: "department", change: { type: "add", departmentName: "追加部署" } }, () => { pickers++; return choose.promise; });
+  const first = session.dispatch({ type: "department", change: { type: "add", departmentName: "追加部署", industryIds: [1] } }, () => { pickers++; return choose.promise; });
   assert.equal(session.getSnapshot().busy, true, "選択待ち中もキューを予約する");
   choose.resolve(destination.handle); await first;
   assert.equal(pickers, 1);
@@ -93,7 +93,7 @@ export async function verifyPlanSession(api) {
   const retry = new api.PlanSession();
   await retry.open(original);
   const failedDestination = file(new Uint8Array()); failedDestination.fail(true);
-  const command = { type: "department", change: { type: "add", departmentName: "再試行部署" } };
+  const command = { type: "department", change: { type: "add", departmentName: "再試行部署", industryIds: [1] } };
   await assert.rejects(retry.dispatch(command, async () => failedDestination.handle), /確定失敗/);
   assert.equal(retry.getHandle(), undefined);
   failedDestination.fail(false);

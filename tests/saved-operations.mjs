@@ -34,7 +34,7 @@ export async function verifySavedOperations(api) {
   await add({ type: "aggregation", change: { type: "add", name: "操作用集計" } });
   const group = contents().aggregations.find(item => item.name === "操作用集計");
   await add({ type: "aggregation", change: { type: "move", member: { kind: "account", id: accountId }, parentId: group.id, sign: -1 } });
-  await add({ type: "department", change: { type: "add", departmentName: "操作用部署" } });
+  await add({ type: "department", change: { type: "add", departmentName: "操作用部署", industryIds: [1] } });
   await add({ type: "department", change: { type: "delete", id: contents().departments.find(item => item.departmentName === "操作用部署").id } });
   await add({ type: "expansion", change: { type: "update", ...contents().expansions[0], expansionName: "編集済み展開" } });
   await add({ type: "industry", change: { type: "update", ...contents().industries[0], industryName: "編集済み業種" } });
@@ -69,7 +69,7 @@ export async function verifySavedOperations(api) {
   const beforeBytes = bytes.slice();
   fail = true;
   await assert.rejects(travel(1), /保存失敗/);
-  await assert.rejects(save({ type: "department", change: { type: "add", departmentName: "失敗用部署" } }), /保存失敗/);
+  await assert.rejects(save({ type: "department", change: { type: "add", departmentName: "失敗用部署", industryIds: [1] } }), /保存失敗/);
   assert.equal(contents(), beforeFailure.contents);
   assert.deepEqual(bytes, beforeBytes);
   assert.equal(session.getSnapshot().operationRevision, beforeFailure.operationRevision);
@@ -91,7 +91,7 @@ export async function verifySavedOperations(api) {
   const inFlight = travel(-1);
   await assert.rejects(travel(-1), /保存が終わる/);
   release(); await inFlight; pause = undefined;
-  await save({ type: "department", change: { type: "add", departmentName: "新しい操作" } });
+  await save({ type: "department", change: { type: "add", departmentName: "新しい操作", industryIds: [1] } });
   assert.equal(session.getSnapshot().canRedo, false, "取り消し後の新しい保存でやり直しを破棄する");
 
   const external = await api.saveKindSelection(bytes, "cost-table", [1]);
@@ -119,7 +119,7 @@ export async function verifySavedOperations(api) {
   await session.restore(remainingHistory[0].id, noPicker);
   assert.equal(session.getSnapshot().canUndo, false, "時点復元成功で操作履歴を初期化する");
   assert.equal(session.getSnapshot().canRedo, false);
-  await save({ type: "department", change: { type: "add", departmentName: "終了確認" } });
+  await save({ type: "department", change: { type: "add", departmentName: "終了確認", industryIds: [1] } });
   await session.close(noPicker);
   assert.equal(session.getSnapshot().canUndo, false);
   await open();

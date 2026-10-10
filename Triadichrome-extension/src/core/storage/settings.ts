@@ -40,6 +40,7 @@ export async function changePlanSettings(bytes: Uint8Array, change: PlanChange):
       if (!db.exec("SELECT id FROM industries WHERE id = ?", [patch.industryId]).length || !db.exec("SELECT id FROM departments WHERE id = ?", [patch.departmentId]).length || !db.exec("SELECT id FROM accounts WHERE id = ?", [patch.accountId]).length) throw new Error("取り込み対象のマスタが見つかりません。");
       if (classificationIdentity(db, "industries", patch.industryId) !== patch.industryIdentity ||
         classificationIdentity(db, "departments", patch.departmentId) !== patch.departmentIdentity) throw new Error("確認後に業種・部署が作り直されています。フォーマットを出力し直してください。");
+      if (!db.exec("SELECT 1 FROM department_industries WHERE department_id = ? AND industry_id = ?", [patch.departmentId, patch.industryId]).length) throw new Error("部署に設定されている業種を選択してください。");
       const current = db.exec("SELECT amount_yen FROM previous_amounts WHERE industry_id = ? AND department_id = ? AND account_id = ? AND month = ?", [patch.industryId, patch.departmentId, patch.accountId, patch.month])[0]?.values[0]?.[0] ?? 0;
       if (Number(current) !== amountToYen(patch.before)) throw new Error("確認後に前年金額が変更されています。ファイルを選び直してください。");
       const amount = amountToYen(patch.after);
@@ -55,6 +56,7 @@ export async function savePreviousAmounts(bytes: Uint8Array, input: PreviousInpu
   return (await editDatabase(bytes, db => {
     if (!db.exec("SELECT id FROM industries WHERE id = ?", [input.industryId]).length) throw new Error("業種名を選択してください。");
     if (!db.exec("SELECT id FROM departments WHERE id = ?", [input.departmentId]).length) throw new Error("部署名を選択してください。");
+    if (!db.exec("SELECT 1 FROM department_industries WHERE department_id = ? AND industry_id = ?", [input.departmentId, input.industryId]).length) throw new Error("部署に設定されている業種を選択してください。");
     for (const row of input.rows) {
       if (!db.exec("SELECT id FROM accounts WHERE id = ?", [row.accountId]).length) throw new Error("勘定科目が見つかりません。");
       for (const [month, text] of Object.entries(row.amounts)) {

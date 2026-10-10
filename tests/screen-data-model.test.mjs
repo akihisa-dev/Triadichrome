@@ -12,7 +12,7 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
         const columns = database.exec(`PRAGMA table_info(${table.name})`)[0].values.map(row => row[1]);
         assert.deepEqual(table.columns.map(column => column.name).sort(), columns.sort(), `${table.name}の項目が一致する`);
         const references = database.exec(`PRAGMA foreign_key_list(${table.name})`)[0]?.values ?? [];
-        assert.deepEqual(table.columns.filter(column => column.reference).map(column => `${column.name}:${column.reference}`).sort(),
+        assert.deepEqual(table.columns.filter(column => column.reference).flatMap(column => column.reference.split(", ").map(reference => `${column.name}:${reference}`)).sort(),
           references.map(row => `${row[3]}:${row[2]}.${row[4]}`).sort(), `${table.name}の参照先が一致する`);
       }
       assert.equal(dataTables.find(table => table.name === "document_info").label, "基本情報");

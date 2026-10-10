@@ -43,3 +43,13 @@
   .account-master-page .account-master-fields .account-code-field,
   .account-master-page .account-master-fields .account-type-field { flex: 1 1 100px; }
 }
+
+.department-industry-choices { border: 0; padding: 0; margin: 0; min-width: 0; display: flex; flex-wrap: wrap; gap: .4rem .8rem; }
+.department-industry-choices legend { font-weight: 600; margin-bottom: .35rem; }
+.department-industry-choices label { display: inline-flex; align-items: center; gap: .3rem; white-space: nowrap; }
+.master-data-page .department-industry-choices input { width: auto; min-height: auto; padding: 0; }
+.department-master-table td { white-space: normal; }
+
+.master-data-page .department-master-table thead th:first-child { width: 25%; }
+.master-data-page .department-industry-choices { font-size: 13px; line-height: 1.5; }
+.master-data-page .department-industry-choices legend { font-size: 12px; font-weight: 550; }
