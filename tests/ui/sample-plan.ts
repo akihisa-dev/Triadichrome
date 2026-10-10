@@ -7,6 +7,7 @@ import { INITIAL_PERIOD_TYPES } from "../../Triadichrome-extension/src/core/stor
 import { INITIAL_DEPARTMENTS } from "../../Triadichrome-extension/src/core/storage/departmentSchema";
 import { INITIAL_INDUSTRIES } from "../../Triadichrome-extension/src/core/storage/industrySchema";
 import { INITIAL_EXPANSIONS } from "../../Triadichrome-extension/src/core/storage/expansionSchema";
+import { changeDepartmentMaster } from "../../Triadichrome-extension/src/core/storage/departmentMaster";
 import { changeAccountMaster } from "../../Triadichrome-extension/src/core/storage/accountMaster";
 import { changeAggregationMaster } from "../../Triadichrome-extension/src/core/storage/aggregationMaster";
 import { createTriadicDatabase, openTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
@@ -139,6 +140,11 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
       }
     })).bytes;
   }
+  if (large) {
+    // Unused departments demonstrate candidate filtering without changing any totals.
+    bytes = await changeDepartmentMaster(bytes, { type: "add", departmentName: "複数業種確認部署", industryIds: [1, 2] });
+    bytes = await changeDepartmentMaster(bytes, { type: "add", departmentName: "単一業種確認部署", industryIds: [3] });
+  }
   const timestamp = `${String(fiscalYear).padStart(4, "0")}-04-01T00:00:00.000Z`;
   const stable = async (input: Uint8Array) => {
     const database = await openTriadicDatabase(input);
@@ -146,6 +152,13 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
       // Normalize both current and embedded snapshot metadata for deterministic fixtures.
       database.run("UPDATE document_info SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
       database.run("UPDATE data_history_state SET saved_at = ?", [timestamp]);
+      if (large) for (const [name, identity] of [
+        ["複数業種確認部署", "00000000-0000-4000-8000-000000000003"],
+        ["単一業種確認部署", "00000000-0000-4000-8000-000000000004"],
+      ]) {
+        const id = Number(database.exec("SELECT id FROM departments WHERE name = ?", [name!])[0]!.values[0]![0]);
+        database.run("UPDATE triadic_metadata SET value = ? WHERE key = ?", [identity!, `departments_identity:${id}`]);
+      }
       return database.export();
     } finally { database.close(); }
   };

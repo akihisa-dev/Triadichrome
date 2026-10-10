@@ -101,6 +101,24 @@ export async function verifySamplePlan(api) {
   const largeBytes = new Uint8Array(await readFile(new URL("../samples/全機能確認用.triadic", import.meta.url)));
   await validateTriadicDatabase(largeBytes);
   const large = await readPlanContents(largeBytes);
+  assert.equal(large.departments.length, 4);
+  const multiple = large.departments.find(item => item.departmentName === "複数業種確認部署");
+  const single = large.departments.find(item => item.departmentName === "単一業種確認部署");
+  assert.deepEqual(multiple.industryIds, [1, 2]);
+  assert.deepEqual(single.industryIds, [3]);
+  for (const department of [multiple, single]) {
+    assert.ok(!large.initiatives.some(item => item.departmentId === department.id));
+    assert.ok(!large.previousAmounts.some(item => item.departmentId === department.id));
+  }
+  assert.ok(large.initiatives.every(item => large.departments.find(d => d.id === item.departmentId).industryIds.includes(item.industryId)));
+  assert.ok(large.previousAmounts.every(item => large.departments.find(d => d.id === item.departmentId).industryIds.includes(item.industryId)));
+  const allowedDraft = { name: "所属業種の登録確認", note: "", fiscalYear: String(large.fiscalYear), expansionId: large.expansions[0].id, departmentId: multiple.id, industryId: 2, rows: [{ accountId: large.accounts[0].id, amounts: { 4: "1.001" } }] };
+  const registered = await readPlanContents(await api.registerInitiative(largeBytes, allowedDraft));
+  assert.equal(registered.initiatives.at(-1).industryId, 2);
+  await assert.rejects(api.registerInitiative(largeBytes, { ...allowedDraft, industryId: 3 }), /部署に設定/);
+  const modified = await api.changeDepartmentMaster(largeBytes, { type: "update", id: multiple.id, departmentName: multiple.departmentName, industryIds: [2] });
+  assert.deepEqual((await readPlanContents(modified)).departments.find(item => item.id === multiple.id).industryIds, [2]);
+  assert.deepEqual((await readPlanContents(largeBytes)).departments.find(item => item.id === multiple.id).industryIds, [1, 2], "変更検証で原本を更新しない");
   const added = large.initiatives.filter(item => item.name.startsWith("大規模確認施策"));
   assert.equal(large.initiatives.length, 14 + api.LARGE_SAMPLE_INITIATIVES);
   assert.equal(added.length, 1000);
@@ -108,7 +126,7 @@ export async function verifySamplePlan(api) {
   assert.ok(largeBytes.length > bytes.length * 10, "実ファイルを従来の10倍以上に拡大する");
   assert.deepEqual(new Set(added.map(item => item.expansionId)), new Set(large.expansions.map(item => item.id)));
   assert.deepEqual(new Set(added.map(item => item.industryId)), new Set(large.industries.map(item => item.id)));
-  assert.deepEqual(new Set(added.map(item => item.departmentId)), new Set(large.departments.map(item => item.id)));
+  assert.deepEqual(new Set(added.map(item => item.departmentId)), new Set(large.departments.filter(item => item.departmentName === "部署A" || item.departmentName === "部署B").map(item => item.id)));
   for (const item of added) {
     assert.equal(item.rows.length, 12);
     assert.deepEqual(item.startYearMonths, { 1: `${api.currentFiscalYear()}-04`, 2: `${api.currentFiscalYear()}-04` });
@@ -124,5 +142,6 @@ export async function verifySamplePlan(api) {
   const largeOlder = await api.readSnapshotContents(await api.readHistorySnapshot(largeBytes, largeHistory.entries[2].id));
   assert.equal(largeOlder.initiatives.length, 1014, "過去の履歴にも大規模データを保持する");
   assert.equal(largeOlder.initiatives[0].rows[0].amounts[4], "100");
+  assert.deepEqual(largeOlder.departments, large.departments, "追加した所属確認部署も履歴に保持する");
   console.log("PASS: sample plan years, monthly edge cases, configured totals and editable/deletable master data");
 }
