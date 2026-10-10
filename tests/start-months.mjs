@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 
 export async function verifyStartMonths(api) {
+  await verifyUnselectedPeriod(api);
   const derive = (rule, amounts, kind = 1, overrides) => api.deriveStartYearMonth(2026, rule, [{ amounts, overrides }], kind);
   assert.equal(derive("new", { 4: "0.001" }), "2026-04");
   assert.equal(derive("new", { 1: "-1" }), "2027-01");
@@ -106,4 +107,35 @@ export async function verifyStartMonths(api) {
   await assert.rejects(api.saveDetailChange(plan, { target: plan.details[0], field: "amount", value: "3" }), /保存失敗/);
   assert.deepEqual(plan.initiatives[0].startYearMonths, item.startYearMonths, "保存失敗で元の開始年月を維持");
   console.log("PASS: 開始年月の読込時導出、期間差、手修正0、相殺、未確定、明細更新、改名、復元、保存失敗");
+}
+
+async function verifyUnselectedPeriod(api) {
+  const original = await api.createTriadicDatabase(2026);
+  const initial = await api.readPlanContents(original);
+  let bytes = await api.registerInitiative(original, { ...api.createInitiativeDraft("2026"), name: "NULLとID0の区別",
+    expansionId: initial.expansions[0].id, industryId: initial.industries[0].id, departmentId: initial.departments[0].id,
+    periodTypeId: null, rows: [{ accountId: initial.accounts[0].id, amounts: { 4: "100", 5: "100" }, overrides: { 2: { 4: "0" } } }] });
+  const db = await api.openTriadicDatabase(bytes);
+  try {
+    db.run("INSERT INTO period_types (id, name, start_month_rule) VALUES (0, 'ID0合成分類', 'new')");
+    for (const rule of ["new", "period_gap"]) {
+      db.run("UPDATE period_types SET start_month_rule = ? WHERE id = 0", [rule]);
+      for (const [periodId, expected] of [
+        [null, { 1: null, 2: null }],
+        [0, rule === "new" ? { 1: "2026-04", 2: "2026-05" } : { 1: "2025-06", 2: null }],
+        [initial.periodTypes.find(item => item.periodName === "新規").id, { 1: "2026-04", 2: "2026-05" }],
+      ]) {
+        db.run("UPDATE initiatives SET period_type_id = ?", [periodId]);
+        bytes = api.exportTriadicDatabase(db);
+        const before = bytes.slice();
+        const contents = await api.readPlanContents(bytes);
+        assert.equal(contents.initiatives[0].periodTypeId, periodId);
+        assert.deepEqual(contents.initiatives[0].startYearMonths, expected, `${rule}: 未選択をID 0に変換しない`);
+        for (const kind of [1, 2]) assert.ok(contents.details.filter(item => item.kindId === kind).every(item => item.startYearMonth === expected[kind]));
+        const snapshot = await api.createBusinessSnapshot(bytes);
+        assert.deepEqual((await api.readSnapshotContents(snapshot)).initiatives[0].startYearMonths, expected);
+        assert.deepEqual(bytes, before, "読込・履歴読込で元bytesを変更しない");
+      }
+    }
+  } finally { db.close(); }
 }

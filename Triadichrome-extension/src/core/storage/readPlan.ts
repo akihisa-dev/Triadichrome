@@ -39,7 +39,7 @@ export function listInitiatives(db: Database, fiscalYear: number, initiativeId?:
   return (db.exec(`SELECT id, name, note, expansion_id, department_id, period_type_id, industry_id, revision FROM initiatives${initiativeId === undefined ? "" : " WHERE id = ?"} ORDER BY sort_order, id`, params)[0]?.values ?? [])
     .map(([id, name, note, expansion, department, period, industry, revision]) => {
       const rows = rowsByOwner.get(Number(id)) ?? [];
-      const rule = rules.get(Number(period)) ?? null;
+      const rule = period === null ? null : rules.get(Number(period)) ?? null;
       return { id: Number(id), name: String(name), note: String(note), expansionId: Number(expansion), departmentId: Number(department), periodTypeId: period === null ? null : Number(period), industryId: Number(industry), fiscalYear, revision: Number(revision),
         startYearMonths: { 1: deriveStartYearMonth(fiscalYear, rule, rows, 1), 2: deriveStartYearMonth(fiscalYear, rule, rows, 2) }, rows, months: {} };
     });
