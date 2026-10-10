@@ -2,19 +2,18 @@ import { useRowWindow, WindowRows } from "./VirtualTableRows";
 import { TableCalculationBoundary } from "./TableCalculationBoundary";
 import { periodCellClass } from "./periodCellStyle";
 import type { ReactNode } from "react";
-import { Fragment, useMemo, useRef } from "react";
+import { Fragment, memo, useMemo, useRef } from "react";
 import { expansionPeriodAmount, tablePeriods } from "../core/tables/periodTables";
 import { type Initiative, type PlanContents } from "../core/domain/plan";
-import { buildKindExpansionTable } from "../core/tables/planTables";
+import { createExpansionTableView } from "../core/tables/expansionTableView";
 import type { KindId } from "../core/domain/kinds";
-import { groupExpansionPeriods } from "../core/tables/expansionTable";
 import { formatTableYen } from "./tableNumberFormat";
 
 type Props = {
   contents: PlanContents; selected: KindId[]; selection: ReactNode;
   onOpenInitiative: (initiative: Initiative) => void;
 };
-function AmountCells({ values }: { values: Initiative["months"][] }) {
+const AmountCells = memo(function AmountCells({ values }: { values: Initiative["months"][] }) {
   return tablePeriods.map(period => <Fragment key={period.id}>{values.map((months, index) => <Fragment key={index}>
     {(["sales", "profit"] as const).map(metric => {
       const amount = expansionPeriodAmount(months, period, metric);
@@ -22,7 +21,7 @@ function AmountCells({ values }: { values: Initiative["months"][] }) {
       return <td key={metric} title={text} className={periodCellClass(period, metric === "sales" && index === 0, metric === "profit" && index === values.length - 1)}>{text}</td>;
     })}
   </Fragment>)}</Fragment>);
-}
+});
 export function ExpansionTablePage({ contents, selected, selection, onOpenInitiative }: Props) {
   return <main className="initiative-list-page expansion-table-page" aria-labelledby="expansion-table-title">
     <div className="initiative-list-heading">
@@ -36,19 +35,10 @@ export function ExpansionTablePage({ contents, selected, selection, onOpenInitia
 }
 
 function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<Props, "selection">) {
-  const table = useMemo(() => buildKindExpansionTable(contents, selected, "registered"), [contents, selected]);
+  const viewForSelection = useMemo(() => createExpansionTableView(contents),
+    [contents.initiatives, contents.accounts, contents.previousAmounts, contents.expansions, contents.periodTypes, contents.fiscalYear]);
+  const { table, groups, flat } = viewForSelection(selected);
   const container = useRef<HTMLDivElement>(null);
-  const flat = useMemo(() => table.groups.flatMap(group => {
-    const periods = groupExpansionPeriods(group.initiatives, contents.periodTypes);
-    const count = group.initiatives.length + 1;
-    let offset = 0;
-    const items = periods.flatMap(period => period.initiatives.map((item, index) => {
-      const row = { group, item, period, groupOffset: offset, groupCount: count, periodOffset: index, subtotal: false };
-      offset++;
-      return row;
-    }));
-    return [...items, { group, item: null, period: null, groupOffset: offset, groupCount: count, periodOffset: 0, subtotal: true }];
-  }), [table, contents.periodTypes]);
   const window = useRowWindow(container, flat.length, 28, 200, 165);
   const virtual = flat.length > 200;
   const labels = [...selected.map(id => contents.kinds.find(kind => kind.id === id)!.kindName), ...(selected.length === 2 ? ["比較"] : [])];
@@ -81,8 +71,8 @@ function ExpansionTableContents({ contents, selected, onOpenInitiative }: Omit<P
             : <>{firstPeriod && <th rowSpan={periodSpan} className="expansion-period">{row.period!.name}</th>}
               <th scope="row" className="expansion-name"><button className="initiative-name-button" type="button" title={row.item!.note || row.item!.name} onClick={() => onOpenInitiative(row.item!)}>{row.item!.name}</button></th><AmountCells values={row.item!.values} /></>}
         </tr>;
-      }} /></tbody> : table.groups.map(group => { return <tbody key={group.expansion.id}>
-        {groupExpansionPeriods(group.initiatives, contents.periodTypes).map((period, periodIndex) => period.initiatives.map((item, index) => <tr key={item.id}>
+      }} /></tbody> : groups.map(({ group, periods }) => { return <tbody key={group.expansion.id}>
+        {periods.map((period, periodIndex) => period.initiatives.map((item, index) => <tr key={item.id}>
           {periodIndex === 0 && index === 0 && <th rowSpan={group.initiatives.length + 1} scope="rowgroup" className="expansion-group">{group.expansion.expansionName}</th>}
           {index === 0 && <th rowSpan={period.initiatives.length} className="expansion-period">{period.name}</th>}
           <th scope="row" className="expansion-name"><button className="initiative-name-button" type="button" title={item.note || item.name} onClick={() => onOpenInitiative(item)}>{item.name}</button></th>

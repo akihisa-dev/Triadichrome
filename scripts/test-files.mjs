@@ -1,4 +1,5 @@
 import { verifyFileRecovery } from "../tests/file-recovery.mjs";
+import { verifyExpansionTableView } from "../tests/expansion-table-view.mjs";
 import { verifyUnifiedMaster } from "../tests/unified-master.mjs";
 import { verifyInitiativeListRendering } from '../tests/initiative-list-rendering.mjs';
 import { verifyPerformanceData } from '../tests/performance-data.mjs';
@@ -72,3 +73,4 @@ await withNodeBundle("tests/core-api.ts", async production => {
 });
 
 await withNodeBundle("tests/performance-api.ts", verifyInitiativeListRendering);
+await withNodeBundle("tests/performance-api.ts", verifyExpansionTableView);

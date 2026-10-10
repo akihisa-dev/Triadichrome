@@ -17,3 +17,4 @@ export function renderInitiativeList(contents: PlanContents, selectedKind: KindI
 }
 
 export { createInitiativeListView } from "../Triadichrome-extension/src/core/tables/initiativeListView";
+export { createExpansionTableView } from "../Triadichrome-extension/src/core/tables/expansionTableView";
