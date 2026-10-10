@@ -1,17 +1,26 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
-type Props = { name: string; value: 1 | -1 | null; disabled: boolean; onChange: (value: 1 | -1) => void };
+type Props = { name: string; value: 1 | -1 | null; disabled: boolean; onChange: (value: 1 | -1) => Promise<boolean> };
 
-/** Selection follows the saved value, including failed saves and operation undo. */
+/** Respond immediately, then return to the saved value after success or failure. */
 export function MasterSignSelector({ name, value, disabled, onChange }: Props) {
+  const [pending, setPending] = useState<1 | -1 | null>(null);
+  const selected = pending ?? value;
+  const busy = disabled || pending !== null;
+  const select = async (sign: 1 | -1) => {
+    if (busy || selected === sign) return;
+    setPending(sign);
+    try { await onChange(sign); }
+    finally { setPending(null); }
+  };
   const container = useRef<HTMLDivElement>(null);
   const pill = useRef<HTMLSpanElement>(null);
   const keyboardTarget = useRef<1 | -1 | null>(null);
   useLayoutEffect(() => {
-    if (disabled || keyboardTarget.current === null) return;
+    if (busy || keyboardTarget.current === null) return;
     container.current!.querySelector<HTMLButtonElement>(keyboardTarget.current === 1 ? "button:first-of-type" : "button:last-of-type")!.focus({ preventScroll: true });
     keyboardTarget.current = null;
-  }, [disabled, value]);
+  }, [busy, value]);
   useLayoutEffect(() => {
     const element = container.current!;
     const update = () => {
@@ -26,15 +35,15 @@ export function MasterSignSelector({ name, value, disabled, onChange }: Props) {
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [value]);
+  }, [selected]);
   return <div ref={container} className="master-sign-selector" role="group" aria-label={`${name}の加減`}>
     <span ref={pill} className="pill" aria-hidden="true" />
-    {([1, -1] as const).map(sign => <button key={sign} type="button" aria-label={sign === 1 ? "加算" : "減算"} aria-pressed={value === sign} disabled={disabled} onClick={() => { if (value !== sign) onChange(sign); }} onKeyDown={event => {
+    {([1, -1] as const).map(sign => <button key={sign} type="button" aria-label={sign === 1 ? "加算" : "減算"} aria-pressed={selected === sign} disabled={busy} onClick={() => { void select(sign); }} onKeyDown={event => {
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
       event.preventDefault();
       const next = event.key === "ArrowLeft" ? 1 : -1;
       container.current!.querySelector<HTMLButtonElement>(next === 1 ? "button:first-of-type" : "button:last-of-type")!.focus();
-      if (value !== next) { keyboardTarget.current = next; onChange(next); }
+      if (selected !== next) { keyboardTarget.current = next; void select(next); }
     }}>{sign === 1 ? "＋" : "−"}</button>)}
   </div>;
 }

@@ -21,6 +21,9 @@ export function changedAggregations(groups: Aggregation[], accounts: Account[], 
     if (sign !== 1 && sign !== -1) throw new Error("加算または減算を選択してください。");
     // Remove and attach in one change: saving must never leave an item between parents.
     next = groups.map(group => {
+      if (group.id === parentId && group.members.some(item => item.kind === member.kind && item.id === member.id)) {
+        return { ...group, members: group.members.map(item => item.kind === member.kind && item.id === member.id ? { ...item, sign } : item) };
+      }
       const members = group.members.filter(item => item.kind !== member.kind || item.id !== member.id);
       if (group.id === parentId) members.push({ ...member, sign });
       return { ...group, members };

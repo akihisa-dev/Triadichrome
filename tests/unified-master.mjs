@@ -45,5 +45,20 @@ export async function verifyUnifiedMaster(api) {
   const db=await api.openTriadicDatabase(bytes);
   try { assert.ok(!db.exec("SELECT value FROM triadic_metadata WHERE key='account_display_names'")[0].values[0][0].includes(String(added.id))); } finally {db.close();}
   contents=await api.readPlanContents(bytes);
+  for (const kind of ['account','group']) {
+    const parent=contents.aggregations.find(item=>item.members.some(member=>member.kind===kind));
+    const member=parent.members.find(item=>item.kind===kind);
+    const beforeOrder=api.orderedMasterRows(contents.accounts,contents.aggregations);
+    const beforeMembers=structuredClone(parent.members);
+    const beforeDb=await api.openTriadicDatabase(bytes);
+    let beforePositions;
+    try { beforePositions=beforeDb.exec("SELECT parent_id,account_id,group_id,position FROM aggregation_members ORDER BY parent_id,position")[0].values; } finally {beforeDb.close();}
+    bytes=await api.changeAggregationMaster(bytes,{type:'move',member:{kind,id:member.id},parentId:parent.id,sign:member.sign===1 ? -1 : 1,presentationOrder:beforeOrder});
+    contents=await api.readPlanContents(bytes);
+    assert.deepEqual(contents.aggregations.find(item=>item.id===parent.id).members,beforeMembers.map(item=>item.kind===kind&&item.id===member.id ? {...item,sign:-item.sign} : item),'符号だけの変更は所属内の順序と他の対象を維持');
+    assert.deepEqual(api.orderedMasterRows(contents.accounts,contents.aggregations),beforeOrder);
+    const afterDb=await api.openTriadicDatabase(bytes);
+    try {assert.deepEqual(afterDb.exec("SELECT parent_id,account_id,group_id,position FROM aggregation_members ORDER BY parent_id,position")[0].values,beforePositions);} finally {afterDb.close();}
+  }
   console.log('PASS: unified master persisted order, membership independence, display names, undo, invalid edits');
 }

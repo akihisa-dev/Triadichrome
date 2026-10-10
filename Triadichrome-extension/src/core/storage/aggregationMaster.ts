@@ -6,9 +6,10 @@ import { changedAggregations, type AggregationChange } from "../domain/aggregati
 import { editDatabase } from "./transaction";
 export async function changeAggregationMaster(bytes: Uint8Array, change: AggregationChange): Promise<Uint8Array> {
   return (await editDatabase(bytes, database => {
-    const order = change.presentationOrder ?? orderedMasterRows(listAccounts(database),listAggregations(database));
-    if (change.presentationOrder) validateMasterOrder(change.presentationOrder,listAccounts(database),listAggregations(database));
-    const next = changedAggregations(listAggregations(database), listAccounts(database), change);
+    const accounts = listAccounts(database), groups = listAggregations(database);
+    const order = change.presentationOrder ?? orderedMasterRows(accounts,groups);
+    if (change.presentationOrder) validateMasterOrder(change.presentationOrder,accounts,groups);
+    const next = changedAggregations(groups, accounts, change);
     if (change.type === "reorder") { saveMasterOrder(database,change.order); return; }
     if (change.type === "add") {
       const added = next[next.length - 1]!;
@@ -16,9 +17,14 @@ export async function changeAggregationMaster(bytes: Uint8Array, change: Aggrega
     } else if (change.type === "delete") database.run("DELETE FROM aggregation_groups WHERE id = ?", [change.id]);
     else if (change.type === "move") {
       const { member, parentId, sign } = change;
-      database.run(member.kind === "account" ? "DELETE FROM aggregation_members WHERE account_id = ?" : "DELETE FROM aggregation_members WHERE group_id = ?", [member.id]);
-      if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM aggregation_members WHERE parent_id = ?))",
-        [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, parentId]);
+      const currentParent = groups.find(group => group.members.some(item => item.kind === member.kind && item.id === member.id));
+      if (parentId !== null && currentParent?.id === parentId) {
+        database.run(`UPDATE aggregation_members SET sign = ? WHERE ${member.kind === "account" ? "account_id" : "group_id"} = ?`, [sign, member.id]);
+      } else {
+        database.run(member.kind === "account" ? "DELETE FROM aggregation_members WHERE account_id = ?" : "DELETE FROM aggregation_members WHERE group_id = ?", [member.id]);
+        if (parentId !== null) database.run("INSERT INTO aggregation_members (parent_id, account_id, group_id, sign, position) VALUES (?, ?, ?, ?, (SELECT COALESCE(MAX(position), -1) + 1 FROM aggregation_members WHERE parent_id = ?))",
+          [parentId, member.kind === "account" ? member.id : null, member.kind === "group" ? member.id : null, sign, parentId]);
+      }
     } else {
       const updated = next.find(group => group.id === change.id)!;
       database.run("UPDATE aggregation_groups SET name = ?, display_name = ? WHERE id = ?", [updated.name, updated.displayName ?? null, change.id]);

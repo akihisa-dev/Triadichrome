@@ -8,7 +8,9 @@ export function readMasterPresentation(db: Database) {
   return {order,names, ranks:new Map(order?.map((row,index) => [masterRowKey(row),index]))};
 }
 export function saveMasterOrder(db: Database, order: MasterRow[]) {
-  db.run("INSERT OR REPLACE INTO triadic_metadata (key,value) VALUES ('master_order', ?)", [JSON.stringify(order)]);
+  const serialized = JSON.stringify(order);
+  if (db.exec("SELECT value FROM triadic_metadata WHERE key = 'master_order'")[0]?.values[0]?.[0] === serialized) return;
+  db.run("INSERT OR REPLACE INTO triadic_metadata (key,value) VALUES ('master_order', ?)", [serialized]);
   // Existing account-only consumers use the account subsequence of the same master.
   let accountIndex=0, groupIndex=0;
   for (const row of order) db.run(`UPDATE ${row.kind === "account" ? "accounts" : "aggregation_groups"} SET sort_order = ? WHERE id = ?`, [row.kind === "account" ? accountIndex++ : groupIndex++, row.id]);
