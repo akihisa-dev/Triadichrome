@@ -60,3 +60,29 @@ for (const scenario of ["monthly", "period", "previous", "difference", "normal"]
     expect(unexpected).toEqual([]);
   });
 }
+
+
+test("相殺後が上限内なら三表・施策入力・期間計を表示する", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.goto("/tests/ui/preview.html?data=overflow-cancellation");
+  await expect(page.getByRole("status")).toHaveText("操作できます");
+  const app = page.frameLocator("#app-preview");
+  await app.getByRole("button", { name: "ファイルを開く", exact: true }).click();
+  const nav = app.getByRole("navigation", { name: "メインナビゲーション" });
+  for (const name of ["総原価表", "展開表", "施策一覧"]) {
+    await nav.getByRole("button", { name, exact: true }).click();
+    const table = app.getByRole("table", { name, exact: true });
+    await expect(table).toBeVisible();
+    await expect(table.getByText("9,007,199,254,741", { exact: true }).first()).toBeVisible();
+    await expect(app.getByRole("alert")).toHaveCount(0);
+  }
+  await app.getByRole("button", { name: "相殺後の上限確認", exact: true }).click();
+  const input = app.getByRole("table", { name: "月別計画金額", exact: true });
+  for (const kind of ["一次予算", "確定予算"]) {
+    await app.getByRole("tab", { name: kind, exact: true }).click();
+    await expect(input.getByRole("row", { name: /^売上合計/ }).getByRole("cell").first()).toHaveText("9,007,199,254,741");
+    await expect(app.getByRole("alert")).toHaveCount(0);
+  }
+  expect(errors).toEqual([]);
+});

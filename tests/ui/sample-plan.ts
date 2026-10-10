@@ -175,3 +175,18 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
   bytes = await trackHistoryChange(bytes, await stable(await updateInitiative(bytes, initiative.id, fiscalYear, draft)), timestamp.replace("00:00:00", "00:06:00"));
   return recordDataHistory(bytes, timestamp.replace("00:00:00", "00:11:00"));
 }
+
+/** Accepted boundary data: row and period sums cancel before range validation. */
+export async function createCostCancellationPlan(fiscalYear = 2026) {
+  let bytes = await createTriadicDatabase(fiscalYear);
+  const plan = await readPlanContents(bytes);
+  const accountId = plan.accounts.find(account => account.accountType === "sales")!.id;
+  const maximum = "9007199254740.991";
+  bytes = await registerInitiative(bytes, {
+    name: "相殺後の上限確認", note: "行順を変えても総原価表・施策一覧・展開表の金額は同じです。4月・5月・6月の年間計も相殺後の上限内です。",
+    fiscalYear: String(fiscalYear), expansionId: 1, industryId: 1, departmentId: 1,
+    rows: [1, 1, -1].map(sign => ({ accountId, amounts: { 4: sign === 1 ? maximum : `-${maximum}`,
+      5: sign === 1 ? `-${maximum}` : maximum, 6: sign === 1 ? maximum : `-${maximum}` } })),
+  });
+  return bytes;
+}

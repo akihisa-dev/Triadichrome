@@ -12,6 +12,15 @@ export function addYen(left: number, right: number): number {
   if (!Number.isSafeInteger(left) || !Number.isSafeInteger(right)) throw new Error("金額が正確に計算できる範囲を超えています。");
   return checkedYen(BigInt(left) + BigInt(right));
 }
+/** Check the completed sum, so cancellation is independent of input order. */
+export function sumYen(values: Iterable<number>): number {
+  let total = 0n;
+  for (const value of values) {
+    if (!Number.isSafeInteger(value)) throw new Error("金額が正確に計算できる範囲を超えています。");
+    total += BigInt(value);
+  }
+  return checkedYen(total);
+}
 /** Compatibility helper for numeric thousands; tables must use integer yen instead. */
 export function addAmounts(left: number, right: number): number {
   return addYen(amountToYen(String(left)), amountToYen(String(right))) / 1000;

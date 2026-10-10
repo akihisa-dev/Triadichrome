@@ -1,5 +1,5 @@
 import { orderedMasterRows } from "../domain/masterRows";
-import { addYen, amountToYen } from "../domain/amounts";
+import { addYen, amountToYen, checkedYen } from "../domain/amounts";
 import { type Account } from "../domain/accountMaster";
 import { validateAggregations, type Aggregation } from "../domain/aggregations";
 import { initiativeMonths, type InitiativeMonth } from "../domain/calendar";
@@ -12,10 +12,16 @@ export type CostRow = {
   previous: MonthlyAmounts; changes: MonthlyAmounts; budget: MonthlyAmounts; comparison: MonthlyAmounts;
 };
 
-function sum(target: MonthlyAmounts, source: MonthlyAmounts, sign = 1): void {
+type ExactMonthlyAmounts = Partial<Record<InitiativeMonth, bigint>>;
+function sum(target: ExactMonthlyAmounts, source: MonthlyAmounts, sign = 1): void {
   for (const month of initiativeMonths) {
-    if (source[month] !== undefined) target[month] = addYen(target[month] ?? 0, source[month]! * sign);
+    if (source[month] === undefined) continue;
+    if (!Number.isSafeInteger(source[month])) throw new Error("金額が正確に計算できる範囲を超えています。");
+    target[month] = (target[month] ?? 0n) + BigInt(source[month]!) * BigInt(sign);
   }
+}
+function finish(values: ExactMonthlyAmounts): MonthlyAmounts {
+  return Object.fromEntries(initiativeMonths.flatMap(month => values[month] === undefined ? [] : [[month, checkedYen(values[month]!)]]));
 }
 
 /** Previous-year totals are a separate baseline, never another year's initiatives. */
@@ -27,6 +33,7 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     kind: "account", id: account.id, name: account.displayName ?? account.accountName, required: false, configured: true,
     previous: { ...previousAmounts.get(account.id) }, changes: {}, budget: {}, comparison: {},
   });
+  const changes = new Map(accounts.map(account => [account.id, {} as ExactMonthlyAmounts]));
   for (const initiative of initiatives) {
     if (initiative.fiscalYear !== fiscalYear) continue;
     for (const input of initiative.rows) {
@@ -34,13 +41,16 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
       if (!row) continue;
       for (const month of initiativeMonths) {
         const amount = input.amounts[month];
-        if (amount !== undefined && amount !== "") sum(row.changes, { [month]: amountToYen(amount) });
+        if (amount !== undefined && amount !== "") sum(changes.get(row.id)!, { [month]: amountToYen(amount) });
       }
     }
   }
   for (const row of byAccount.values()) {
-    sum(row.budget, row.previous);
-    sum(row.budget, row.changes);
+    row.changes = finish(changes.get(row.id)!);
+    const budget: ExactMonthlyAmounts = {};
+    sum(budget, row.previous);
+    sum(budget, row.changes);
+    row.budget = finish(budget);
   }
   const byGroup = new Map<number, CostRow>();
   const parents = new Map<number, number>();
@@ -57,14 +67,17 @@ export function buildCostTable(accounts: Account[], groups: Aggregation[], initi
     const group = queue[index]!;
     const row: CostRow = { kind: "group", id: group.id, name: group.displayName ?? group.name, required: group.required !== null,
       configured: group.members.length > 0, previous: {}, changes: {}, budget: {}, comparison: {} };
+    const previous: ExactMonthlyAmounts = {}, changes: ExactMonthlyAmounts = {}, budget: ExactMonthlyAmounts = {};
     for (const member of group.members) {
       const child = (member.kind === "account" ? byAccount : byGroup).get(member.id)!;
       row.configured &&= child.configured;
-      sum(row.previous, child.previous, member.sign);
-      sum(row.changes, child.changes, member.sign);
-      sum(row.budget, child.budget, member.sign);
+      sum(previous, child.previous, member.sign);
+      sum(changes, child.changes, member.sign);
+      sum(budget, child.budget, member.sign);
     }
-    if (!row.configured) { row.previous = {}; row.changes = {}; row.budget = {}; }
+    if (row.configured) {
+      row.previous = finish(previous); row.changes = finish(changes); row.budget = finish(budget);
+    }
     byGroup.set(group.id, row);
     const parentId = parents.get(group.id);
     if (parentId !== undefined) {

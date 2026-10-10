@@ -1,6 +1,6 @@
 import { accountEffectsYen } from "../domain/accountEffects";
 import { amountToYen } from "../domain/amounts";
-import { addYen } from "../domain/amounts";
+import { addYen, checkedYen } from "../domain/amounts";
 import { buildCostTable } from "./costTable";
 import { initiativesForKind } from "./initiatives";
 import { initiativeMonths } from "../domain/calendar";
@@ -19,10 +19,14 @@ export function filterPlan(contents: PlanContents, filter: ClassificationFilter)
 export function previousByAccount(contents: PlanContents) {
   const result = new Map<number, Partial<Record<typeof initiativeMonths[number], number>>>();
   for (const account of contents.accounts) result.set(account.id, Object.fromEntries(initiativeMonths.map(month => [month, 0])));
+  const exact = new Map(contents.accounts.map(account => [account.id, {} as Partial<Record<typeof initiativeMonths[number], bigint>>]));
   for (const record of contents.previousAmounts) {
-    const row = result.get(record.accountId)!;
+    const row = exact.get(record.accountId)!;
     const month = record.month as typeof initiativeMonths[number];
-    row[month] = addYen(row[month] ?? 0, amountToYen(record.amount));
+    row[month] = (row[month] ?? 0n) + BigInt(amountToYen(record.amount));
+  }
+  for (const [id, values] of exact) for (const month of initiativeMonths) {
+    result.get(id)![month] = checkedYen(values[month] ?? 0n);
   }
   return result;
 }
@@ -35,13 +39,13 @@ export function buildKindCostTable(contents: PlanContents, selected: KindId[]) {
 export function previousTotals(contents: PlanContents): ExpansionTotals {
   const amounts = previousByAccount(contents);
   return Object.fromEntries(initiativeMonths.map(month => {
-    let sales = 0, profit = 0;
+    let sales = 0n, profit = 0n;
     for (const account of contents.accounts) {
       const amount = amounts.get(account.id)?.[month] ?? 0;
       const effects = accountEffectsYen(amount, account.accountType);
-      sales = addYen(sales, effects.sales); profit = addYen(profit, effects.profit);
+      sales += BigInt(effects.sales); profit += BigInt(effects.profit);
     }
-    return [month, { sales, profit }];
+    return [month, { sales: checkedYen(sales), profit: checkedYen(profit) }];
   }));
 }
 export function combineTotals(left: Initiative["months"], right: Initiative["months"], sign = 1): ExpansionTotals {

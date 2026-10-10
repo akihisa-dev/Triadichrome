@@ -1,4 +1,4 @@
-import { addYen } from "../domain/amounts";
+import { addYen, sumYen } from "../domain/amounts";
 import { initiativeMonths, type InitiativeMonth } from "../domain/calendar";
 import type { KindId } from "../domain/kinds";
 import type { Initiative, PlanContents } from "../domain/plan";
@@ -15,7 +15,7 @@ export const tablePeriods: TablePeriod[] = initiativeMonths.flatMap((month, inde
 ]);
 
 function sumPeriod(values: Partial<Record<InitiativeMonth, number>>, period: TablePeriod): number {
-  return period.months.reduce((sum, month) => addYen(sum, values[month] ?? 0), 0);
+  return sumYen(period.months.map(month => values[month] ?? 0));
 }
 
 /** Aggregate original amounts before display rounding; recompute rates from period totals. */
@@ -51,5 +51,5 @@ export function buildPeriodCostComparison(contents: PlanContents, selected: Kind
 
 export function expansionPeriodAmount(months: Initiative["months"], period: TablePeriod, metric: "sales" | "profit"): number | null {
   if (period.months.some(month => months[month]?.[metric] === null)) return null;
-  return period.months.reduce((sum, month) => addYen(sum, months[month]?.[metric] ?? 0), 0);
+  return sumYen(period.months.map(month => months[month]?.[metric] ?? 0));
 }

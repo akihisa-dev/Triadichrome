@@ -1,13 +1,15 @@
+import { createCostCancellationPlan } from "./sample-plan";
 import { createTriadicDatabase } from "../../Triadichrome-extension/src/core/storage/triadicDatabase";
 import { readPlanContents } from "../../Triadichrome-extension/src/core/storage/readPlan";
 import { registerInitiative } from "../../Triadichrome-extension/src/core/storage/initiatives";
 import { saveKindSelection, savePreviousAmounts } from "../../Triadichrome-extension/src/core/storage/settings";
 import { createInitiativeDraft } from "../../Triadichrome-extension/src/core/domain/initiativeRules";
 
-export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal" | "initiative" | "previous-input";
+export type OverflowScenario = "monthly" | "period" | "previous" | "difference" | "normal" | "initiative" | "previous-input" | "cancellation";
 
 /** Real, accepted SQLite data; only file I/O is replaced by memory-files. */
 export async function createOverflowPlan(scenario: OverflowScenario) {
+  if (scenario === "cancellation") return createCostCancellationPlan();
   let bytes = await createTriadicDatabase(2026);
   const plan = await readPlanContents(bytes);
   const accountId = plan.accounts.find(account => account.accountType === "sales")!.id;
