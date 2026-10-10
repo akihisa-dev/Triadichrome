@@ -114,7 +114,7 @@ export async function verifySingleYearPlan(api) {
   assert.deepEqual(contents.kinds.map(kind => kind.kindName), ["一次予算", "確定予算"]);
   const db = await api.openTriadicDatabase(bytes);
   try {
-    assert.throws(() => db.run("UPDATE plan SET fiscal_year = 2028"), /固定/);
+    assert.throws(() => db.run("UPDATE document_info SET fiscal_year = 2028"), /固定/);
     assert.throws(() => db.run("UPDATE kind_selections SET first_kind = 3"), /CHECK/);
     db.exec("PRAGMA user_version = 13; UPDATE triadic_metadata SET value = '13' WHERE key = 'format_version';");
     await assert.rejects(api.openTriadicDatabase(db.export()), /対応していません/);

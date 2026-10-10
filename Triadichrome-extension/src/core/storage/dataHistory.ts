@@ -105,7 +105,7 @@ export async function readHistorySnapshot(bytes: Uint8Array, id: number): Promis
     const copy = Uint8Array.from(snapshot);
     const historic = await openBusinessSnapshot(copy);
     try {
-      const fiscalYear = (db: Database) => db.exec("SELECT fiscal_year FROM plan WHERE id = 1")[0]?.values[0]?.[0];
+      const fiscalYear = (db: Database) => db.exec("SELECT fiscal_year FROM document_info WHERE id = 1")[0]?.values[0]?.[0];
       if (fiscalYear(historic) !== fiscalYear(database)) throw new Error("履歴の基準年度が一致しません。");
     } finally { historic.close(); }
     return copy;

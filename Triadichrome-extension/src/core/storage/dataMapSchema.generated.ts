@@ -127,6 +127,23 @@ export const dataMapSchema = [
     ]
   },
   {
+    "name": "document_info",
+    "columns": [
+      {
+        "name": "id"
+      },
+      {
+        "name": "fiscal_year"
+      },
+      {
+        "name": "created_at"
+      },
+      {
+        "name": "updated_at"
+      }
+    ]
+  },
+  {
     "name": "expansions",
     "columns": [
       {
@@ -261,23 +278,6 @@ export const dataMapSchema = [
       },
       {
         "name": "start_month_rule"
-      }
-    ]
-  },
-  {
-    "name": "plan",
-    "columns": [
-      {
-        "name": "id"
-      },
-      {
-        "name": "fiscal_year"
-      },
-      {
-        "name": "created_at"
-      },
-      {
-        "name": "updated_at"
       }
     ]
   },

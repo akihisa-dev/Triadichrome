@@ -3,7 +3,7 @@ import { deriveStartYearMonth, type InitiativeStartMonths, type StartMonthRule }
 import type { AmountSource } from "../domain/kinds";
 
 function derivedStartMonths(db: Database) {
-  const fiscalYear = Number(db.exec("SELECT fiscal_year FROM plan WHERE id = 1")[0]!.values[0]![0]);
+  const fiscalYear = Number(db.exec("SELECT fiscal_year FROM document_info WHERE id = 1")[0]!.values[0]![0]);
   const owners = new Map<number, AmountSource[]>();
   // Test each amount before grouping: opposite values must remain active.
   // Only month activity is needed, not every account's amount in JavaScript.

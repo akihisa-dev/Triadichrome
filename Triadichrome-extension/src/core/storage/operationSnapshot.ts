@@ -7,7 +7,7 @@ export async function applyOperationSnapshot(bytes: Uint8Array, snapshot: Uint8A
   try {
     const restored = await openBusinessSnapshot(snapshot);
     try {
-      const year = (database: typeof current) => database.exec("SELECT fiscal_year FROM plan WHERE id = 1")[0]!.values[0]![0];
+      const year = (database: typeof current) => database.exec("SELECT fiscal_year FROM document_info WHERE id = 1")[0]!.values[0]![0];
       if (year(current) !== year(restored)) throw new Error("操作履歴の基準年度が一致しません。");
       restored.run("UPDATE triadic_metadata SET value = 'plan' WHERE key = 'document_type'");
       restored.exec(DATA_HISTORY_SQL);

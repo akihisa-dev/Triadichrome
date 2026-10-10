@@ -15,6 +15,8 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
         assert.deepEqual(table.columns.filter(column => column.reference).map(column => `${column.name}:${column.reference}`).sort(),
           references.map(row => `${row[3]}:${row[2]}.${row[4]}`).sort(), `${table.name}の参照先が一致する`);
       }
+      assert.equal(dataTables.find(table => table.name === "document_info").label, "基本情報");
+      assert.ok(!dataTables.some(table => table.name === "plan"));
       assert.equal(new Set(screenData.map(screen => screen.page)).size, screenData.length);
       for (const screen of screenData) {
         assert.equal(new Set(screen.tables.map(item => item.table)).size, screen.tables.length, `${screen.name}の表に重複がない`);
@@ -44,14 +46,14 @@ test("画面とデータの対応が実際の保存テーブル・列・参照�
       for (const explanation of ["小計・合計", "利益率", "加減算", "保存しません", "previous_amounts"])
         assert.ok(previous.calculated.some(text => text.includes(explanation)), explanation);
       const kind = screenData.find(item => item.page === "kind-master");
-      assert.deepEqual(kind.tables.map(item => item.table), ["plan"], "共通ヘッダーの年度だけを参照し、種別マスタの保存表を捏造しない");
+      assert.deepEqual(kind.tables.map(item => item.table), ["document_info"], "共通ヘッダーの年度だけを参照し、種別マスタの保存表を捏造しない");
       assert.ok(kind.calculated.some(text => text.includes("固定定義")));
       const attributes = screenData.find(item => item.page === "account-type-master");
-      assert.deepEqual(attributes.tables.map(item => item.table), ["plan"], "科目属性の固定定義に保存テーブルを作らない");
+      assert.deepEqual(attributes.tables.map(item => item.table), ["document_info"], "科目属性の固定定義に保存テーブルを作らない");
       for (const text of ["固定定義", "追加・改名・削除", "accounts.attribute", "書き換えません"])
         assert.ok(attributes.calculated.some(explanation => explanation.includes(text)), text);
       const amounts = screenData.find(item => item.page === "amount-item-master");
-      assert.deepEqual(amounts.tables.map(item => item.table), ["plan"]);
+      assert.deepEqual(amounts.tables.map(item => item.table), ["document_info"]);
       for (const text of ["構成", "固定定義", "同じ定義", "書き換えません"])
         assert.ok(amounts.calculated.some(explanation => explanation.includes(text)), text);
     } finally { database.close(); }

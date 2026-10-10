@@ -6,23 +6,23 @@ import { AGGREGATION_SQL } from "./aggregationSchema";
 export const TRIADIC_FILE_EXTENSION = ".triadic";
 export const TRIADIC_MIME_TYPE = "application/vnd.triadichrome+sqlite";
 export const TRIADIC_FORMAT_ID = "triadichrome";
-export const TRIADIC_FORMAT_VERSION = 16;
+export const TRIADIC_FORMAT_VERSION = 17;
 const revision = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(revision) = 'integer' AND revision >= 0)";
 const amount = "INTEGER NOT NULL DEFAULT 0 CHECK (typeof(amount_yen) = 'integer' AND amount_yen BETWEEN -9007199254740991 AND 9007199254740991)";
 const month = "INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)";
 const startYearMonth = (column: string) => `TEXT CHECK (${column} IS NULL OR (typeof(${column}) = 'text' AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]' AND substr(${column}, 1, 4) BETWEEN '0001' AND '9999' AND substr(${column}, 6, 2) BETWEEN '01' AND '12'))`;
-export const BUSINESS_TABLES = ["triadic_metadata", "plan", "accounts", "expansions", "industries", "departments", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "amount_overrides", "previous_amounts", "kind_selections"] as const;
+export const BUSINESS_TABLES = ["triadic_metadata", "document_info", "accounts", "expansions", "industries", "departments", "period_types", "aggregation_groups", "aggregation_members", "initiatives", "initiative_rows", "initiative_amounts", "amount_overrides", "previous_amounts", "kind_selections"] as const;
 export const TRIADIC_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
 PRAGMA user_version = ${TRIADIC_FORMAT_VERSION};
 CREATE TABLE triadic_metadata (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL);
 INSERT INTO triadic_metadata VALUES ('format_id', '${TRIADIC_FORMAT_ID}'), ('format_version', '${TRIADIC_FORMAT_VERSION}'), ('container', 'sqlite');
-CREATE TABLE plan (
+CREATE TABLE document_info (
  id INTEGER PRIMARY KEY CHECK (id = 1),
  fiscal_year INTEGER NOT NULL CHECK (typeof(fiscal_year) = 'integer' AND fiscal_year BETWEEN 1 AND 9998),
  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
-CREATE TRIGGER immutable_fiscal_year BEFORE UPDATE OF fiscal_year ON plan BEGIN SELECT RAISE(ABORT, '年度は作成時に固定します'); END;
+CREATE TRIGGER immutable_fiscal_year BEFORE UPDATE OF fiscal_year ON document_info BEGIN SELECT RAISE(ABORT, '年度は作成時に固定します'); END;
 CREATE TABLE accounts (
  id INTEGER PRIMARY KEY AUTOINCREMENT,
  code TEXT NOT NULL UNIQUE CHECK (code GLOB '[0-9][0-9][0-9]'),

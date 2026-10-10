@@ -8,7 +8,7 @@ export async function editDatabase<T>(bytes: Uint8Array, change: (db: Database) 
     db.run("BEGIN");
     const result = change(db);
     syncInitiativeStartMonths(db);
-    db.run("UPDATE plan SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);
+    db.run("UPDATE document_info SET updated_at = ? WHERE id = 1", [new Date().toISOString()]);
     db.run("COMMIT");
     return { result, bytes: exportTriadicDatabase(db) };
   } finally { db.close(); }

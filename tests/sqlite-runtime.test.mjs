@@ -53,15 +53,18 @@ test("同梱本体の版・配布WASMと検索・複数文・保存メモリの�
   assert.ok(notices.includes("Apache License"));
 });
 
-test("旧SQLiteが作った正常な計画・履歴を読み編集再保存しても構造を維持する", async () => {
+test("旧保存形式の計画・履歴は読み込みと編集を拒否し元の内容を保持する", async () => {
   await withNodeBundle("tests/core-api.ts", async api => {
     const bytes = new Uint8Array(inflateSync(Buffer.from(oldPlan, "base64")));
     const before = bytes.slice();
-    await api.validateTriadicDatabase(bytes);
-    const saved = await api.editDatabase(bytes, db => db.run("UPDATE departments SET name = '互換確認' WHERE id = 1"));
-    await api.validateTriadicDatabase(saved.bytes);
+    await assert.rejects(api.validateTriadicDatabase(bytes), /保存形式には対応/);
+    let edited = false;
+    await assert.rejects(api.editDatabase(bytes, () => { edited = true; }), /保存形式には対応/);
+    assert.equal(edited, false, "旧形式に対して編集処理を実行しない");
     assert.deepEqual(bytes, before);
-    const snapshot = await api.openBusinessSnapshot(new Uint8Array(inflateSync(Buffer.from(oldSnapshot, "base64"))));
-    snapshot.close();
+    const snapshot = new Uint8Array(inflateSync(Buffer.from(oldSnapshot, "base64")));
+    const originalSnapshot = snapshot.slice();
+    await assert.rejects(api.openBusinessSnapshot(snapshot), /保存形式には対応/);
+    assert.deepEqual(snapshot, originalSnapshot);
   });
 });

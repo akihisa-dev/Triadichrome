@@ -18,7 +18,7 @@ export async function prepareAggregationSave(bytes: Uint8Array, change: Aggregat
     const before = await snapshotFromDatabase(database);
     database.run("BEGIN");
     applyAggregationChange(database, change);
-    database.run("UPDATE plan SET updated_at = ? WHERE id = 1", [now]);
+    database.run("UPDATE document_info SET updated_at = ? WHERE id = 1", [now]);
     database.run("COMMIT");
     const changed = originalMaster !== master();
     const after = changed ? await snapshotFromDatabase(database) : null;

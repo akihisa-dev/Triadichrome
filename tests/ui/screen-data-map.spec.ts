@@ -5,6 +5,13 @@ test("画面の保存項目と参照先をたどり、関連図の入口へ戻�
   await app.getByRole("button", { name: "画面とデータ", exact: true }).click();
   const map = app.getByRole("region", { name: "画面とデータの対応図" });
   await expect(map.getByRole("heading", { name: "施策一覧", exact: true })).toBeVisible();
+  const info = map.locator("#screen-data-document_info");
+  await expect(info.locator(".screen-data-table-heading")).toContainText("基本情報");
+  await expect(info.locator(".screen-data-table-heading")).toContainText("document_info");
+  await info.locator(".screen-data-table-heading").click();
+  await expect(info.locator(".screen-data-columns")).toContainText("作成日時");
+  await expect(info.locator(".screen-data-columns")).toContainText("更新日時");
+  await expect(map.locator("#screen-data-plan")).toHaveCount(0);
   await expect(map.locator("#screen-data-initiatives")).toContainText("primary_start_year_month");
   await map.getByRole("navigation").getByRole("button", { name: "施策詳細", exact: true }).click();
   await map.locator("#screen-data-initiatives .screen-data-table-heading").click();

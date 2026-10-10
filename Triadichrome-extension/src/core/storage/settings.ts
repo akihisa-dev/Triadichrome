@@ -4,7 +4,7 @@ import { amountToYen, yenToAmount } from "../domain/amounts";
 import { editDatabase } from "./transaction";
 import { isKindId, type KindId, type KindSelections, type KindScreen, type PlanSettings, type KindOverrides, type PlanChange, type PreviousInput } from "../domain/kinds";
 export function readPlanSettings(db: Database): PlanSettings {
-  const [year] = db.exec("SELECT fiscal_year FROM plan WHERE id = 1")[0]!.values[0]!;
+  const [year] = db.exec("SELECT fiscal_year FROM document_info WHERE id = 1")[0]!.values[0]!;
   const kindSelections: KindSelections = { "initiative-list": [2], "cost-table": [1], "expansion-table": [1] };
   for (const [screen, first, second] of db.exec("SELECT screen, first_kind, second_kind FROM kind_selections")[0]?.values ?? []) {
     kindSelections[String(screen) as KindScreen] = [Number(first) as KindId, ...(second === null ? [] : [Number(second) as KindId])];

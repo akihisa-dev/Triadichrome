@@ -143,7 +143,7 @@ export async function createSamplePlan(fiscalYear = currentFiscalYear(), large =
     const database = await openTriadicDatabase(input);
     try {
       // Normalize both current and embedded snapshot metadata for deterministic fixtures.
-      database.run("UPDATE plan SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
+      database.run("UPDATE document_info SET created_at = ?, updated_at = ?", [timestamp, timestamp]);
       database.run("UPDATE data_history_state SET saved_at = ?", [timestamp]);
       return database.export();
     } finally { database.close(); }

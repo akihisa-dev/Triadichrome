@@ -6,8 +6,8 @@ export async function verifySchemaBoundary(api) {
   const snapshot = await api.createBusinessSnapshot(original);
   // Harmless fixture alterations exercise executable schema objects and same-name replacements.
   const alterations = [
-    "CREATE TRIGGER unexpected_update AFTER UPDATE OF updated_at ON plan BEGIN UPDATE departments SET name = '人工の変更' WHERE id = 1; END",
-    "DROP TRIGGER immutable_fiscal_year; CREATE TRIGGER immutable_fiscal_year BEFORE UPDATE OF fiscal_year ON plan BEGIN SELECT 1; END",
+    "CREATE TRIGGER unexpected_update AFTER UPDATE OF updated_at ON document_info BEGIN UPDATE departments SET name = '人工の変更' WHERE id = 1; END",
+    "DROP TRIGGER immutable_fiscal_year; CREATE TRIGGER immutable_fiscal_year BEFORE UPDATE OF fiscal_year ON document_info BEGIN SELECT 1; END",
     "CREATE VIEW unexpected_view AS SELECT id FROM accounts",
     "CREATE INDEX unexpected_expression ON accounts(lower(name))",
     "CREATE TABLE unexpected_table (value TEXT)",
@@ -38,8 +38,8 @@ export async function verifySchemaBoundary(api) {
   const changed = replaced.export(); replaced.close();
   await assert.rejects(api.openTriadicDatabase(changed), /許可されていない保存構造/);
   const live = await api.openTriadicDatabase(original);
-  assert.throws(() => live.exec("UPDATE plan SET fiscal_year = 2027"), /年度は作成時に固定/);
-  live.exec("CREATE TEMP TRIGGER unexpected_temporary AFTER UPDATE ON plan BEGIN SELECT 1; END");
+  assert.throws(() => live.exec("UPDATE document_info SET fiscal_year = 2027"), /年度は作成時に固定/);
+  live.exec("CREATE TEMP TRIGGER unexpected_temporary AFTER UPDATE ON document_info BEGIN SELECT 1; END");
   assert.throws(() => api.exportTriadicDatabase(live), /許可されていない保存構造/);
   live.close();
   const ordinary = await api.editDatabase(original, db => db.run("UPDATE departments SET name = '正常の変更' WHERE id = 1"));

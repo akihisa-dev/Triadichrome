@@ -94,7 +94,7 @@ export async function verifySamplePlan(api) {
   assert.equal((await readPlanContents(await changeAggregationMaster(bytes, { type: "delete", id: disposable.id }))).aggregations.length, 15);
   const database = await openTriadicDatabase(bytes);
   try {
-    assert.deepEqual(database.exec("SELECT created_at, updated_at FROM plan")[0].values, [["2026-04-01T00:00:00.000Z", "2026-04-01T00:00:00.000Z"]], "確認用の作成・更新日時を再生成のたびに変更しない");
+    assert.deepEqual(database.exec("SELECT created_at, updated_at FROM document_info")[0].values, [["2026-04-01T00:00:00.000Z", "2026-04-01T00:00:00.000Z"]], "確認用の作成・更新日時を再生成のたびに変更しない");
     assert.deepEqual(plan.details.filter(row => row.initiativeId === product.id && row.kindId === 1 && [4,3].includes(row.month)).slice(0,2).map(row => [row.year,row.month]), [[2026,4],[2027,3]]);
   } finally { database.close(); }
   assert.equal((await readPlanContents(bytes)).accounts.length, 59, "削除確認後も元データを再利用できる");

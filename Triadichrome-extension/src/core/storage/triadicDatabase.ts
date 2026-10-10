@@ -52,8 +52,8 @@ function assertDatabase(db: Database, documentType: DocumentType): void {
     validateDataHistory(db);
   }
   if (metadata.get("document_type") !== documentType) invalid();
-  const plan = db.exec("SELECT id, fiscal_year, created_at, updated_at FROM plan")[0]?.values ?? [];
-  if (plan.length !== 1 || plan[0]?.[0] !== 1 || !Number.isInteger(plan[0]?.[1]) || Number(plan[0]?.[1]) < 1 || Number(plan[0]?.[1]) > 9998) invalid();
+  const documentInfo = db.exec("SELECT id, fiscal_year, created_at, updated_at FROM document_info")[0]?.values ?? [];
+  if (documentInfo.length !== 1 || documentInfo[0]?.[0] !== 1 || !Number.isInteger(documentInfo[0]?.[1]) || Number(documentInfo[0]?.[1]) < 1 || Number(documentInfo[0]?.[1]) > 9998) invalid();
   if (db.exec("PRAGMA integrity_check")[0]?.values[0]?.[0] !== "ok" || db.exec("PRAGMA foreign_key_check").length) invalid();
   if (db.exec(`SELECT id FROM accounts WHERE typeof(code) != 'text' OR code NOT GLOB '[0-9][0-9][0-9]' OR attribute NOT IN ('sales','cost','expense','profit') OR trim(name) = ''
     UNION ALL SELECT id FROM expansions WHERE typeof(code) != 'text' OR code = '' OR code GLOB '*[^0-9]*' OR trim(name) = ''
@@ -90,7 +90,7 @@ export async function createTriadicDatabase(fiscalYear = new Date().getFullYear(
   try {
     db.exec(TRIADIC_SCHEMA_SQL);
     const now = new Date().toISOString();
-    db.run("INSERT INTO plan VALUES (1, ?, ?, ?)", [fiscalYear, now, now]);
+    db.run("INSERT INTO document_info VALUES (1, ?, ?, ?)", [fiscalYear, now, now]);
     db.run("INSERT INTO triadic_metadata VALUES ('document_type', 'plan')");
     db.exec(DATA_HISTORY_SQL);
     db.run("INSERT INTO data_history_state VALUES (1, 1, 1, NULL, ?)", [now]);
